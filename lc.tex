@@ -2,10 +2,45 @@
 % siamltex1213bueler.cls is a two or three line change of siamltex1213.cls to permit
 % pdflatex to work and not spew warnings
 
-\title{Conservation in a layer\thanks{This work was supported by NASA grant \# NNX13AM16G.}} 
+\usepackage{amssymb,amsmath}
 
-\author{Ed Bueler\thanks{Dept.~of Mathematics and Statistics, and Geophysical Institute, University of Alaska Fairbanks 
-(\email{elbueler@alaska.edu}).}}
+\usepackage{times}
+
+% math macros
+\newcommand\bv{\mathbf{v}}
+\newcommand\bV{\mathbf{V}}
+\newcommand\bn{\mathbf{n}}
+\newcommand\bq{\mathbf{q}}
+\newcommand\bQ{\mathbf{Q}}
+
+\newcommand\CC{\mathbb{C}}
+\newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
+\newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
+\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
+\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
+\newcommand{\ddxp}[1]{\ensuremath{\frac{\partial #1}{\partial x'}}}
+\newcommand{\ddz}[1]{\ensuremath{\frac{\partial #1}{\partial z}}}
+\newcommand{\ddxx}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x^2}}}
+\newcommand{\ddyy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial y^2}}}
+\newcommand{\ddxy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x \partial y}}}
+\newcommand{\ddzz}[1]{\ensuremath{\frac{\partial^2 #1}{\partial z^2}}}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand\eps{\epsilon}
+\renewcommand{\grad}{\nabla}
+\newcommand{\ihat}{\mathbf{i}}
+\newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
+\newcommand{\jhat}{\mathbf{j}}
+\newcommand{\khat}{\mathbf{k}}
+\newcommand{\nhat}{\mathbf{n}}
+\newcommand\lam{\lambda}
+\newcommand\lap{\triangle}
+\newcommand\Matlab{\textsc{Matlab}\xspace}
+\newcommand\RR{\mathbb{R}}
+\newcommand\vf{\varphi}
+
+\title{Conservation in free-boundary layer models\thanks{This work was supported by NASA grant \# NNX13AM16G.}} 
+
+\author{Ed Bueler\thanks{Dept.~of Mathematics and Statistics, and Geophysical Institute, University of Alaska Fairbanks (\texttt{elbueler@alaska.edu}).}}
 
 \begin{document}
 \maketitle
@@ -22,13 +57,60 @@ FIXME
 
 \pagestyle{myheadings}
 \thispagestyle{plain}
-\markboth{ED BUELER}{CONSERVATION IN A LAYER}
+\markboth{ED BUELER}{CONSERVATION IN FREE-BOUNDARY LAYER MODELS}
 
 \section{Introduction}
 
-
+Problems of this type appear for ice sheets \cite{JouvetBueler2012}, shallow water flows over marshes \cite{AlonsoSantillanaDawson}, subglacial hydrology \cite{AschwandenBuelerKhroulevBlatter,BuelervanPeltDRAFT,Schoofetal2012}, supraglacial runoff [CITE?], sea ice [CITE?], and tsunami run-up [CITE?], among other applications.
 
 \section{Theory}
+
+Let $\Omega \subset \RR^d$ be a bounded set with sufficiently-regular boundary.  The time-dependent model consists of a mass-conservation equation, a fixed-location boundary condition, and a constraint:
+\begin{align}
+u_t &= - \Div \bq + f(u,x,t), \label{eq:massconserve} \\
+\bq \cdot \bn \Big|_{\partial\Omega} &= 0, \label{eq:fixedneumann} \\
+u &\ge 0 \label{eq:constraint}
+\end{align}
+for $u(x,t)$ with $x\in \Omega$.  We suppose $\bq = \bq(\grad u, u, x, t)$.  Essentially because constraint \eqref{eq:constraint} comes from the meaning of $u$ as a layer thickness, equation \eqref{eq:massconserve} is sometimes called a ``St.~Venant'' equation [BECAUSE OF FIXME].
+
+The time semi-discretized problem is a weakly-posed problem for the new values $u_n(x) \approx u(x,t_n)$, given the old values $u_{n-1}(x)$,
+\begin{align}
+\frac{u_n - u_{n-1}}{\Delta t} &= - \Div \bQ_n + F(u_n,x), \label{eq:semimassconserve} \\
+\bQ_n \cdot \bn \Big|_{\partial\Omega} &= 0, \label{eq:semifixedneumann} \\
+u_n &\ge 0 \label{eq:semiconstraint}
+\end{align}
+Here $F(u_n,x,t)$ is a very general function coming from the semi-discretization problem, and including various functions of the old values.  On the one hand, in the simplest implicit case, a backward Euler scheme, $F(u_n,x) = f(u_n,x,t_n)$ and $\bQ_n = \bq(\grad u_n,u,x,t_n)$.  In the case of a trapezoid rule, however,
+\begin{align*}
+F(u_n,x) &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}),
+\end{align*}
+and $\bQ_n = \frac{1}{2} \bq(\grad u_n,u_n,x,t_n)$.  Thus $F$ ``absorbs'' all the terms evaluated at time $t_{n-1}$.
+
+Define
+\begin{equation}
+m(t) = \int_\Omega u(x,t)\,dx.
+\end{equation}
+Decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
+\begin{align*}
+\Omega &= \Omega_n \cup \Omega_r \cup \Omega_0, \\
+\Omega_n &= \{u_n(x)>0\}, \\
+\Omega_r &= \{u_n(x)=0 \text{ but } u_{n-1}(x) > 0\}, \\
+\Omega_0 &= \{u_n(x)=0 \text{ and } u_{n-1}(x) = 0\}.
+\end{align*}
+Here the subscript ``$r$'' stands for ``retreat''.  Note $\Omega_n$ has a boundary which decomposes
+\begin{align*}
+\partial\Omega_n &= \Gamma_f \cup \Gamma_0
+\end{align*}
+where along $\Gamma_f$ condition \eqref{eq:semifixedneumann} applies (``$f$'' stands for ``fixed'') and along $\Gamma_0$ we have $\bQ_n = 0$.
+
+Then by \eqref{eq:semimassconserve} we have
+\begin{align*}
+m(t_{n}) - m(t_{n-1}) &= \int_{\Omega_n} (u_n - u_{n-1})\,dx - \int_{\Omega_r} u_{n-1}\,dx \\
+   &= \Delta t \int_{\Omega_n} (- \Div \bQ_n + F(u_n,x)) \,dx - \int_{\Omega_r} u_{n-1}\,dx \\
+   &= \Delta t \int_{\partial\Omega_n} \bQ_n \cdot \bn + \Delta t \int_{\Omega_n} F(u_n,x)\,dx - \int_{\Omega_r} u_{n-1}\,dx \\
+   &= \Delta t \int_{\Omega_n} F(u_n,x)\,dx - \int_{\Omega_r} u_{n-1}\,dx
+\end{align*}
+because $\bQ_n=0$ along $\partial\Omega_n$.
+
 
 
 \section{Conclusion}  FIXME
