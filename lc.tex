@@ -63,41 +63,42 @@ FIXME
 
 Problems of this type appear for ice sheets \cite{JouvetBueler2012}, shallow water flows over marshes \cite{AlonsoSantillanaDawson}, [Dupuit-Forchheimer APPROX IN GROUNDWATER], subglacial hydrology \cite{AschwandenBuelerKhroulevBlatter,BuelervanPeltDRAFT,Schoofetal2012}, supraglacial runoff [CITE?], sea ice [CITE?], and tsunami run-up [CITE?], among other applications.
 
-\section{Theory}
-
-Let $\Omega \subset \RR^d$ be a bounded open region with sufficiently-regular boundary.  The time-dependent model we examine includes a mass-conservation equation, a fixed-location flux (Neumann) boundary condition, and a constraint:
+Let $\Omega \subset \RR^d$ be a bounded open region with sufficiently-regular boundary.  The time-dependent model we consider is usually stated in strong form as follows, including a mass-conservation equation, a fixed-location flux (Neumann) boundary condition, and a constraint:
 \begin{align}
 u_t &= - \Div \bq + f(u,x,t) &&\text{in } \Omega \label{eq:massconserve} \\
 \bq \cdot \bn &= g(x,t) &&\text{on } \partial\Omega \label{eq:fixedneumann} \\
 u &\ge 0 &&\text{in } \bar\Omega \label{eq:constraint}
 \end{align}
-for $u(x,t)$ with $x\in \Omega$.  We suppose $\bq = \bq(\grad u, u, x, t)$ for now, with more detail below.  Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a layer \emph{thickness}, which must be nonnegative.  Equation \eqref{eq:massconserve} is sometimes called a ``St.~Venant'' equation [BECAUSE OF FIXME].
+for $u(x,t)$ with $x\in \Omega$.  We suppose $\bq = \bq(\grad u, u, x, t)$ for now, with more detail below.  
 
-Let $\{t_n\}$ be a sequence of increasing times.  The (time) semi-discretized problem is a weakly-posed problem in $W^{1,p}(\Omega)$---more detail is given on function spaces below---for the new values $u_n(x) \approx u(x,t_n)$, given the old values $u_{n-1}(x)$,
+Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a layer \emph{thickness}, which must be nonnegative.  Equation \eqref{eq:massconserve} is sometimes called a ``St.~Venant'' equation [BECAUSE OF FIXME].
+
+Conservation equation \eqref{eq:massconserve} is only intended to apply, in this strong form, where $u>0$.  The same applies to the boundary condition \eqref{eq:fixedneumann} in locations where $G\ne 0$.  We will see that well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions.
+
+Let $\{t_n\}$ be a sequence of increasing times.  The (time) semi-discretized problem will be a stated as a weak, well-posed problem in $W^{1,p}(\Omega)$---more detail is given on function spaces below---for the new values $u_n(x) \approx u(x,t_n)$, given the old values $u_{n-1}(x)$.  Here is the strong form, corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint} above:
 \begin{align}
 \frac{u_n - u_{n-1}}{\Delta t} &= - \Div \bQ_n + F_n &&\text{in } \Omega \label{eq:semimassconserve} \\
 \bQ_n \cdot \bn &= G_n &&\text{on } \partial\Omega \label{eq:semifixedneumann} \\
 u_n &\ge 0 &&\text{in } \bar\Omega \label{eq:semiconstraint}
 \end{align}
-Here $F_n(u_n,x)$, $\bQ_n(\grad u_n,u_n,x)$, $G_n(x)$ are rather general functions coming from the semi-discretization procedure, and including various functions of the old values.
 
-For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we would have $F_n = f(u_n,x,t_n)$ and $\bQ_n = \bq(\grad u_n,u,x,t_n)$.  In the case of a trapezoid rule, however,
+Here $F_n(u_n,x)$, $\bQ_n(\grad u_n,u_n,x)$, $G_n(x)$ are rather general functions coming from the semi-discretization procedure, and including various functions of the old values.  For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we would have $F_n = f(u_n,x,t_n)$ and $\bQ_n = \bq(\grad u_n,u,x,t_n)$.  In the case of a trapezoid rule, however,
 \begin{align*}
-F(u_n,x) &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}),
+F_n &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}),
 \end{align*}
 and $\bQ_n = \frac{1}{2} \bq(\grad u_n,u_n,x,t_n)$.  Thus $F$ generally ``absorbs'' various terms evaluated at time $t_{n-1}$ and time $t_n$ also.
 
-Also define
-\begin{equation}
-M_n = \int_\Omega u_n(x)\,dx
-\end{equation}
-and decompose $\Omega$ into three disjoint and pair-wise disjoint regions based on $u_n$ and $u_{n-1}$:
+Decompose $\Omega$ into three disjoint and pair-wise disjoint regions based on $u_n$ and $u_{n-1}$:
 \begin{align*}
 \Omega_n &= \{u_n(x)>0\}, \\
 \Omega_n^r &= \{u_n(x)=0 \text{ and } u_{n-1}(x) > 0\}, \\
 \Omega_n^0 &= \{u_n(x)=0 \text{ and } u_{n-1}(x) = 0\},
 \end{align*}
-so that $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.  Here the superscript ``$r$'' stands for ``retreat''.  See Figure \ref{fig:domains}.
+so that $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.  Here the superscript ``$r$'' stands for ``retreat''.  See Figure \ref{fig:domains}.  The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a fixed (Neumann) condition applies, and a part which is the free boundary,
+\begin{align*}
+\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
+\end{align*}
+(superscript ``$N$'' stands for ``Neumann'').  Specifically, $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, and along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.  We will show [WILL WE?] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 \begin{figure}[ht]
 \centerline{FIXME}
@@ -106,21 +107,36 @@ so that $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.  Here the superscri
 \label{fig:domains}
 \end{figure}
 
-The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a fixed (Neumann) condition applies, and a part which is the free boundary,
-\begin{align*}
-\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
-\end{align*}
-(superscript ``$N$'' stands for ``Neumann'').  Specifically, $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, and along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.  We will show [WILL WE?] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n^0 = 0$.
+Define
+\begin{equation}
+M_n = \int_\Omega u_n(x)\,dx,
+\end{equation}
+which we call the \emph{(total) mass at time} $t_n$, and define
+\begin{equation}
+R_n = \int_{\Omega_n^r} u_{n-1}\,dx,
+\end{equation}
+which we call the \emph{retreat loss at time} $t_n$.
 
-FIXME: Then by \eqref{eq:semimassconserve} we have
-\begin{align*}
-m(t_{n}) - m(t_{n-1}) &= \int_{\Omega_n} (u_n - u_{n-1})\,dx - \int_{\Omega_r} u_{n-1}\,dx \\
-   &= \Delta t \int_{\Omega_n} (- \Div \bQ_n + F(u_n,x)) \,dx - \int_{\Omega_r} u_{n-1}\,dx \\
-   &= \Delta t \int_{\partial\Omega_n} \bQ_n \cdot \bn + \Delta t \int_{\Omega_n} F(u_n,x)\,dx - \int_{\Omega_r} u_{n-1}\,dx \\
-   &= \Delta t \int_{\Omega_n} F(u_n,x)\,dx - \int_{\Omega_r} u_{n-1}\,dx
-\end{align*}
-because $\bQ_n=0$ along $\partial\Omega_n$.
+The mass and the retreat loss at time $t_n$ are related, of course.  By \eqref{eq:semimassconserve} we have
+\begin{align}
+M_n - M_{n-1} &=  - \int_{\Omega_n^r} u_{n-1}\,dx + \int_{\Omega_n} (u_n - u_{n-1})\,dx \label{eq:massstep} \\
+   &= - \int_{\Omega_n^r} u_{n-1}\,dx + \Delta t \int_{\Omega_n} (- \Div \bQ_n + F_n) \,dx \notag \\
+   &= - R_n + \Delta t \int_{\Gamma_n^N} G_n + \Delta t \int_{\Omega_n} F_n\,dx \notag
+\end{align}
+because $\bQ_n=0$ along $\Gamma_n^0$.
 
+The above calculation is quite easy, but it gets us to our main point:
+\begin{quote}
+\emph{the retreat loss cannot be precisely-balanced with the source term $F_n$ or a related integral.}
+\end{quote}
+What we mean, among other ways to think about the problem, is that at points $x$ within $\Omega_n^r$, where $F_n(x)$ is negative as we shall see, the exact time $\bar t(x)$ at which $u(x,t)$ first becomes zero varies over $\Omega_n^r$.  While these various ``details'' can disappear in the limit $\Delta t \to 0$, practical models necessarily have discrete time, but also (in a climatic context) must necessarily conserve discrete mass (in time or time+space).  As a practical consequence our main point is that
+\begin{quote}
+\emph{models must keep time series for $R_n$, $\int_{\Gamma_n^N} G_n$, and $\int_{\Omega_n} F_n$ in order to provide auditable mass conservation, namely equation \eqref{eq:massstep}.}
+\end{quote}
+
+Note that the retreat area $\Omega_n^r$ can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of surface water can evaporate.  In all of these example cases, the mass of water is conserved, but climatic models attempt to conserve masses of the phases of water separately as the phases have different consequences on earth system dynamics (e.g.~snow and ice have higher albedo than liquid ocean).
+
+\section{Retreat mass}
 
 
 \section{Conclusion}  FIXME
