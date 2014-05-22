@@ -1,6 +1,10 @@
 all: lc.pdf
 
-figures = 
+figures = domains-fig.pdf
+
+domains-fig.pdf:
+	python domainsfigure.py
+	pdfcrop domains-fig.pdf domains-fig.pdf
 
 # TO BUILD lc.pdf:
 #   * ice-bib.bib needs to be a link to the same object in pism-dev/doc/

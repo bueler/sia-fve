@@ -71,9 +71,9 @@ u &\ge 0 &&\text{in } \bar\Omega \label{eq:constraint}
 \end{align}
 for the \emph{layer thickness} $u(x,t)$ with $x\in \Omega$.  We informally suppose $\bq = \bq(\grad u, u, x, t)$ for now, with more essential detail below.
 
-In the time-dependent support of $u$ we say that the layer is present, and that it is absent in the complement.  Finding the evolving ``free'' boundary between the support and its complement is a critical aspect of problems of this type.
+Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a layer \emph{thickness}, which cannot be negative.  In the time-dependent support of $u$, namely $\{(x,t) \big| u(x,t) > 0\}$, we say that the layer exists, and that it is absent in the complement.  Finding the evolving ``free'' boundary of the support is essential to problems of this type.
 
-Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a layer \emph{thickness}, which must be nonnegative.  Conservation equation \eqref{eq:massconserve}, which is sometimes called a ``St.~Venant'' equation [BECAUSE OF FIXME], is only intended to apply, in this strong form, where the layer exists ($u>0$).  The same applies to the boundary condition \eqref{eq:fixedneumann}, as it can only make sense in locations where $u>0$, at least in the generic case $g\ne 0$.  We will see that well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions.
+Conservation equation \eqref{eq:massconserve}, which is sometimes called a ``St.~Venant'' equation [BECAUSE OF FIXME], is only intended to apply, in this strong form, where the layer exists ($u>0$).  The same applies to the boundary condition \eqref{eq:fixedneumann}, as it can only make sense in locations where $u>0$, at least in the generic case $g\ne 0$.  Well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions.  This is done below.
 
 We actually work with the (time) semi-discretized problem, which will be a stated as a weak problem in $W^{1,p}(\Omega)$, with attention to well-posedness, below.  For now, let $\{t_n\}$ be a sequence of increasing times.  The semi-discretized problem is for the new values $u_n(x) \approx u(x,t_n)$, given the old values $u_{n-1}(x)$.  Here is the strong form, corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint} above:
 \begin{align}
@@ -105,11 +105,11 @@ The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a
 (superscript ``$N$'' stands for ``Neumann'').  Specifically, $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, and along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.  We will show [WILL WE?  NO, WE CAN'T!] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 \begin{figure}[ht]
-\vspace{1.0in}
-\centerline{FIXME}
-\vspace{1.0in}
-%\includegraphics[width=5.0in,keepaspectratio=true]{figs/cheb2dgrid}
-\caption{At times $t_{n-1},t_n$ the layer has thicknesses $u_{n-1},u_n$, and this implies a decomposition of $\Omega$.}
+\begin{center}
+\includegraphics[width=3.0in,keepaspectratio=true]{domains}
+\end{center}
+\vspace{-0.2in}
+\caption{We decompose $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$, where $\Omega_n$ the support of $u_n$, $\Omega_n^r$ is the retreat set, and $\Omega_n^0$ is the set on which both $u_{n-1}$ and $u_n$ are zero.}
 \label{fig:domains}
 \end{figure}
 
