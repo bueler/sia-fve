@@ -57,7 +57,7 @@ FIXME
 
 \pagestyle{myheadings}
 \thispagestyle{plain}
-\markboth{ED BUELER}{CONSERVATION IN FREE-BOUNDARY LAYER MODELS}
+\markboth{ED BUELER}{CONSERVATION FOR FLUID LAYERS WITH FREE-BOUNDARIES}
 
 \section{Introduction}
 
@@ -87,6 +87,8 @@ Here $F_n(u_n,x)$, $\bQ_n(\grad u_n,u_n,x)$, $G_n(x)$ are rather general functio
 F_n &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}),
 \end{align*}
 and $\bQ_n = \frac{1}{2} \bq(\grad u_n,u_n,x,t_n)$.  Thus $F$ generally ``absorbs'' various terms evaluated at time $t_{n-1}$ and time $t_n$ also.
+
+FIXME: we can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
 
 Decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
 \begin{align*}
@@ -142,18 +144,78 @@ admitting that the retreat loss $R_n$ vanishes entirely in the $\Delta t\to 0$ l
 The retreat area $|\Omega_n^r|$ can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of a layer of surface water on ground can evaporate, in the short duration of one time step.  In these example cases the mass of water in all phases is conserved, but climatic models additionally attempt to conserve masses of the phases of water separately, as these phases have different physical properties relevant to earth system dynamics (e.g.~snow and ice have higher albedo than liquid ocean).  In multiphysics models with at least one fluid having a moving free boundary, auditable mass conservation requires a broader conception of discrete-time conservation than is currently understood.
 
 
-\section{Weak formulation of a time-step}  The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solutions $u_n(x)$, because the free boundary is not organically included in the problem statement, and also because the space of admissible solutions is not specified.  Here we both specify the appropriate function spaces and propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} for \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  This weak form can be proven to be well-posed in some cases.
+\section{Regarding the flux}
+
+FIXME:  want property that for $X$ an open set,
+\begin{equation}
+u_n=0 \text{ on } X \quad \implies \quad \bQ_n=0 \text{ on } X  \label{eq:vanishingQn}
+\end{equation}
+
+FIXME:  want maximum principle property that
+\begin{equation}
+v + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \text{ on } X \quad \implies \quad v > 0 \text{ on } X  \label{eq:maxprincQn}
+\end{equation}
+for all $\alpha>0$ because the strong form says $u_n + \Delta t\, \Div \bQ_n = (u_{n-1} + \Delta t\, F_n)$ and we want to conclude the contrapositive of \eqref{eq:maxprincQn} in $\Omega_n^0$ and $\Omega_n^r$:
+\begin{equation}
+F_n \le 0  \text{ on } \Omega_n^0  \label{eq:inequalityonzero}
+\end{equation}
+\begin{equation}
+u_{n-1} + \Delta t\, F_n \le 0  \text{ on } \Omega_n^r  \label{eq:inequalityonretreat}
+\end{equation}
+
+FIXME: if $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
+    $$\bQ_n(\grad v,v,x) \in L^q(\Omega)$$ 
+
+\section{Weak formulation of a time-step}  The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solutions $u_n(x)$, because the free boundary is not organically included in the problem statement, and also because the space of admissible solutions is not specified.  Here we both specify the appropriate function spaces and propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} for \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  This weak form can be proven to be well-posed in some cases.  In more cases the weak form can be shown to imply the strong form where the layer exists (interior condition).
+
+We start by arguing informally for why the weak form, a non-obvious variational inequality, should hold.\footnote{Though our idea is that the weak form is more fundamental, nonetheless mathematical history, if not human frailty, has made the strong form much more prominent in applications and in the climate modeling literature relevant to our problem.}  Our argument uses facts which are at least intuitively true in the subsets of the decomposition $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.
+
+Suppose $v\ge 0$ is sufficiently smooth on $\Omega$.  Using the decomposition and the divergence theorem (Green's theorem),
+\begin{align*}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= -\int_{\Omega_n} \bQ_n \cdot \grad(v-u_n) - \int_{\Omega_n^r \cup \Omega_n^0} \bQ_n \cdot \grad(v-u_n) \\
+  &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\Omega_n} \Div \left(\bQ_n (v-u_n)\right) \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n) - \int_{\Omega_n^r \cup \Omega_n^0} \Div \left(\bQ_n (v-u_n)\right) \\
+  &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\Gamma_n^N} G_n (v-u_n) \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n)
+\end{align*}
+because
+       $$\int_{\Gamma_n^0} (\bQ_n \cdot \bn) (v-u_n) = 0,$$
+and using \eqref{eq:semifixedneumann}.  By \eqref{eq:semimassconserve} where the layer exists, namely in $\Omega_n$, we have
+\begin{align}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:equalitybeforeVI} \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \notag
+\end{align}
+Here we have used the fact that $G_n$ extends by zero to the whole of $\partial \Omega$.
+
+However, by \eqref{eq:vanishingQn} on $\Omega_n^0$,
+    $$\int_{\Omega_n^0} (\Div \bQ_n) (v-u_n) = \int_{\Omega_n^0} (0) (v-u_n) \ge \int_{\Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n)$$
+because in fact $u_n=u_{n-1}=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, and because \eqref{eq:inequalityonzero} says that $F_n \le 0$ on $\Omega_n^0$.  Almost the same, by \eqref{eq:vanishingQn} on $\Omega_n^r$,
+    $$\int_{\Omega_n^r} (\Div \bQ_n) (v-u_n) = \int_{\Omega_n^r} (0) (v-u_n) \ge \int_{\Omega_n^r} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n)$$
+because in fact $u_n=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, and because \eqref{eq:inequalityonretreat} says that $F_n - (u_n - u_{n-1})/\Delta t = F_n + u_{n-1}/\Delta t \le 0$ on $\Omega_n^0$.  Thus if we return to \eqref{eq:equalitybeforeVI} we have
+\begin{align}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &\ge \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:essentiallyVI} \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \notag
+\end{align}
+
+We want to be able to pose our problem (weakly) so that the decomposition $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$ is not needed to pose the problem.  But \eqref{eq:essentiallyVI} can be written without that decomposition!:
+\begin{equation}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:morallytheVI}
+\end{equation}
+This is our variational inequality weak form, in which the free boundary does not appear in posing the problem.
 
 \begin{definition}  Fix $p>1$.  Let
     $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\big|\, v(x) \ge 0 \text{ for all } x \in \Omega\right\}.$$
 \end{definition}
 
-\begin{definition}  We say $u_n \in \mathcal{K}$ \emph{solves the one time-step problem} if 
-    $$\int_\Omega \left(u_n + \Delta t\,\Div \bQ\right)(v-u_n) \ge \int_\Omega \left(u_{n-1} + \Delta t\,F_n\right)(v-u_n)$$
-for all $v\in\mathcal{K}$.
+\begin{definition}  We say $u_n \in \mathcal{K}$ \emph{solves the weak time-step problem} if 
+\begin{align}
+\int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n) + &\Delta t \int_{\partial \Omega} G_n (v-u_n) \ge \label{eq:theVI} \\
+  &\qquad\qquad \int_{\Omega} \left(\Delta t F_n + u_{n-1}\right) (v-u_n). \notag
+\end{align}
 \end{definition}
 
-FIXME: argue for the reasonableness of this weak form
+
+
 
 \section{Conclusion}  FIXME
 
