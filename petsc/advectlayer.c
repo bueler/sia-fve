@@ -89,7 +89,7 @@ int main(int argc,char **argv)
   Vec                 u;
   AppCtx              user;
   PetscReal           t;
-  PetscInt            its, n;
+  PetscInt            its, n, NN = 100;
   SNESConvergedReason reason;
   DM                  da;
   DMDALocalInfo       info;
@@ -97,15 +97,19 @@ int main(int argc,char **argv)
   PetscInitialize(&argc,&argv,(char*)0,help);
 
   user.L  = 10000.0;
-  user.v0 = 100.0;
-  user.f0 = 10.0;
+  user.v0 = 10000.0;
+  user.f0 = 100.0;
   user.q0 = 0.0;
   user.qL = 0.0;
 
-  user.dt = 1.0;
+  user.dt = 30.0;
+
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"","options to advectlayer","");CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-nsteps","number of time steps",NULL,NN,&NN,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,
-                      -10,         // override with -da_grid_x or -da_refine
+                      -100,        // override with -da_grid_x or -da_refine
                       1, 1, NULL,  // dof = 1 and stencil width = 1
                       &da); CHKERRQ(ierr);
   ierr = DMSetApplicationContext(da, &user);CHKERRQ(ierr);
@@ -118,11 +122,11 @@ int main(int argc,char **argv)
   ierr = DMDASetUniformCoordinates(da,user.dx/2,user.L-user.dx/2,
                                    -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
 
-  ierr = DMGetGlobalVector(da, &u); CHKERRQ(ierr);
+  ierr = DMCreateGlobalVector(da,&u);CHKERRQ(ierr);
   ierr = VecSetOptionsPrefix(u,"u_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)u,"solution u"); CHKERRQ(ierr);
 
-  ierr = DMGetGlobalVector(da, &user.uold);CHKERRQ(ierr);
+  ierr = DMCreateGlobalVector(da,&user.uold);CHKERRQ(ierr);
   ierr = VecSetOptionsPrefix(user.uold,"uold_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)user.uold,"OLD solution uold"); CHKERRQ(ierr);
 
@@ -137,27 +141,28 @@ int main(int argc,char **argv)
             (PetscErrorCode (*)(DMDALocalInfo*,void*,void*,void*))FormFunctionLocal,
             &user);CHKERRQ(ierr);
 
+  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); CHKERRQ(ierr);
+
   /* Time Loop */
   t = 0.0;
   ierr = VecCopy(user.uold,u);CHKERRQ(ierr);
-  for (n = 0; n < 100; ++n, t += user.dt) {
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %g ...\n", t); CHKERRQ(ierr);
+  for (n = 0; n < NN; ++n) {
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %7g: ", t); CHKERRQ(ierr);
     ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
 
-    ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); CHKERRQ(ierr);
     ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
     ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
     ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"number of Newton iterations = %D; result = %s\n",
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations;   result = %s\n",
                        its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
 
     ierr = VecCopy(u, user.uold); CHKERRQ(ierr);
     ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+    t += user.dt;
   }
 
-  ierr = DMRestoreGlobalVector(da, &u);CHKERRQ(ierr);
-  ierr = DMRestoreGlobalVector(da, &user.uold);CHKERRQ(ierr);
-
+  ierr = VecDestroy(&u);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.uold);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
   ierr = DMDestroy(&da);CHKERRQ(ierr);
 
