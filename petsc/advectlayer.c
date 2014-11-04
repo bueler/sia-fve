@@ -3,6 +3,14 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 "on 0 < x < L but subject to constraint\n"
 "  u >= 0.\n";
 
+//  ./advectlayer -help |grep ad_
+
+//  ./advectlayer -ad_steps 100
+//  ./advectlayer -ad_dt 0.1
+
+//  ./advectlayer -snes_type vinewtonssls
+//  ./advectlayer -snes_vi_monitor
+
 #include <math.h>
 #include <petscdmda.h>
 #include <petscsnes.h>
@@ -40,42 +48,42 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   PetscInt       j;
   PetscReal      *uold, 
                  x, xleft, xright, vleft, vright, f,
-                 nu = user->dt / user->dx,
-                 pi = PETSC_PI,
+                 nu   = user->dt / user->dx,
+                 nu2  = nu / 2.0,
+                 pi   = PETSC_PI,
                  Lsqr = user->L * user->L,
-                 L5 = user->L / 5.0;
+                 L5   = user->L / 5.0;
 
   PetscFunctionBeginUser;
-  ierr = DMDAVecGetArray(info->da, user->uold,  &uold);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   for (j=info->xs; j<info->xs+info->xm; j++) {
       x      = user->dx * ((PetscReal)j + 1.0/2.0);
       xleft  = x - user->dx/2;
       xright = x + user->dx/2;
       vleft  = (4.0 / Lsqr) * user->v0 * (user->L - xleft);
       vright = (4.0 / Lsqr) * user->v0 * (user->L - xright);
+      //vleft  = user->v0;
+      //vright = user->v0;
       if (x <= L5 || x >= 4.0*L5)
           f = 0.0;
       else
           f = user->f0 * sin(3.0 * pi * (x - L5) / (3.0*L5));
-
       if (j == 0) {
-          FF[j] = + (1.0 + (nu/2.0) * vright) * u[j]
-                  + (nu/2.0) * vright * u[j+1]
-                  - nu * user->q0
-                  - uold[j] - user->dt * f;
+          FF[j] = - nu * user->q0
+                  + (1.0 + nu2 * vright) * u[j]
+                  + nu2 * vright * u[j+1];
       } else if (j == info->mx-1) {
-          FF[j] = - (nu/2.0) * vleft * u[j-1]
-                  + (1.0 - (nu/2.0) * vleft) * u[j]
-                  + nu * user->qL
-                  - uold[j] - user->dt * f;
+          FF[j] = - nu2 * vleft * u[j-1]
+                  + (1.0 - nu2 * vleft) * u[j]
+                  + nu * user->qL;
       } else {
-          FF[j] = - (nu/2.0) * vleft * u[j-1]
-                  + (1.0 + (nu/2.0) * (vright - vleft)) * u[j]
-                  + (nu/2.0) * vright * u[j+1]
-                  - uold[j] - user->dt * f;
+          FF[j] = - nu2 * vleft * u[j-1]
+                  + (1.0 + nu2 * (vright - vleft)) * u[j]
+                  + nu2 * vright * u[j+1];
       }
+      FF[j] -= uold[j] + user->dt * f;
   }
-  ierr = DMDAVecRestoreArray(info->da, user->uold,  &uold);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
 
   //FIXME ierr = PetscLogFlops(10.0*info->ym*info->xm);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -89,7 +97,7 @@ int main(int argc,char **argv)
   Vec                 u;
   AppCtx              user;
   PetscReal           t;
-  PetscInt            its, n, NN = 100;
+  PetscInt            its, n, NN;
   SNESConvergedReason reason;
   DM                  da;
   DMDALocalInfo       info;
@@ -102,10 +110,11 @@ int main(int argc,char **argv)
   user.q0 = 0.0;
   user.qL = 0.0;
 
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"ad_","options to advectlayer","");CHKERRQ(ierr);
+  NN = 10;
+  ierr = PetscOptionsInt("-steps","number of time steps",NULL,NN,&NN,NULL);CHKERRQ(ierr);
   user.dt = 30.0;
-
-  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"","options to advectlayer","");CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-nsteps","number of time steps",NULL,NN,&NN,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal("-dt","length of time step",NULL,user.dt,&user.dt,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,
