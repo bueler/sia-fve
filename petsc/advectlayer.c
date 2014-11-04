@@ -1,15 +1,20 @@
 static const char help[] = "Solves advecting-layer problem in 1d:\n"
 "  u_t + div q = f  where  q = v(x) u\n"
 "on 0 < x < L but subject to constraint\n"
-"  u >= 0.\n";
+"  u >= 0.\n"
+"Implicit (backward Euler) centered finite difference method and\n"
+"SNESVI.\n\n";
 
-//  ./advectlayer -help |grep ad_
+//   ./advectlayer -help |grep ad_
 
-//  ./advectlayer -ad_steps 100
-//  ./advectlayer -ad_dt 0.1
+//   ./advectlayer -ad_steps 100
+//   ./advectlayer -ad_dt 0.1
 
-//  ./advectlayer -snes_type vinewtonssls
-//  ./advectlayer -snes_vi_monitor
+//   ./advectlayer -snes_type vinewtonssls
+//   ./advectlayer -snes_vi_monitor
+
+// failure around this dt:
+//   ./advectlayer -ad_dt 4000.0
 
 #include <math.h>
 #include <petscdmda.h>
@@ -60,19 +65,27 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       x      = user->dx * ((PetscReal)j + 1.0/2.0);
       xleft  = x - user->dx/2;
       xright = x + user->dx/2;
+      // here
+      //   v(x) = (4/L^2) v0 x (L - x)
+      // so
+      //   0 <= v <= v0
+      // and right-hand Neumann b.c. is inactive (and wrong?)
       vleft  = (4.0 / Lsqr) * user->v0 * (user->L - xleft);
       vright = (4.0 / Lsqr) * user->v0 * (user->L - xright);
-      //vleft  = user->v0;
-      //vright = user->v0;
+      // here
+      //   f(x) = f0 sin(3 pi (x - L/5)/(4L/5))
+      // except f = 0 outside of [L/5,4L/5]
+      // so f < 0 in middle of domain
       if (x <= L5 || x >= 4.0*L5)
           f = 0.0;
       else
           f = user->f0 * sin(3.0 * pi * (x - L5) / (3.0*L5));
-      if (j == 0) {
+      // compute residual
+      if (j == 0) { // left-hand Neumann
           FF[j] = - nu * user->q0
                   + (1.0 + nu2 * vright) * u[j]
                   + nu2 * vright * u[j+1];
-      } else if (j == info->mx-1) {
+      } else if (j == info->mx-1) { // right-hand Neumann; FIXME assuming v>=0
           FF[j] = - nu2 * vleft * u[j-1]
                   + (1.0 - nu2 * vleft) * u[j]
                   + nu * user->qL;
@@ -126,8 +139,9 @@ int main(int argc,char **argv)
   ierr = DMDAGetLocalInfo(da,&info); CHKERRQ(ierr);
   user.dx = user.L / (PetscReal)(info.mx);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "using grid of %d points with spacing %g ...\n",
-                     info.mx,user.dx); CHKERRQ(ierr);
+                     "using grid of %d points with spacing %g\n"
+                     "[CFL time step is %g]\n",
+                     info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
   ierr = DMDASetUniformCoordinates(da,user.dx/2,user.L-user.dx/2,
                                    -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
 
