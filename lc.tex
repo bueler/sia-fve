@@ -132,7 +132,11 @@ From \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} we decompose $\Omega
 \Omega_n^r &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) > 0\right\}, \\
 \Omega_n^0 &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) = 0\right\},
 \end{align*}
-so that $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.  Here the superscript ``$r$'' stands for ``retreat,''\footnote{At this point a symmetry has been broken.  We could have decomposed $\Omega= \Omega_n \cup \Omega_n^a \cup \Omega_n^0$ where $\Omega_n^a = \{u_n(x) > 0 \text{ and } u_{n-1}(x) = 0\}$ is the ``advance'' set.  As far as we can tell the resulting alternate theory offers no advantages or disadvantages.} and $\Omega_n^r$ is called the \emph{retreat set}.
+so that
+\begin{equation}
+\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0.  \label{eq:omegadecomposition}
+\end{equation}
+Here the superscript ``$r$'' stands for ``retreat,''\footnote{At this point a symmetry has been broken.  We could have decomposed $\Omega= \Omega_n \cup \Omega_n^a \cup \Omega_n^0$ where $\Omega_n^a = \{u_n(x) > 0 \text{ and } u_{n-1}(x) = 0\}$ is the ``advance'' set.  As far as we can tell the resulting alternate theory offers no advantages or disadvantages.} and $\Omega_n^r$ is called the \emph{retreat set}.
 
 Figure \ref{fig:domains} shows this decomposition of $\Omega$.  In this section we simply define the quantities needed to precisely restate the major assertion of section \ref{sec:intro}.  A decomposition of the boundary $\partial \Omega$ is needed to define the quantities.
 
@@ -144,71 +148,78 @@ Figure \ref{fig:domains} shows this decomposition of $\Omega$.  In this section 
 \label{fig:domains}
 \end{figure}
 
-The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a fixed (Neumann) condition applies, and a part which is the free boundary,
+The boundary of the support $\Omega_n$ of $u_n$ decomposes disjointly into the part where a fixed (Neumann) condition applies, and a part which is the free boundary.  Let $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, where superscript ``$N$'' stands for ``Neumann.''  Then
 \begin{align*}
 \partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
 \end{align*}
-(superscript ``$N$'' stands for ``Neumann'').  Specifically, $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, and along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.  We will show [WILL WE?  PRESUMABLY ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
+Along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.
 
 Now define
 \begin{equation}
-M_n = \int_\Omega u_n(x)\,dx, \label{eq:totalmassdefn}
+M_n = \int_\Omega u_n(x)\,dx = \int_{\Omega_n} u_n(x)\,dx, \label{eq:totalmassdefn}
 \end{equation}
 which we naturally call the \emph{(total) mass} at time $t_n$, and define
 \begin{equation}
 R_n = \int_{\Omega_n^r} u_{n-1}\,dx, \label{eq:retreatlossdefn}
 \end{equation}
-which we call the \emph{retreat loss} at time $t_n$.  The total mass and the retreat loss at time $t_n$ are related.  By \eqref{eq:semimassconserve}, \eqref{eq:totalmassdefn}, and \eqref{eq:retreatlossdefn} we have
+which we call the \emph{retreat loss} at time $t_n$.  The total mass and the retreat loss at time $t_n$ are related.  In fact, by \eqref{eq:semimassconserve}, \eqref{eq:totalmassdefn}, and \eqref{eq:retreatlossdefn} we have
 \begin{align}
 M_n - M_{n-1} &=  - \int_{\Omega_n^r} u_{n-1}\,dx + \int_{\Omega_n} (u_n - u_{n-1})\,dx \label{eq:massstep} \\
    &= - R_n + \Delta t \int_{\Omega_n} (- \Div \bQ_n + F_n) \,dx \notag \\
    &= - R_n + \Delta t \int_{\Gamma_n^N} G_n + \Delta t \int_{\Omega_n} F_n\,dx \notag
 \end{align}
-because $\bQ_n=0$ along $\Gamma_n^0$.
+because $\bQ_n=0$ along $\Gamma_n^0$ by assumption (ii).
 
-Given the continuous-time solution $u(x,t)$ starting with initial condition $u(x,t_{n-1}) = u_{n-1}(x)$, at points $x$ within $\Omega_n^r$ we could define the time at $u(x,t)$ first becomes zero, the \emph{loss-time function} which is well-defined on the retreat set $\Omega_n^r$:
+Given the continuous-time solution $u(x,t)$ to problem \eqref{eq:massconserve}--\eqref{eq:constraint} starting with initial condition $u(x,t_{n-1}) = u_{n-1}(x)$, at points $x$ within $\Omega_n^r$ we could define the time at which $u(x,t)$ first becomes zero.  This \emph{time-of-loss function} is well-defined on the retreat set $\Omega_n^r$:
 \begin{equation}
 \bar t(x) = \inf\left\{t \,\big|\, u(x,t)>0 \,\text{ and }\, t_{n-1} < t \le t_n\right\}.
 \end{equation}
-Observe that $\bar t(x)$ varies over $\Omega_n^r$.  Of course as $\Delta t \to 0$ then $\bar t(x) \to t_{n-1}$, and we might even expect that the area of $\Omega_n^r$ might decrease to zero, though this has not been proven.  But for numerical models, which necessarily have discrete time, the variation in $\bar t(x)$, over $\Omega_n^r$ during the time-step $t_{n-1} < t \le t_n$, is unknown.  If this uncertainty is not acknowledge then it might be a barrier to the conservation of discrete (at least, time-semi-discretized) mass.
+While $\bar t(x)$ varies over $\Omega_n^r$, as $\Delta t \to 0$ then $\bar t(x) \to t_{n-1}$.  We might even expect that the area of $\Omega_n^r$ might decrease to zero as $\Delta t \to 0$, though this has not been proven.  But for numerical models, which necessarily have discrete time, the variation in $\bar t(x)$, over $\Omega_n^r$ during the time-step $t_{n-1} < t \le t_n$, is unknown.  Not accounting for the unknown variation of $\bar t(x)$ over the retreat set $\Omega_n^r$ is a barrier to the conservation of discrete (or merely time-discretized) modeled mass.
 
-As an operational statement about discrete-time models, we can rephrase our major assertion from the Introdcution as
+As an operational statement about discrete-time models, we can rephrase our major assertion from section \ref{sec:intro} as
 \begin{quote}
 \emph{The model must store a time series for $R_n$, in addition to the expected time series $\int_{\Gamma_n^N} G_n$ and $\int_{\Omega_n} F_n$, in order to provide auditable mass conservation.}
 \end{quote}
-In stating this assertion, we acknowledge that the retreat loss $R_n$ should vanish in the $\Delta t\to 0$ limit.
+In stating this assertion, we note that the retreat loss $R_n$ should vanish in the $\Delta t\to 0$ limit, which is a consistency statement about the time-discretized model.
 
 
-\section{Regarding the flux} \label{sec:fluxassumptions}
+\section{Regularity and maximum principle assumptions on the flux} \label{sec:fluxassumptions}
 
-FIXME:  want property that for $X$ an open set,
-\begin{equation}
-u_n=0 \text{ on } X \quad \implies \quad \bQ_n=0 \text{ on } X  \label{eq:vanishingQn}
-\end{equation}
+FIXME: we make three kinds of assumptions on the flux: \begin{itemize}
+\item $\bQ_n$ is regular (i.e.~H\"older in $\grad u$, H\"older in $u$ and \eqref{eq:QisLq},
+\item for $\bQ_n$, assumption (ii) and maximum principle \eqref{eq:maxprincQn}, and
+\item the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$
+\end{itemize}
 
-FIXME:  want maximum principle property that
+FIXME:  want maximum principle property that for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
 \begin{equation}
-v + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \text{ on } X \quad \implies \quad v > 0 \text{ on } X  \label{eq:maxprincQn}
+v(x) + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \quad \implies \quad v(x) > 0 \label{eq:maxprincQn}
 \end{equation}
-for all $\alpha>0$ because the strong form \eqref{eq:semimassconserve} says $u_n + \Delta t\, \Div \bQ_n = (u_{n-1} + \Delta t\, F_n)$ and we want to conclude the contrapositive of \eqref{eq:maxprincQn} in $\Omega_n^0$ and $\Omega_n^r$ where $u_n=0$:
+for all $x\in\Omega$ 
+
+From the contrapositive of \eqref{eq:maxprincQn} applied to $X = \Omega_n^0$, where $u_n=0$ and $u_{n-1}=0$, and because the strong form \eqref{eq:semimassconserve} says that
+   $$u_n + \Delta t \Div \bQ_n = u_{n-1} + \Delta t F_n,$$
+we have
 \begin{equation}
-F_n \le 0  \text{ on } \Omega_n^0  \label{eq:inequalityonzero}
+F_n = \Div \bQ_n \le 0  \label{eq:divfluxnonpositive}
 \end{equation}
+at all points in $\Omega_n^0$.  Also, using the contrapositive of \eqref{eq:maxprincQn} on $X = \Omega_r^n$, where $u_n=0$, and strong form \eqref{eq:semimassconserve}, gives
 \begin{equation}
-u_{n-1} + \Delta t\, F_n \le 0  \text{ on } \Omega_n^r  \label{eq:inequalityonretreat}
+u_{n-1} + \Delta t F_n = \Delta t \Div\bQ_n \le 0
 \end{equation}
+at all points in $\Omega_n^r$.
 
 FIXME: if $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
-    $$\bQ_n(\grad v,v,x) \in L^q(\Omega)$$ 
-
+\begin{equation}
+\bQ_n(\grad v,v,x) \in L^q(\Omega) \label{eq:QisLq}
+\end{equation}
+ 
 
 \section{Weak formulation of a time-step}  \label{sec:weakform}
 
-The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solutions $u_n(x)$, because the free boundary is not organically included in the problem statement, and also because the space of admissible solutions is not specified.  Here we both specify the appropriate function spaces and propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} for \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  This weak form can be proven to be well-posed in some cases.  In more cases the weak form can be shown to imply the strong form where the solution exists (``interior condition'').
+The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solutions $u_n(x)$, because the free boundary is not organically included in the problem statement, and also because the space of admissible solutions is not specified.  Here we specify the appropriate function spaces and we propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia}.  This weak form can be proven to be well-posed in some cases.  In more cases the weak form can be shown to imply the strong form where $u_n>0$ (``interior condition'').  We start by arguing informally for why the weak form, a variational inequality, should hold.\footnote{Though the weak form is mathematically more fundamental, nonetheless history and human frailty have made the strong form more prominent in applications, especially in the climate-modeling literature where our conservation concerns are most relevant.}  Our argument uses facts which are intuitively true in the subsets from decomposition \eqref{eq:omegadecomposition}.
 
-We start by arguing informally for why the weak form, a non-obvious variational inequality, should hold.\footnote{Though the weak form is mathematically more fundamental, nonetheless history and human frailty have made the strong form more prominent in applications, especially in the climate-modeling literature where our conservation concerns are most relevant.}  Our argument uses facts which are intuitively true in the subsets of the decomposition $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.
-
-Suppose $v\ge 0$ is sufficiently smooth on $\Omega$.  Using the decomposition and the divergence theorem (Green's theorem),
+Suppose $u_n\ge 0$ and $v\ge 0$ are sufficiently smooth on $\Omega$ and define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$.  Using \eqref{eq:omegadecomposition} and integration by parts (divergence theorem),
 \begin{align*}
 -\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= -\int_{\Omega_n} \bQ_n \cdot \grad(v-u_n) - \int_{\Omega_n^r \cup \Omega_n^0} \bQ_n \cdot \grad(v-u_n) \\
   &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\Omega_n} \Div \left(\bQ_n (v-u_n)\right) \\
@@ -253,6 +264,7 @@ This is our variational inequality weak form, in which the free boundary does no
 \end{definition}
 for all $v \in \mathcal{K}$.
 
+FIXME:  We will show [WILL WE?  PRESUMABLY ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 
 \section{Conclusion}  FIXME
