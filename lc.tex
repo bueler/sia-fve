@@ -11,7 +11,9 @@
 \newcommand\bV{\mathbf{V}}
 \newcommand\bn{\mathbf{n}}
 \newcommand\bq{\mathbf{q}}
+
 \newcommand\bQ{\mathbf{Q}}
+\newcommand\bX{\mathbf{X}}
 
 \newcommand\CC{\mathbb{C}}
 \newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
@@ -92,42 +94,47 @@ We call the unknown $u$ the \emph{layer thickness} $u(x,t)$, for $x\in \Omega$ a
 \end{equation}
 but with more detail below in section \ref{sec:fluxassumptions}.
 
-Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  In the time-dependent support of $u$, namely $\{(x,t) \big| u(x,t) > 0\}$, we say that the layer exists, and that it is absent in the complement.  Finding the evolution of this support, and of its ``free'' boundary, is essential to problems of this type.
+Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  In the time-dependent support of $u$, namely $\{(x,t) \big| u(x,t) > 0\}$, we say that the layer exists, and that it is absent in the complement.  Finding the evolution of this support, and of its free boundary, is essential to problems of this type.
 
-Of course, conservation equation \eqref{eq:massconserve} only applies in this strong form where the layer exists.  The same applies to the boundary condition \eqref{eq:fixedneumann}, which only makes sense in locations where $u>0$, at least in the generic case $g\ne 0$.  Well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions.  This is done below.
+Conservation equation \eqref{eq:massconserve} only applies in this strong form where the layer exists.  Similarly the boundary condition \eqref{eq:fixedneumann} only make sense in locations where $u>0$, at least in the generic case $g\ne 0$.  Well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions, as we do in sections \ref{sec:fluxassumptions} and \ref{sec:weakform}.
 
-We actually work with the (time) semi-discretized problem.  Let $\{t_n\}$ be a sequence of increasing times.  The semi-discretized problem determines the new values $u_n(x) \approx u(x,t_n)$, given the old values $u_{n-1}(x)$.  Here is the strong form, corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint} above:
+We work with the (time) semi-discretized problem.  Let $\{t_n\}_{n=0}^N$ be a sequence of increasing times on an interval $[0,T]$ with $t_0=0$ and $t_N=T$.  The semi-discretized problem determines $u_n(x) \approx u(x,t_n)$ given old values $u_{n-1}(x)$.  Corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint}, the single-time-step strong form is
 \begin{align}
-\frac{u_n - u_{n-1}}{\Delta t} &= - \Div \bQ_n + F_n &&\text{in } \Omega, \text{ where } u_n > 0 \label{eq:semimassconserve} \\
+\frac{u_n - u_{n-1}}{\Delta t} + \Div \bQ_n &= F_n &&\text{in } \Omega, \text{ where } u_n > 0 \label{eq:semimassconserve} \\
 \bQ_n \cdot \bn &= G_n &&\text{on } \partial\Omega, \text{ where } u_n > 0 \label{eq:semifixedneumann} \\
 u_n &\ge 0 &&\text{in } \bar\Omega \label{eq:semiconstraint}
 \end{align}
-Again, the problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated as a weak problem below, with attention to well-posedness.
+Problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated as a weak problem in section \ref{sec:weakform}, with attention to well-posedness.
 
-In equations  \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions $F_n(u_n,x)$, $\bQ_n(\grad u_n,u_n,x)$, $G_n(x)$ come from the semi-discretization procedure, and including various combinations of the old and new values.  For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $F_n = f(u_n,x,t_n)$ and $\bQ_n = \bq(\grad u_n,u,x,t_n)$.  In the case of a trapezoid rule, however,
+In equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions $\bQ_n(\grad u_n,u_n,x)$, $F_n(u_n,x)$, and $G_n(u_n,x)$ come from the semi-discretization procedure, and including various combinations of the old and new values.  For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n = \bq(\grad u_n,u,x,t_n)$, $F_n = f(u_n,x,t_n)$, and $G_n = g(u_n,x,t_n)$.  In the case of a trapezoid rule, however,
 \begin{align*}
-F_n &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \left(\Div \bq\right)(\grad u_{n-1},u_{n-1},x,t_{n-1}),
+\bQ_n &= \frac{1}{2} \bq(\grad u_n,u_n,x,t_n), \\
+F_n   &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \left(\Div \bq\right)(\grad u_{n-1},u_{n-1},x,t_{n-1}), \text{ and} \\
+G_n   &= g(u_n,x,t_n).
 \end{align*}
-and $\bQ_n = \frac{1}{2} \bq(\grad u_n,u_n,x,t_n)$.  Thus $F$ generally ``absorbs'' various terms evaluated at times $t_{n-1}$ and time $t_n$, but we will assume $F$ is zeroth-order in $u_n$.
+According to the time-semi-discretization procedure, $F_n$ generally ``absorbs'' various terms evaluated at times $t_{n-1}$ and time $t_n$.
+
+To proceed with basic definitions we make two assumptions on the single-time-step strong form problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  These assumptions will continue to apply in the weak form of section \ref{sec:weakform}:
+\renewcommand{\labelenumi}{(\roman{enumi})}
+\begin{enumerate}
+\item $F_n(v,x)$ is zeroth-order in $v$, and
+\item $\bQ_n(\bX,v,x)$ is continuous in $v$ and $\bQ_n(\bX,0,x)=0$ for all $\bX\in\RR^d$ and $x\in\Omega$.
+\end{enumerate}
 
 FIXME: we can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
 
 
-\section{The retreat set, the retreat loss, and the unknown loss-time}  \label{sec:retreatdefn}
+\section{The retreat set and the retreat loss}  \label{sec:retreatdefn}
 
-Decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
+From \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} we decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
 \begin{align*}
 \Omega_n &= \left\{x \in \Omega \,\big|\, u_n(x)>0\right\}, \\
 \Omega_n^r &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) > 0\right\}, \\
 \Omega_n^0 &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) = 0\right\},
 \end{align*}
-so that $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.  Here the superscript ``$r$'' stands for ``retreat''.\footnote{At this point a symmetry has been broken.  We could have decomposed $\Omega= \Omega_n \cup \Omega_n^a \cup \Omega_n^0$ where $\Omega_n^a = \{u_n(x) > 0 \text{ and } u_{n-1}(x) = 0\}$ is the ``advance'' set.  As far as we can tell the resulting alternate theory offers no advantages \dots}  See Figure \ref{fig:domains}.
+so that $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.  Here the superscript ``$r$'' stands for ``retreat,''\footnote{At this point a symmetry has been broken.  We could have decomposed $\Omega= \Omega_n \cup \Omega_n^a \cup \Omega_n^0$ where $\Omega_n^a = \{u_n(x) > 0 \text{ and } u_{n-1}(x) = 0\}$ is the ``advance'' set.  As far as we can tell the resulting alternate theory offers no advantages or disadvantages.} and $\Omega_n^r$ is called the \emph{retreat set}.
 
-The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a fixed (Neumann) condition applies, and a part which is the free boundary,
-\begin{align*}
-\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
-\end{align*}
-(superscript ``$N$'' stands for ``Neumann'').  Specifically, $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, and along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.  We will show [WILL WE?  PRESUMABLY ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
+Figure \ref{fig:domains} shows this decomposition of $\Omega$.  In this section we simply define the quantities needed to precisely restate the major assertion of section \ref{sec:intro}.  A decomposition of the boundary $\partial \Omega$ is needed to define the quantities.
 
 \begin{figure}[ht]
 \begin{center}
@@ -136,6 +143,12 @@ The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a
 \caption{We decompose $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$, where $\Omega_n$ the support of $u_n$, $\Omega_n^r$ is the retreat set, and $\Omega_n^0$ is the set on which both $u_{n-1}$ and $u_n$ are zero.  The boundary of $\Omega_n$ is decomposed into two pieces, $\partial\Omega_n = \Gamma_n^N \cup \Gamma_n^0$.}
 \label{fig:domains}
 \end{figure}
+
+The boundary of the support $\Omega_n$ of $u_n$ decomposes into the part where a fixed (Neumann) condition applies, and a part which is the free boundary,
+\begin{align*}
+\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
+\end{align*}
+(superscript ``$N$'' stands for ``Neumann'').  Specifically, $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, and along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.  We will show [WILL WE?  PRESUMABLY ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 Now define
 \begin{equation}
@@ -188,7 +201,10 @@ u_{n-1} + \Delta t\, F_n \le 0  \text{ on } \Omega_n^r  \label{eq:inequalityonre
 FIXME: if $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
     $$\bQ_n(\grad v,v,x) \in L^q(\Omega)$$ 
 
-\section{Weak formulation of a time-step}  The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solutions $u_n(x)$, because the free boundary is not organically included in the problem statement, and also because the space of admissible solutions is not specified.  Here we both specify the appropriate function spaces and propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} for \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  This weak form can be proven to be well-posed in some cases.  In more cases the weak form can be shown to imply the strong form where the solution exists (``interior condition'').
+
+\section{Weak formulation of a time-step}  \label{sec:weakform}
+
+The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solutions $u_n(x)$, because the free boundary is not organically included in the problem statement, and also because the space of admissible solutions is not specified.  Here we both specify the appropriate function spaces and propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} for \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  This weak form can be proven to be well-posed in some cases.  In more cases the weak form can be shown to imply the strong form where the solution exists (``interior condition'').
 
 We start by arguing informally for why the weak form, a non-obvious variational inequality, should hold.\footnote{Though the weak form is mathematically more fundamental, nonetheless history and human frailty have made the strong form more prominent in applications, especially in the climate-modeling literature where our conservation concerns are most relevant.}  Our argument uses facts which are intuitively true in the subsets of the decomposition $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$.
 
