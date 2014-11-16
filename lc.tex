@@ -38,7 +38,7 @@
 \newcommand\RR{\mathbb{R}}
 \newcommand\vf{\varphi}
 
-\title{Conservation for fluid layers with free boundaries\thanks{Supported by NASA grant \# NNX13AM16G.}} 
+\title{Conservation for fluid layers with free boundaries\thanks{Draft date: \today.  Supported by NASA grant \# NNX13AM16G.}} 
 
 \author{Ed Bueler\thanks{Dept.~of Mathematics and Statistics, and Geophysical Institute, University of Alaska Fairbanks (\texttt{elbueler@alaska.edu}).}}
 
@@ -59,11 +59,10 @@ FIXME
 \thispagestyle{plain}
 \markboth{ED BUELER}{CONSERVATION FOR FLUID LAYERS WITH FREE-BOUNDARIES}
 
-\section{Introduction}
 
-Consider a fluid of one material type which moves over a solid substrate, or even a substrate which changes shape as the fluid moves.  Suppose further that fluid can be added or removed at the boundary of the fluid mass, either by a process like precipitation or aggregation (or even by phase change if we define the fluid region as of only one phase).  Through both flow and such boundary sources, the three-dimensional region occupied by the fluid changes in time, thus the problem is of moving-boundary type.  How can a numerical model of such free-boundary fluid motion, with non-material boundary surfaces, conserve the discretized mass of the fluid exactly?
+\section{Introduction}  \label{sec:intro}
 
-Of course there is nothing special about ``mass'' in the above paragraph.  Can the discretized energy or momentum or mass of a fluid with moving boundary, and boundary source terms, be conserved exactly?
+Consider a fluid which moves over a solid substrate.  Suppose that mass can be added or removed at the boundary of the fluid region, either by a process like precipitation or aggregation, or by phase change if we define the fluid region as being only one phase.  We describe all such addition/removal at the boundary as ``boundary sources.''  Through both flow and boundary sources, the three-dimensional region occupied by the fluid changes in time, thus the problem is of moving-boundary type.  Can a numerical model of such free-boundary fluid motion, with non-material boundary surfaces, conserve the discretized mass of the fluid exactly?  Of course there is nothing special about ``mass'' in the above; can the discretized energy or momentum of a fluid with moving boundary, given boundary source terms, be conserved exactly?
 
 Problems of this type appear for ice sheets \cite{BLKCB,CDDSV,EgholmNielsen2010,JouvetBueler2012}, shallow water flows over marshes \cite{AlonsoSantillanaDawson}, [Dupuit-Forchheimer APPROX IN GROUNDWATER], laboratory flows \cite{Kondic,PeglerWorster2012,SayagWorster2013}, subglacial hydrology \cite{AschwandenBuelerKhroulevBlatter,BuelervanPeltDRAFT,Schoofetal2012}, supraglacial runoff (?), sea ice (?), and tsunami run-up (?), among other applications.  Within the context of ice sheet modeling, discrete mass conservation at free boundaries has a small literature \cite{Albrechtetal2011,JaroschSchoofAnslow2013} which suggests the difficulty of the problem.
 
@@ -71,21 +70,27 @@ Although the above literature relates to the problem we have stated, there is no
 
 Our approach is to semi-discretize the problem in time and pose each time-step problem in weak variational form.  Each time step is a variational inequality because we look at the simplified case of fluid layers where the layer thickness is well-defined.  The positivity of thickness is the active constraint in the variational inequality form.
 
-We identify the ``retreat area'' during the time step as fundamental.  By definition this area is the set where the fluid layer thickness was positive at the beginning of the time step, and, through flow and boundary-source terms, one-time-step weak problem solution gives thickness equal to zero.  That is, the fluid was lost from the retreat area at some time during the time-step.  Even for well-behaved source terms (e.g.~smooth in time and space) and short time steps, the retreat area can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of a layer of surface water on ground can evaporate, in the duration of one time step no matter how short.  We can state our major assertion informally:
+We identify the ``retreat area'' during the time step as fundamental.  By definition this area is the set where the fluid layer thickness is positive at the beginning of the time step, and, through flow and boundary-source terms, the thickness is zero at the end of the time step.  That is, fluid was completely lost from the retreat area at some time during the time-step.  Even for well-behaved source terms (e.g.~smooth in time and space) and short time steps, the retreat area can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of a layer of surface water on ground can evaporate, in the duration of one time step no matter how short.  We can state our major assertion informally:
 \begin{quote}
-\emph{The retreat loss is not exactly balanced by a modeled source (either term or boundary integral) during the discrete time-step, so a conserving model must track it separately.}
+\emph{The retreat loss is not exactly balanced by a \emph{modeled} source during the discrete time-step, so a conserving model must track the retreat loss separately.}
 \end{quote}
 
-Climate models are ``multiphysics'' models which generally attempt to conserve masses of the phases of water separately, as these phases have different physical properties relevant to earth system dynamics.  For example, snow and ice have higher albedo than liquid ocean, and different densities as well.  In such climate multiphysics models with at least one fluid having a moving free boundary, auditable mass conservation does not generally occur.  We believe this is correctable once theoretical limits on discrete conservation are acknowledged, as here.  With the correction term identified here, for example, when a large area of ice sheet or sea-ice melts then the discrete-time model will both have exact conservation of the mass of water in all phases, but also it will be able to correctly report mass transfers between the phases for scientific purposes, as the different phases occupy changing two- and three-dimensional regions.
+Climate models are ``multiphysics'' models which generally attempt to conserve masses of the phases of water (in particular) separately, as these phases have different physical properties relevant to earth system dynamics.  For example, snow and ice have higher albedo than liquid ocean, and different densities as well.  In such climate multiphysics models with at least one fluid having a moving free boundary, auditable mass conservation does not generally occur.  We believe this will be easier to correct once theoretical limits on discrete conservation are acknowledged, as here.  With the correction term identified here, for example, when a large area of ice sheet or sea-ice melts then the discrete-time model will both have exact conservation of the mass of water in all phases, but also it will be able to correctly report scientificially-essential mass transfers between the phases, as the phases occupy changing two- and three-dimensional regions.
 
 
-\section{Continuous-time and discrete-time strong formulations}  Let $\Omega \subset \RR^d$ be a bounded open region with sufficiently-regular boundary.  The time-dependent model we consider is usually stated in strong form as follows.  It combines a mass-conservation equation, a fixed-location flux (Neumann) boundary condition, and a constraint:
+\section{Continuous-time and discrete-time strong formulations}  \label{sec:strongform}
+
+Let $\Omega \subset \RR^d$ be a bounded open region with sufficiently-regular boundary.  The time-dependent model we consider is usually stated in strong form as follows.  It combines a conservation equation, a fixed-location flux (Neumann) boundary condition, and a constraint:
 \begin{align}
-u_t &= - \Div \bq + f(u,x,t) &&\text{in } \Omega, \text{ where } u > 0 \label{eq:massconserve} \\
-\bq \cdot \bn &= g(x,t) &&\text{on } \partial\Omega, \text{ where } u > 0 \label{eq:fixedneumann} \\
+u_t + \Div \bq &= f(u,x,t) &&\text{in } \Omega, \text{ where } u > 0 \label{eq:massconserve} \\
+\bq \cdot \bn &= g(u,x,t) &&\text{on } \partial\Omega, \text{ where } u > 0 \label{eq:fixedneumann} \\
 u &\ge 0 &&\text{in } \bar\Omega. \label{eq:constraint}
 \end{align}
-The unknown is the \emph{layer thickness} $u(x,t)$, for $x\in \Omega$ and $t>0$.  The manner in which the flux $\bq$ depends on the unknown $u$ or its gradient $\grad u$ is undetermined, for now, but with more essential detail below.
+We call the unknown $u$ the \emph{layer thickness} $u(x,t)$, for $x\in \Omega$ and $t>0$.  The manner in which the flux $\bq$ depends on the unknown $u$ or its gradient $\grad u$ is general for now,
+\begin{equation}
+\bq = \bq(\grad u,u,x,t), \label{eq:fluxdepends}
+\end{equation}
+but with more detail below in section \ref{sec:fluxassumptions}.
 
 Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  In the time-dependent support of $u$, namely $\{(x,t) \big| u(x,t) > 0\}$, we say that the layer exists, and that it is absent in the complement.  Finding the evolution of this support, and of its ``free'' boundary, is essential to problems of this type.
 
@@ -108,7 +113,9 @@ and $\bQ_n = \frac{1}{2} \bq(\grad u_n,u_n,x,t_n)$.  Thus $F$ generally ``absorb
 FIXME: we can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
 
 
-\section{The retreat set, the retreat loss, and the unknown loss-time}  Decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
+\section{The retreat set, the retreat loss, and the unknown loss-time}  \label{sec:retreatdefn}
+
+Decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
 \begin{align*}
 \Omega_n &= \left\{x \in \Omega \,\big|\, u_n(x)>0\right\}, \\
 \Omega_n^r &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) > 0\right\}, \\
@@ -159,7 +166,7 @@ As an operational statement about discrete-time models, we can rephrase our majo
 In stating this assertion, we acknowledge that the retreat loss $R_n$ should vanish in the $\Delta t\to 0$ limit.
 
 
-\section{Regarding the flux}
+\section{Regarding the flux} \label{sec:fluxassumptions}
 
 FIXME:  want property that for $X$ an open set,
 \begin{equation}
