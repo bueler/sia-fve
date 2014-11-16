@@ -131,7 +131,7 @@ int main(int argc,char **argv)
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,
-                      -100,        // override with -da_grid_x or -da_refine
+                      -51,         // override with -da_grid_x or -da_refine
                       1, 1, NULL,  // dof = 1 and stencil width = 1
                       &da); CHKERRQ(ierr);
   ierr = DMSetApplicationContext(da, &user);CHKERRQ(ierr);
@@ -139,9 +139,9 @@ int main(int argc,char **argv)
   ierr = DMDAGetLocalInfo(da,&info); CHKERRQ(ierr);
   user.dx = user.L / (PetscReal)(info.mx);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "using grid of %d points with spacing %g\n"
+                     "doing %d steps of dt=%f on grid of %d points with spacing %g\n"
                      "[CFL time step is %g]\n",
-                     info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
+                     NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
   ierr = DMDASetUniformCoordinates(da,user.dx/2,user.L-user.dx/2,
                                    -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
 
