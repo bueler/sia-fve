@@ -7,20 +7,29 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 "Implicit (backward Euler) centered finite difference method and\n"
 "SNESVI.\n\n";
 
-//   ./advectlayer -help |grep ad_
+//FIXME: add Jacobian
+
+//FIXME: use 3rd-order upwinding with flux-limiter
+
+//FIXME: for 3rd-order, Jacobian ignors flux limiter?
+
+//FIXME: relate to event detection in \infty dimensions
+
+//   ./advectlayer -help |grep al_
 
 //   ./advectlayer -snes_fd -draw_pause 0.5
 //   ./advectlayer -snes_mf -draw_pause 0.5
 
-//   ./advectlayer -snes_fd -ad_noshow
-//   ./advectlayer -snes_fd -ad_steps 100
-//   ./advectlayer -snes_fd -ad_dt 0.1
+//   ./advectlayer -snes_fd -al_noshow
+//   ./advectlayer -snes_fd -al_steps 100
+//   ./advectlayer -snes_fd -al_dt 0.1
 
 //   ./advectlayer -snes_fd -snes_type vinewtonssls
 //   ./advectlayer -snes_fd -snes_vi_monitor
 
-//   ./advectlayer -snes_fd -ad_steps 500 -da_refine 2 -ad_dt 0.01
-//   ./advectlayer -snes_fd -ad_steps 1000 -da_refine 3 -ad_dt 0.0025 -snes_rtol 1.0e-10
+//   ./advectlayer -snes_fd -al_dt 0.01 -al_steps 1000 -da_refine 2
+
+//   ./advectlayer -snes_fd -al_steps 1000 -da_refine 3 -al_dt 0.0025 -snes_rtol 1.0e-10
 
 #include <math.h>
 #include <petscdmda.h>
@@ -49,6 +58,7 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu)
 }
 
 
+// constant velocity
 PetscReal velocity(const PetscReal x, const AppCtx *user) {
   return user->v0;
 }
@@ -58,15 +68,10 @@ PetscReal velocity(const PetscReal x, const AppCtx *user) {
 //   return (4.0 / Lsqr) * user->v0 * x * (user->L - x);
 
 
+// without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
 PetscReal fsource(const PetscReal x, const AppCtx *user) {
-  // source f(x) = 0 outside of [L/5,4L/5], and f(x) sinusoid otherwise
-  // note f(x) < 0 in middle fifth of the domain (2L/5,3L/5)
-  const PetscReal pi3 = 3.0 * PETSC_PI,
-                  L5  = user->L / 5.0;
-  if (x <= L5 || x >= 4.0*L5)
-     return 0.0;
-  else
-     return user->f0 * sin(pi3 * (x - L5) / (3.0*L5));
+  const PetscReal CC = 4.0 * PETSC_PI;
+  return -(user->f0/5.0) + user->f0 * sin(CC * x / user->L);
 }
 
 
@@ -112,7 +117,7 @@ int main(int argc,char **argv) {
   user.v0 = 10000.0;
   user.f0 = 100.0;
 
-  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"ad_","options to advectlayer","");CHKERRQ(ierr);
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"al_","options to advectlayer","");CHKERRQ(ierr);
   NN = 10;
   ierr = PetscOptionsInt("-steps","number of time steps",
                          NULL,NN,&NN,NULL);CHKERRQ(ierr);
