@@ -6,6 +6,10 @@
 
 \usepackage{times}
 
+%\theoremstyle{definition}
+\newtheorem{example}{Example}
+%\newtheorem*{examplecont}{Example, continued}
+
 % math macros
 \newcommand\bv{\mathbf{v}}
 \newcommand\bV{\mathbf{V}}
@@ -268,7 +272,25 @@ FIXME:  We will show that in some cases this is well-posed
 FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 
-\section{Conclusion}  FIXME
+\section{Examples and non-examples} \label{sec:examples}
+
+In this section FIXME
+
+\begin{example}  Let $v_0>0$ and $f_0>0$ be scales for the velocity and source term.  Consider an advecting-layer problem in one dimension, with constant velocity.  That is, if $q = v_0 u$ then the strong form problem for $u(t,x)$ is
+\begin{equation}
+u_t + v_0 u_x = f(x) \quad \text{ subject to } \quad u\ge 0.  \label{eq:ex:advectlayer}
+\end{equation}
+Specifically, suppose $x\in[0,L]$ and periodic boundary conditions $u(t,0)=u(t,L)$ and $u_x(t,0)=u_x(t,L)$.  For the source term, consider this particular source that is negative on average:
+    $$f(x) = f_0 \left(\sin\left(\frac{2\pi x}{L}\right) - \frac{1}{5}\right).$$
+
+If $\tilde u(t,x)$ solves the same problem without the constraint, and if $\tilde M(t) = \int_0^L \tilde u(t,x)\,dx$ is the continuous-time mass for the unconstrained problem then
+    $$\dot{\tilde M}(t) = \int_0^L f(x)\,dx = -\frac{f_0 L}{5} < 0$$
+so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
+
+But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
+\end{example}
+
+\section{Conclusion} \label{sec:conclusion}  FIXME
 
 
 %         References

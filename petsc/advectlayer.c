@@ -70,8 +70,8 @@ PetscReal velocity(const PetscReal x, const AppCtx *user) {
 
 // without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
 PetscReal fsource(const PetscReal x, const AppCtx *user) {
-  const PetscReal CC = 4.0 * PETSC_PI;
-  return -(user->f0/5.0) + user->f0 * sin(CC * x / user->L);
+  const PetscReal CC = 2.0 * PETSC_PI / user-> L;
+  return - (user->f0/5.0) + user->f0 * sin(CC * x);
 }
 
 
@@ -113,9 +113,9 @@ int main(int argc,char **argv) {
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
-  user.L  = 10000.0;
-  user.v0 = 10000.0;
-  user.f0 = 100.0;
+  user.L  = 100.0;
+  user.v0 = 100.0;
+  user.f0 = 1.0;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"al_","options to advectlayer","");CHKERRQ(ierr);
   NN = 10;
