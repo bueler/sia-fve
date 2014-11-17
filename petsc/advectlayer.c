@@ -9,10 +9,6 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 
 //FIXME: add Jacobian
 
-//FIXME: use 3rd-order upwinding with flux-limiter
-
-//FIXME: for 3rd-order, Jacobian ignors flux limiter?
-
 //FIXME: relate to event detection in \infty dimensions
 
 //   ./advectlayer -help |grep al_
@@ -32,6 +28,8 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 
 //   ./advectlayer -snes_fd -al_steps 1000 -da_refine 3 -al_dt 0.0025 -snes_rtol 1.0e-10
 
+// for lev in 0 1 2 3 4; do ./advectlayer -snes_fd -al_exactinit -al_noshow -al_dt 0.01 -al_steps 10 -da_refine $lev | grep error; done
+
 #include <math.h>
 #include <petscdmda.h>
 #include <petscsnes.h>
@@ -45,6 +43,7 @@ typedef struct {
             L,    // domain is  0 <= x <= L
             v0,   // scale for velocity v(x)
             f0;   // scale for source term f(x)
+  PetscBool o3;
 } AppCtx;
 
 
@@ -58,11 +57,9 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 }
 
 
-//  for call-back: tell SNESVI (variational inequality) that we want  0.0 <= u < +infinity
-PetscErrorCode SetInitial(const PetscBool useexact, Vec u, const AppCtx *user) {
+PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-  if (useexact) {
     const PetscReal twopi = 2.0 * PETSC_PI,
                     x0    = (user->L/twopi) * asin(1.0/5.0),
                     scale = user->f0/user->v0,
@@ -83,9 +80,6 @@ PetscErrorCode SetInitial(const PetscBool useexact, Vec u, const AppCtx *user) {
         }
     }
     ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
-  } else {
-    ierr = VecSet(u,0.0); CHKERRQ(ierr);
-  }
   PetscFunctionReturn(0);
 }
 
@@ -107,26 +101,36 @@ PetscReal fsource(const PetscReal x, const AppCtx *user) {
 }
 
 
-/* for call-back: evaluate nonlinear function FF(x) on local process patch */
+/* for call-back: evaluate residual FF(x) on local process patch */
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar *FF,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
   PetscInt        j;
   const PetscReal dt = user->dt, dx = user->dx,
                   nu = dt / dx, nu2 = nu / 2.0;
-  PetscReal       *uold, x, vleft, vright;
+  PetscReal       *uold, x;
 
   PetscFunctionBeginUser;
   ierr = DMDAVecGetArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   for (j=info->xs; j<info->xs+info->xm; j++) {
       x      = dx/2 + dx * (PetscReal)j;
-      vleft  = velocity(x - dx/2,user);
-      vright = velocity(x + dx/2,user);
-      // compute residual
-      FF[j] = - nu2 * vleft * u[j-1]
-              + (1.0 + nu2 * (vright - vleft)) * u[j]
-              + nu2 * vright * u[j+1]
-              - uold[j] - dt * fsource(x,user);
+      if (user->o3) {
+        // this third-order upwind biased implicit thing only works if v(x)=v0>0
+        const PetscReal mu = user->v0 * nu / 6.0;
+        FF[j] =   mu * u[j-2]
+                - 6.0*mu * u[j-1]
+                + (1.0 + 3.0*mu) * u[j]
+                + 2.0*mu * u[j+1]
+                - uold[j] - dt * fsource(x,user);
+      } else {
+        // centered finite difference, works even if v=v(x)
+        const PetscReal vleft = velocity(x - dx/2,user),
+                        vright = velocity(x + dx/2,user);
+        FF[j] = - nu2 * vleft * u[j-1]
+                + (1.0 + nu2 * (vright - vleft)) * u[j]
+                + nu2 * vright * u[j+1]
+                - uold[j] - dt * fsource(x,user);
+      }
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -161,11 +165,14 @@ int main(int argc,char **argv) {
   useexactinit = PETSC_FALSE;
   ierr = PetscOptionsBool("-exactinit","initialize with exact solution",
                           NULL,useexactinit,&useexactinit,NULL);CHKERRQ(ierr);
+  user.o3 = PETSC_FALSE;
+  ierr = PetscOptionsBool("-thirdorder","use third-order upwind biased FD",
+                          NULL,user.o3,&user.o3,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
-                      1, 1, NULL,  // dof = 1 and stencil width = 1
+                      1, 2, NULL,  // dof = 1 and stencil width = 2
                       &user.da); CHKERRQ(ierr);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
@@ -187,8 +194,11 @@ int main(int argc,char **argv) {
   ierr = VecSetOptionsPrefix(user.uold,"uold_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)user.uold,"OLD solution uold"); CHKERRQ(ierr);
 
-  //ierr = VecSet(user.uold,0.0);CHKERRQ(ierr);
-  ierr = SetInitial(useexactinit,user.uold,&user);CHKERRQ(ierr);
+  if (useexactinit) {
+    ierr = SetToExactSolution(user.uold,&user);CHKERRQ(ierr);
+  } else {
+    ierr = VecSet(user.uold,0.0); CHKERRQ(ierr);
+  }
 
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
@@ -225,6 +235,17 @@ int main(int argc,char **argv) {
       t += user.dt;
     }
   }
+
+  // evaluate numerical error relative to steady state
+  Vec uexact;
+  PetscScalar errnorm;
+  ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
+  ierr = SetToExactSolution(uexact,&user);CHKERRQ(ierr);
+  ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
+  ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "on dx=%.4e grid with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
+             user.dx,NN,user.dt,errnorm); CHKERRQ(ierr);
 
   ierr = VecDestroy(&u);CHKERRQ(ierr);
   ierr = VecDestroy(&user.uold);CHKERRQ(ierr);
