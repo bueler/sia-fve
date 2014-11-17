@@ -23,6 +23,7 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 //   ./advectlayer -snes_fd -al_noshow
 //   ./advectlayer -snes_fd -al_steps 100
 //   ./advectlayer -snes_fd -al_dt 0.1
+//   ./advectlayer -snes_fd -al_exactinit
 
 //   ./advectlayer -snes_fd -snes_type vinewtonssls
 //   ./advectlayer -snes_fd -snes_vi_monitor
@@ -48,12 +49,43 @@ typedef struct {
 
 
 //  for call-back: tell SNESVI (variational inequality) that we want  0.0 <= u < +infinity
-PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu)
-{
+PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
   ierr = VecSet(Xl,0.0); CHKERRQ(ierr);
   ierr = VecSet(Xu,PETSC_INFINITY); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+//  for call-back: tell SNESVI (variational inequality) that we want  0.0 <= u < +infinity
+PetscErrorCode SetInitial(const PetscBool useexact, Vec u, const AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscFunctionBeginUser;
+  if (useexact) {
+    const PetscReal twopi = 2.0 * PETSC_PI,
+                    x0    = (user->L/twopi) * asin(1.0/5.0),
+                    scale = user->f0/user->v0,
+                    dx    = user->dx;
+    DMDALocalInfo info;
+    PetscReal     *au, x, cosdiff;
+    PetscInt      j;
+    ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, u, &au);CHKERRQ(ierr);
+    for (j=info.xs; j<info.xs+info.xm; j++) {
+        x       = dx/2 + dx * (PetscReal)j;
+        if (x <= x0) {
+          au[j] = 0.0;
+        } else {
+          cosdiff = cos(twopi*x0/user->L) - cos(twopi*x/user->L);
+          au[j]   = scale * ( (user->L/twopi) * cosdiff - (x-x0)/5.0 );
+          au[j]   = PetscMax(0.0,au[j]);
+        }
+    }
+    ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
+  } else {
+    ierr = VecSet(u,0.0); CHKERRQ(ierr);
+  }
   PetscFunctionReturn(0);
 }
 
@@ -107,8 +139,7 @@ int main(int argc,char **argv) {
   Vec                 u;
   AppCtx              user;
   PetscInt            NN;
-  PetscBool           noshow;
-  DM                  da;
+  PetscBool           noshow, useexactinit;
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -127,40 +158,44 @@ int main(int argc,char **argv) {
   noshow = PETSC_FALSE;
   ierr = PetscOptionsBool("-noshow","do not show solution with X",
                           NULL,noshow,&noshow,NULL);CHKERRQ(ierr);
+  useexactinit = PETSC_FALSE;
+  ierr = PetscOptionsBool("-exactinit","initialize with exact solution",
+                          NULL,useexactinit,&useexactinit,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
                       1, 1, NULL,  // dof = 1 and stencil width = 1
-                      &da); CHKERRQ(ierr);
-  ierr = DMSetApplicationContext(da, &user);CHKERRQ(ierr);
+                      &user.da); CHKERRQ(ierr);
+  ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
-  ierr = DMDAGetLocalInfo(da,&info); CHKERRQ(ierr);
+  ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
   user.dx = user.L / (PetscReal)(info.mx);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
                      "doing %d steps of dt=%f on grid of %d points with spacing %g\n"
                      "[CFL time step is %g]\n",
                      NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
   // cell-centered grid
-  ierr = DMDASetUniformCoordinates(da,user.dx/2,user.L-user.dx/2,
+  ierr = DMDASetUniformCoordinates(user.da,user.dx/2,user.L-user.dx/2,
                                    -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
 
-  ierr = DMCreateGlobalVector(da,&u);CHKERRQ(ierr);
+  ierr = DMCreateGlobalVector(user.da,&u);CHKERRQ(ierr);
   ierr = VecSetOptionsPrefix(u,"u_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)u,"solution u"); CHKERRQ(ierr);
 
-  ierr = DMCreateGlobalVector(da,&user.uold);CHKERRQ(ierr);
+  ierr = DMCreateGlobalVector(user.da,&user.uold);CHKERRQ(ierr);
   ierr = VecSetOptionsPrefix(user.uold,"uold_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)user.uold,"OLD solution uold"); CHKERRQ(ierr);
 
-  ierr = VecSet(user.uold,0.0);CHKERRQ(ierr);
+  //ierr = VecSet(user.uold,0.0);CHKERRQ(ierr);
+  ierr = SetInitial(useexactinit,user.uold,&user);CHKERRQ(ierr);
 
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
-  ierr = SNESSetDM(snes,da);CHKERRQ(ierr);
+  ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
   ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
 
-  ierr = DMDASNESSetFunctionLocal(da,INSERT_VALUES,
+  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
             (PetscErrorCode (*)(DMDALocalInfo*,void*,void*,void*))FormFunctionLocal,
             &user);CHKERRQ(ierr);
 
@@ -194,7 +229,7 @@ int main(int argc,char **argv) {
   ierr = VecDestroy(&u);CHKERRQ(ierr);
   ierr = VecDestroy(&user.uold);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
-  ierr = DMDestroy(&da);CHKERRQ(ierr);
+  ierr = DMDestroy(&user.da);CHKERRQ(ierr);
 
   PetscFinalize();
   return 0;
