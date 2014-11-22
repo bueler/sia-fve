@@ -74,7 +74,7 @@ Problems of this type appear for ice sheets \cite{BLKCB,CDDSV,EgholmNielsen2010,
 
 Although the above literature relates to the problem we have stated, there is no theoretical guidance as to what degree such exact discrete conservation is possible.  The literature of global climate model addresses exact discrete conservation as a goal [FIXME: CITE], but always in a context without free boundary.  This paper starts a theory of exact discrete conservation for free-boundary fluid problems.
 
-Our approach is to semi-discretize the problem in time and pose each time-step problem in weak variational form.  Each time step is a variational inequality because we look at the simplified case of fluid layers where the layer thickness is well-defined.  The positivity of thickness is the active constraint in the variational inequality form.
+Fluid simulation codes and climate models are obliged to discretize time in some manner, while a rich selection of methods, including finite difference/volume/element methods and grid free spectral methods, are possible when discretizing space.  Thus our approach is to semi-discretize the problem in time by a one-step method and pose each time-step problem in weak variational form.  Each time step is a variational inequality because we look at the simplified case of fluid layers where the layer thickness is well-defined.  The positivity of thickness is the active constraint in the variational inequality form.
 
 We identify the ``retreat area'' during the time step as fundamental.  By definition this area is the set where the fluid layer thickness is positive at the beginning of the time step, and, through flow and boundary-source terms, the thickness is zero at the end of the time step.  That is, fluid was completely lost from the retreat area at some time during the time-step.  Even for well-behaved source terms (e.g.~smooth in time and space) and short time steps, the retreat area can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of a layer of surface water on ground can evaporate, in the duration of one time step no matter how short.  We can state our major assertion informally:
 \begin{quote}
@@ -84,23 +84,28 @@ We identify the ``retreat area'' during the time step as fundamental.  By defini
 Climate models are ``multiphysics'' models which generally attempt to conserve masses of the phases of water (in particular) separately, as these phases have different physical properties relevant to earth system dynamics.  For example, snow and ice have higher albedo than liquid ocean, and different densities as well.  In such climate multiphysics models with at least one fluid having a moving free boundary, auditable mass conservation does not generally occur.  We believe this will be easier to correct once theoretical limits on discrete conservation are acknowledged, as here.  With the correction term identified here, for example, when a large area of ice sheet or sea-ice melts then the discrete-time model will both have exact conservation of the mass of water in all phases, but also it will be able to correctly report scientificially-essential mass transfers between the phases, as the phases occupy changing two- and three-dimensional regions.
 
 
-\section{Continuous-time and discrete-time strong formulations}  \label{sec:strongform}
+\section{Continuous-time strong formulation}  \label{sec:strongform}
 
-Let $\Omega \subset \RR^d$ be a bounded open region with sufficiently-regular boundary.  The time-dependent model we consider is usually stated in strong form as follows.  It combines a conservation equation, a fixed-location flux (Neumann) boundary condition, and a constraint:
+Let $\Omega \subset \RR^d$ be a bounded open region with sufficiently-regular boundary.  The time-dependent model we consider is usually stated in strong form as follows.  It combines a conservation equation, a flux (Neumann) boundary condition, and a constraint:
 \begin{align}
 u_t + \Div \bq &= f(u,x,t) &&\text{in } \Omega, \text{ where } u > 0 \label{eq:massconserve} \\
 \bq \cdot \bn &= g(u,x,t) &&\text{on } \partial\Omega, \text{ where } u > 0 \label{eq:fixedneumann} \\
 u &\ge 0 &&\text{in } \bar\Omega. \label{eq:constraint}
 \end{align}
-We call the unknown $u$ the \emph{layer thickness} $u(x,t)$, for $x\in \Omega$ and $t>0$.  The manner in which the flux $\bq$ depends on the unknown $u$ or its gradient $\grad u$ is general for now,
+We call the unknown $u$ the \emph{layer thickness} $u(x,t)$, and it is defined for $x\in \Omega$ and $t>0$.  The form of the flux $\bq$, that is, how it depends on the unknown $u$ or its gradient $\grad u$, is general for now,
 \begin{equation}
 \bq = \bq(\grad u,u,x,t), \label{eq:fluxdepends}
 \end{equation}
 but with more detail below in section \ref{sec:fluxassumptions}.
 
-Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  In the time-dependent support of $u$, namely $\{(x,t) \big| u(x,t) > 0\}$, we say that the layer exists, and that it is absent in the complement.  Finding the evolution of this support, and of its free boundary, is essential to problems of this type.
+Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  We will consider cases where the solution $u$ is continuous (see section \ref{sec:weakform} below, where $u\in W^{1,p}(\Omega)$ with $p>d$), so that the time-dependent support of $u$, namely
+   $$\supp u = \{x \big| u(x,t) > 0\} \subset \Omega,$$
+is an open set.  We say that the layer exists for $x\in \supp u$, and that it is absent otherwise, though of course $u(x)=0$ is defined for $x\notin \supp u$.  Finding the evolution of this support, and of its free boundary, is essential to problems of this type.
 
 Conservation equation \eqref{eq:massconserve} only applies in this strong form where the layer exists.  Similarly the boundary condition \eqref{eq:fixedneumann} only make sense in locations where $u>0$, at least in the generic case $g\ne 0$.  Well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions, as we do in sections \ref{sec:fluxassumptions} and \ref{sec:weakform}.
+
+
+\section{Discrete-time strong formulation}  \label{sec:discreteform}
 
 We work with the (time) semi-discretized problem.  Let $\{t_n\}_{n=0}^N$ be a sequence of increasing times on an interval $[0,T]$ with $t_0=0$ and $t_N=T$.  The semi-discretized problem determines $u_n(x) \approx u(x,t_n)$ given old values $u_{n-1}(x)$.  Corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint}, the single-time-step strong form is
 \begin{align}
@@ -108,24 +113,119 @@ We work with the (time) semi-discretized problem.  Let $\{t_n\}_{n=0}^N$ be a se
 \bQ_n \cdot \bn &= G_n &&\text{on } \partial\Omega, \text{ where } u_n > 0 \label{eq:semifixedneumann} \\
 u_n &\ge 0 &&\text{in } \bar\Omega \label{eq:semiconstraint}
 \end{align}
-Problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated as a weak problem in section \ref{sec:weakform}, with attention to well-posedness.
+Problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated as a weak problem in section \ref{sec:weakform}, with attention to well-posedness, with $u_n$ the weak solution.
 
-In equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions $\bQ_n(\grad u_n,u_n,x)$, $F_n(u_n,x)$, and $G_n(u_n,x)$ come from the semi-discretization procedure, and including various combinations of the old and new values.  For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n = \bq(\grad u_n,u,x,t_n)$, $F_n = f(u_n,x,t_n)$, and $G_n = g(u_n,x,t_n)$.  In the case of a trapezoid rule, however,
+In equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions
+\begin{align}
+ \bQ_n &= \bQ_n(\bX,v,x), \label{eq:Qnfunctionalform} \\
+ F_n &= F_n(v,x), \label{eq:Fnfunctionalform} \\
+ G_n &= G_n(v,x), \label{eq:Gnfunctionalform}
+\end{align}
+where $\bX\in\RR^d$ is a vector, $v\ge 0$, and $x\in \Omega$, come from the semi-discretization procedure.  For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n(\bX,v,x) = \bq(\bX,v,x,t_n)$, $F_n(v,x) = f(v,x,t_n)$, and $G_n(v,x) = g(v,x,t_n)$.  More generally, a $\theta$-method discretization of \eqref{eq:massconserve} with $0\le \theta \le 1$, namely
+\begin{align}
+  &\frac{u_n - u_{n-1}}{\Delta t} + \theta\, \Div \bq(\grad u_n,u_n,x,t_n) + (1-\theta) \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}) \label{eq:thetamethod} \\
+  &\qquad =  \theta f(u_n,x,t_n) + (1-\theta) f(u_{n-1},x,t_{n-1}), \notag
+\end{align}
+is of form \eqref{eq:semimassconserve} with
 \begin{align*}
-\bQ_n &= \frac{1}{2} \bq(\grad u_n,u_n,x,t_n), \\
-F_n   &= \frac{1}{2} f(u_n,x,t_n) + \frac{1}{2} f(u_{n-1},x,t_{n-1}) - \frac{1}{2} \left(\Div \bq\right)(\grad u_{n-1},u_{n-1},x,t_{n-1}), \text{ and} \\
-G_n   &= g(u_n,x,t_n).
+\bQ_n(\bX,v,x) &= \theta\, \bq(\bX,v,x,t_n), \\
+F_n(v,x)       &= \theta f(v,x,t_n) + (1-\theta) f(u_{n-1},x,t_{n-1}) \\
+               &\qquad - (1-\theta) \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}), \\
+G_n(v,x)       &= g(v,x,t_n).
 \end{align*}
-According to the time-semi-discretization procedure, $F_n$ generally ``absorbs'' various terms evaluated at times $t_{n-1}$ and time $t_n$.
+Thus, according to the time-semi-discretization procedure, $F_n$ ``absorbs'' all the terms coming from time-discretizing \eqref{eq:semimassconserve}, whether evaluated at times $t_{n-1}$ or time $t_n$, which do not involve the flux $\bq$ evaluated at time $t_n$.
 
-To proceed with basic definitions we make two assumptions on the single-time-step strong form problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  These assumptions will continue to apply in the weak form of section \ref{sec:weakform}:
-\renewcommand{\labelenumi}{(\roman{enumi})}
-\begin{enumerate}
-\item $F_n(v,x)$ is zeroth-order in $v$, and
-\item $\bQ_n(\bX,v,x)$ is continuous in $v$ and $\bQ_n(\bX,0,x)=0$ for all $\bX\in\RR^d$ and $x\in\Omega$.
-\end{enumerate}
+The $\theta=0$ case of \eqref{eq:thetamethod} is the (forward) Euler method, $\theta=1/2$ is the trapezoidal rule, and $\theta=1$ is the backward Euler method.  Though the case of the Euler method, in which $\bQ_n=0$, is completely acceptable in our theory,  we are generally interested in using some implicitness for stability reasons.  Furthermore, our theory based on the weak form of \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is not limited to the $\theta$ methods, because other one-step schemes like Runge-Kutta can be put in this form (Appendix), but hypotheses on the flux in the next section may be much harder to check.
+
+
+\section{Flux assumptions} \label{sec:fluxassumptions}
+
+We make three kinds of assumptions on the discrete-time flux $\bQ_n(\grad u,u,x)$: \begin{itemize}
+\item $\bQ_n$ is regular (i.e.~H\"older in $\grad u$, H\"older in $u$ and \eqref{eq:QisLq},
+\item for $\bQ_n$, assumption (ii) and maximum principle \eqref{eq:maxprincQn}, and
+\item the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$
+\end{itemize}
+
+FIXME:  want maximum principle property that for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
+\begin{equation}
+v(x) + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \quad \implies \quad v(x) > 0 \label{eq:maxprincQn}
+\end{equation}
+for all $x\in\Omega$ 
+
+From the contrapositive of \eqref{eq:maxprincQn} applied to $X = \Omega_n^0$, where $u_n=0$ and $u_{n-1}=0$, and because the strong form \eqref{eq:semimassconserve} says that
+   $$u_n + \Delta t \Div \bQ_n = u_{n-1} + \Delta t F_n,$$
+we have
+\begin{equation}
+F_n = \Div \bQ_n \le 0  \label{eq:divfluxnonpositive}
+\end{equation}
+at all points in $\Omega_n^0$.  Also, using the contrapositive of \eqref{eq:maxprincQn} on $X = \Omega_r^n$, where $u_n=0$, and strong form \eqref{eq:semimassconserve}, gives
+\begin{equation}
+u_{n-1} + \Delta t F_n = \Delta t \Div\bQ_n \le 0  \label{eq:inequalityonretreat}
+\end{equation}
+at all points in $\Omega_n^r$.
+
+FIXME: if $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
+\begin{equation}
+\bQ_n(\grad v,v,x) \in L^q(\Omega) \label{eq:QisLq}
+\end{equation}
+ 
+
+FIXME $\bQ_n(\bX,v,x)$ is continuous in $v$ and $\bQ_n(\bX,0,x)=0$ for all $\bX\in\RR^d$ and $x\in\Omega$.
 
 FIXME: we can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
+
+
+\section{Weak formulation of a time-step}  \label{sec:weakform}
+
+The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of $u_n(x)$ because the free boundary is not an integral part of the problem statement.  Here we specify the appropriate function spaces and we propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex space of admissible functions.  This weak form can be proven to be well-posed in some cases.  More generally the weak form can be shown to imply the strong form where $u_n>0$ (``interior condition'').  We start by arguing informally to construct the weak form.\footnote{Though the weak form is mathematically more fundamental, nonetheless history and human frailty have made the strong form more prominent in applications, especially in the climate-modeling literature where our conservation concerns are most relevant.}  Our argument uses facts which are intuitively true on the subsets in decomposition \eqref{eq:omegadecomposition}.
+
+Suppose $u_n\ge 0$ and $v\ge 0$ are sufficiently smooth on $\Omega$ and define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$.  Using \eqref{eq:omegadecomposition} and integration by parts (divergence theorem) we get
+\begin{align*}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n) - \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n).
+\end{align*}
+Because $u_n$ is continuous, $u_n=0$ along $\Gamma_n^0$ so it follows from assumption (ii) and equation \eqref{eq:semifixedneumann} that
+       $$\int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) = \int_{\Gamma_n^N} G_n (v-u_n).$$
+Similarly,
+       $$\int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n) = 0.$$
+By using \eqref{eq:semimassconserve} and by extending $G_n$ by zero to all of $\partial \Omega$ we get
+\begin{align}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:equalitybeforeVI} \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \notag
+\end{align}
+
+However, by assumption (ii) we have $\Div \bQ_n=0$ on $\Omega_n^0$ so
+    $$\int_{\Omega_n^0} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n),$$
+because in fact $u_n=u_{n-1}=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, and because \eqref{eq:divfluxnonpositive} says that $F_n \le 0$ on $\Omega_n^0$.  Almost the same, by assumption (ii) on $\Omega_n^r$,
+    $$\int_{\Omega_n^r} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^r} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n)$$
+because $u_n=0$ and $v-u_n = v \ge 0$ on $\Omega_n^r$, and because \eqref{eq:inequalityonretreat} says that $F_n - (u_n - u_{n-1})/\Delta t = F_n + u_{n-1}/\Delta t \le 0$ on $\Omega_n^r$.  Thus if we return to \eqref{eq:equalitybeforeVI} we have
+\begin{align}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &\ge \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:essentiallyVI} \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \notag
+\end{align}
+
+We want to weakly-pose our problem so that the decomposition $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$ does not appear, as this decomposition arises from knowing the solution $u_n$.  But \eqref{eq:essentiallyVI} can be written without the decomposition:
+\begin{equation}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:morallytheVI}
+\end{equation}
+This is our variational inequality weak form.
+
+\medskip
+\begin{definition}  Fix $p>1$.  Let
+    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\big|\, v(x) \ge 0 \text{ for all } x \in \Omega\right\}.$$
+\end{definition}
+
+\begin{definition}  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if 
+\begin{align}
+&\int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n)  \label{eq:theVI} \\
+  &\qquad\qquad \ge \int_{\Omega} \left(u_{n-1} + \Delta t F_n\right) (v-u_n) - \Delta t \int_{\partial \Omega} G_n (v-u_n)\notag
+\end{align}
+for all $v \in \mathcal{K}$.
+\end{definition}
+
+FIXME:  We will show that in some cases this is well-posed
+
+FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 
 \section{The retreat set and the retreat loss}  \label{sec:retreatdefn}
@@ -187,91 +287,6 @@ As an operational statement about discrete-time models, we can rephrase our majo
 In stating this assertion, we note that the retreat loss $R_n$ should vanish in the $\Delta t\to 0$ limit, which is a consistency statement about the time-discretized model.
 
 
-\section{Regularity and maximum principle assumptions on the flux} \label{sec:fluxassumptions}
-
-FIXME: we make three kinds of assumptions on the flux: \begin{itemize}
-\item $\bQ_n$ is regular (i.e.~H\"older in $\grad u$, H\"older in $u$ and \eqref{eq:QisLq},
-\item for $\bQ_n$, assumption (ii) and maximum principle \eqref{eq:maxprincQn}, and
-\item the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$
-\end{itemize}
-
-FIXME:  want maximum principle property that for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
-\begin{equation}
-v(x) + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \quad \implies \quad v(x) > 0 \label{eq:maxprincQn}
-\end{equation}
-for all $x\in\Omega$ 
-
-From the contrapositive of \eqref{eq:maxprincQn} applied to $X = \Omega_n^0$, where $u_n=0$ and $u_{n-1}=0$, and because the strong form \eqref{eq:semimassconserve} says that
-   $$u_n + \Delta t \Div \bQ_n = u_{n-1} + \Delta t F_n,$$
-we have
-\begin{equation}
-F_n = \Div \bQ_n \le 0  \label{eq:divfluxnonpositive}
-\end{equation}
-at all points in $\Omega_n^0$.  Also, using the contrapositive of \eqref{eq:maxprincQn} on $X = \Omega_r^n$, where $u_n=0$, and strong form \eqref{eq:semimassconserve}, gives
-\begin{equation}
-u_{n-1} + \Delta t F_n = \Delta t \Div\bQ_n \le 0  \label{eq:inequalityonretreat}
-\end{equation}
-at all points in $\Omega_n^r$.
-
-FIXME: if $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
-\begin{equation}
-\bQ_n(\grad v,v,x) \in L^q(\Omega) \label{eq:QisLq}
-\end{equation}
- 
-
-\section{Weak formulation of a time-step}  \label{sec:weakform}
-
-The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of $u_n(x)$ because the free boundary is not an integral part of the problem statement.  Here we specify the appropriate function spaces and we propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex space of admissible functions.  This weak form can be proven to be well-posed in some cases.  More generally the weak form can be shown to imply the strong form where $u_n>0$ (``interior condition'').  We start by arguing informally to construct the weak form.\footnote{Though the weak form is mathematically more fundamental, nonetheless history and human frailty have made the strong form more prominent in applications, especially in the climate-modeling literature where our conservation concerns are most relevant.}  Our argument uses facts which are intuitively true on the subsets in decomposition \eqref{eq:omegadecomposition}.
-
-Suppose $u_n\ge 0$ and $v\ge 0$ are sufficiently smooth on $\Omega$ and define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$.  Using \eqref{eq:omegadecomposition} and integration by parts (divergence theorem) we get
-\begin{align*}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) \\
-  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n) - \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n).
-\end{align*}
-Because $u_n$ is continuous, $u_n=0$ along $\Gamma_n^0$ so it follows from assumption (ii) and equation \eqref{eq:semifixedneumann} that
-       $$\int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) = \int_{\Gamma_n^N} G_n (v-u_n).$$
-Similarly,
-       $$\int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n) = 0.$$
-By using \eqref{eq:semimassconserve} and by extending $G_n$ by zero to all of $\partial \Omega$ we get
-\begin{align}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:equalitybeforeVI} \\
-  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \notag
-\end{align}
-
-However, by assumption (ii) we have $\Div \bQ_n=0$ on $\Omega_n^0$ so
-    $$\int_{\Omega_n^0} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n),$$
-because in fact $u_n=u_{n-1}=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, and because \eqref{eq:divfluxnonpositive} says that $F_n \le 0$ on $\Omega_n^0$.  Almost the same, by assumption (ii) on $\Omega_n^r$,
-    $$\int_{\Omega_n^r} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^r} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n)$$
-because $u_n=0$ and $v-u_n = v \ge 0$ on $\Omega_n^r$, and because \eqref{eq:inequalityonretreat} says that $F_n - (u_n - u_{n-1})/\Delta t = F_n + u_{n-1}/\Delta t \le 0$ on $\Omega_n^r$.  Thus if we return to \eqref{eq:equalitybeforeVI} we have
-\begin{align}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &\ge \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:essentiallyVI} \\
-  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \notag
-\end{align}
-
-We want to weakly-pose our problem so that the decomposition $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$ does not appear, as this decomposition arises from knowing the solution $u_n$.  But \eqref{eq:essentiallyVI} can be written without the decomposition:
-\begin{equation}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:morallytheVI}
-\end{equation}
-This is our variational inequality weak form.
-
-\medskip
-\begin{definition}  Fix $p>1$.  Let
-    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\big|\, v(x) \ge 0 \text{ for all } x \in \Omega\right\}.$$
-\end{definition}
-
-\begin{definition}  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if 
-\begin{align}
-&\int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n)  \label{eq:theVI} \\
-  &\qquad\qquad \ge \int_{\Omega} \left(u_{n-1} + \Delta t F_n\right) (v-u_n) - \Delta t \int_{\partial \Omega} G_n (v-u_n)\notag
-\end{align}
-for all $v \in \mathcal{K}$.
-\end{definition}
-
-FIXME:  We will show that in some cases this is well-posed
-
-FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
-
-
 \section{Examples and non-examples} \label{sec:examples}
 
 In this section FIXME
@@ -294,11 +309,22 @@ But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)
 
 
 %         References
-\bibliography{ice-bib}
+\bibliography{lc}
 \bibliographystyle{siam}
 
-%\Appendix
-%\section{FIXME}
+\Appendix
+\section{Second-order Runge-Kutta time-discretization}  
 
+In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using $\theta$ methods which include Euler, backward Euler, and trapezoidal rules.  These time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$, which appear in single-time-step strong form equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and then appear in the single-time-step weak problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta schemes, though at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.
+
+FIXME: Butcher tableau for RK2 = explicit midpoint
+$$\begin{array}{c|cc}
+0   & 0   & 0  \\
+1/2 & 1/2 & 0  \\
+\hline
+    & 0   & 1  \\
+\end{array}$$
+
+FIXME: DIRK(2,2) is strongly S-stable \cite{Alexander1977}
 
 \end{document}
