@@ -11,12 +11,14 @@
 %\newtheorem*{examplecont}{Example, continued}
 
 % math macros
-\newcommand\bv{\mathbf{v}}
-\newcommand\bV{\mathbf{V}}
+\newcommand\bbf{\mathbf{f}}
 \newcommand\bn{\mathbf{n}}
 \newcommand\bq{\mathbf{q}}
+\newcommand\bv{\mathbf{v}}
+\newcommand\by{\mathbf{y}}
 
 \newcommand\bQ{\mathbf{Q}}
+\newcommand\bV{\mathbf{V}}
 \newcommand\bX{\mathbf{X}}
 
 \newcommand\CC{\mathbb{C}}
@@ -312,18 +314,36 @@ But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)
 \bibliography{lc}
 \bibliographystyle{siam}
 
+
 \Appendix
-\section{Second-order Runge-Kutta time-discretization}  
 
-In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using $\theta$ methods which include Euler, backward Euler, and trapezoidal rules.  These time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$, which appear in single-time-step strong form equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and then appear in the single-time-step weak problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta schemes, though at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.
+\section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$, which appear in single-time-step strong form equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and which reappear in the single-time-step variational inequality problem \eqref{eq:theVI}.
 
-FIXME: Butcher tableau for RK2 = explicit midpoint
-$$\begin{array}{c|cc}
-0   & 0   & 0  \\
-1/2 & 1/2 & 0  \\
-\hline
-    & 0   & 1  \\
+In this Appendix we illustrate how these functions can be generated for Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes could also be addressed without any additional ideas, but we limit our presentation to second-order this for simplicity.
+
+For the $m$-dimensional ODE system
+  $$\by' = \bbf(t,\by),$$
+every two stage RK scheme with time-step $h=\Delta t$ can be written with Butcher tableau \cite{AscherPetzold}
+  $$
+\begin{array}{c|cc}
+\tau_1 & a_{11} & a_{12}  \\
+\tau_2 & a_{21} & a_{22}  \\ \hline
+       & b_1   & b_2  \\
 \end{array}$$
+representing the formulas
+  $$\by_{n,i} = \by_{n-1} + h \sum_{j=1}^2 a_{ij} \bbf(t_{n-1} + \tau_j h, \by_{n,j})$$
+for $i=1,2$, and
+  $$\by_n = \by_{n-1} + h \sum_{i=1}^2 b_i \bbf(t_{n-1} + \tau_i h, \by_{n,i}).$$
+\emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal), \emph{semi-implicit} methods have only $a_{12}=0$, and \emph{diagonally-implicit} methods are semi-implicit methods for which $a_{11}=a_{22}$, by definition \cite{Alexander1977}.  We consider only semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:discreteform} have tableau
+  $$
+\begin{array}{c|cc}
+0 &          &   \\
+1 & 1-\theta & \theta  \\ \hline
+  & 1-\theta & \theta  \\
+\end{array}$$
+Note that $\theta>0$ methods are semi-implicit but not not diagonally-implicit.
+
+Diagonally-implicit $s$-stage RK methods have the well-known advantage, especially in the case of large $m$ arising from discretization of partial differential equations, that the matrix $A$ used in solving the discrete system, or its linearization, can be re-used at each stage because it is of the $i$-independent form $A \bu = \bb$ where $A = I - h a_{ii} \partial f/\partial y$ \cite{Alexander1977,AscherPetzold}.  Furthermore, there exists a strongly S-stable \cite{Alexander1977}, which has stiff decay \cite{AscherPetzold}, with two stages and order of accuracy two.  
 
 FIXME: DIRK(2,2) is strongly S-stable \cite{Alexander1977}
 
