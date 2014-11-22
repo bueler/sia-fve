@@ -117,29 +117,24 @@ We work with the (time) semi-discretized problem.  Let $\{t_n\}_{n=0}^N$ be a se
 \bQ_n \cdot \bn &= G_n &&\text{on } \partial\Omega, \text{ where } u_n > 0 \label{eq:semifixedneumann} \\
 u_n &\ge 0 &&\text{in } \bar\Omega \label{eq:semiconstraint}
 \end{align}
-Problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated as a weak problem in section \ref{sec:weakform}, with attention to well-posedness, with $u_n$ the weak solution.
+Problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated as a weak problem in section \ref{sec:weakform}, with attention to well-posedness, with $u_n$ the weak solution.  In equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions
+\begin{equation}
+\bQ_n(\bX,v,x), \quad F_n(v,x), \quad G_n(v,x)\label{eq:functionalforms}
+\end{equation}
+come from the semi-discretization procedure.  In \eqref{eq:functionalforms}, $\bX\in\RR^d$ is a vector, $v\ge 0$, and $x\in \Omega$.  According to the particular discretization procedure, $F_n$ ``absorbs'' all the terms, whether evaluated at $t_{n-1}$ or $t_n$, which do not involve the flux $\bq$ evaluated at time $t_n$.
 
-In equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions
-\begin{align}
- \bQ_n &= \bQ_n(\bX,v,x), \label{eq:Qnfunctionalform} \\
- F_n &= F_n(v,x), \label{eq:Fnfunctionalform} \\
- G_n &= G_n(v,x), \label{eq:Gnfunctionalform}
-\end{align}
-where $\bX\in\RR^d$ is a vector, $v\ge 0$, and $x\in \Omega$, come from the semi-discretization procedure.  For example, in the simplest implicit case of a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n(\bX,v,x) = \bq(\bX,v,x,t_n)$, $F_n(v,x) = f(v,x,t_n)$, and $G_n(v,x) = g(v,x,t_n)$.  More generally, a $\theta$-method discretization of \eqref{eq:massconserve} with $0\le \theta \le 1$, namely
+For example, in the simplest implicit case, a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n = \bq(\bX,v,x,t_n)$, $F_n = f(v,x,t_n)$, and $G_n = g(v,x,t_n)$.  More generally, a $\theta$-method discretization of \eqref{eq:massconserve} with $0\le \theta \le 1$, namely
 \begin{align}
   &\frac{u_n - u_{n-1}}{\Delta t} + \theta\, \Div \bq(\grad u_n,u_n,x,t_n) + (1-\theta) \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}) \label{eq:thetamethod} \\
   &\qquad =  \theta f(u_n,x,t_n) + (1-\theta) f(u_{n-1},x,t_{n-1}), \notag
 \end{align}
 is of form \eqref{eq:semimassconserve} with
 \begin{align*}
-\bQ_n(\bX,v,x) &= \theta\, \bq(\bX,v,x,t_n), \\
-F_n(v,x)       &= \theta f(v,x,t_n) + (1-\theta) f(u_{n-1},x,t_{n-1}) \\
-               &\qquad - (1-\theta) \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}), \\
-G_n(v,x)       &= g(v,x,t_n).
+\bQ_n &= \theta\, \bq(\bX,v,x,t_n), \\
+F_n   &= \theta f(v,x,t_n) + (1-\theta) f(u_{n-1},x,t_{n-1}) \\
+               &\qquad - (1-\theta) \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}).
 \end{align*}
-Thus, according to the time-semi-discretization procedure, $F_n$ ``absorbs'' all the terms coming from time-discretizing \eqref{eq:semimassconserve}, whether evaluated at times $t_{n-1}$ or time $t_n$, which do not involve the flux $\bq$ evaluated at time $t_n$.
-
-The $\theta=0$ case of \eqref{eq:thetamethod} is the (forward) Euler method, $\theta=1/2$ is the trapezoidal rule, and $\theta=1$ is the backward Euler method.  Though the case of the Euler method, in which $\bQ_n=0$, is completely acceptable in our theory,  we are generally interested in using some implicitness for stability reasons.  Furthermore, our theory based on the weak form of \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is not limited to the $\theta$ methods, because other one-step schemes like Runge-Kutta can be put in this form (Appendix), but hypotheses on the flux in the next section may be much harder to check.
+The $\theta=0$ case of \eqref{eq:thetamethod} is the (forward) Euler method, $\theta=1/2$ is the trapezoidal rule, and $\theta=1$ is the backward Euler method.  The fact that $\bQ_n=0$ in the Euler method is completely-acceptable in our weakly-posed theory (Section \ref{sec:weakform}), but we are generally interested in using some implicitness for stability reasons.  Also, our theory is not limited to the $\theta$ methods, because other one-step, multi-stage schemes like Runge-Kutta can be put in this form (see Appendix), but hypotheses on the flux (next section) may be much harder to check than for the $\theta$ method above.
 
 
 \section{Flux assumptions} \label{sec:fluxassumptions}
@@ -319,13 +314,11 @@ But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)
 
 \Appendix
 
-\section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$, which appear in single-time-step strong form equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and which reappear in the single-time-step variational inequality problem \eqref{eq:theVI}.
-
-In this Appendix we illustrate how these functions can be generated for Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes could also be addressed without any additional ideas, but we limit our presentation to second-order this for simplicity.
+\section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  Of course these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes could also be addressed without any additional ideas, but we limit our presentation to two-stage schemes this for simplicity.
 
 For the $m$-dimensional ODE system
   $$\by' = \bbf(t,\by),$$
-every two stage RK scheme with time-step $h=\Delta t$ can be written with Butcher tableau \cite{AscherPetzold}
+every two-stage RK scheme with time-step $h=\Delta t$ can be written with Butcher tableau \cite{AscherPetzold}
   $$
 \begin{array}{c|cc}
 \tau_1 & a_{11} & a_{12}  \\
@@ -333,20 +326,20 @@ every two stage RK scheme with time-step $h=\Delta t$ can be written with Butche
        & b_1   & b_2  \\
 \end{array}$$
 representing the formulas
-  $$\by_{n,i} = \by_{n-1} + h \sum_{j=1}^2 a_{ij} \bbf(t_{n-1} + \tau_j h, \by_{n,j})$$
-for $i=1,2$, and
-  $$\by_n = \by_{n-1} + h \sum_{i=1}^2 b_i \bbf(t_{n-1} + \tau_i h, \by_{n,i}).$$
-\emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal), \emph{semi-implicit} methods have only $a_{12}=0$, and \emph{diagonally-implicit} methods are semi-implicit methods for which $a_{11}=a_{22}$, by definition \cite{Alexander1977}.  We consider only semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:discreteform} have tableau
+  $$\by_{n,i} = \by_{n-1} + h \sum_{j=1}^2 a_{ij} \bbf(t_{n-1} + \tau_j h, \by_{n,j}), \quad \by_n = \by_{n-1} + h \sum_{i=1}^2 b_i \bbf(t_{n-1} + \tau_i h, \by_{n,i}),$$
+with $i=1,2$ in the first case.  \emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal), \emph{semi-implicit} methods have only $a_{12}=0$, and (singly) \emph{diagonally-implicit} methods are semi-implicit methods for which $a_{11}=a_{22}$, by definition \cite{Alexander1977,AscherPetzold}.  We consider only semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:discreteform} have tableau
   $$
 \begin{array}{c|cc}
 0 &          &   \\
 1 & 1-\theta & \theta  \\ \hline
   & 1-\theta & \theta  \\
 \end{array}$$
-Note that $\theta>0$ methods are semi-implicit but not not diagonally-implicit.
+Note that $\theta>0$ methods are semi-implicit but not diagonally-implicit.
 
-Diagonally-implicit $s$-stage RK methods have the well-known advantage, especially in the case of large $m$ arising from discretization of partial differential equations, that the matrix $A$ used in solving the discrete system, or its linearization, can be re-used at each stage because it is of the $i$-independent form $A \bu = \bb$ where $A = I - h a_{ii} \partial f/\partial y$ \cite{Alexander1977,AscherPetzold}.  Furthermore, there exists a strongly S-stable \cite{Alexander1977}, which has stiff decay \cite{AscherPetzold}, with two stages and order of accuracy two.  
+Diagonally-implicit $s$-stage RK (``DIRK'') methods have the well-known advantage, especially in our large $m$ case arising from discretization of a PDE, that the matrix $A$ in the fully-discrete system, or the Jacobian matrix arising in the linearization of the fully-discrete problem, can be re-used at each stage $i$ during a step.  The matrix in question is of $i$-independent form $A = I - h a_{ii} \partial f/\partial y$ \cite{AscherPetzold}.  The accuracy of an $s$-stage DIRK method is limited to $p=s+1$, but there exist strongly S-stable stiff decay DIRKs with $s$ stages and order of accuracy $p=s$ for $s=2,3$ \cite{Alexander1977}.
 
-FIXME: DIRK(2,2) is strongly S-stable \cite{Alexander1977}
+We now generate functions \eqref{eq:functionalforms} for two DIRK schemes, the $(s,p)=(1,2)$ scheme known as the implicit midpoint rule, and the unique strongly S-stable $(s,p)=(2,2)$ scheme for which $0\le \tau_i\le 1$.  The significance of this condition on $\tau_i$ in our context is that the source term $f(x,t)$ in \eqref{eq:massconserve} is only evaluated in the interval $[t_{n-1},t_n]$ when computing $u_n$; the other strongly S-stable $(s,p)=(2,2)$ method, oddly enough, has $\tau_1>1$.
+
+FIXME: show functions
 
 \end{document}
