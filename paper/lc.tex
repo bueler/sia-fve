@@ -317,29 +317,68 @@ But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)
 \section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.  Of course these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes could also be addressed without any additional ideas, but we limit our presentation to two-stage schemes this for simplicity.
 
 For the $m$-dimensional ODE system
-  $$\by' = \bbf(t,\by),$$
+\begin{equation}
+  \by' = \bbf(t,\by),  \label{eq:abstractODE}
+\end{equation}
 every two-stage RK scheme with time-step $h=\Delta t$ can be written with Butcher tableau \cite{AscherPetzold}
-  $$
+\begin{equation}
 \begin{array}{c|cc}
 \tau_1 & a_{11} & a_{12}  \\
 \tau_2 & a_{21} & a_{22}  \\ \hline
-       & b_1   & b_2  \\
-\end{array}$$
+       & b_1    & b_2     \\
+\end{array}  \label{eq:tableau}
+\end{equation}
 representing the formulas
-  $$\by_{n,i} = \by_{n-1} + h \sum_{j=1}^2 a_{ij} \bbf(t_{n-1} + \tau_j h, \by_{n,j}), \quad \by_n = \by_{n-1} + h \sum_{i=1}^2 b_i \bbf(t_{n-1} + \tau_i h, \by_{n,i}),$$
-with $i=1,2$ in the first case.  \emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal), \emph{semi-implicit} methods have only $a_{12}=0$, and (singly) \emph{diagonally-implicit} methods are semi-implicit methods for which $a_{11}=a_{22}$, by definition \cite{Alexander1977,AscherPetzold}.  We consider only semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:discreteform} have tableau
-  $$
+\begin{align*}
+  \by_{n,i} &= \by_{n-1} + h \sum_{j=1}^2 a_{ij} \bbf(t_{n-1} + \tau_j h, \by_{n,j}), \\
+      \by_n &= \by_{n-1} + h \sum_{i=1}^2 b_i \bbf(t_{n-1} + \tau_i h, \by_{n,i}),
+\end{align*}
+with $i=1,2$ in the first equation.  \emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal) and, by definition, \emph{semi-implicit} methods have $a_{12}=0$.  We consider only explicit and semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:discreteform} have tableau
+\begin{equation*}
 \begin{array}{c|cc}
 0 &          &   \\
 1 & 1-\theta & \theta  \\ \hline
   & 1-\theta & \theta  \\
-\end{array}$$
+\end{array}
+\end{equation*}
 Note that $\theta>0$ methods are semi-implicit but not diagonally-implicit.
 
-Diagonally-implicit $s$-stage RK (``DIRK'') methods have the well-known advantage, especially in our large $m$ case arising from discretization of a PDE, that the matrix $A$ in the fully-discrete system, or the Jacobian matrix arising in the linearization of the fully-discrete problem, can be re-used at each stage $i$ during a step.  The matrix in question is of $i$-independent form $A = I - h a_{ii} \partial f/\partial y$ \cite{AscherPetzold}.  The accuracy of an $s$-stage DIRK method is limited to $p=s+1$, but there exist strongly S-stable stiff decay DIRKs with $s$ stages and order of accuracy $p=s$ for $s=2,3$ \cite{Alexander1977}.
+So-called (singly) \emph{diagonally-implicit} RK (``DIRK'') methods are semi-implicit methods for which the diagonal entries $a_{ii}$ are constant (independent of $i$) \cite{AscherPetzold}.  The accuracy of $s$-stage DIRK methods is limited to $p=s+1$, but there exist strongly S-stable and stiffly-accurate DIRKs with $s$ stages and order of accuracy $p=s$ for $s=1,2,3$ \cite{Alexander1977}.  Note that ``strongly S-stable'' is also called ``stiff decay'' \cite{AscherPetzold}, and that ``stiffly-accurate'' is also defined in \cite{AscherPetzold}.
 
-We now generate functions \eqref{eq:functionalforms} for two DIRK schemes, the $(s,p)=(1,2)$ scheme known as the implicit midpoint rule, and the unique strongly S-stable $(s,p)=(2,2)$ scheme for which $0\le \tau_i\le 1$.  The significance of this condition on $\tau_i$ in our context is that the source term $f(x,t)$ in \eqref{eq:massconserve} is only evaluated in the interval $[t_{n-1},t_n]$ when computing $u_n$; the other strongly S-stable $(s,p)=(2,2)$ method, oddly enough, has $\tau_1>1$.
+The strong stability properties of these DIRK methods are exactly what is needed for many of the applications addressed in the current paper, namely diffusive cases where $\bq \sim - \grad u$.  In these diffusive cases the $m$-dimensional method-of-lines ODE system generated by spatially-semi-discretizing \eqref{eq:massconserve} would become arbitrarily stiff under spatial refinement.  Furthermore, semi-implicit methods have the computational advantage, especially in our large $m$ case arising from discretization of a PDE, that each stage represents a separate linear system of only $m$ equations to solve.  (General $s$-stage implicit RK schemes require solving size $sm$ linear systems, but for semi-implicit RK schemes the matrix has block lower-triangular form.)  DIRK methods have the further advantage that the $m\times m$ matrix $A$ for each stage, or the Jacobian matrix arising from the linearization of the stage, can be re-used at each stage $i$ during a step.  Matrix $A$ has $i$-independent form $A = I - h a_{ii} J$, at least if the Jacobian $J$ is evaluated at only at the start of the time step in the nonlinear case: $J = \frac{\partial f}{\partial y}(t_{n-1},\by_{n-1})$.
 
-FIXME: show functions
+We now generate functions \eqref{eq:functionalforms} for two particular DIRK schemes, the $(s,p)=(1,2)$ A-stable scheme known as the implicit midpoint rule, and the unique strongly S-stable $(s,p)=(2,2)$ scheme for which $0\le \tau_i\le 1$.  The significance of the latter condition on $\tau_i$ for our context is that the source term $f$ in \eqref{eq:massconserve} is only evaluated at $t$ in the interval $[t_{n-1},t_n]$ when computing $u_n$; the other strongly S-stable $(s,p)=(2,2)$ method, oddly enough, has $\tau_1>1$.
+
+\begin{itemize}
+\item For uniform appearance we write the implicit midpoint rule as a two-stage scheme with tableau
+\begin{equation*}
+\begin{array}{c|cc}
+0           &    &             \\
+\frac{1}{2} & 0  & \frac{1}{2} \\ \hline
+            & 0  & 1           \\
+\end{array}
+\end{equation*}
+This scheme has two equations: the first stage is a backward Euler step of $\frac{1}{2} h$, but the second stage is explicit.  Using the notation $\tilde\by = \by_{n,2}$ for the scheme applied to ODE system \eqref{eq:abstractODE}, the equations are
+\begin{align*}
+\tilde\by &= \by_{n-1} + \tfrac{1}{2} h \bbf(t_n+\tfrac{1}{2}h,\tilde\by), \\
+\by_n &= \by_{n-1} + h \bbf(t_n+\tfrac{1}{2}h,\tilde\by).
+\end{align*}
+FIXME: $\bQ_n$ and etc
+%
+\item The strongly S-stable $(2,2)$ scheme has tableau
+\begin{equation*}
+\begin{array}{c|cc}
+\alpha & \alpha   &        \\
+1      & 1-\alpha & \alpha \\ \hline
+       & 1-\alpha & \alpha \\
+\end{array}
+\end{equation*}
+where $\alpha = (2-\sqrt{2})/2 \approx 0.293$.  Noting the stiffly-accurate condition, namely $a_{2j}=b_j$ for $j=1,2$, this scheme also has only two equations, both implicit.  Now using notation $\tilde\by = \by_{n,1}$, they are
+\begin{align*}
+\tilde\by &= \by_{n-1} + \alpha h \bbf(t_n+\alpha h,\tilde\by), \\
+\by_n &= \by_{n-1} + (1-\alpha) h \bbf(t_n+\alpha h,\tilde\by) + h \bbf(t_n+h,\tilde\by).
+\end{align*}
+FIXME: $\bQ_n$ and etc
+\end{itemize}
 
 \end{document}
