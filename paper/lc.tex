@@ -372,10 +372,10 @@ We now generate functions \eqref{eq:functionalforms} for two particular DIRK sch
 \end{array}
 \end{equation*}
 This scheme has two equations: the first stage is a backward Euler step of $\frac{1}{2} h$, but the second stage is explicit.  Using the notation $\tilde\by = \by_{n,2}$ for the scheme applied to ODE system \eqref{eq:abstractODE}, the equations are
-\begin{align*}
-\tilde\by &= \by_{n-1} + \tfrac{1}{2} h \bbf(t_n+\tfrac{1}{2}h,\tilde\by), \\
-\by_n &= \by_{n-1} + h \bbf(t_n+\tfrac{1}{2}h,\tilde\by).
-\end{align*}
+\begin{align}
+\tilde\by &= \by_{n-1} + \tfrac{1}{2} h \bbf(t_n+\tfrac{1}{2}h,\tilde\by), \label{eq:impmid} \\
+\by_n &= \by_{n-1} + h \bbf(t_n+\tfrac{1}{2}h,\tilde\by). \notag
+\end{align}
 FIXME: $\bQ_n$ and etc
 %
 \item The strongly S-stable $(2,2)$ scheme has tableau
@@ -387,10 +387,10 @@ FIXME: $\bQ_n$ and etc
 \end{array}
 \end{equation*}
 where $\alpha = (2-\sqrt{2})/2 \approx 0.293$.  Noting the stiffly-accurate condition, namely $a_{2j}=b_j$ for $j=1,2$, this scheme also has only two equations, both implicit.  Now using notation $\tilde\by = \by_{n,1}$, they are
-\begin{align*}
-\tilde\by &= \by_{n-1} + \alpha h \bbf(t_n+\alpha h,\tilde\by), \\
-\by_n &= \by_{n-1} + (1-\alpha) h \bbf(t_n+\alpha h,\tilde\by) + h \bbf(t_n+h,\tilde\by).
-\end{align*}
+\begin{align}
+\tilde\by &= \by_{n-1} + \alpha h \bbf(t_n+\alpha h,\tilde\by), \label{eq:sstabledirk} \\
+\by_n &= \by_{n-1} + (1-\alpha) h \bbf(t_n+\alpha h,\tilde\by) + \alpha h \bbf(t_n+h,\by_n). \notag
+\end{align}
 FIXME: $\bQ_n$ and etc
 \end{itemize}
 
