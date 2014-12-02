@@ -180,51 +180,46 @@ Along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.
 
 \section{Flux assumptions} \label{sec:fluxassumptions}
 
-We make three kinds of assumptions on the discrete-time flux $\bQ_n(\grad u,u,x)$: \begin{itemize}
-\item $\bQ_n$ is regular (i.e.~H\"older in $\grad u$, H\"older in $u$ and \eqref{eq:QisLq},
-\item for $\bQ_n$, assumption (ii) and maximum principle \eqref{eq:maxprincQn}, and
-\item the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$
-\end{itemize}
+If $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$, we assume
+\begin{equation}
+\bQ_n(\grad v,v,x) \in L^q(\Omega). \label{eq:QisLq}
+\end{equation}
 
-FIXME:  want maximum principle property that for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
+If $v(x)>0$ on an open subset $S\subset \Omega$, and if $v\in C^1(S)$ then
+\begin{equation}
+\frac{\partial}{\partial x_i} \bQ_n(\grad v,v,x) \in L_{\operatorname{loc}}^q(S). \label{eq:Qissmooth}
+\end{equation}
+
+For fixed $\bX\in\RR^d$ and $x\in \Omega$, we assume $\bQ_n(\bX,v,x)$ is continuous in $v\in\RR$, and we assume
+\begin{equation}
+\bQ_n(\bX,0,x)=0. \label{eq:Qiszero}
+\end{equation}
+
+Finally we assume a maximum principle property: for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
 \begin{equation}
 v(x) + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \quad \implies \quad v(x) > 0 \label{eq:maxprincQn}
 \end{equation}
-for all $x\in\Omega$ 
+for all $x\in\Omega$.
 
-From the contrapositive of \eqref{eq:maxprincQn} applied to $X = \Omega_n^0$, where $u_n=0$ and $u_{n-1}=0$, and because the strong form \eqref{eq:semimassconserve} says that
-   $$u_n + \Delta t \Div \bQ_n = u_{n-1} + \Delta t F_n,$$
-we have
-\begin{equation}
-F_n = \Div \bQ_n \le 0  \label{eq:divfluxnonpositive}
-\end{equation}
-at all points in $\Omega_n^0$.  Also, using the contrapositive of \eqref{eq:maxprincQn} on $X = \Omega_r^n$, where $u_n=0$, and strong form \eqref{eq:semimassconserve}, gives
-\begin{equation}
-u_{n-1} + \Delta t F_n = \Delta t \Div\bQ_n \le 0  \label{eq:inequalityonretreat}
-\end{equation}
-at all points in $\Omega_n^r$.
+Thus we make three basic assumptions about the discrete-time flux $\bQ_n(\grad u,u,x)$: \begin{itemize}
+\item the flux is regular (i.e.~continuity in second argument and assumptions \eqref{eq:QisLq} and \eqref{eq:QisLq}),
+\item the flux is zero if the thickness is zero (equation \eqref{eq:Qiszero}), and
+\item the flux satisfies a maximum principle (assumption \eqref{eq:maxprincQn}).
+\end{itemize}
 
-FIXME: if $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
-\begin{equation}
-\bQ_n(\grad v,v,x) \in L^q(\Omega) \label{eq:QisLq}
-\end{equation}
- 
-
-FIXME $\bQ_n(\bX,v,x)$ is continuous in $v$ and $\bQ_n(\bX,0,x)=0$ for all $\bX\in\RR^d$ and $x\in\Omega$.
-
-FIXME: we can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
+FIXME: Assume the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$.  We can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
 
 
-\section{Weak formulation of a time-step}  \label{sec:weakform}
+\section{Weak formulation of a time-step ($u_n\in W^{1,p}(\Omega)$ case)}  \label{sec:weakform}
 
 The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of $u_n(x)$ because the free boundary is not an integral part of the problem statement.  Here we specify the appropriate function spaces and we propose a weak form, a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex space of admissible functions.  This weak form can be proven to be well-posed in some cases.  More generally the weak form can be shown to imply the strong form where $u_n>0$ (``interior condition'').  We start by arguing informally to construct the weak form.\footnote{Though the weak form is mathematically more fundamental, nonetheless history and human frailty have made the strong form more prominent in applications, especially in the climate-modeling literature where our conservation concerns are most relevant.}  Our argument uses facts which are intuitively true on the subsets in decomposition \eqref{eq:omegadecomposition}.
 
-Suppose $u_n\ge 0$ and $v\ge 0$ are sufficiently smooth on $\Omega$ and define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$.  Using \eqref{eq:omegadecomposition} and integration by parts (divergence theorem) we get
+Suppose $u_n\ge 0$ and $v\ge 0$ are sufficiently smooth on $\Omega$ and define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$.  Using decomposition \eqref{eq:omegadecomposition} and integration by parts (divergence theorem) we get
 \begin{align*}
 -\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) \\
   &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n) - \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n).
 \end{align*}
-Because $u_n$ is continuous, $u_n=0$ along $\Gamma_n^0$ so it follows from assumption (ii) and equation \eqref{eq:semifixedneumann} that
+Because $u_n$ is continuous, $u_n=0$ along $\Gamma_n^0$ so it follows from \eqref{eq:Qiszero} and equation \eqref{eq:semifixedneumann} that
        $$\int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) = \int_{\Gamma_n^N} G_n (v-u_n).$$
 Similarly,
        $$\int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n) = 0.$$
@@ -234,11 +229,11 @@ By using \eqref{eq:semimassconserve} and by extending $G_n$ by zero to all of $\
   &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \notag
 \end{align}
 
-However, by assumption (ii) we have $\Div \bQ_n=0$ on $\Omega_n^0$ so
+However, by \eqref{eq:Qiszero} we have $\Div \bQ_n=0$ on $\Omega_n^0$ so
     $$\int_{\Omega_n^0} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n),$$
-because in fact $u_n=u_{n-1}=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, and because \eqref{eq:divfluxnonpositive} says that $F_n \le 0$ on $\Omega_n^0$.  Almost the same, by assumption (ii) on $\Omega_n^r$,
+because in fact $u_n=u_{n-1}=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, and because $F_n \le 0$ on $\Omega_n^0$.  Almost the same, by \eqref{eq:Qiszero} on $\Omega_n^r$,
     $$\int_{\Omega_n^r} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^r} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n)$$
-because $u_n=0$ and $v-u_n = v \ge 0$ on $\Omega_n^r$, and because \eqref{eq:inequalityonretreat} says that $F_n - (u_n - u_{n-1})/\Delta t = F_n + u_{n-1}/\Delta t \le 0$ on $\Omega_n^r$.  Thus if we return to \eqref{eq:equalitybeforeVI} we have
+because $u_n=0$ and $v-u_n = v \ge 0$ on $\Omega_n^r$, and because $F_n - (u_n - u_{n-1})/\Delta t = F_n + u_{n-1}/\Delta t \le 0$ on $\Omega_n^r$.  Thus if we return to \eqref{eq:equalitybeforeVI} we have
 \begin{align}
 -\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &\ge \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:essentiallyVI} \\
   &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \notag
@@ -325,7 +320,7 @@ But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)
 \bibliographystyle{siam}
 
 
-\Appendix
+\appendix
 
 \section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z),F_n(v,z),G_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
 
