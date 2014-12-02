@@ -122,7 +122,7 @@ is an open set.  We say that the layer exists for $x\in \supp u$, and that it is
 Conservation equation \eqref{eq:massconserve} only applies in this strong form where the layer exists.  Similarly the boundary condition \eqref{eq:fixedneumann} only make sense in locations where $u>0$, at least in the generic case $g\ne 0$.  Well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions, as we do in sections \ref{sec:fluxassumptions} and \ref{sec:weakform}.
 
 
-\section{Discrete-time strong formulation}  \label{sec:discreteform}
+\section{Discrete-time strong formulation and associated set decomposition}  \label{sec:discreteform}
 
 We work with the (time) semi-discretized problem.  Let $\{t_n\}_{n=0}^N$ be a sequence of increasing times on an interval $[0,T]$ with $t_0=0$ and $t_N=T$.  The semi-discretized problem determines $u_n(x) \approx u(x,t_n)$ given old values $u_{n-1}(x)$.  Corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint}, the single-time-step strong form is
 \begin{align}
@@ -134,7 +134,7 @@ Problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} will be restated 
 \begin{equation}
 \bQ_n(\bX,v,x), \quad F_n(v,x), \quad G_n(v,x)\label{eq:functionalforms}
 \end{equation}
-come from the semi-discretization procedure.  In \eqref{eq:functionalforms}, $\bX\in\RR^d$ is a vector, $v\ge 0$, and $x\in \Omega$.  According to the particular discretization procedure, $F_n$ ``absorbs'' all the terms, whether evaluated at $t_{n-1}$ or $t_n$, which do not involve the flux $\bq$ evaluated at time $t_n$.
+come from the semi-discretization procedure.  In \eqref{eq:functionalforms}, $\bX\in\RR^d$ is any vector, $v\in\RR$, and $x\in \Omega$.  (Note that we assume $\bQ_n(\bX,v,x)$ is defined for any $v\in\RR$, not just $v\ge 0$.)  According to the particular discretization procedure, $F_n$ ``absorbs'' all the terms, whether evaluated at $t_{n-1}$ or $t_n$, which do not involve the flux $\bq$ evaluated at time $t_n$.
 
 For example, in the simplest implicit case, a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n = \bq(\bX,v,x,t_n)$, $F_n = f(v,x,t_n)$, and $G_n = g(v,x,t_n)$.  More generally, a $\theta$-method discretization of \eqref{eq:massconserve} with $0\le \theta \le 1$, namely
 \begin{align}
@@ -147,7 +147,35 @@ is of form \eqref{eq:semimassconserve} with
 F_n   &= \theta f(v,x,t_n) + (1-\theta) f(u_{n-1},x,t_{n-1}) \\
                &\qquad - (1-\theta) \Div \bq(\grad u_{n-1},u_{n-1},x,t_{n-1}).
 \end{align*}
-The $\theta=0$ case of \eqref{eq:thetamethod} is the (forward) Euler method, $\theta=1/2$ is the trapezoidal rule, and $\theta=1$ is the backward Euler method.  The fact that $\bQ_n=0$ in the Euler method is completely-acceptable in our weakly-posed theory (Section \ref{sec:weakform}), but we are generally interested in using some implicitness for stability reasons.  Also, our theory is not limited to the $\theta$ methods, because other one-step, multi-stage schemes like Runge-Kutta can be put in this form (see Appendix), but hypotheses on the flux (next section) may be much harder to check than for the $\theta$ method above.
+The $\theta=0$ case of \eqref{eq:thetamethod} is the (forward) Euler method, $\theta=1/2$ is the trapezoidal rule, and $\theta=1$ is the backward Euler method.  The fact that $\bQ_n=0$ in the Euler method is completely-acceptable in our weakly-posed theory (Section \ref{sec:weakform}), but we are primarily interested in using some implicitness for stability reasons.
+
+Our theory is not limited to the $\theta$-methods.  In particular, multi-stage one-step schemes like Runge-Kutta can be put in the form of \eqref{eq:semimassconserve}---see Appendix---though hypotheses on the flux (next section) may be harder to check than for the $\theta$-methods above.
+
+To precisely restate the major assertion of section \ref{sec:intro} we decompose $\Omega$ using the solution of problem \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}.   We define three disjoint regions based on $u_n$ and $u_{n-1}$:
+\begin{align*}
+\Omega_n &= \left\{x \in \Omega \,\big|\, u_n(x)>0\right\}, \\
+\Omega_n^r &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) > 0\right\}, \\
+\Omega_n^0 &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) = 0\right\},
+\end{align*}
+so that
+\begin{equation}
+\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0.  \label{eq:omegadecomposition}
+\end{equation}
+Here the superscript ``$r$'' stands for ``retreat,''\footnote{At this point a symmetry has been broken.  We could have decomposed $\Omega= \Omega_n \cup \Omega_n^a \cup \Omega_n^0$ where $\Omega_n^a = \{u_n(x) > 0 \text{ and } u_{n-1}(x) = 0\}$ is the ``advance'' set.  As far as we can tell the resulting alternate theory offers no advantages or disadvantages.} and $\Omega_n^r$ is called the \emph{retreat set}.  Figure \ref{fig:domains} shows this decomposition of $\Omega$.
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=2.0in,keepaspectratio=true]{domains-fig}
+\end{center}
+\caption{We decompose $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$, where $\Omega_n$ the support of $u_n$, $\Omega_n^r$ is the retreat set, and $\Omega_n^0$ is the set on which both $u_{n-1}$ and $u_n$ are zero.  The boundary of $\Omega_n$ is decomposed into two pieces, $\partial\Omega_n = \Gamma_n^N \cup \Gamma_n^0$.}
+\label{fig:domains}
+\end{figure}
+
+A decomposition of the boundary $\partial \Omega$ is also needed to define the quantities.  The boundary of the support $\Omega_n$ of $u_n$ decomposes disjointly into the part where a fixed (Neumann) condition applies, and a part which is the free boundary.  Let $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, where superscript ``$N$'' stands for ``Neumann.''  Then
+\begin{align*}
+\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
+\end{align*}
+Along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.
 
 
 \section{Flux assumptions} \label{sec:fluxassumptions}
@@ -240,35 +268,7 @@ FIXME:  We will show that in some cases this is well-posed
 FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 
-\section{The retreat set and the retreat loss}  \label{sec:retreatdefn}
-
-From \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} we decompose $\Omega$ into three disjoint regions based on $u_n$ and $u_{n-1}$:
-\begin{align*}
-\Omega_n &= \left\{x \in \Omega \,\big|\, u_n(x)>0\right\}, \\
-\Omega_n^r &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) > 0\right\}, \\
-\Omega_n^0 &= \left\{x \in \Omega \,\big|\, u_n(x)=0 \text{ and } u_{n-1}(x) = 0\right\},
-\end{align*}
-so that
-\begin{equation}
-\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0.  \label{eq:omegadecomposition}
-\end{equation}
-Here the superscript ``$r$'' stands for ``retreat,''\footnote{At this point a symmetry has been broken.  We could have decomposed $\Omega= \Omega_n \cup \Omega_n^a \cup \Omega_n^0$ where $\Omega_n^a = \{u_n(x) > 0 \text{ and } u_{n-1}(x) = 0\}$ is the ``advance'' set.  As far as we can tell the resulting alternate theory offers no advantages or disadvantages.} and $\Omega_n^r$ is called the \emph{retreat set}.
-
-Figure \ref{fig:domains} shows this decomposition of $\Omega$.  In this section we simply define the quantities needed to precisely restate the major assertion of section \ref{sec:intro}.  A decomposition of the boundary $\partial \Omega$ is needed to define the quantities.
-
-\begin{figure}[ht]
-\begin{center}
-\includegraphics[width=2.0in,keepaspectratio=true]{domains-fig}
-\end{center}
-\caption{We decompose $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$, where $\Omega_n$ the support of $u_n$, $\Omega_n^r$ is the retreat set, and $\Omega_n^0$ is the set on which both $u_{n-1}$ and $u_n$ are zero.  The boundary of $\Omega_n$ is decomposed into two pieces, $\partial\Omega_n = \Gamma_n^N \cup \Gamma_n^0$.}
-\label{fig:domains}
-\end{figure}
-
-The boundary of the support $\Omega_n$ of $u_n$ decomposes disjointly into the part where a fixed (Neumann) condition applies, and a part which is the free boundary.  Let $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, where superscript ``$N$'' stands for ``Neumann.''  Then
-\begin{align*}
-\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
-\end{align*}
-Along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.
+\section{Time-series for mass, and the retreat loss}  \label{sec:timeseries}
 
 Now define
 \begin{equation}
