@@ -4,45 +4,88 @@ import matplotlib.font_manager as font_manager
 from pylab import *
 from sys import exit
 
-x = linspace(0.0,10.0,1001)
-b = 0.07*(x-3.0)**2 + 0.2*sin(2.0*x)
+def genbasicfig():
+    x = linspace(0.0,10.0,1001)
+    b = 0.07*(x-3.0)**2 + 0.2*sin(2.0*x)
 
-h0 = 3.0
-L = 3.0
-h = maximum(0.0, h0*(-0.2 + sqrt(maximum(0.0,1.0 - (x-5)**2/L**2))) )
-s = b + h
+    h0 = 3.0
+    L = 3.0
+    h = maximum(0.0, h0*(-0.2 + sqrt(maximum(0.0,1.0 - (x-5)**2/L**2))) )
+    s = b + h
+
+    plot(x, b, '--k', lw=3.0)
+    hold(True)
+    plot(x, s, 'k', lw=3.0)
+
+    arrow(x[600],b[600],0.0,h[600],lw=1.0,head_width=0.1,color='k',length_includes_head=True)
+    arrow(x[600],s[600],0.0,-h[600],lw=1.0,head_width=0.1,color='k',length_includes_head=True)
+    t = text(x[600]-0.4,b[600]+0.4*h[600],'h')
+    font = font_manager.FontProperties(family='sans serif', style='italic', size=24)
+    t.set_font_properties(font)
+
+    arrow(x[450],b[600]+0.3*h[600],-1.0,-0.1,lw=2.0,head_width=0.2,color='k',length_includes_head=True)
+    t = text(x[400],b[600]+0.45*h[600],'q')
+    font = font_manager.FontProperties(family='sans serif', style='normal', weight='bold', size=24)
+    t.set_font_properties(font)
+
+    axis([0.0,10.0,-1.0,5.0])
+    axis('off')
+    return x, s
+
+def showclimate(x,s,mycolor):
+    for j in range(10):
+        xarr = x[50+100*j]
+        if j>0:
+            magarr = 0.6*sin(pi/2 + 0.6*xarr)
+        else:
+            magarr = 0.1
+        arrow(xarr,s.max()+0.2,0.0,magarr,lw=1.5,head_width=0.1,color=mycolor)
+    #font = font_manager.FontProperties(family='sans serif', style='italic', size=24)
+    #t = text(x[500],s.max()+0.3,'f > 0',color=mycolor)
+    #t.set_font_properties(font)
+    #t = text(x[100],s.max()-0.3,'f < 0',color=mycolor)
+    #t.set_font_properties(font)
+
+debug = False
+
+# basic figure
+figure(figsize=(10,4))
+genbasicfig()
+hold(False)
+if debug:
+    show()  # debug
+else:
+    savefig('cartoon-layer.pdf',bbox_inches='tight')
 
 figure(figsize=(10,4))
+x, s = genbasicfig()
+showclimate(x,s,'b')
+hold(False)
+if debug:
+    show()  # debug
+else:
+    savefig('cartoon-wclimate.pdf',bbox_inches='tight')
 
-plot(x, b, '--k', lw=3.0)
-hold(True)
-plot(x, s, 'k', lw=3.0)
+# for circles
+th = linspace(0.0,2.0*pi+pi/100.0,201)
 
-arrow(x[600],b[600],0.0,h[600],lw=1.0,head_width=0.1,color='k',length_includes_head=True)
-arrow(x[600],s[600],0.0,-h[600],lw=1.0,head_width=0.1,color='k',length_includes_head=True)
-t = text(x[600]-0.4,b[600]+0.4*h[600],'h')
-font = font_manager.FontProperties(family='sans serif', style='italic', size=24)
-t.set_font_properties(font)
+figure(figsize=(10,4))
+x, s = genbasicfig()
+showclimate(x,s,'b')
+plot(x[950] + 0.4*cos(th), s.max()+0.5 + 0.5*sin(th),'-r',lw=3.0)
+hold(False)
+if debug:
+    show()  # debug
+else:
+    savefig('cartoon-sensitive-one.pdf',bbox_inches='tight')
 
-arrow(x[450],b[600]+0.3*h[600],-1.0,-0.1,lw=2.0,head_width=0.2,color='k',length_includes_head=True)
-t = text(x[400],b[600]+0.45*h[600],'q')
-font = font_manager.FontProperties(family='sans serif', style='normal', weight='bold', size=24)
-t.set_font_properties(font)
-
-for j in range(10):
-  xarr = x[50+100*j]
-  if j>0:
-    magarr = 0.6*sin(pi/2 + 0.6*xarr)
-  else:
-    magarr = 0.1
-  arrow(xarr,s.max()+0.2,0.0,magarr,lw=1.5,head_width=0.1,color='k')
-t = text(x[0]-0.5,s.max()+0.2,'f')
-font = font_manager.FontProperties(family='sans serif', style='italic', size=24)
-t.set_font_properties(font)
-
-axis([0.0,10.0,-1.0,5.0])
-axis('off')
-
-savefig('layer-cartoon.pdf',bbox_inches='tight')
-#show()  # debug
+figure(figsize=(10,4))
+x, s = genbasicfig()
+showclimate(x,s,'b')
+plot(x[50] + 0.4*cos(th), s.max()+0.25 + 0.4*sin(th),'--r',lw=3.0)
+hold(False)
+if debug:
+    show()  # debug
+else:
+    savefig('cartoon-sensitive-two.pdf',bbox_inches='tight')
 

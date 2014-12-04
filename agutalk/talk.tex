@@ -118,23 +118,46 @@
 
 \subsection{Free-boundary fluid layer well-posedness.}
 
-
 \begin{frame}{A fluid layer in a climate}
-\framesubtitle{(the problem, in one slide)}
 
 \begin{center}
-\includegraphics[width=0.9\textwidth,keepaspectratio=true]{layer-cartoon}
+\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-layer}}
+\only<2->{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}}
 \end{center}
 
+\vspace{-9mm}
   \begin{itemize}
   \item mass conservation usually written
-     $$h_t + \Div\bq = f$$
+     \only<1>{$$h_t + \Div\bq = f$$}
+     \only<2->{$$h_t + \Div\bq = {\color{blue} f}$$}
     \begin{itemize}
     \vspace{-6mm}
-    \item[$\circ$] \dots which applies \emph{where} $h>0$ only
+    \item<1->[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
+    \item<2->[$\circ$] accumulation ${\color{blue} f}>0$ shown downward
     \end{itemize}
-  \item $h$ is a thickness:
+  \item<3> $h$ is a thickness:
       $$h\ge 0$$
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{A fluid layer in a climate (\emph{difficulties})}
+
+\begin{center}
+\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
+\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
+\end{center}
+
+\vspace{-9mm}
+  \begin{itemize}
+  \item<1-> $f<0$ not ``detected'' by model where $h=0$
+     \begin{itemize}
+     \item<1->[$\circ$] mass conservation accounting hard \dots
+     \end{itemize}
+  \item<2> $f\approx 0$ threshold behavior
+     \begin{itemize}
+     \item<2>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
+     \end{itemize}
   \end{itemize}
 \end{frame}
 
@@ -142,46 +165,17 @@
 \begin{frame}{Examples}
 
   \begin{itemize}
-  \item
-    Use \texttt{itemize} a lot.
-  \item
-    Use very short sentences or short phrases.
+  \item FIXME: show images
   \end{itemize}
 \end{frame}
 
-
-\begin{frame}{Make Titles Informative.}
-
-  You can create overlays\dots
-  \begin{itemize}
-  \item stuff
-    \begin{itemize}
-    \item
-      First item.
-    \item    
-      Second item.
-    \end{itemize}
-  \item
-    using overlay specifications:
-    \begin{itemize}
-    \item<2->
-      First item.
-    \item<3->
-      Second item.
-    \end{itemize}
-  \end{itemize}
-\end{frame}
-
-
-\begin{frame}{Make Titles Informative.}
-\end{frame}
 
 
 \section{What's achievable?}
 
 \subsection{Limits to auditable discrete conservation.}
 
-\begin{frame}{Make Titles Informative.}
+\begin{frame}{FIXME}
 \end{frame}
 
 

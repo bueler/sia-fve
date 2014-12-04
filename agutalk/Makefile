@@ -1,10 +1,10 @@
 all: talk.pdf
 
-figures = layer-cartoon.pdf
+figures = cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf
 
-layer-cartoon.pdf:
+cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf:
 	python figs1d.py
-	pdfcrop layer-cartoon.pdf layer-cartoon.pdf
+	#for X in layer wclimate sensitive-one; do pdfcrop cartoon-$$X.pdf cartoon-$$X.pdf; done
 
 talk.aux: talk.tex $(figures)
 	pdflatex talk
@@ -15,4 +15,4 @@ talk.pdf: talk.aux $(figures)
 .PHONY: clean
 
 clean:
-	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz *.nav *.snm *.toc *~
+	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz *.nav *.snm *.toc *~ cartoon-*.pdf
