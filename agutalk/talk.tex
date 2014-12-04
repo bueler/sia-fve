@@ -13,6 +13,44 @@
 \usepackage{times}
 \usepackage[T1]{fontenc}
 
+% math macros
+\newcommand\bb{\mathbf{b}}
+\newcommand\bbf{\mathbf{f}}
+\newcommand\bn{\mathbf{n}}
+\newcommand\bq{\mathbf{q}}
+\newcommand\bu{\mathbf{u}}
+\newcommand\bv{\mathbf{v}}
+\newcommand\by{\mathbf{y}}
+
+\newcommand\bQ{\mathbf{Q}}
+\newcommand\bV{\mathbf{V}}
+\newcommand\bX{\mathbf{X}}
+
+\newcommand\CC{\mathbb{C}}
+\newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
+\newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
+\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
+\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
+\newcommand{\ddxp}[1]{\ensuremath{\frac{\partial #1}{\partial x'}}}
+\newcommand{\ddz}[1]{\ensuremath{\frac{\partial #1}{\partial z}}}
+\newcommand{\ddxx}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x^2}}}
+\newcommand{\ddyy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial y^2}}}
+\newcommand{\ddxy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x \partial y}}}
+\newcommand{\ddzz}[1]{\ensuremath{\frac{\partial^2 #1}{\partial z^2}}}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand\eps{\epsilon}
+\newcommand{\grad}{\nabla}
+\newcommand{\ihat}{\mathbf{i}}
+\newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
+\newcommand{\jhat}{\mathbf{j}}
+\newcommand{\khat}{\mathbf{k}}
+\newcommand{\nhat}{\mathbf{n}}
+\newcommand\lam{\lambda}
+\newcommand\lap{\triangle}
+\newcommand\Matlab{\textsc{Matlab}\xspace}
+\newcommand\RR{\mathbb{R}}
+\newcommand\vf{\varphi}
+
 
 \title[Conservation in free-boundary layers] % (optional, use only with long paper titles)
 {Conservation \\ in free-boundary fluid layer models}
@@ -79,6 +117,26 @@
 \section{The problem}
 
 \subsection{Free-boundary fluid layer well-posedness.}
+
+
+\begin{frame}{A fluid layer in a climate}
+\framesubtitle{(the problem, in one slide)}
+
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio=true]{layer-cartoon}
+\end{center}
+
+  \begin{itemize}
+  \item mass conservation usually written
+     $$h_t + \Div\bq = f$$
+    \begin{itemize}
+    \vspace{-6mm}
+    \item[$\circ$] \dots which applies \emph{where} $h>0$ only
+    \end{itemize}
+  \item $h$ is a thickness:
+      $$h\ge 0$$
+  \end{itemize}
+\end{frame}
 
 
 \begin{frame}{Examples}
