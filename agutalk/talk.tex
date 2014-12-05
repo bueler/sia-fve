@@ -196,12 +196,90 @@ $$h_t + \Div\bq = {\color{blue} f}$$
 \end{frame}
 
 
-\begin{frame}{Has anyone faced these problems before?}
-%images/
-%Albrechtetal2011.png
-%JaroschSchoofAnslow2013.png
-%jouvet-two-grids.png
+\begin{frame}{Numerical models \emph{must} discretize time}
+
+$$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
+
+  \begin{itemize}
+  \item semi-discretize in time
+    \begin{itemize}
+    \item[$\circ$] $H_n\ge 0$ is the thickness at $t_n$
+    \item[$\circ$] new equation is PDE in space (where $H_n>0$)
+    \item[$\circ$] I'll call it the ``single time-step problem''
+    \end{itemize}
+  \item flux $\bQ_n$ depends on $H_n,\grad H_n,x$
+  \item source $F_n$ depends on $H_n,H_{n-1},x$
+  \item<2-> details of $\bQ_n$, $F_n$ from time-step scheme
+    \begin{itemize}
+    \item<2->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
+    \end{itemize}
+  \item<3> low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
+  \end{itemize}
 \end{frame}
+
+
+\begin{frame}{Anyone faced these problems before?}
+
+  \begin{itemize}
+  \item yes, of course!  for example:
+    \begin{itemize}
+    \item[$\circ$] ad hoc schemes for finite volume/difference mass conservation
+    \end{itemize}
+  \only<2>{\item I don't mind ``\texttt{if \dots then \dots}'' in my code
+  \item \emph{but I want to know what mathematical problem it reflects!}}
+  \end{itemize}
+
+\only<1>{
+\begin{columns}
+\begin{column}{0.3\textwidth}
+\includegraphics[width=\textwidth,keepaspectratio=true]{JaroschSchoofAnslow2013}
+
+\small glacier ice
+
+on steep terrain
+
+\smallskip
+\tiny (Jarosch, Schoof, Anslow, 2013)
+\end{column}
+
+\begin{column}{0.6\textwidth}
+\includegraphics[width=0.8\textwidth,keepaspectratio=true]{Albrechtetal2011}
+
+\small ice shelf fronts
+
+\tiny (Albrecht et al, 2011)
+
+\small \medskip
+\includegraphics[width=0.6\textwidth,keepaspectratio=true]{jouvet-two-grids}
+
+\small volume-of-fluid method on fine grid
+
+\tiny (Jouvet et al 2008)
+\end{column}
+\end{columns}}
+
+\only<2>{\phantom{foo}
+
+\vspace{38mm}
+\phantom{bar}}
+\end{frame}
+
+
+\begin{frame}{Weak form includes $h\ge 0$ constraint}
+
+  \begin{itemize}
+  \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is single time-step ``strong form''
+  \item closed convex set of admissible thicknesses $H_n$:
+    $$FIXME define \mathcal{K}$$
+  \item
+    $$FIXME state VI$$
+  \end{itemize}
+\end{frame}
+
+
+% could put this in
+%\begin{frame}{Decomposition into sets}
+%\end{frame}
 
 
 \section{What's achievable?}
