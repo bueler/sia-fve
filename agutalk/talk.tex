@@ -87,6 +87,7 @@
 
 
 \begin{document}
+\graphicspath{{../images/}{../../talks-public/commonfigs/}}
 
 \begin{frame}
   \titlepage
@@ -127,13 +128,14 @@
 
 \vspace{-9mm}
   \begin{itemize}
-  \item mass conservation usually written
+  \item mass conservation for a layer:
      \only<1>{$$h_t + \Div\bq = f$$}
      \only<2->{$$h_t + \Div\bq = {\color{blue} f}$$}
     \begin{itemize}
-    \vspace{-6mm}
+    \vspace{-4mm}
     \item<1->[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
-    \item<2->[$\circ$] accumulation ${\color{blue} f}>0$ shown downward
+    \item<2->[$\circ$] source ${\color{blue} f}$
+    \item<2->[$\circ$] $f>0$ shown downward (accumulation)
     \end{itemize}
   \item<3> $h$ is a thickness:
       $$h\ge 0$$
@@ -146,17 +148,24 @@
 \begin{center}
 \only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
 \only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
+\only<3>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
 \end{center}
 
-\vspace{-9mm}
+\vspace{-18mm}
+$$h_t + \Div\bq = {\color{blue} f}$$
+
   \begin{itemize}
   \item<1-> $f<0$ not ``detected'' by model where $h=0$
      \begin{itemize}
-     \item<1->[$\circ$] mass conservation accounting hard \dots
+     \item<1->[$\circ$] how to do mass conservation accounting?
      \end{itemize}
-  \item<2> $f\approx 0$ threshold behavior
+  \item<2-> $f\approx 0$ threshold behavior
      \begin{itemize}
-     \item<2>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
+     \item<2->[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
+     \end{itemize}
+  \item<3> $h=0$ \emph{and what else} at free boundary?
+     \begin{itemize}
+     \item<3>[$\circ$] shape of free boundary depends on flux $\bq$
      \end{itemize}
   \end{itemize}
 \end{frame}
@@ -164,11 +173,35 @@
 
 \begin{frame}{Examples}
 
-  \begin{itemize}
-  \item FIXME: show images
-  \end{itemize}
+\includegraphics[width=0.42\textwidth,keepaspectratio=true]{polaris}
+\hfill
+\includegraphics[width=0.47\textwidth,keepaspectratio=true]{supp4rignot-small}
+
+\small glaciers \hfill ice shelves \& sea ice
+
+\medskip
+\includegraphics[width=0.43\textwidth,keepaspectratio=true]{marsh-water}
+\hfill
+\includegraphics[width=0.44\textwidth,keepaspectratio=true]{tsunami-sendai}
+
+\small tidewater marsh \hfill tsunami inundation
+
+%\vspace{-2mm}
+%{\tiny {\color{gray} (Alonso, Santillana \& Dawson, 2008)}}
+
+\medskip
+\scriptsize and subglacial hydrology, supraglacial runoff, general surface hydrology, \dots
+
+
 \end{frame}
 
+
+\begin{frame}{Has anyone faced these problems before?}
+%images/
+%Albrechtetal2011.png
+%JaroschSchoofAnslow2013.png
+%jouvet-two-grids.png
+\end{frame}
 
 
 \section{What's achievable?}
