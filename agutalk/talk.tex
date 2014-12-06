@@ -53,7 +53,7 @@
 
 
 \title[Conservation in free-boundary layers] % (optional, use only with long paper titles)
-{Conservation \\ in free-boundary fluid layer models}
+{Conservation \\ in \\ free-boundary fluid layer models}
 
 
 \author{Ed Bueler}
@@ -190,7 +190,7 @@ $$h_t + \Div\bq = {\color{blue} f}$$
 %{\tiny {\color{gray} (Alonso, Santillana \& Dawson, 2008)}}
 
 \medskip
-\scriptsize and subglacial hydrology, supraglacial runoff, general surface hydrology, \dots
+\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
 
 
 \end{frame}
@@ -202,13 +202,13 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 
   \begin{itemize}
   \item semi-discretize in time
+  \item new equation is PDE in space (where $H_n>0$)
     \begin{itemize}
     \item[$\circ$] $H_n\ge 0$ is the thickness at $t_n$
-    \item[$\circ$] new equation is PDE in space (where $H_n>0$)
-    \item[$\circ$] I'll call it the ``single time-step problem''
+    \item[$\circ$] call it the ``single time-step problem''
+    \item[$\circ$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
+    \item[$\circ$] source $F_n$ depends on $H_n,H_{n-1},x$
     \end{itemize}
-  \item flux $\bQ_n$ depends on $H_n,\grad H_n,x$
-  \item source $F_n$ depends on $H_n,H_{n-1},x$
   \item<2-> details of $\bQ_n$, $F_n$ from time-step scheme
     \begin{itemize}
     \item<2->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
