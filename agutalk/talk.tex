@@ -154,23 +154,22 @@
 \begin{frame}{A fluid layer in a climate}
 
 \begin{center}
-\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-layer}}
-\only<2->{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}}
+\only<1-4>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-layer}}
+\only<5>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}}
 \end{center}
 
-\vspace{-9mm}
+\vspace{-7mm}
   \begin{itemize}
   \item mass conservation for a layer:
-     \only<1>{$$h_t + \Div\bq = f$$}
-     \only<2->{$$h_t + \Div\bq = {\color{blue} f}$$}
+     \only<1-4>{$$h_t + \Div\bq = f$$}
+     \only<5>{$$h_t + \Div\bq = {\color{blue} f}$$}
     \begin{itemize}
     \vspace{-4mm}
-    \item<1->[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
-    \item<2->[$\circ$] source ${\color{blue} f}$ is ``climate''
-    \item<2->[$\circ$] $f>0$ shown downward (accumulation)
+    \item<2->[$\circ$] $h$ is a thickness: $h\ge 0$
+    \item<3->[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
+    \item<4->[$\circ$] $\bq$ is flow (vertically-integrated)
+    \item<5>[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
     \end{itemize}
-  \item<3> $h$ is a thickness:
-      $$h\ge 0$$
   \end{itemize}
 \end{frame}
 
@@ -184,12 +183,12 @@
 \end{center}
 
 \vspace{-18mm}
-$$h_t + \Div\bq = {\color{blue} f}$$
+$$h_t + \Div\bq = f$$
 
   \begin{itemize}
   \item<1-> $h=0$ \emph{and what else} at free boundary?
      \begin{itemize}
-     \item<1->[$\circ$] shape of free boundary depends on flux $\bq$
+     \item<1->[$\circ$] shape at free boundary depends on both $\bq$ and $f$
      \end{itemize}
   \item<2-> $f<0$ not ``detected'' by model where $h=0$
      \begin{itemize}
@@ -259,8 +258,7 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
     \begin{itemize}
     \item[$\circ$] ad hoc schemes for finite volume/difference mass conservation
     \end{itemize}
-  \only<2>{\item I don't mind ``\texttt{if \dots then \dots}'' in my code
-  \item \emph{but I want to know what mathematical problem it reflects!}}
+  \only<2>{\bigskip \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!}
   \end{itemize}
 
 \only<1>{
@@ -294,7 +292,7 @@ on steep terrain
 
 \only<2>{\phantom{foo}
 
-\vspace{38mm}
+\vspace{36mm}
 \phantom{bar}}
 \end{frame}
 
@@ -311,7 +309,7 @@ on steep terrain
   \small
   \medskip
     \begin{itemize}
-    \item[$\circ$] derive this ``variational inequality'' from strong form and integration-by-parts
+    \item[$\circ$] derive this ``variational inequality'' from the strong form and integration-by-parts
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -319,7 +317,7 @@ on steep terrain
 
 \begin{frame}{Theorem: weak solves strong}
 
-\emph{Theorem}.  Assume $\bQ_n=0$ when $H_n=0$.  Assume $H_n \in \mathcal{K}$ solves weak single time-step problem.  Then
+\emph{Theorem}.  Assume $\bQ_n=0$ when $H_n=0$.  Assume $H_n \in \mathcal{K}$ solves weak single time-step problem and is smooth.  Then
   \begin{enumerate}
   \item ``interior condition'' on set where $H_n>0$:
     $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
@@ -328,20 +326,15 @@ on steep terrain
   \end{enumerate}
 
 \uncover<2>{
-part 2 is nontrivial, for Example:
+re part 2:
   \begin{itemize}
-  \item in 1D with $Q_n = \alpha x$ for $\alpha >0$ (i.e.~flux does not depend on thickness) and $F_n=0$ we can have $H_{n-1} > 0$ even though $H_n=0$
-  \item so assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
+  \item ``climate is negative enough to remove old thickness''
+  \item it is nontrivial: assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
     \begin{itemize}
     \item[$\circ$] \dots yes, we are talking about a \emph{layer}
     \end{itemize}
   \end{itemize}}
 \end{frame}
-
-
-% could put this idea in:
-%\begin{frame}{Decomposition into sets}
-%\end{frame}
 
 
 \section{Practical consequences:}
@@ -362,8 +355,11 @@ part 2 is nontrivial, for Example:
 	\end{align*}
 \end{itemize}
 
+\vspace{-5mm}
 \begin{center}
-FIXME: 1D FIGURE
+\includegraphics[width=0.9\textwidth,keepaspectratio=true]{cartoon-sets}
+
+FIXME: add sets underneath
 \end{center}
 \end{frame}
 
