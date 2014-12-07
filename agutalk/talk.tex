@@ -278,7 +278,22 @@ on steep terrain
 \end{frame}
 
 
-% could put this in
+\begin{frame}{theorem: weak solution solves strong form}
+
+\emph{theorem}.  assume $\bQ_n(\grad H_n,H_n,x)=0$ when $H_n=0$
+  \begin{enumerate}
+  \item ``interior condition'':  if $H_n \in \mathcal{K}$ solves weak single time-step problem then \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$ on set where $H_n>0$
+  \item on set where $H_n = 0$ it follows that $u_{n-1} + \Delta t\, F_n \le 0$ 
+  \end{enumerate}
+
+\medskip
+  \begin{itemize}
+  \item part 2 is nontrivial:  in 1D if $Q_n = \alpha x$ for $\alpha >0$ (i.e.~flux does not depend on thickness) then FIXME
+  \end{itemize}
+\end{frame}
+
+
+% could put this idea in:
 %\begin{frame}{Decomposition into sets}
 %\end{frame}
 
