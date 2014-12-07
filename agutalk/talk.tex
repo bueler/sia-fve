@@ -13,6 +13,38 @@
 \usepackage{times}
 \usepackage[T1]{fontenc}
 
+% see http://tex.stackexchange.com/questions/86188/labelling-with-arrows-in-an-automated-way
+\usepackage{tikz}
+\usepackage{amsmath}
+
+\newif\ifclipme\clipmetrue
+\tikzset{labelstyle/.style={LabelStyle/.append style={#1}},linestyle/.style={LineStyle/.append style={#1}}}
+\tikzset{LabelStyle/.initial={},LineStyle/.initial={}}
+
+\newcommand{\mathWithDescription}[4][]{{%
+    \tikzset{#1}%
+    \tikz[baseline]{
+        \node[draw=red,rounded corners,anchor=base] (m#4) {$\displaystyle#2$};
+        \ifclipme\begin{pgfinterruptboundingbox}\fi
+            \node[above of=m#4,font=\strut, LabelStyle] (l#4) {#3};
+            \draw[-,red, LineStyle] (l#4) to (m#4);
+        \ifclipme\end{pgfinterruptboundingbox}\fi
+    }%
+}}
+
+\newcommand{\mathWithDescriptionStarred}[3][]{{%
+    \clipmefalse%
+    \mathWithDescription[#1]{#2}{#3}{\themathLabelNode}%
+}}
+
+\newcounter{mathLabelNode}
+
+\newcommand{\mathLabelBox}[3][]{%
+   \stepcounter{mathLabelNode}%
+   \mathWithDescription[#1]{#2}{#3}{\themathLabelNode}%
+   \vphantom{\mathWithDescriptionStarred[#1]{#2}{#3}{\themathLabelNode}}%
+}
+
 % math macros
 \newcommand\bb{\mathbf{b}}
 \newcommand\bbf{\mathbf{f}}
@@ -53,7 +85,7 @@
 
 
 \title[Conservation in free-boundary layers] % (optional, use only with long paper titles)
-{Conservation \\ in \\ free-boundary fluid layer models}
+{Conservation \\ in \\ free-boundary fluid layer \\ models}
 
 
 \author{Ed Bueler}
@@ -115,7 +147,7 @@
 % - If you omit details that are vital to the proof/implementation,
 %   just say so once. Everybody will be happy with that.
 
-\section{The problem}
+\section{The problem I'm worried about:}
 
 \subsection{Free-boundary fluid layer well-posedness.}
 
@@ -134,7 +166,7 @@
     \begin{itemize}
     \vspace{-4mm}
     \item<1->[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
-    \item<2->[$\circ$] source ${\color{blue} f}$
+    \item<2->[$\circ$] source ${\color{blue} f}$ is ``climate''
     \item<2->[$\circ$] $f>0$ shown downward (accumulation)
     \end{itemize}
   \item<3> $h$ is a thickness:
@@ -143,29 +175,29 @@
 \end{frame}
 
 
-\begin{frame}{A fluid layer in a climate (\emph{difficulties})}
+\begin{frame}{A fluid layer in a climate: \emph{the troubles}}
 
 \begin{center}
-\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
-\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
-\only<3>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
+\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
+\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
+\only<3>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
 \end{center}
 
 \vspace{-18mm}
 $$h_t + \Div\bq = {\color{blue} f}$$
 
   \begin{itemize}
-  \item<1-> $f<0$ not ``detected'' by model where $h=0$
+  \item<1-> $h=0$ \emph{and what else} at free boundary?
      \begin{itemize}
-     \item<1->[$\circ$] how to do mass conservation accounting?
+     \item<1->[$\circ$] shape of free boundary depends on flux $\bq$
      \end{itemize}
-  \item<2-> $f\approx 0$ threshold behavior
+  \item<2-> $f<0$ not ``detected'' by model where $h=0$
      \begin{itemize}
-     \item<2->[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
+     \item<2->[$\circ$] how to do mass conservation accounting?
      \end{itemize}
-  \item<3> $h=0$ \emph{and what else} at free boundary?
+  \item<3> $f\approx 0$ threshold behavior
      \begin{itemize}
-     \item<3>[$\circ$] shape of free boundary depends on flux $\bq$
+     \item<3>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
      \end{itemize}
   \end{itemize}
 \end{frame}
@@ -201,19 +233,21 @@ $$h_t + \Div\bq = {\color{blue} f}$$
 $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
 
   \begin{itemize}
-  \item semi-discretize in time
-  \item new equation is PDE in space (where $H_n>0$)
+  \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
+  \item<2-> new equation is ``single time-step problem''
     \begin{itemize}
-    \item[$\circ$] $H_n\ge 0$ is the thickness at $t_n$
-    \item[$\circ$] call it the ``single time-step problem''
-    \item[$\circ$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
-    \item[$\circ$] source $F_n$ depends on $H_n,H_{n-1},x$
+    \item<2->[$\circ$] it's a PDE in space \alert{where $H_n>0$}
+    \item<2->[$\circ$] I'll assume:
+       \begin{itemize}
+       \item<2->[$\diamond$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
+       \item<2->[$\diamond$] source $F_n$ depends on $H_n,x$
+       \end{itemize}
     \end{itemize}
-  \item<2-> details of $\bQ_n$, $F_n$ from time-step scheme
+  \item<3-> details of $\bQ_n$, $F_n$ come from time-step scheme
     \begin{itemize}
-    \item<2->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
+    \item<3->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
     \end{itemize}
-  \item<3> low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
+  \item<4> low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
   \end{itemize}
 \end{frame}
 
@@ -265,31 +299,43 @@ on steep terrain
 \end{frame}
 
 
-\begin{frame}{Weak form includes $h\ge 0$ constraint}
+\begin{frame}{Weak form incorporates constraint}
 
   \begin{itemize}
-  \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is single time-step ``strong form''
-  \item closed convex set of admissible thicknesses:
+  \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is ``strong form''
+  \item define set of admissible thicknesses:
     $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\}$$
-  \item $H_n \in \mathcal{K}$ solves the ``weak single time-step problem'' if
-    $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge FIXME$$
+  \item<2> define: $H_n \in \mathcal{K}$ \emph{solves the weak single time-step problem} if
+    $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
   for all $v \in \mathcal{K}$
+  \small
+  \medskip
+    \begin{itemize}
+    \item[$\circ$] derive this ``variational inequality'' from strong form and integration-by-parts
+    \end{itemize}
   \end{itemize}
 \end{frame}
 
 
-\begin{frame}{theorem: weak solution solves strong form}
+\begin{frame}{Theorem: weak solves strong}
 
-\emph{theorem}.  assume $\bQ_n(\grad H_n,H_n,x)=0$ when $H_n=0$
+\emph{Theorem}.  Assume $\bQ_n=0$ when $H_n=0$.  Assume $H_n \in \mathcal{K}$ solves weak single time-step problem.  Then
   \begin{enumerate}
-  \item ``interior condition'':  if $H_n \in \mathcal{K}$ solves weak single time-step problem then \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$ on set where $H_n>0$
-  \item on set where $H_n = 0$ it follows that $u_{n-1} + \Delta t\, F_n \le 0$ 
+  \item ``interior condition'' on set where $H_n>0$:
+    $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
+  \item on set where $H_n = 0$:
+    $$H_{n-1} + \Delta t\, F_n \le 0$$
   \end{enumerate}
 
-\medskip
+\uncover<2>{
+part 2 is nontrivial, for Example:
   \begin{itemize}
-  \item part 2 is nontrivial:  in 1D if $Q_n = \alpha x$ for $\alpha >0$ (i.e.~flux does not depend on thickness) then FIXME
-  \end{itemize}
+  \item in 1D with $Q_n = \alpha x$ for $\alpha >0$ (i.e.~flux does not depend on thickness) and $F_n=0$ we can have $H_{n-1} > 0$ even though $H_n=0$
+  \item so assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
+    \begin{itemize}
+    \item[$\circ$] \dots yes, we are talking about a \emph{layer}
+    \end{itemize}
+  \end{itemize}}
 \end{frame}
 
 
@@ -298,9 +344,75 @@ on steep terrain
 %\end{frame}
 
 
-\section{What's achievable?}
+\section{Practical consequences:}
 
 \subsection{Limits to auditable discrete conservation.}
+
+\begin{frame}{Important sets for one time-step}
+\begin{itemize}
+\item $\Omega \subset \RR^d$ is the (fixed) computational domain
+    \begin{itemize}
+    \item[$\circ$] normally $d=2$
+    \end{itemize}
+\item suppose $H_n$ solves the weak single time-step problem
+\item define
+	\begin{align*}
+	\Omega_n &= \left\{x \in \Omega\,\Big|\,H_n(x) > 0\right\} \\
+	\Omega_n^r &= \left\{x \in \Omega\,\Big|\,H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{retreat set}}
+	\end{align*}
+\end{itemize}
+
+\begin{center}
+FIXME: 1D FIGURE
+\end{center}
+\end{frame}
+
+
+\begin{frame}{Discrete mass conservation}
+
+\begin{itemize}
+\item define:
+   $$M_n = \int_\Omega H_n(x)\,dx \qquad \text{\emph{mass at time} $t_n$}$$
+\item then \vspace{-5mm}
+	\begin{align*}
+	M_n - M_{n-1} &= \int_{\Omega_n} \mathLabelBox[
+    labelstyle={xshift=2cm},
+    linestyle={out=270,in=90, -latex}
+    ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
+	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
+	\end{align*}
+\item change in mass is from
+  \begin{itemize}
+  \item[$\circ$] climate over fluid-covered region: $C_n = \Delta t\, \int_{\Omega_n} F_n \,dx$
+  \item[$\circ$] another term:
+     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\alert{retreat loss}}$$
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Discrete conservation: \emph{main claim}}
+
+\begin{itemize}
+\item \alert{the retreat loss $R_n$ is not balanced by the climate}
+  \begin{itemize}
+  \item[$\circ$] yes, $R_n$ \emph{is} ``caused'' by the climate, but we don't know what computable integral it balances
+  \end{itemize}
+
+\medskip
+\item thus a numerical model must track \alert{three} time series to ``balance the books'':
+  \begin{itemize}
+  \item[$\circ$] mass at time $t_n$: $M_n = \int_\Omega H_n(x)\,dx$
+  \item[$\circ$] climate over fluid-covered region: $C_n = \Delta t\, \int_{\Omega_n} F_n \,dx$
+  \item[$\circ$] retreat loss: $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
+  \end{itemize}
+\item so that
+  $$M_n = M_{n-1} + C_n - R_n$$
+\end{itemize}
+\end{frame}
+
+
+\subsection{Numerical variational inequality solution needed.}
 
 \begin{frame}{FIXME}
 \end{frame}
