@@ -269,10 +269,11 @@ on steep terrain
 
   \begin{itemize}
   \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is single time-step ``strong form''
-  \item closed convex set of admissible thicknesses $H_n$:
-    $$FIXME define \mathcal{K}$$
-  \item
-    $$FIXME state VI$$
+  \item closed convex set of admissible thicknesses:
+    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\}$$
+  \item $H_n \in \mathcal{K}$ solves the ``weak single time-step problem'' if
+    $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge FIXME$$
+  for all $v \in \mathcal{K}$
   \end{itemize}
 \end{frame}
 
