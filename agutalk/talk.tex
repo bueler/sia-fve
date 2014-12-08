@@ -149,7 +149,7 @@
 
 \section{The problem I'm worried about:}
 
-\subsection{Free-boundary fluid layer well-posedness.}
+\subsection{Time-stepping free-boundary fluid layer models.}
 
 \begin{frame}{A fluid layer in a climate}
 
@@ -233,9 +233,9 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 
   \begin{itemize}
   \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
-  \item<2-> new equation is ``single time-step problem''
+  \item<2-> the new equation is ``single time-step problem''
     \begin{itemize}
-    \item<2->[$\circ$] it's a PDE in space \alert{where $H_n>0$}
+    \item<2->[$\circ$] a PDE in space \alert{where $H_n>0$}
     \item<2->[$\circ$] I'll assume:
        \begin{itemize}
        \item<2->[$\diamond$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
@@ -372,7 +372,7 @@ re part 2:
     ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
 	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
 	\end{align*}
-\item change in mass is from
+\item thus change in mass is from
   \begin{itemize}
   \item[$\circ$] climate over fluid-covered region: $C_n = \Delta t\, \int_{\Omega_n} F_n \,dx$
   \item[$\circ$] another term:
@@ -408,18 +408,29 @@ re part 2:
 
 \begin{frame}{Well-posedness of the weak problem}
 \begin{itemize}
-\item have been agnostic on form of $\bQ_n$
+\item I have been agnostic on form of $\bQ_n$
   \begin{itemize}
   \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' for layer
   \item[$\circ$] \dots which excludes $\bQ_n(x)$ independent of thickness
   \end{itemize}
-\item<2> form of $\bQ_n$ matters for well-posedness; cases:
-$$\begin{matrix}
-  \bQ_n = X(x) H_n & \text{\emph{transported layer}} \\
-  \bQ_n = -k \grad H_n & \text{\emph{linear diffusion}} \\
-  \bQ_n = - \grad(H_n^\gamma) \text{ for } \gamma > 1 & \text{\emph{porous medium}} \\
-  \bQ_n = - H_n^\alpha |\grad (H_n+b)|^\beta \grad (H_n+b) & \text{\emph{shallow ice approximation; diffusive shallow water approximation}}
-\end{matrix}$$
+\item<2-> but form of $\bQ_n$ matters for well-posedness!
+\item<3> cases to consider:\small
+$$\begin{array}{ll}
+  \bQ_n = \bX(x) H_n & \text{\phantom{\Big|}\emph{transported layer}} \\
+  \bQ_n = -k \grad H_n & \text{\phantom{\bigg|}\emph{linear diffusion}} \\
+  \hspace{-0.5mm}\begin{aligned}
+  \bQ_n &= - \grad(H_n^\gamma) \\
+        &= - \gamma H_n^{\gamma-1} \grad H_n
+  \end{aligned} & \text{\phantom{\Big|}\emph{porous medium}}\phantom{\Big|} \\
+  \bQ_n = - H_n^\alpha |\grad (H_n+b)|^\beta \grad (H_n+b)\phantom{\bigg|} &
+        \hspace{-0.75mm}\begin{array}{ll}
+        \text{\emph{shallow ice approx.}} \\
+        \text{\& \emph{diffusive shallow water}}
+        \end{array} \\
+  \bQ_n = \text{\emph{worse (non-local)}}\phantom{\bigg|} & \hspace{-0.75mm}\begin{array}{ll}
+        \text{\emph{ice shelf flow} \& \emph{sea ice} \& \dots}
+        \end{array}
+\end{array}$$
 \end{itemize}
 \end{frame}
 
@@ -429,30 +440,28 @@ $$\begin{matrix}
 
 \section*{Summary}
 
-\begin{frame}{Summary}
+\begin{frame}{Wrapping up}
 
-  % Keep the summary *very short*.
   \begin{itemize}
-  \item
-    The \alert{first main message} of your talk in one or two lines.
-  \item
-    The \alert{second main message} of your talk in one or two lines.
-  \item
-    Perhaps a \alert{third message}, but not more than that.
-  \end{itemize}
-  
-  % The following outlook is optional.
-  \vskip0pt plus.5fill
-  \begin{itemize}
-  \item
-    Outlook
+  \item layer flow problems:
     \begin{itemize}
-    \item
-      Something you haven't solved.
-    \item
-      Something else you haven't solved.
+    \item[$\circ$]  e.g.~glaciers, sea ice, shallow water, \dots
+    \item[$\circ$]  conservation modeled by eqn $h_t + \Div\bq = f$ for thickness $h$
+    \item[$\circ$]  include constraint $h \ge 0$
+    \item[$\circ$]  numerical models discretize in time
+    \end{itemize}
+  \item \emph{suggestion}:  single time-step problem can be posed weakly as variational inequality, incorporating $h\ge 0$
+  \item a limitation of any approach is that exact discrete conservation
+    \begin{itemize}
+    \item[$\circ$] requires tracking retreat loss or equivalent, but
+    \item[$\circ$] \emph{isn't really possible}
     \end{itemize}
   \end{itemize}
+
+%  \begin{itemize}
+%  \item to do: FIXME better understanding of well-posedness
+%  \item to do: FIXME better numerical schemes
+%  \end{itemize}
 \end{frame}
 
 
