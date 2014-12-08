@@ -91,19 +91,29 @@ mysave('cartoon-sensitive-three.pdf')
 
 figure(figsize=(10,4))
 x, s, b = genbasicfig(showqh=False)
+# compute and plot H_{n-1}
 h0 = 2.8
 L = 3.5
 h = maximum(0.0, h0*(-0.2 + sqrt(maximum(0.0,1.0 - (x-4.2)**2/L**2))) )
 plot(x[h>0], b[h>0] + h[h>0], ':k', lw=3.5)
+# arrows with H_n, H_{n-1} labels
 arrow(x[200]-0.4,b[200] + h[200]+0.4,0.39,-0.39,
       lw=1.5,head_width=0.1,color='k',length_includes_head=True)
 font = font_manager.FontProperties(family='sans serif', style='italic', size=24)
 t1 = text(x[200]-0.7,b[200] + h[200]+0.55,r'$H_{n-1}$')
 t1.set_font_properties(font)
-arrow(x[700]+0.2,s[700]+0.6,-0.19,-0.58,
+arrow(x[750]+0.4,s[750]+0.4,-0.39,-0.38,
       lw=1.5,head_width=0.1,color='k',length_includes_head=True)
-t2 = text(x[700]+0.0,s[700]+0.7,r'$H_n$')
+t2 = text(x[750]+0.4,s[750]+0.5,r'$H_n$')
 t2.set_font_properties(font)
+# under bars for sets
+plot([x[80],x[195]],[-0.7,-0.7],'k',lw=4.0)
+t3 = text(x[120],-1.5,r'$\Omega_n^r$')
+t3.set_font_properties(font)
+plot([x[215],x[795]],[-0.7,-0.7],'k',lw=4.0)
+t4 = text(x[500],-1.5,r'$\Omega_n$')
+t4.set_font_properties(font)
+axis([0.0,10.0,-1.0,4.5])
 hold(False)
 mysave('cartoon-sets.pdf')
 

@@ -292,7 +292,7 @@ on steep terrain
 
 \only<2>{\phantom{foo}
 
-\vspace{36mm}
+\vspace{33.8mm}
 \phantom{bar}}
 \end{frame}
 
@@ -341,12 +341,9 @@ re part 2:
 
 \subsection{Limits to auditable discrete conservation.}
 
-\begin{frame}{Important sets for one time-step}
+\begin{frame}{Sets for single time-step problem}
 \begin{itemize}
-\item $\Omega \subset \RR^d$ is the (fixed) computational domain
-    \begin{itemize}
-    \item[$\circ$] normally $d=2$
-    \end{itemize}
+\item $\Omega$ is the (fixed) computational domain
 \item suppose $H_n$ solves the weak single time-step problem
 \item define
 	\begin{align*}
@@ -355,11 +352,9 @@ re part 2:
 	\end{align*}
 \end{itemize}
 
-\vspace{-5mm}
+\vspace{-2mm}
 \begin{center}
-\includegraphics[width=0.9\textwidth,keepaspectratio=true]{cartoon-sets}
-
-FIXME: add sets underneath
+\includegraphics[width=1.0\textwidth,keepaspectratio=true]{cartoon-sets}
 \end{center}
 \end{frame}
 
@@ -381,7 +376,7 @@ FIXME: add sets underneath
   \begin{itemize}
   \item[$\circ$] climate over fluid-covered region: $C_n = \Delta t\, \int_{\Omega_n} F_n \,dx$
   \item[$\circ$] another term:
-     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\alert{retreat loss}}$$
+     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\emph{\alert{retreat loss} during step} $n$}$$
   \end{itemize}
 \end{itemize}
 \end{frame}
@@ -399,7 +394,8 @@ FIXME: add sets underneath
 \item thus a numerical model must track \alert{three} time series to ``balance the books'':
   \begin{itemize}
   \item[$\circ$] mass at time $t_n$: $M_n = \int_\Omega H_n(x)\,dx$
-  \item[$\circ$] climate over fluid-covered region: $C_n = \Delta t\, \int_{\Omega_n} F_n \,dx$
+  \item[$\circ$] climate over fluid-covered region:
+     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx = \int_{t_{n-1}}^{t_n} \int_{\Omega_n} F_n \,dx\,dt$$
   \item[$\circ$] retreat loss: $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
   \end{itemize}
 \item so that

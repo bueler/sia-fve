@@ -2,9 +2,8 @@ all: talk.pdf
 
 figures = cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf
 
-cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf:
+cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf: figs1d.py
 	python figs1d.py
-	#for X in layer wclimate sensitive-one; do pdfcrop cartoon-$$X.pdf cartoon-$$X.pdf; done
 	pdfcrop cartoon-sets.pdf cartoon-sets.pdf
 
 talk.aux: talk.tex $(figures)
