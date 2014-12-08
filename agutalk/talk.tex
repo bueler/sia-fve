@@ -254,9 +254,9 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \begin{frame}{Anyone faced these problems before?}
 
   \begin{itemize}
-  \item yes, of course!  for example:
+  \item yes, of course!
     \begin{itemize}
-    \item[$\circ$] ad hoc schemes for finite volume/difference mass conservation
+    \item[$\circ$] generic result: ad hoc schemes for finite volume/difference mass conservation
     \end{itemize}
   \only<2>{\bigskip \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!}
   \end{itemize}
@@ -309,7 +309,12 @@ on steep terrain
   \small
   \medskip
     \begin{itemize}
-    \item[$\circ$] derive this ``variational inequality'' from the strong form and integration-by-parts
+    \item[$\circ$] derive this ``variational inequality'' from:
+      \begin{itemize}
+      \item[$\diamond$] the strong form \emph{and}
+      \item[$\diamond$] integration-by-parts \emph{and}
+      \item[$\diamond$] arguments about $H_n=0$ areas
+      \end{itemize}
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -329,7 +334,7 @@ on steep terrain
 re part 2:
   \begin{itemize}
   \item ``climate is negative enough to remove old thickness''
-  \item it is nontrivial: assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
+  \item assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
     \begin{itemize}
     \item[$\circ$] \dots yes, we are talking about a \emph{layer}
     \end{itemize}
@@ -347,8 +352,8 @@ re part 2:
 \item suppose $H_n$ solves the weak single time-step problem
 \item define
 	\begin{align*}
-	\Omega_n &= \left\{x \in \Omega\,\Big|\,H_n(x) > 0\right\} \\
-	\Omega_n^r &= \left\{x \in \Omega\,\Big|\,H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{retreat set}}
+	\Omega_n &= \operatorname{supp} H_n = \left\{x \in \Omega\,\Big|\,H_n(x) > 0\right\} \\
+	\Omega_n^r &= \left\{x \in \Omega\,\Big|\,H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
 	\end{align*}
 \end{itemize}
 
@@ -387,7 +392,7 @@ re part 2:
 \begin{itemize}
 \item \alert{the retreat loss $R_n$ is not balanced by the climate}
   \begin{itemize}
-  \item[$\circ$] yes, $R_n$ \emph{is} ``caused'' by the climate, but we don't know what computable integral it balances
+  \item[$\circ$] yes, $R_n$ is caused by the climate, but we don't know what \emph{computable integral} it balances
   \end{itemize}
 
 \medskip
@@ -404,24 +409,63 @@ re part 2:
 \end{frame}
 
 
-\subsection{Numerical variational inequality solution needed.}
+\subsection{Numerical weak free boundary solution needed.}
+
+\begin{frame}{Driven by practical modeling}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\small
+\item for me: ice sheet modeling (e.g.~Greenland at right)
+\item icy region fractal and disconnected (blue + orange)
+\item currently in PISM$^*$:
+  \begin{itemize}
+  \item[$\circ$] explicit time-stepping
+  \item[$\circ$] \dots but free boundary by projection
+  \end{itemize}
+\item want for PISM:
+  \begin{itemize}
+  \item[$\circ$] implicit time steps \emph{with free boundary}
+  \item[$\circ$] better conservation accounting to user
+  \end{itemize}
+\end{itemize}
+
+\vspace{10mm}
+\quad {\tiny $^*$= Parallel Ice Sheet Model, \texttt{pism-docs.org}}
+\end{column}
+\begin{column}{0.5\textwidth}
+\begin{center}
+\only<1>{\includegraphics[width=0.85\textwidth,keepaspectratio=true]{ice-mask-900m}}
+\only<2>{\includegraphics[width=0.87\textwidth,keepaspectratio=true]{jako-crop-mask-900m}
+
+\scriptsize PISM whole Greenland at 900m
+
+see Aschwanden C51A-0245 on 12/19}
+\end{center}
+\end{column}
+\end{columns}
+\end{frame}
+
 
 \begin{frame}{Well-posedness of the weak problem}
 \begin{itemize}
 \item I have been agnostic on form of $\bQ_n$
   \begin{itemize}
-  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' for layer
+  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' needed for layer
   \item[$\circ$] \dots which excludes $\bQ_n(x)$ independent of thickness
   \end{itemize}
-\item<2-> but form of $\bQ_n$ matters for well-posedness!
-\item<3> cases to consider:\small
+\item<2-> but form of $\bQ_n$ matters
+  \begin{itemize}
+  \item[$\circ$] for well-posedness
+  \item[$\circ$] for numerical solutions
+  \end{itemize}
+\item<3> cases to study:\small
 $$\begin{array}{ll}
   \bQ_n = \bX(x) H_n & \text{\phantom{\Big|}\emph{transported layer}} \\
   \bQ_n = -k \grad H_n & \text{\phantom{\bigg|}\emph{linear diffusion}} \\
-  \hspace{-0.5mm}\begin{aligned}
-  \bQ_n &= - \grad(H_n^\gamma) \\
-        &= - \gamma H_n^{\gamma-1} \grad H_n
-  \end{aligned} & \text{\phantom{\Big|}\emph{porous medium}}\phantom{\Big|} \\
+  \bQ_n = - \grad(H_n^\gamma) = - \gamma H_n^{\gamma-1} \grad H_n
+     & \text{\phantom{\Big|}\emph{porous medium}}\phantom{\bigg|} \\
   \bQ_n = - H_n^\alpha |\grad (H_n+b)|^\beta \grad (H_n+b)\phantom{\bigg|} &
         \hspace{-0.75mm}\begin{array}{ll}
         \text{\emph{shallow ice approx.}} \\
@@ -440,21 +484,26 @@ $$\begin{array}{ll}
 
 \section*{Summary}
 
-\begin{frame}{Wrapping up}
+\begin{frame}{Wrap up slide}
 
   \begin{itemize}
   \item layer flow problems:
     \begin{itemize}
     \item[$\circ$]  e.g.~glaciers, sea ice, shallow water, \dots
-    \item[$\circ$]  conservation modeled by eqn $h_t + \Div\bq = f$ for thickness $h$
-    \item[$\circ$]  include constraint $h \ge 0$
+    \item[$\circ$]  conservation is modeled by eqn $h_t + \Div\bq = f$
+    \item[$\circ$]  include nonnegativity constraint on thickness
     \item[$\circ$]  numerical models discretize in time
     \end{itemize}
-  \item \emph{suggestion}:  single time-step problem can be posed weakly as variational inequality, incorporating $h\ge 0$
-  \item a limitation of any approach is that exact discrete conservation
+  \item<2-> \emph{suggestion}:  single time-step problem can be
     \begin{itemize}
-    \item[$\circ$] requires tracking retreat loss or equivalent, but
-    \item[$\circ$] \emph{isn't really possible}
+    \item[$\circ$]  posed weakly as variational inequality,
+    \item[$\circ$]  incorporating $h\ge 0$
+    \end{itemize}
+  \item<3> \emph{claim}:  for \emph{any} numerical approach, exact discrete conservation
+    \begin{itemize}
+    \item[$\circ$]  requires tracking retreat loss or equivalent, but
+    \item[$\circ$]  \emph{isn't really possible},
+    \item[$\circ$]  except in refinement limit
     \end{itemize}
   \end{itemize}
 
