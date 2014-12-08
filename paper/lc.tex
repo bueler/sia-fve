@@ -219,9 +219,11 @@ Also, if $v(x)>0$ on an open subset $S\subset \Omega$ then we assume
 \frac{\partial}{\partial x_i} \bQ_n(\grad v,v,x) \in L^q(S). \label{eq:Qissmooth}
 \end{equation}
 
-For fixed $\bX\in\RR^d$ and $x\in \Omega$, we assume $\bQ_n(\bX,v,x)$ is continuous in $v\in\RR$, and we assume
+For fixed $\bX\in\RR^d$ and $x\in \Omega$, we assume $\bQ_n(\bX,v,x)$ is continuous in $v\in\RR$.  For $v \in W^{1,p}(\Omega)$, define
+    $$E_v = \left\{x\in\Omega \,\big|\, v(x) = 0\right\}.$$
+Note that $\grad v = 0$ a.e.~on $E_v$ \cite[lemma A.4 of chapter II]{KinderlehrerStampacchia}.  We assume that
 \begin{equation}
-\bQ_n(\bX,0,x)=0. \label{eq:Qiszero}
+\bQ_n(\grad v,v,x)=0 \quad \text{a.e.~on } E_v. \label{eq:Qiszero}
 \end{equation}
 
 Thus we make two kinds of assumptions about the discrete-time flux $\bQ_n(\grad u,u,x)$: \begin{itemize}
@@ -229,6 +231,8 @@ Thus we make two kinds of assumptions about the discrete-time flux $\bQ_n(\grad 
 \item the flux is zero if the thickness is zero (equation \eqref{eq:Qiszero}).
 \end{itemize}
 The latter assumption is intimately-related to the meaning of $\bQ_n$ in \eqref{eq:semimassconserve}, and to $\bq$ in \eqref{eq:massconserve} as well, namely that this flux transports a layer with nonnegative thickness, and if the thickness is zero then there is no transport.
+
+FIXME: We assume $F_n(v,x)$ is minimally regular, specifically that it is continuous in its first argument and that for fixed $v\in W^{1,p}(\Omega)$, $\phi(x) := F_n(v(x),x)$ is in $L^q(\Omega)$.  Note we do \emph{not} require that it be strictly increasing in $v$, which would be natural if we sought monotonicity in the $\Delta t \to \infty$ (i.e.~steady state) limit \cite{JouvetBueler2012}; see section \ref{sec:mono}.
 
 FIXME: Assume the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$.  We can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
 
@@ -289,7 +293,8 @@ We can now precisely define our weak problem.
 
 It is easy to see that $\mathcal{K}$ is a closed, convex subset of $W^{1,p}(\Omega)$.  
 
-\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$.  Assume that the flux function $\bQ_n(\bX,v,x)$ satisfies \eqref{eq:QisLq} and \eqref{eq:Qissmooth}.  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if it solves \eqref{eq:morallytheVI}, which we prefer to write as
+\medskip
+\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Assume that the flux function $\bQ_n(\bX,v,x)$ satisfies \eqref{eq:QisLq} and \eqref{eq:Qissmooth}.  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if it solves \eqref{eq:morallytheVI}, which we prefer to write as
 \begin{align}
 &\int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n)  \label{eq:theVI} \\
   &\qquad\qquad \ge \int_{\Omega} \left(u_{n-1} + \Delta t\, F_n\right) (v-u_n) - \Delta t \int_{\partial \Omega} G_n (v-u_n),  \notag
@@ -335,6 +340,38 @@ FIXME:  We will show that in some cases this is well-posed
 FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 From now on we use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.
+
+
+\section{Monotonicity, uniqueness, and $L^1$-contractivity} \label{sec:mono}
+
+We continue in this section to allow the flux function $\bQ_n$ to be quite arbitrary, in solving our weak single time-step problem \eqref{eq:theVI}, except that the flux function should satisfy the conditions in section \ref{sec:fluxassumptions}.
+
+Let $\mathcal{X} = W^{1,p}(\Omega)$ for $p > 1$, which we observe is a reflexive Banach space, and denote its dual space by $\mathcal{X}'$.  Denote the pairing of $\mathcal{X}'$ and $\mathcal{X}$ by $\ip{\cdot}{\cdot}$.  Noting that $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$, one defines a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} if
+    $$\ip{A(u) - A(v)}{u-v} \ge 0$$
+for all $u,v\in\mathcal{K}$ \cite[chapter III]{KinderlehrerStampacchia}.  The mapping is \emph{strictly monotone} if also $\ip{A(u) - A(v)}{u-v} = 0$ implies $u=v$.
+
+FIXME: Take $G_n=0$ and $F_n=F_n(x)\in L^q(\Omega)$ (i.e.~independent of $v$) for convenience in this section.
+
+\medskip
+\newcommand{\An}{A_{n}}
+\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Given flux function $\bQ_n(\bX,v,x)$ satisfying the assumptions of section \ref{sec:fluxassumptions}, define $\An:\mathcal{K} \to \mathcal{X}'$ by
+    $$\ip{\An(u)}{\phi} = \int_{\Omega} \left(u - u_{n-1} + \Delta t\, F_n\right) \phi - \Delta t\, \bQ_n(\grad u,u,x) \cdot \grad\phi$$
+for all $u \in \mathcal{K}$ and $\phi\in\mathcal{X}$.
+\end{definition}
+
+Note that $\An$ depends on $\Delta t$ in particular.  We will denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$ by $\ip{\cdot}{\cdot}$.  Note that $W^{1,p}(\Omega) \subset L^2(\Omega)$ by Sobolev's lemma if $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, which occurs if either $p>d$ or $d\le 2$.  The next Lemma is an easy calculation.
+
+\begin{lemma}  (i) The operator $\An$ is monotone if and only if
+    $$\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le \|u-v\|_{L^2(\Omega)}^2$$
+for all $u,v \in \mathcal{K}$.
+
+(ii) If (i) holds then the operator $\An$ is strictly monotone if also
+    $$\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0$$
+for all $u,v \in \mathcal{K}$.
+\end{lemma}
+
+
+
 
 
 \section{Examples, non-examples, and well-posedness} \label{sec:examples}
