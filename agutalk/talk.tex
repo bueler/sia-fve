@@ -367,7 +367,7 @@ re part 2:
 \item then \vspace{-5mm}
 	\begin{align*}
 	M_n - M_{n-1} &= \int_{\Omega_n} \mathLabelBox[
-    labelstyle={xshift=2cm},
+    labelstyle={xshift=1cm,yshift=2mm},
     linestyle={out=270,in=90, -latex}
     ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
 	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
@@ -395,7 +395,7 @@ re part 2:
   \begin{itemize}
   \item[$\circ$] mass at time $t_n$: $M_n = \int_\Omega H_n(x)\,dx$
   \item[$\circ$] climate over fluid-covered region:
-     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx = \int_{t_{n-1}}^{t_n} \int_{\Omega_n} F_n \,dx\,dt$$
+     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
   \item[$\circ$] retreat loss: $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
   \end{itemize}
 \item so that
@@ -406,7 +406,24 @@ re part 2:
 
 \subsection{Numerical variational inequality solution needed.}
 
-\begin{frame}{FIXME}
+\begin{frame}{Well-posedness of the weak problem}
+\begin{itemize}
+\item have been agnostic on form of $\bQ_n$
+  \begin{itemize}
+  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' for layer
+  \item[$\circ$] \dots which excludes $\bQ_n(x)$ independent of thickness
+  \end{itemize}
+\item<2> form of $\bQ_n$ matters for well-posedness; cases:
+$$\begin{matrix}
+  \bQ_n = X(x) H_n & \text{\emph{transported layer}} \\
+  \bQ_n = -k \grad H_n & \text{\emph{linear diffusion}} \\
+  \bQ_n = - \grad(H_n^\gamma) \text{ for } \gamma > 1 & \text{\emph{porous medium}} \\
+  \bQ_n = - H_n^\alpha |\grad (H_n+b)|^\beta \grad (H_n+b) & \text{\emph{shallow ice approximation; diffusive shallow water approximation}}
+\end{matrix}$$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Numerical solution of the weak problem}
 \end{frame}
 
 
