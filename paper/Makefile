@@ -2,7 +2,7 @@ all: lc.pdf
 
 figures = domains-fig.pdf
 
-domains-fig.pdf:
+domains-fig.pdf: domainsfigure.py
 	python domainsfigure.py
 	pdfcrop domains-fig.pdf domains-fig.pdf
 
