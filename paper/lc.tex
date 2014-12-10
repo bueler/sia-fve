@@ -107,24 +107,20 @@ We believe that the avoidance of, or at least clearer understanding or, essentia
 
 \section{Continuous-time strong formulation}  \label{sec:strongform}
 
-Let $\Omega \subset \RR^d$ be a bounded open region with regular (e.g.~$C^1$) boundary.  The time-dependent model we consider is usually stated in strong form as follows.  It combines a conservation equation, a flux (Neumann) boundary condition, and a constraint:
+Let $\Omega \subset \RR^d$ be a bounded open region with regular (e.g.~$C^1$) boundary.  The time-dependent model we consider is usually stated in strong form, combining a conservation equation and a constraint:
 \begin{align}
 u_t + \Div \bq &= f(u,x,t) &&\text{in } \Omega, \text{ where } u > 0 \label{eq:massconserve} \\
-\bq \cdot \bn &= g(u,x,t) &&\text{on } \partial\Omega, \text{ where } u > 0 \label{eq:fixedneumann} \\
 u &\ge 0 &&\text{in } \bar\Omega. \label{eq:constraint}
 \end{align}
-We call the unknown $u$ the \emph{layer thickness} $u(x,t)$, and it is defined for $x\in \Omega$ and $t>0$.  The form of the flux $\bq$, that is, how it depends on the unknown $u$ or its gradient $\grad u$, is general for now,
+We call the unknown $u$ the \emph{layer thickness} $u(x,t)$.  It is defined for all $x\in \Omega$ and $t>0$.  The form of the flux $\bq$, that is, how it depends on the unknown $u$ or its gradient $\grad u$, is general for now,
 \begin{equation}
 \bq = \bq(\grad u,u,x,t), \label{eq:fluxdepends}
 \end{equation}
 but with more detail below in section \ref{sec:fluxassumptions}.
 
-Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  Consider the time-dependent support of $u$, namely
-   $$\supp u(t) = \{x \big| u(x,t) > 0\} \subset \Omega.$$
-We say that the layer exists for $x \in \supp u(t)$, i.e.~where $u(x,t)>0$, and that it is absent otherwise.  Of course $u(x,t)=0$ is defined for $x \notin \supp u (t)$.  Finding the evolution of the support, and of its free boundary, is essential to problems of this type.
+Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  We say that the layer exists where $u(x,t)>0$, and that it is absent otherwise ($u(x,t)=0$).  Finding the evolution of the support of $u$, and of its free boundary, is essential to problems of this type.
 
-Conservation equation \eqref{eq:massconserve} only applies in this strong form where the layer exists.  Similarly the boundary condition \eqref{eq:fixedneumann} only make sense in locations where $u>0$, at least in the generic case $g\ne 0$.  Well-posedness of the problem \eqref{eq:massconserve}--\eqref{eq:constraint} in fact requires a weak formulation, in which these caveats are replaced by a precise specification of admissible functions, as we do in sections \ref{sec:fluxassumptions} and \ref{sec:weakform}.
-
+Conservation equation \eqref{eq:massconserve} only applies in this strong form where the layer exists.  Well-posedness of problem \eqref{eq:massconserve}--\eqref{eq:constraint} requires a precise specification of admissible functions and a weak formulation.  We do so in sections \ref{sec:fluxassumptions}--\ref{sec:mono}.
 
 \section{Discrete-time strong formulation and associated set decomposition}  \label{sec:discreteform}
 
@@ -135,16 +131,15 @@ Though the weak form of this problem, stated in section \ref{sec:weakform} below
 Corresponding to \eqref{eq:massconserve}--\eqref{eq:constraint}, the single-time-step strong form is
 \begin{align}
 \frac{u_n - u_{n-1}}{\Delta t} + \Div \bQ_n(\grad u_n,u_n,x) &= F_n(u_n,x) &&\text{in } \Omega, \text{ where } u_n > 0 \label{eq:semimassconserve} \\
-\bQ_n(\grad u_n,u_n,x) \cdot \bn &= G_n(u_n,x) &&\text{on } \partial\Omega, \text{ where } u_n > 0 \label{eq:semifixedneumann} \\
 u_n &\ge 0 &&\text{in } \overline{\Omega} \label{eq:semiconstraint}
 \end{align}
 In equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, the functions
 \begin{equation}
-\bQ_n(\bX,v,x), \quad F_n(v,x), \quad G_n(v,x)\label{eq:functionalforms}
+\bQ_n(\bX,v,x), \quad F_n(v,x) \label{eq:functionalforms}
 \end{equation}
 come from the semi-discretization procedure, where $\bX\in\RR^d$ is any vector, $v\in\RR$, and $x\in \Omega$.  Note that we assume $\bQ_n(\bX,v,x)$ is defined for any $v\in\RR$, not just $v\ge 0$, and for all $x\in\Omega$, not just where $v(x)>0$.
 
-For example, namely in the simplest implicit case, a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n = \bq(\bX,v,x,t_n)$, $F_n = f(v,x,t_n)$, and $G_n = g(v,x,t_n)$.
+For example, namely in the simplest implicit case, a backward Euler scheme applied to \eqref{eq:massconserve}--\eqref{eq:constraint}, we have $\bQ_n = \bq(\bX,v,x,t_n)$ and $F_n = f(v,x,t_n)$.
 
 However, according to the particular discretization procedure, the source function $F_n$ ``absorbs'' all the terms, whether evaluated at $t_{n-1}$ or $t_n$, which do not involve the flux $\bq$ evaluated at time $t_n$.  For example, and including the backward Euler case above, consider a $\theta$-method discretization of \eqref{eq:massconserve} with $0\le \theta \le 1$.  The result is
 \begin{align}
@@ -179,36 +174,28 @@ Here the superscript ``$r$'' stands for ``retreat,''\footnote{At this point a sy
 \begin{center}
 \includegraphics[width=2.0in,keepaspectratio=true]{domains-fig}
 \end{center}
-\caption{We decompose $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$, where $\Omega_n$ the support of $u_n$, $\Omega_n^r$ is the retreat set, and $\Omega_n^0$ is the set on which both $u_{n-1}$ and $u_n$ are zero.  The boundary of $\Omega_n$ is decomposed into two pieces, $\partial\Omega_n = \Gamma_n^N \cup \Gamma_n^0$.}
+\caption{We decompose $\Omega = \Omega_n \cup \Omega_n^r \cup \Omega_n^0$, where $\Omega_n$ the support of $u_n$, $\Omega_n^r$ is the retreat set, and $\Omega_n^0$ is the set on which both $u_{n-1}$ and $u_n$ are zero.}
 \label{fig:domains}
 \end{figure}
 
-A decomposition of the boundary of the support of $u_n$, i.e.~of the subregion $\Omega_n$, is also shown in Figure \ref{fig:domains}.  The boundary of $\Omega_n$ decomposes disjointly into the part where a fixed (Neumann) condition applies, and a part which is the free boundary.  Let $\Gamma_n^0 = \Omega \cap \partial \Omega_n$ and $\Gamma_n^N = \partial \Omega \cap \partial \Omega_n$, where superscript ``$N$'' stands for ``Neumann.''  Then
-\begin{align*}
-\partial\Omega_n &= \Gamma_n^N \cup \Gamma_n^0
-\end{align*}
-Along $\Gamma_n^N$ the flux condition \eqref{eq:semifixedneumann} applies.
-
-At this point the strong form of the single time-step problem is not complete.  In particular, though we have specified the PDE \eqref{eq:semimassconserve} which applies on the set where its solution $u_n$ is positive (i.e.~on $\Omega_n$), in this (inadequate) strong formulation we can also specify behavior on the complement where $u_n=0$ (i.e.~on $\Omega_n^r \cup \Omega_n^0$).  This ``behavior'' is in the form of inequalities.
+The strong form of the single time-step problem is not adequate.  In particular, though we have specified the PDE \eqref{eq:semimassconserve} which applies on the set where its solution $u_n$ is positive (i.e.~on $\Omega_n$), in this strong formulation we should also specify behavior on the complement where $u_n=0$ (i.e.~on $\Omega_n^r \cup \Omega_n^0$), in the form of inequalities.  However, these specifications are in terms of the set on which the solution is positive, so we have ``posed'' a problem in terms of its solution.  For now we continue to flesh-out the strong formulation only so as to help formulate a weak problem which makes no reference to solution-dependent information.
 
 Assume $F_n(v,x)$ is continuous, and assume $u_n(x)$ is continuous and solves the strong form.  Rewrite \eqref{eq:semimassconserve} as
     $$u_n = u_{n-1} + \Delta t\, F_n - \Delta t\, \Div \bQ_n.$$
-If $u_n=0$ then the terms on the right must, apparently, either sum to zero or be negative, as otherwise they should be balanced by a positive value for $u_n$; the alternative $u_n<0$ is not allowed because $u_n$ is a thickness.  Furthermore, at least intuitively, the flux of a zero-thickness layer should be zero: $\bQ_n=0$ on $\Omega_n^r \cup \Omega_n^0$; see assumption \eqref{eq:Qiszero} below.  Thus, $u_{n-1}+\Delta t\, F_n \le 0$ on $\Omega_n^r \cup \Omega_n^0$.  However, because $u_{n-1}\ge 0$ and $\Delta t\ge 0$, we have these two facts
+If $u_n=0$ then the terms on the right must, apparently, either sum to zero or be negative (as otherwise they should be balanced by a positive value for $u_n$).  Furthermore, at least intuitively, the flux of a zero-thickness layer should be zero: $\bQ_n=0$ on $\Omega_n^r \cup \Omega_n^0$; see assumption \eqref{eq:Qiszero} below.  Thus, $u_{n-1}+\Delta t\, F_n \le 0$ on $\Omega_n^r \cup \Omega_n^0$.  However, because $u_{n-1}\ge 0$ and $\Delta t\ge 0$, we have these two facts
 \begin{equation}
 F_n(u_n,x) \le 0 \quad \text{ and } \quad u_{n-1} + \Delta t\, F_n(u_n,x) \le 0 \quad \text{ on } \Omega_n^r \cup \Omega_n^0. \label{eq:strongconditionswherezero}
 \end{equation}
-These inequalities will be used to derive the weak form.
+These inequalities will be used in deriving the weak form.
 
-The intuition behind conditions \eqref{eq:strongconditionswherezero} should be clear, namely that the source term must be sufficiently negative if we are in a location where the layer is removed where it was previously (i.e.~in $\Omega_n^r$ where $u_{n-1}>0$), or where it continues to be absent in a place where it was also previously absent (i.e.~in $\Omega_n^0$ where $u_{n-1}=0$).  If the layer was previously present ($\Omega_n^r$) then from \eqref{eq:semimassconserve} we can say $u_{n-1} + \Delta t\, F_n \le 0$, but this implies $F_n\le 0$ because $u_{n-1}\ge 0$ and $\Delta t>0$.  If the layer was previously absent ($\Omega_n^0$) then we can say $F_n\le 0$, but this is clearly equivalent to $u_{n-1} + \Delta t\, F_n \le 0$ because $u_{n-1}=0$.
-
-We also note a contrapositive of \eqref{eq:strongconditionswherezero}: if $F_n(u_n,x)>0$ then $u_n(x)>0$.
+The intuition behind conditions \eqref{eq:strongconditionswherezero} should be clear.  The source term must be sufficiently negative if we are in a thickness-zero location where the layer was previously present (i.e.~in $\Omega_n^r$ where $u_{n-1}>0$), or where it continues to be absent (i.e.~in $\Omega_n^0$ where $u_{n-1}=0$).  We also note a contrapositive of \eqref{eq:strongconditionswherezero}: if $F_n(u_n,x)>0$ then $u_n(x)>0$.
 
 
 \section{General flux assumptions} \label{sec:fluxassumptions}
 
 Let $p\ge 1$.  Recall that the Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v\in L^p(\Omega)$ and with all partial derivatives in $L^p(\Omega)$ (i.e.~$\partial_i v \in L^p(\Omega)$ for $i=1,\dots,d$) \cite{Evans}.  This space has norm
     $$\|v\|_{1,p} = \left(\int_\Omega |v|^p\,dx + \sum_i \int_\Omega |\partial_i v|^p\,dx\right)^{1/p}.$$
-Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans}, but generally $v$ may be discontinuous.
+Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans}, but generally $v$ may be discontinuous.  Denote by $W_0^{1,p}(\Omega)$ the closure of $C_c^\infty(\Omega)$ in $W^{1,p}(\Omega)$.
 
 If $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$, we assume
 \begin{equation}
@@ -234,21 +221,17 @@ The latter assumption is intimately-related to the meaning of $\bQ_n$ in \eqref{
 
 FIXME: We assume $F_n(v,x)$ is minimally regular, specifically that it is continuous in its first argument and that for fixed $v\in W^{1,p}(\Omega)$, $\phi(x) := F_n(v(x),x)$ is in $L^q(\Omega)$.  Note we do \emph{not} require that it be strictly increasing in $v$, which would be natural if we sought monotonicity in the $\Delta t \to \infty$ (i.e.~steady state) limit \cite{JouvetBueler2012}; see section \ref{sec:mono}.
 
-FIXME: Assume the flux boundary condition $G_n$ is regular (i.e.~in $L^\infty(\partial\Omega)$ and H\"older in $u$.  We can extend $G_n$ by zero to the whole of $\partial \Omega$ and not change anything.  On the flip side, as a modeler you are free to put $G_n$ zero anywhere on the boundary, but if it is nonzero then it must be that the solution $u_n$ is actually positive on that part of the boundary
-
 
 \section{Weak formulation of a time-step}  \label{sec:weakform}
 
-The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solution function $u_n$ because the behavior of $u_n$ along free boundary $\partial\Omega_n$ is not clear.  Also, statements \eqref{eq:strongconditionswherezero}, while intuitively correct, require defining sets (e.g.~$\Omega_n$ and its complement $\Omega_n^r \cup \Omega_n^0$) in terms of the solution to the problem we are attempting to state.
+The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solution function $u_n$ because the behavior of $u_n$ along free boundary $\partial\Omega_n$ is not clear.  Statements \eqref{eq:strongconditionswherezero}, while intuitively correct, require defining sets (namely, $\Omega_n$ and its complement $\Omega_n^r \cup \Omega_n^0$) in terms of the solution to the problem we are attempting to state.  By contrast, we now propose a weak form of the single time-step problem, namely a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex set of admissible functions.  This weak form refers only to the set $\Omega$ and its boundary, not to decomposition \eqref{eq:omegadecomposition}.  We start by arguing that a solution to the discrete-time strong problem will be a solution to a certain variational inequality; thereby we find the variational inequality; this argument uses both equations  \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} and the facts \eqref{eq:strongconditionswherezero}.  Then we show that a solution of the weak form satisfies these strong equations/facts.  In later sections we address well-posedness, which depends on details of the flux function $\bQ_n$ which we do not need here.
 
-Instead, in this section we specify function spaces and we propose a weak form of the single time-step problem, namely a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex space of admissible functions.  This weak form refers only to the set $\Omega$ and its boundary, not to the sets of the decomposition \eqref{eq:omegadecomposition}.
-
-We start by arguing that a solution to the discrete-time strong problem will be a solution to a certain variational inequality; thereby we find the variational inequality.  Our argument uses both the equations  \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} from the strong problem and the facts \eqref{eq:strongconditionswherezero}.  The hypotheses of this theorem are not the main concern; the hypotheses needed to show well-posedness of the weak form, which will depend on the details of the flux, are of greater importance.
+The hypotheses of the next theorem are not the main concern; the hypotheses needed to show well-posedness of the weak form, which will depend on the details of the flux, are of greater importance.
 
 \medskip
-\begin{theorem} \label{thm:strongimpliesweak} Suppose $u_n\ge 0$ and $v\ge 0$ are continuous on $\overline{\Omega}$ and that $\grad u_n,\grad v$ are in $L^p(\Omega)$.  Suppose that the sets $\Omega_n$, $\Omega_n^r$, $\Omega_n^0$ in decomposition \eqref{eq:omegadecomposition} are all sufficiently smooth (e.g.~Lipshitz).  Suppose $u_n$ solves \eqref{eq:semimassconserve} and \eqref{eq:semifixedneumann} where $u_n>0$.  Suppose the function $\bQ_n(\bX,v,x)$ satisfies assumptions \eqref{eq:QisLq}, \eqref{eq:Qissmooth}, and \eqref{eq:Qiszero}.  Define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$, $F_n = F_n(u_n,x)$, and $G_n=G_n(u_n,x)$.  Then
+\begin{theorem} \label{thm:strongimpliesweak} Suppose $u_n\ge 0$ and $v\ge 0$ are continuous on $\overline{\Omega}$ and that $\grad u_n,\grad v$ are in $L^p(\Omega)$.  Suppose that the sets $\Omega_n$, $\Omega_n^r$, $\Omega_n^0$ in decomposition \eqref{eq:omegadecomposition} are all sufficiently smooth (e.g.~Lipshitz).  Suppose $u_n$ solves \eqref{eq:semimassconserve} where $u_n>0$.  Suppose the function $\bQ_n(\bX,v,x)$ satisfies assumptions \eqref{eq:QisLq}, \eqref{eq:Qissmooth}, and \eqref{eq:Qiszero}.  Define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n(u_n,x)$.  Then
 \begin{equation}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n). \label{eq:morallytheVI}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \label{eq:morallytheVI}
 \end{equation}
 \end{theorem}
 
@@ -258,16 +241,14 @@ Using decomposition \eqref{eq:omegadecomposition} and integration by parts (dive
 -\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) \\
   &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n) - \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n).
 \end{align*}
-Because $u_n$ is continuous, $u_n=0$ along $\Gamma_n^0$.  It then follows from \eqref{eq:Qiszero} and equation \eqref{eq:semifixedneumann} that
-       $$\int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) = \int_{\Gamma_n^N} G_n (v-u_n) = \int_{\partial \Omega} G_n (v-u_n).$$
-(For the last equality, recall we extend $G_n$ by zero to all of $\partial \Omega$.)
+Because $u_n$ is continuous, $u_n=0$ along $\Gamma_n^0$.  It then follows from \eqref{eq:Qiszero} that
+       $$\int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) = 0.$$
 Similarly,
        $$\int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n) = 0.$$
 By using \eqref{eq:semimassconserve} we get
-\begin{align}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:equalitybeforeVI} \\
-  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \notag
-\end{align}
+\begin{equation}
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) = \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \label{eq:equalitybeforeVI}
+\end{equation}
 
 By \eqref{eq:Qiszero} we have $\Div \bQ_n=0$ on $\Omega_n^0$.  However, by \eqref{eq:strongconditionswherezero}, $F_n \le 0$ on $\Omega_n^0$.  Thus
     $$\int_{\Omega_n^0} (\Div \bQ_n) (v-u_n) = 0 \ge \int_{\Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n),$$
@@ -277,7 +258,7 @@ because $u_n=0$, $F_n + u_{n-1}/\Delta t \le 0$, and $v-u_n = v \ge 0$ on $\Omeg
 
 Thus if we return to \eqref{eq:equalitybeforeVI} we now have
 \begin{align}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &\ge \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) - \int_{\partial \Omega} G_n (v-u_n) \label{eq:essentiallyVI} \\
+-\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &\ge \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) \label{eq:essentiallyVI} \\
   &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \notag
 \end{align}
 But \eqref{eq:essentiallyVI} can be written without decomposition \eqref{eq:omegadecomposition}, namely as \eqref{eq:morallytheVI}.
@@ -288,20 +269,19 @@ We can now precisely define our weak problem.
 
 \medskip
 \begin{definition}  Fix $p>1$.  Let
-    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\big|\, v(x) \ge 0 \text{ for all } x \in \Omega\right\}.$$
+    $$\mathcal{K} = \left\{v \in W_0^{1,p}(\Omega) \,\big|\, v(x) \ge 0 \text{ for all } x \in \Omega\right\}.$$
 \end{definition}
-
-It is easy to see that $\mathcal{K}$ is a closed, convex subset of $W^{1,p}(\Omega)$.  
+It is easy to see that $\mathcal{K}$ is a closed, convex subset of $W_0^{1,p}(\Omega)$.  
 
 \medskip
 \begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Assume that the flux function $\bQ_n(\bX,v,x)$ satisfies \eqref{eq:QisLq} and \eqref{eq:Qissmooth}.  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if it solves \eqref{eq:morallytheVI}, which we prefer to write as
-\begin{align}
-&\int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n)  \label{eq:theVI} \\
-  &\qquad\qquad \ge \int_{\Omega} \left(u_{n-1} + \Delta t\, F_n\right) (v-u_n) - \Delta t \int_{\partial \Omega} G_n (v-u_n),  \notag
-\end{align}
-for all $v \in \mathcal{K}$, where $\bQ_n=\bQ_n(\grad u_n,u_n,x)$, $F_n = F_n(u_n,x)$, and $G_n=G_n(u_n,x)$ by definition.
+\begin{equation}
+\int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(u_{n-1} + \Delta t\, F_n\right) (v-u_n)  \label{eq:theVI}
+\end{equation}
+for all $v \in \mathcal{K}$, where $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n(u_n,x)$.
 \end{definition}
 
+\medskip
 To complete our introduction of the weak problem we show a partial converse of Theorem \ref{thm:strongimpliesweak}, namely we show what is called an ``interior condition'', that a (weak) solution $u_n$ of \eqref{eq:theVI} actually solves the PDE \eqref{eq:semimassconserve}.
 
 \medskip
@@ -325,7 +305,7 @@ This is true for all $\eps$ of either sign which are sufficiently small (i.e.~fo
    $$\int_\Omega \left[u_n + \Delta t\,\Div\bQ_n - u_{n-1} - \Delta t\,F_n\right]\phi = 0.$$
 But then, in classical variational manner, the quantity in square brackets is zero, that is, equation \eqref{eq:semimassconserve}, because $\phi\in C_c^\infty(S)$ is arbitrary.
 
-The proof of (ii) is similar and easier.  We start with \emph{nonnegative} $\phi\in C_c^\infty(S)$.  Again extending $\phi$ by zero to all of $\Omega$, let $v = u_n + \phi$, so $v\in\mathcal{K}$.  Again note $v-u_n=\phi$ is zero on $\partial \Omega$.  Because $S\subset \Omega_n^0$, $u_n=0$ and $u_{n-1}=0$ on the support of $\phi$.  By assumption \eqref{eq:Qiszero}, $\bQ_n=0$ on the support of $\phi$ also.  Thus by \eqref{eq:theVI},
+To prove (ii) we start with \emph{nonnegative} $\phi\in C_c^\infty(S)$.  Again extending $\phi$ by zero to all of $\Omega$, let $v = u_n + \phi$, so $v\in\mathcal{K}$.  Again note $v-u_n=\phi$ is zero on $\partial \Omega$.  Because $S\subset \Omega_n^0$, $u_n=0$ and $u_{n-1}=0$ on the support of $\phi$.  By assumption \eqref{eq:Qiszero}, $\bQ_n=0$ on the support of $\phi$ also.  Thus by \eqref{eq:theVI},
     $$\int_{\Omega} 0 \ge \int_{\Omega} \left(0 + \Delta t\, F_n\right) \phi,$$
 so that $0 \ge \int_{\Omega} F_n \phi$ because $\Delta t>0$.  Because $\phi\in C_c^\infty(S)$ is an arbitrary nonnegative function, $F_n \le 0$ on $S$.
 
@@ -335,11 +315,7 @@ It follows as before that $u_{n-1} + \Delta t\, F_n \le 0$ on $S$.
 \end{proof}
 
 \medskip
-FIXME:  We will show that in some cases this is well-posed
-
-FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\Gamma_n^0$ we have both $u_n=0$ and $\bQ_n = 0$.
-
-From now on we use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.
+From now on we use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.  FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\partial\Omega_n$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 
 \section{Monotonicity, coerciveness, and first well-posedness results} \label{sec:mono}
