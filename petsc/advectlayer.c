@@ -4,8 +4,8 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 "    q = v(x) u\n"
 "on 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
-"Implicit (backward Euler) centered finite difference method and\n"
-"SNESVI.\n\n";
+"Several O(dx^2) finite difference methods to choose among, and exact\n"
+"solution for v(x)=v0 case, and SNESVI.\n\n";
 
 //FIXME: add Jacobian
 
@@ -31,6 +31,14 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 
 //   ./advectlayer -snes_fd -al_steps 1000 -da_refine 3 -al_dt 0.0025 -snes_rtol 1.0e-10
 
+// run at 10^5 CFL with 1.6 million DOFs
+//   ./advectlayer -al_noshow -al_steps 10 -da_refine 15 -al_exactinit -al_thirdorder
+//   ./advectlayer -al_noshow -al_steps 10 -da_refine 15 -al_exactinit -al_box
+
+// why the big difference in Newton iterations (box is bad, and pc choices do not affect):
+//   mpiexec -n 4 ./advectlayer -al_noshow -al_steps 10 -da_refine 5 -al_exactinit -al_box
+//   mpiexec -n 4 ./advectlayer -al_noshow -al_steps 10 -da_refine 5 -al_exactinit
+
 // for lev in 0 1 2 3 4; do ./advectlayer -snes_fd -al_exactinit -al_noshow -al_dt 0.01 -al_steps 10 -da_refine $lev | grep error; done
 
 #include <math.h>
@@ -46,7 +54,8 @@ typedef struct {
             L,    // domain is  0 <= x <= L
             v0,   // scale for velocity v(x)
             f0;   // scale for source term f(x)
-  PetscInt  scheme;
+  PetscInt  scheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
+            vchoice; // 0 = (v(x) = v0), 1 = (v(x) quadratic)
 } AppCtx;
 
 
@@ -63,38 +72,42 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-    const PetscReal twopi = 2.0 * PETSC_PI,
-                    x0    = (user->L/twopi) * asin(1.0/5.0),
-                    scale = user->f0/user->v0,
-                    dx    = user->dx;
-    DMDALocalInfo info;
-    PetscReal     *au, x, cosdiff;
-    PetscInt      j;
-    ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(user->da, u, &au);CHKERRQ(ierr);
-    for (j=info.xs; j<info.xs+info.xm; j++) {
-        x       = dx/2 + dx * (PetscReal)j;
-        if (x <= x0) {
-          au[j] = 0.0;
-        } else {
-          cosdiff = cos(twopi*x0/user->L) - cos(twopi*x/user->L);
-          au[j]   = scale * ( (user->L/twopi) * cosdiff - (x-x0)/5.0 );
-          au[j]   = PetscMax(0.0,au[j]);
-        }
-    }
-    ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
+  if (user->vchoice > 0) {
+    SETERRQ(PETSC_COMM_WORLD,4,"exact solution only available in v(x)=v0 case\n");
+  }
+  const PetscReal twopi = 2.0 * PETSC_PI,
+                  x0    = (user->L/twopi) * asin(1.0/5.0),
+                  scale = user->f0/user->v0,
+                  dx    = user->dx;
+  DMDALocalInfo info;
+  PetscReal     *au, x, cosdiff;
+  PetscInt      j;
+  ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, u, &au);CHKERRQ(ierr);
+  for (j=info.xs; j<info.xs+info.xm; j++) {
+      x = dx/2 + dx * (PetscReal)j;
+      if (x <= x0) {
+        au[j] = 0.0;
+      } else {
+        cosdiff = cos(twopi*x0/user->L) - cos(twopi*x/user->L);
+        au[j]   = scale * ( (user->L/twopi) * cosdiff - (x-x0)/5.0 );
+        au[j]   = PetscMax(0.0,au[j]);
+      }
+  }
+  ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
 
 // constant velocity
 PetscReal velocity(const PetscReal x, const AppCtx *user) {
-  return user->v0;
+  if (user->vchoice == 1) {
+    const PetscReal Lsqr = user->L * user->L;
+    return (4.0 / Lsqr) * user->v0 * x * (user->L - x);
+  } else
+    return user->v0;
 }
 
-// alternative for velocity():
-//   const PetscReal Lsqr = user->L * user->L;
-//   return (4.0 / Lsqr) * user->v0 * x * (user->L - x);
 
 
 // without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
@@ -127,6 +140,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                   - uold[j] - dt * fsource(x,user);
           break; }
         case 1 : { // this third-order upwind biased implicit thing only works if v(x)=v0>0
+          if (user->vchoice > 0) {
+            SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
+          }
           const PetscReal mu = user->v0 * nu / 6.0;
           FF[j] =   mu * u[j-2]
                   - 6.0*mu * u[j-1]
@@ -137,8 +153,12 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
         case 2 : { // the box scheme; works even if v=v(x)
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
-          FF[j] = u[j-1] + u[j] - uold[j-1] - uold[j]
-                  + nu * ( vright * (u[j] + uold[j]) - vleft * (u[j-1] + uold[j-1]) )
+          //const PetscReal uoldleft  = 0.2 * uold[j-2] + 0.6 * uold[j-1] + 0.2 * uold[j],
+          //                uoldright = 0.2 * uold[j-1] + 0.6 * uold[j] + 0.2 * uold[j+1];
+          const PetscReal uoldleft  = uold[j-1],
+                          uoldright = uold[j];
+          FF[j] = u[j-1] + u[j] - uoldleft - uoldright
+                  + nu * ( vright * (u[j] + uoldright) - vleft * (u[j-1] + uoldleft) )
                   - 2.0 * dt * fsource(x,user);
           break; }
         default :
@@ -164,6 +184,7 @@ int main(int argc,char **argv) {
   user.L  = 100.0;
   user.v0 = 100.0;
   user.f0 = 1.0;
+  user.vchoice = 0;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"al_","options to advectlayer","");CHKERRQ(ierr);
   NN = 10;
@@ -178,6 +199,8 @@ int main(int argc,char **argv) {
   useexactinit = PETSC_FALSE;
   ierr = PetscOptionsBool("-exactinit","initialize with exact solution",
                           NULL,useexactinit,&useexactinit,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt("-vchoice","choose form of v(x)",
+                         NULL,user.vchoice,&user.vchoice,NULL);CHKERRQ(ierr);
   o3set = PETSC_FALSE;
   boxset = PETSC_FALSE;
   ierr = PetscOptionsBool("-thirdorder","use third-order upwind-biased FD scheme",
@@ -252,7 +275,7 @@ int main(int argc,char **argv) {
       ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
       ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
       ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations;   result = %s\n",
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
                          its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
       if (reason < 0) {
         SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
