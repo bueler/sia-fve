@@ -2,11 +2,11 @@
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
-advectlayer: advectlayer.o  chkopts
-	-${CLINKER} -o advectlayer advectlayer.o  ${PETSC_SNES_LIB}
-	${RM} advectlayer.o
+layer: layer.o  chkopts
+	-${CLINKER} -o layer layer.o  ${PETSC_SNES_LIB}
+	${RM} layer.o
 
 .PHONY: distclean
 
 distclean:
-	@rm -f *~ advectlayer
+	@rm -f *~ layer

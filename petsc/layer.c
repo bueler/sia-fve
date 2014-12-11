@@ -1,8 +1,10 @@
 static const char help[] = "Solves advecting-layer problem in 1d:\n"
-"    u_t + div q = f\n"
-"where\n"
+"    u_t + q_x = f\n"
+"where the flux q combines an advecting layer\n"
 "    q = v(x) u\n"
-"on 0 < x < L, with periodic boundary conditions, subject to constraint\n"
+"with a p-Laplacian\n"
+"    q = - k |u_x|^{p-2} u_x\n"
+"Domain is 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
 "Several O(dx^2) finite difference methods to choose among, and exact\n"
 "solution for v(x)=v0 case, and SNESVI.\n\n";
@@ -11,35 +13,35 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 
 //FIXME: relate to event detection in \infty dimensions
 
-//   ./advectlayer -help |grep al_
+//   ./layer -help |grep lay_
 
-//   ./advectlayer -snes_fd -draw_pause 0.5
-//   ./advectlayer -snes_mf -draw_pause 0.5
+//   ./layer -snes_fd -draw_pause 0.5
+//   ./layer -snes_mf -draw_pause 0.5
 
-//   ./advectlayer -snes_fd -al_noshow
-//   ./advectlayer -snes_fd -al_steps 100
-//   ./advectlayer -snes_fd -al_dt 0.1
-//   ./advectlayer -snes_fd -al_exactinit
+//   ./layer -snes_fd -lay_noshow
+//   ./layer -snes_fd -lay_steps 100
+//   ./layer -snes_fd -lay_dt 0.1
+//   ./layer -snes_fd -lay_exactinit
 
-//   ./advectlayer -snes_fd -al_thirdorder -draw_pause 0.5
-//   ./advectlayer -snes_fd -al_box  -draw_pause 0.5
+//   ./layer -snes_fd -lay_thirdorder -draw_pause 0.5
+//   ./layer -snes_fd -lay_box  -draw_pause 0.5
 
-//   ./advectlayer -snes_fd -snes_type vinewtonssls
-//   ./advectlayer -snes_fd -snes_vi_monitor
+//   ./layer -snes_fd -snes_type vinewtonssls
+//   ./layer -snes_fd -snes_vi_monitor
 
-//   ./advectlayer -snes_fd -al_dt 0.01 -al_steps 1000 -da_refine 2
+//   ./layer -snes_fd -lay_dt 0.01 -lay_steps 1000 -da_refine 2
 
-//   ./advectlayer -snes_fd -al_steps 1000 -da_refine 3 -al_dt 0.0025 -snes_rtol 1.0e-10
+//   ./layer -snes_fd -lay_steps 1000 -da_refine 3 -lay_dt 0.0025 -snes_rtol 1.0e-10
 
 // run at 10^5 CFL with 1.6 million DOFs
-//   ./advectlayer -al_noshow -al_steps 10 -da_refine 15 -al_exactinit -al_thirdorder
-//   ./advectlayer -al_noshow -al_steps 10 -da_refine 15 -al_exactinit -al_box
+//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_thirdorder
+//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_box
 
 // why the big difference in Newton iterations (box is bad, and pc choices do not affect):
-//   mpiexec -n 4 ./advectlayer -al_noshow -al_steps 10 -da_refine 5 -al_exactinit -al_box
-//   mpiexec -n 4 ./advectlayer -al_noshow -al_steps 10 -da_refine 5 -al_exactinit
+//   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit -lay_box
+//   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit
 
-// for lev in 0 1 2 3 4; do ./advectlayer -snes_fd -al_exactinit -al_noshow -al_dt 0.01 -al_steps 10 -da_refine $lev | grep error; done
+// for lev in 0 1 2 3 4; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -da_refine $lev | grep error; done
 
 #include <math.h>
 #include <petscdmda.h>
@@ -186,7 +188,7 @@ int main(int argc,char **argv) {
   user.f0 = 1.0;
   user.vchoice = 0;
 
-  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"al_","options to advectlayer","");CHKERRQ(ierr);
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
   NN = 10;
   ierr = PetscOptionsInt("-steps","number of time steps",
                          NULL,NN,&NN,NULL);CHKERRQ(ierr);
