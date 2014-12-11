@@ -194,42 +194,57 @@ The intuition behind conditions \eqref{eq:strongconditionswherezero} should be c
 \section{General flux assumptions} \label{sec:fluxassumptions}
 
 Let $p\ge 1$.  Recall that the Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v\in L^p(\Omega)$ and with all partial derivatives in $L^p(\Omega)$ (i.e.~$\partial_i v \in L^p(\Omega)$ for $i=1,\dots,d$) \cite{Evans}.  This space has norm
-    $$\|v\|_{1,p} = \left(\int_\Omega |v|^p\,dx + \sum_i \int_\Omega |\partial_i v|^p\,dx\right)^{1/p}.$$
+\begin{equation}
+  \|v\|_{1,p} = \left(\int_\Omega |v|^p\,dx + \sum_i \int_\Omega |\partial_i v|^p\,dx\right)^{1/p}.  \label{eq:norm}
+\end{equation}
 Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans}, but generally $v$ may be discontinuous.  Denote by $W_0^{1,p}(\Omega)$ the closure of $C_c^\infty(\Omega)$ in $W^{1,p}(\Omega)$.
 
-If $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$, we assume
+We now itemize those assumptions about $\bQ_n$ which apply for the remainder of this work:
+\begin{itemize}
+\item If $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$, we assume
 \begin{equation}
 \bQ_n(\grad v,v,x) \in L^q(\Omega). \label{eq:QisLq}
 \end{equation}
-Also, if $v(x)>0$ on an open subset $S\subset \Omega$ then we assume
+\item For fixed $x\in \Omega$, we assume $\bQ_n(\bX,v,x)$ is continuous as a function of $\bX\in\RR^d$ and $v\in\RR$:
 \begin{equation}
-\frac{\partial}{\partial x_i} \bQ_n(\grad v,v,x) \in L^q(S). \label{eq:Qissmooth}
+(\bX,v) \mapsto \bQ_n(\bX,v,x) \text{ is continuous on } \RR^d \times \RR.  \label{eq:Qiscontinuous}
 \end{equation}
-
-For fixed $\bX\in\RR^d$ and $x\in \Omega$, we assume $\bQ_n(\bX,v,x)$ is continuous in $v\in\RR$.  For $v \in W^{1,p}(\Omega)$, define
+\item For $v \in W^{1,p}(\Omega)$, define
     $$E_v = \left\{x\in\Omega \,\big|\, v(x) = 0\right\}.$$
 Note that $\grad v = 0$ a.e.~on $E_v$ \cite[lemma A.4 of chapter II]{KinderlehrerStampacchia}.  We assume that
 \begin{equation}
 \bQ_n(\grad v,v,x)=0 \quad \text{a.e.~on } E_v. \label{eq:Qiszero}
 \end{equation}
+\end{itemize}
 
 Thus we make two kinds of assumptions about the discrete-time flux $\bQ_n(\grad u,u,x)$: \begin{itemize}
-\item the flux is regular (i.e.~continuity in second argument and assumptions \eqref{eq:QisLq} and \eqref{eq:Qissmooth}) and
+\item the flux is regular (i.e.~\eqref{eq:QisLq} and \eqref{eq:Qiscontinuous}) and
 \item the flux is zero if the thickness is zero (equation \eqref{eq:Qiszero}).
 \end{itemize}
 The latter assumption is intimately-related to the meaning of $\bQ_n$ in \eqref{eq:semimassconserve}, and to $\bq$ in \eqref{eq:massconserve} as well, namely that this flux transports a layer with nonnegative thickness, and if the thickness is zero then there is no transport.
 
-FIXME: We assume $F_n(v,x)$ is minimally regular, specifically that it is continuous in its first argument and that for fixed $v\in W^{1,p}(\Omega)$, $\phi(x) := F_n(v(x),x)$ is in $L^q(\Omega)$.  Note we do \emph{not} require that it be strictly increasing in $v$, which would be natural if we sought monotonicity in the $\Delta t \to \infty$ (i.e.~steady state) limit \cite{JouvetBueler2012}; see section \ref{sec:mono}.
+We assume $F_n(v,x)$ is minimally regular, specifically that for fixed $v\in W^{1,p}(\Omega)$
+\begin{equation}
+F_n(v(x),x) \in L^q(\Omega),  \label{eq:FisLq}
+\end{equation}
+and that for fixed $x\in\Omega$
+\begin{equation}
+v \mapsto F_n(v,x) \text{ is continuous}  \label{eq:Fiscontinuous}
+\end{equation}
+as a function from $[0,\infty)$ to $\RR$.  Note we do \emph{not} require that $F_n$ be strictly increasing in $v$, which would be natural if we sought monotonicity in the $\Delta t \to \infty$ (i.e.~steady state) limit \cite{JouvetBueler2012}; see section \ref{sec:mono}.
 
 
 \section{Weak formulation of a time-step}  \label{sec:weakform}
 
 The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a description of the solution function $u_n$ because the behavior of $u_n$ along free boundary $\partial\Omega_n$ is not clear.  Statements \eqref{eq:strongconditionswherezero}, while intuitively correct, require defining sets (namely, $\Omega_n$ and its complement $\Omega_n^r \cup \Omega_n^0$) in terms of the solution to the problem we are attempting to state.  By contrast, we now propose a weak form of the single time-step problem, namely a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex set of admissible functions.  This weak form refers only to the set $\Omega$ and its boundary, not to decomposition \eqref{eq:omegadecomposition}.  We start by arguing that a solution to the discrete-time strong problem will be a solution to a certain variational inequality; thereby we find the variational inequality; this argument uses both equations  \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} and the facts \eqref{eq:strongconditionswherezero}.  Then we show that a solution of the weak form satisfies these strong equations/facts.  In later sections we address well-posedness, which depends on details of the flux function $\bQ_n$ which we do not need here.
 
-The hypotheses of the next theorem are not the main concern; the hypotheses needed to show well-posedness of the weak form, which will depend on the details of the flux, are of greater importance.
+The hypotheses of the next theorem are not the main concern; the hypotheses needed to show well-posedness of the weak form, which will depend on the details of the flux, are of greater importance.  To state the strong form we need the strong assumption that $\bQ_n$ is smooth: if $v(x)>0$ on an open subset $S\subset \Omega$ then we assume
+\begin{equation}
+\frac{\partial}{\partial x_i} \bQ_n(\grad v,v,x) \in L^q(S). \label{eq:Qissmooth}
+\end{equation}
 
 \medskip
-\begin{theorem} \label{thm:strongimpliesweak} Suppose $u_n\ge 0$ and $v\ge 0$ are continuous on $\overline{\Omega}$ and that $\grad u_n,\grad v$ are in $L^p(\Omega)$.  Suppose that the sets $\Omega_n$, $\Omega_n^r$, $\Omega_n^0$ in decomposition \eqref{eq:omegadecomposition} are all sufficiently smooth (e.g.~Lipshitz).  Suppose $u_n$ solves \eqref{eq:semimassconserve} where $u_n>0$.  Suppose the function $\bQ_n(\bX,v,x)$ satisfies assumptions \eqref{eq:QisLq}, \eqref{eq:Qissmooth}, and \eqref{eq:Qiszero}.  Define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n(u_n,x)$.  Then
+\begin{theorem} \label{thm:strongimpliesweak} Suppose $u_n\ge 0$ and $v\ge 0$ are continuous on $\overline{\Omega}$ and that $\grad u_n,\grad v$ are in $L^p(\Omega)$.  Suppose that the sets $\Omega_n$, $\Omega_n^r$, $\Omega_n^0$ in decomposition \eqref{eq:omegadecomposition} are all sufficiently smooth (e.g.~Lipshitz).  Suppose $u_n$ solves \eqref{eq:semimassconserve} where $u_n>0$.  Suppose the function $\bQ_n(\bX,v,x)$ satisfies assumptions \eqref{eq:QisLq}, \eqref{eq:Qiscontinuous}, and \eqref{eq:Qiszero}, and also make the smoothness assumption \eqref{eq:Qissmooth}.  Define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n(u_n,x)$.  Then
 \begin{equation}
 -\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \label{eq:morallytheVI}
 \end{equation}
@@ -274,7 +289,7 @@ We can now precisely define our weak problem.
 It is easy to see that $\mathcal{K}$ is a closed, convex subset of $W_0^{1,p}(\Omega)$.  
 
 \medskip
-\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Assume that the flux function $\bQ_n(\bX,v,x)$ satisfies \eqref{eq:QisLq} and \eqref{eq:Qissmooth}.  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if it solves \eqref{eq:morallytheVI}, which we prefer to write as
+\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Assume that the flux function $\bQ_n(\bX,v,x)$ satisfies \eqref{eq:QisLq} and the source function $F_n(v,x)$ satisfies \eqref{eq:FisLq}.  We say $u_n \in \mathcal{K}$ solves the \emph{single-time-step weak problem} if it solves \eqref{eq:morallytheVI}, which we prefer to write as
 \begin{equation}
 \int_{\Omega} u_n (v-u_n) - \Delta t\, \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(u_{n-1} + \Delta t\, F_n\right) (v-u_n)  \label{eq:theVI}
 \end{equation}
@@ -285,10 +300,10 @@ for all $v \in \mathcal{K}$, where $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n
 To complete our introduction of the weak problem we show a partial converse of Theorem \ref{thm:strongimpliesweak}, namely we show what is called an ``interior condition'', that a (weak) solution $u_n$ of \eqref{eq:theVI} actually solves the PDE \eqref{eq:semimassconserve}.
 
 \medskip
-\begin{theorem} \label{thm:weakimpliesstrong}  Assume $\bQ_n$ satisfies \eqref{eq:Qiszero}.  Suppose $u_n\in\mathcal{K}$ solves the single-time-step weak problem \eqref{eq:theVI}.
+\begin{theorem} \label{thm:weakimpliesstrong}  Assume $\bQ_n$ satisfies \eqref{eq:QisLq}--\eqref{eq:Qiszero} and \eqref{eq:Qissmooth}, and assume that $F_n$ satisfies \eqref{eq:FisLq}.  Suppose $u_n\in\mathcal{K}$ solves the single-time-step weak problem \eqref{eq:theVI}.
 \renewcommand{\labelenumi}{\emph{(\roman{enumi})}}
 \begin{enumerate}
-\item If $S \subset \Omega_n$ is open, and if $\overline{S}\subset \Omega$ also, and if $u_n\in C(\overline{S})$, then equation \eqref{eq:semimassconserve} applies at all $x\in S$.
+\item Suppose $S \subset \Omega_n$ is open and that $\overline{S}\subset \Omega$.  If $u_n\in C(\overline{S})$, then equation \eqref{eq:semimassconserve} applies at all $x\in S$.
 \item If $S \subset \Omega_n^0$ is open then $F_n \le 0$ at all $x\in S$.
 \item If $S \subset \Omega_n^r$ is open then $u_{n-1} + \Delta t\,F_n \le 0$ at all $x\in S$.
 \end{enumerate}
@@ -318,21 +333,15 @@ It follows as before that $u_{n-1} + \Delta t\, F_n \le 0$ on $S$.
 From now on we use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.  FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\partial\Omega_n$ we have both $u_n=0$ and $\bQ_n = 0$.
 
 
-\section{Monotonicity, coerciveness, and first well-posedness results} \label{sec:mono}
+\section{Monotonicity, coerciveness, and well-posedness} \label{sec:mono}
 
 We continue in this section to allow the flux function $\bQ_n$ to be quite arbitrary, in solving our weak single time-step problem \eqref{eq:theVI}, except that the flux function should satisfy the conditions in section \ref{sec:fluxassumptions}.
 
-Let $\mathcal{X} = W^{1,p}(\Omega)$ for $p > 1$, which we observe is a reflexive Banach space, and denote its dual space by $\mathcal{X}'$ and its norm by $\|\cdot\|$.  Denote the pairing of $\mathcal{X}'$ and $\mathcal{X}$ by $\ip{\cdot}{\cdot}$.  We will also denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$, where $\frac{1}{p}+\frac{1}{q}=1$, by $\ip{\cdot}{\cdot}$.
-
-Recalling that $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$, and following definitions in chapter III of \cite{KinderlehrerStampacchia}, we define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} if
-    $$\ip{A(u) - A(v)}{u-v} \ge 0$$
-for all $u,v\in\mathcal{K}$.  The mapping is \emph{strictly monotone} if also $\ip{A(u) - A(v)}{u-v} = 0$ implies $u=v$.  The mapping is \emph{coercive} if there is $\phi\in \mathcal{K}$ so that
-    $$\lim_{\|u\|\to\infty} \frac{\ip{A(u) - A(\phi)}{u-\phi}}{\|u-\phi\|} = +\infty.$$
-where the limit is taken over $u\in\mathcal{K}$.
+Let $\mathcal{X} = W_0^{1,p}(\Omega)$ for $p > 1$ with norm \eqref{eq:norm} denoted by $\|\cdot\|$.  Recall $\mathcal{X}$ is a reflexive Banach space, and denote its dual space by $\mathcal{X}'$.  Denote the pairing of $\mathcal{X}'$ and $\mathcal{X}$ by $\ip{\cdot}{\cdot}$.  We will also denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$, where $\frac{1}{p}+\frac{1}{q}=1$, by the same symbols $\ip{\cdot}{\cdot}$.
 
 \medskip
 \newcommand{\An}{A_{n}}
-\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Given functions $\bQ_n(\bX,v,x)$ and $F_n(v,x)$ satisfying the assumptions of section \ref{sec:fluxassumptions}, define $\An:\mathcal{K} \to \mathcal{X}'$ by
+\begin{definition}  Suppose $u_{n-1}\in\mathcal{K}$ and $\Delta t>0$.  Given functions $\bQ_n(\bX,v,x)$ and $F_n(v,x)$ satisfying \eqref{eq:QisLq} and \eqref{eq:FisLq}, respectively, define $\An:\mathcal{K} \to \mathcal{X}'$ by
 \begin{equation}
   \ip{\An(v)}{\phi} = \int_\Omega v \phi - \Delta t\, \bQ_n(\grad v,v,x) \cdot \grad\phi - \left(u_{n-1} + \Delta t\, F_n(v,x) \right) \phi \label{eq:defineAn}
 \end{equation}
@@ -340,12 +349,20 @@ for all $v \in \mathcal{K}$ and $\phi\in\mathcal{X}$.  We can write \eqref{eq:th
 \begin{equation}
   \ip{\An(u)}{v-u} \ge 0 \label{eq:theVIabstract}
 \end{equation}
-for all $u \in \mathcal{K}$.
+for all $v \in \mathcal{K}$.
 \end{definition}
 
-Suppose $\An$ is monotone.  Observe that if $u_0 \in \mathcal{K}$ and $u_1 \in \mathcal{K}$ each solve \eqref{eq:theVIabstract} then $\ip{\An(u_0)}{u_1-u_0} \ge 0$ and $\ip{\An(u_1)}{u_0-u_1} \ge 0$.  By adding these, and using monotonicity,
-    $$\ip{\An(u_0) - \An(u_1)}{u_0 - u_1} = 0.$$
-If furthermore $\An$ is strictly monotone then we see that $u_0=u_1$.  That is, strict monotonicity of $\An$ implies uniqueness for the solution to \eqref{eq:theVI}, if it exists \cite[chapter III]{KinderlehrerStampacchia}.
+Our goal now is to determine properties of the flux $\bQ_n$ which will lead to the problem \eqref{eq:theVI} or \eqref{eq:theVIabstract} being well-posed.  The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} is based on the idea that variational inequality \eqref{eq:theVIabstract} has a unique solution if the mapping $\An$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.  We define these terms now, and give the key lemma that relates properties of $\bQ_n$ to these functional-analytic properties of $\An$.
+
+Recalling that $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} if
+    $$\ip{A(u) - A(v)}{u-v} \ge 0$$
+for all $u,v\in\mathcal{K}$.  The mapping $A$ is \emph{strictly monotone} if also $\ip{A(u) - A(v)}{u-v} = 0$ implies $u=v$.  The mapping $A$ is \emph{coercive} if there is $\phi\in \mathcal{K}$ so that
+    $$\lim_{\|u\|\to\infty} \frac{\ip{A(u) - A(\phi)}{u-\phi}}{\|u-\phi\|} = +\infty.$$
+where the limit is taken over $u\in\mathcal{K}$.
+
+Suppose $A$ is monotone.  Observe that if $u_0 \in \mathcal{K}$ and $u_1 \in \mathcal{K}$ each solve \eqref{eq:theVIabstract} then $\ip{A(u_0)}{u_1-u_0} \ge 0$ and $\ip{A(u_1)}{u_0-u_1} \ge 0$.  By adding these, and using monotonicity,
+    $$\ip{A(u_0) - A(u_1)}{u_0 - u_1} = 0.$$
+If furthermore $A$ is strictly monotone then we see that $u_0=u_1$.  That is, strict monotonicity of $\An$ implies uniqueness for the solution to \eqref{eq:theVIabstract}, if any such solutions exist.
 
 Lemma \ref{lem:monotonecoercive} below is proven via the following easy calculation that applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$:
    $$\ip{\An(u) - \An(v)}{u-v} = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).$$
@@ -366,16 +383,37 @@ for all $u,v \in \mathcal{K}$.  Conversely, if $\An$ is monotone then \eqref{eq:
 for all $u,v \in \mathcal{K}$.
 \end{lemma}
 
-Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $\An$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $\An$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if the expression on the left side of \eqref{eq:Qncoercive} were less than $-\eps \|u-v\| \log \|u-v\|$ then $\An$ would also be coercive.
+Note that the norm on the right side of \eqref{eq:Qncoercive} is \eqref{eq:norm} for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $\An$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $\An$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  (For example, if the expression on the left side of \eqref{eq:Qncoercive} were less than $-\eps \|u-v\| \log \|u-v\|$ then $\An$ would also be coercive.)
 
-Chapter III of \cite{KinderlehrerStampacchia} immediately gives the following theorem.
+As the final prerequisite for a well-posedness theorem we consider continuity.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $M\subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap M \to \mathcal{X}'$ is weakly-continuous.  Thus, if we have $\{v_i\}_{i=1}^m$, with $v_i\in\mathcal{K}$ and with $M=\operatorname{span}\left<v_i\right>$, and if we fix $\phi\in\mathcal{X}$, then the map $g:\RR^m \to \RR$ defined by
+\begin{equation}
+  g(c_1,\dots,c_m) = \ip{\An\left(\sum_{i=1}^m c_i v_i\right)}{\phi}
+\end{equation}
+needs to be continuous.  But now the linearity of the integral, and the almost-forgotton continuity assumptions \eqref{eq:Qiscontinuous} and \eqref{eq:Fiscontinuous}, show that $g$ is indeed continuous.  Thus $\An$ is continuous on finite-dimensional subspaces.
 
-\begin{theorem}  \label{thm:firstwellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, and $G_n=G_n(x)$ is continuous on $\partial \Omega$.  If the conditions of section \ref{sec:fluxassumptions} apply to $\bQ_n$, and if \eqref{eq:Qncoercive} holds for $\bQ_n$ so that the operator $\An$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+Corollary III.1.8 (for part (i)) and Theorem III.1.7 (for part (ii)) of \cite{KinderlehrerStampacchia} now gives the following two-part theorem.
+
+\begin{theorem}  \label{thm:firstwellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, and that conditions \eqref{eq:QisLq}--\eqref{eq:Qiszero} apply to $\bQ_n$.
+
+(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$ so that the operator $\An$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
+
+(ii) Suppose \eqref{eq:Qnmonotone} holds with $C<1$ for $\bQ_n$ so that $\An$ is strictly monotone.  For $R>0$ define
+    $$\mathcal{K}_R = \mathcal{K} \cap \left\{v\in \mathcal{X} \,\Big|\, \|v\|\le R\right\},$$
+a closed, convex subset of $\mathcal{X}$ which is also bounded.  The solution $u_R\in \mathcal{K}_R$ of the variational inequality
+\begin{equation}
+  \ip{\An(u_R)}{v-u_R} \ge 0, \label{eq:theVIabstractR}
+\end{equation}
+for all $v \in \mathcal{K}_R$, exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIabstractR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
+
+FIXME: consider $L^1$-contractivity in general?
+
+
+\section{Examples, non-examples, and well-posedness} \label{sec:examples}
 
 We can now check conditions \eqref{eq:Qnmonotone} and/or \eqref{eq:Qncoercive} for certain particular flux formulae.
 
-FIXME: for $\bQ_n(\grad u,u,x) = \bX(x) u$ where $\bX \in W^{1,\infty}(\Omega;\RR^d)$, i.e.~transported layer with differentiable velocity, we have
+\begin{example} FIXME: for $\bQ_n(\grad u,u,x) = \bX(x) u$ where $\bX \in W^{1,\infty}(\Omega;\RR^d)$, i.e.~transported layer with differentiable velocity, we have
 \begin{align*}
    &\left|\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v}\right| = \Delta t\,\left|\int_\Omega \bX \cdot (u-v) \grad (u - v)\right| \\
    &\quad = \frac{\Delta t}{2}\,\left|\int_\Omega \bX \cdot \grad (u - v)^2\right| = \frac{\Delta t}{2}\,\left|\int_\Omega \Div(\bX (u - v)^2) - (\Div\bX) (u-v)^2\right| \\
@@ -385,30 +423,26 @@ assuming $u=v$ on $\partial \Omega$.  In this case $\An$ is strictly monotone if
 \begin{equation}
 \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty} \le C \label{eq:cfllayer}
 \end{equation}
-and monotone with $C=1$ in this inequality.  Condition \eqref{eq:cfllayer} is a rather CFL-ish condition.  There is no good reason to suppose coercive, however.
+(and $\An$ is monotone if $C=1$ in this inequality).  Condition \eqref{eq:cfllayer} is a rather CFL-ish condition.  There is no good reason to suppose coercive, however.
+\end{example}
 
-FIXME: For $p$-Laplacian $\bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u$ with $p>1$, including ordinary Laplacian ($p=2$ case), use Lemma 2.1 from \cite{BarrettLiu1993} which says there is $M>0$ such that
+\begin{example} FIXME: For $p$-Laplacian $\bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u$ with $p>1$, including ordinary Laplacian ($p=2$ case), use Lemma 2.1 from \cite{BarrettLiu1993} which says there is $M>0$ such that
 \begin{equation}
     (|\xi|^{p-2}\xi - |\eta|^{p-2}\eta)\cdot (\xi - \eta) \ge M \left(|\xi|+|\eta|\right)^{p-2} |\xi-\eta|^2  \label{eq:barrettliu}
 \end{equation}
-for all $\xi,\eta\in\RR^d$.  If $p\ge 2$ then by \eqref{eq:barrettliu} for $\xi = \grad u$ and $\eta = \grad v$ and the Poincare-type inequality that there is $C>0$ so that
-  $$\frac{1}{C} \|\phi\| \le \left(\int_\Omega |\grad \phi|^p\right)^{1/p} \le C \|\phi\|$$
-for all $\phi\in W^{1,p}(\Omega)$, we have
+for all $\xi,\eta\in\RR^d$.  Assume $\partial \Omega$ is $C^1$.  On $W_0^{1,p}(\Omega)$ we have a Poincare-type inequality, namely  that there is a constant $C = C(\Omega,p)>0$ so that
+\begin{equation}
+  \int_\Omega |\grad \phi|^p \le \|\phi\|^p \le C(\Omega,p) \int_\Omega |\grad \phi|^p  \label{eq:poincareequivalence}
+\end{equation}
+for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.  Thus if $p\ge 2$ then by \eqref{eq:barrettliu} for $\xi = \grad u$ and $\eta = \grad v$ and \eqref{eq:poincareequivalence} and
 \begin{align*}
 \int_\Omega \left(\bQ_n(\grad u) - \bQ_n(\grad v)\right)\cdot (\grad u - \grad v) &= -k  \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad \right)\cdot (\grad u - \grad v) \\
   &\le - k M  \int_\Omega \left(|\grad u| + |\grad v|\right)^{p-2} |\grad u - \grad v|^2 \\
-  &\stackrel{\ast}{\le} - k M  \int_\Omega \left(|\grad u - \grad v|\right)^{p-2} |\grad u - \grad v|^2 \\
-  &= - k M  \int_\Omega |\grad u - \grad v|^p \\
-  &\le - \frac{k M}{C^p} \|u-v\|^p
+  &\stackrel{\ast}{\le} - k M  \int_\Omega |\grad u - \grad v|^p \\
+  &\le - \frac{k M}{C(\Omega,p)} \|u-v\|^p
 \end{align*}
-and thus \eqref{eq:Qncoercive} with $\eps = kM/C^p > 0$ and $r=p>1$.  (Step $\ast$ holds because by the triangle inequality on $\RR^d$, and the fact that $s\mapsto s^{p-2}$ is nondecreasing, so we have $|a-b|^{p-2} \le (|a| + |b|)^{p-2}$ or $-(|a| + |b|)^{p-2} \le - |a-b|^{p-2}$.)
-
-FIXME: consider $L^1$-contractivity
-
-
-\section{Examples, non-examples, and well-posedness} \label{sec:examples}
-
-In this section FIXME
+and thus \eqref{eq:Qncoercive} with $\eps = kM/C(\Omega,p) > 0$ and $r=p>1$.  Step $\ast$ holds from the triangle inequality, and the fact that $s\mapsto s^{p-2}$ is nondecreasing, so that $-(|a| + |b|)^{p-2} \le - |a-b|^{p-2}$ for $a,b\in\RR^d$.
+\end{example}
 
 FIXME: some examples need this assumption?: a maximum principle property: for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
 \begin{equation}
