@@ -21,6 +21,9 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 //   ./advectlayer -snes_fd -al_dt 0.1
 //   ./advectlayer -snes_fd -al_exactinit
 
+//   ./advectlayer -snes_fd -al_thirdorder -draw_pause 0.5
+//   ./advectlayer -snes_fd -al_box  -draw_pause 0.5
+
 //   ./advectlayer -snes_fd -snes_type vinewtonssls
 //   ./advectlayer -snes_fd -snes_vi_monitor
 
@@ -43,7 +46,7 @@ typedef struct {
             L,    // domain is  0 <= x <= L
             v0,   // scale for velocity v(x)
             f0;   // scale for source term f(x)
-  PetscBool o3;
+  PetscInt  scheme;
 } AppCtx;
 
 
@@ -108,28 +111,38 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   PetscInt        j;
   const PetscReal dt = user->dt, dx = user->dx,
                   nu = dt / dx, nu2 = nu / 2.0;
-  PetscReal       *uold, x;
+  PetscReal       *uold;
 
   PetscFunctionBeginUser;
   ierr = DMDAVecGetArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   for (j=info->xs; j<info->xs+info->xm; j++) {
-      x      = dx/2 + dx * (PetscReal)j;
-      if (user->o3) {
-        // this third-order upwind biased implicit thing only works if v(x)=v0>0
-        const PetscReal mu = user->v0 * nu / 6.0;
-        FF[j] =   mu * u[j-2]
-                - 6.0*mu * u[j-1]
-                + (1.0 + 3.0*mu) * u[j]
-                + 2.0*mu * u[j+1]
-                - uold[j] - dt * fsource(x,user);
-      } else {
-        // centered finite difference, works even if v=v(x)
-        const PetscReal vleft = velocity(x - dx/2,user),
-                        vright = velocity(x + dx/2,user);
-        FF[j] = - nu2 * vleft * u[j-1]
-                + (1.0 + nu2 * (vright - vleft)) * u[j]
-                + nu2 * vright * u[j+1]
-                - uold[j] - dt * fsource(x,user);
+      const PetscReal x = dx/2 + dx * (PetscReal)j;
+      switch (user->scheme) {
+        case 0 : { // backward-Euler, centered scheme; works even if v=v(x)
+          const PetscReal vleft  = velocity(x - dx/2,user),
+                          vright = velocity(x + dx/2,user);
+          FF[j] = - nu2 * vleft * u[j-1]
+                  + (1.0 + nu2 * (vright - vleft)) * u[j]
+                  + nu2 * vright * u[j+1]
+                  - uold[j] - dt * fsource(x,user);
+          break; }
+        case 1 : { // this third-order upwind biased implicit thing only works if v(x)=v0>0
+          const PetscReal mu = user->v0 * nu / 6.0;
+          FF[j] =   mu * u[j-2]
+                  - 6.0*mu * u[j-1]
+                  + (1.0 + 3.0*mu) * u[j]
+                  + 2.0*mu * u[j+1]
+                  - uold[j] - dt * fsource(x,user);
+          break; }
+        case 2 : { // the box scheme; works even if v=v(x)
+          const PetscReal vleft  = velocity(x - dx/2,user),
+                          vright = velocity(x + dx/2,user);
+          FF[j] = u[j-1] + u[j] - uold[j-1] - uold[j]
+                  + nu * ( vright * (u[j] + uold[j]) - vleft * (u[j-1] + uold[j-1]) )
+                  - 2.0 * dt * fsource(x,user);
+          break; }
+        default :
+          SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of scheme\n");
       }
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
@@ -143,7 +156,7 @@ int main(int argc,char **argv) {
   Vec                 u;
   AppCtx              user;
   PetscInt            NN;
-  PetscBool           noshow, useexactinit;
+  PetscBool           noshow, useexactinit, o3set, boxset;
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -165,10 +178,22 @@ int main(int argc,char **argv) {
   useexactinit = PETSC_FALSE;
   ierr = PetscOptionsBool("-exactinit","initialize with exact solution",
                           NULL,useexactinit,&useexactinit,NULL);CHKERRQ(ierr);
-  user.o3 = PETSC_FALSE;
-  ierr = PetscOptionsBool("-thirdorder","use third-order upwind biased FD",
-                          NULL,user.o3,&user.o3,NULL);CHKERRQ(ierr);
+  o3set = PETSC_FALSE;
+  boxset = PETSC_FALSE;
+  ierr = PetscOptionsBool("-thirdorder","use third-order upwind-biased FD scheme",
+                          NULL,o3set,&o3set,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool("-box","use box method FD scheme",
+                          NULL,boxset,&boxset,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
+
+  if (o3set && boxset) {
+    SETERRQ(PETSC_COMM_WORLD,1,"set -thirdorder or -box or neither, but BOTH -thirdorder and -box is conflict\n");
+  } else if (o3set)
+    user.scheme = 1;
+  else if (boxset)
+    user.scheme = 2;
+  else
+    user.scheme = 0;
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
