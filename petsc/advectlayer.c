@@ -248,11 +248,15 @@ int main(int argc,char **argv) {
     }
     for (n = 0; n < NN; ++n) {
       ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %7g: ", t+user.dt); CHKERRQ(ierr);
+      ierr = VecScale(u,0.99); CHKERRQ(ierr); // move u so that line search goes some distance
       ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
       ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
       ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations;   result = %s\n",
                          its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+      if (reason < 0) {
+        SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
+      }
       if (!noshow) {
         ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
       }
