@@ -23,8 +23,8 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 //   ./layer -snes_fd -lay_dt 0.1
 //   ./layer -snes_fd -lay_exactinit
 
-//   ./layer -snes_fd -lay_thirdorder -draw_pause 0.5
-//   ./layer -snes_fd -lay_box  -draw_pause 0.5
+//   ./layer -snes_fd -lay_scheme 1 -draw_pause 0.5
+//   ./layer -snes_fd -lay_scheme 2 -draw_pause 0.5
 
 //   ./layer -snes_fd -snes_type vinewtonssls
 //   ./layer -snes_fd -snes_vi_monitor
@@ -34,11 +34,11 @@ static const char help[] = "Solves advecting-layer problem in 1d:\n"
 //   ./layer -snes_fd -lay_steps 1000 -da_refine 3 -lay_dt 0.0025 -snes_rtol 1.0e-10
 
 // run at 10^5 CFL with 1.6 million DOFs
-//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_thirdorder
-//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_box
+//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_scheme 1
+//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_scheme 2
 
 // why the big difference in Newton iterations (box is bad, and pc choices do not affect):
-//   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit -lay_box
+//   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit -lay_scheme 2
 //   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit
 
 // for lev in 0 1 2 3 4; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -da_refine $lev | grep error; done
@@ -178,7 +178,7 @@ int main(int argc,char **argv) {
   Vec                 u;
   AppCtx              user;
   PetscInt            NN;
-  PetscBool           noshow, useexactinit, o3set, boxset;
+  PetscBool           noshow, useexactinit;
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -186,7 +186,6 @@ int main(int argc,char **argv) {
   user.L  = 100.0;
   user.v0 = 100.0;
   user.f0 = 1.0;
-  user.vchoice = 0;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
   NN = 10;
@@ -201,24 +200,13 @@ int main(int argc,char **argv) {
   useexactinit = PETSC_FALSE;
   ierr = PetscOptionsBool("-exactinit","initialize with exact solution",
                           NULL,useexactinit,&useexactinit,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt("-vchoice","choose form of v(x)",
+  user.vchoice = 0;
+  ierr = PetscOptionsInt("-vchoice","choose form of v(x): 0 constant, 1 quadratic",
                          NULL,user.vchoice,&user.vchoice,NULL);CHKERRQ(ierr);
-  o3set = PETSC_FALSE;
-  boxset = PETSC_FALSE;
-  ierr = PetscOptionsBool("-thirdorder","use third-order upwind-biased FD scheme",
-                          NULL,o3set,&o3set,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool("-box","use box method FD scheme",
-                          NULL,boxset,&boxset,NULL);CHKERRQ(ierr);
+  user.scheme = 0;
+  ierr = PetscOptionsInt("-scheme","choose FD scheme: 0 centered BEuler, 1 third-order, 2 box, 3 centered trapezoid",
+                          NULL,user.scheme,&user.scheme,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
-
-  if (o3set && boxset) {
-    SETERRQ(PETSC_COMM_WORLD,1,"set -thirdorder or -box or neither, but BOTH -thirdorder and -box is conflict\n");
-  } else if (o3set)
-    user.scheme = 1;
-  else if (boxset)
-    user.scheme = 2;
-  else
-    user.scheme = 0;
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
