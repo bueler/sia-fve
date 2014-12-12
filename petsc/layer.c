@@ -69,10 +69,10 @@ typedef struct {
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactSolution(Vec,const AppCtx*);
-extern PetscReal velocity(const PetscReal,const AppCtx*);
-extern PetscReal fsource(const PetscReal, const AppCtx*);
+extern PetscErrorCode FillWithSource(Vec,const AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
-extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*);
+extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[]);
+extern PetscErrorCode ViewToASCII(Vec,const char[],const char[],const PetscInt,const PetscReal);
 
 
 int main(int argc,char **argv) {
@@ -80,7 +80,8 @@ int main(int argc,char **argv) {
   SNES                snes;
   Vec                 u;
   AppCtx              user;
-  PetscBool           noshow;
+  PetscBool           noshow,genfigs;
+  char                figsprefix[512];
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -98,7 +99,7 @@ int main(int argc,char **argv) {
   user.NN = 10;
   user.vchoice = 0;
   noshow = PETSC_FALSE;
-  ierr = ProcessOptions(&user,&noshow); CHKERRQ(ierr);
+  ierr = ProcessOptions(&user,&noshow,&genfigs,figsprefix); CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
@@ -130,6 +131,15 @@ int main(int argc,char **argv) {
     ierr = VecSet(user.uold,0.0); CHKERRQ(ierr);
   }
 
+  if (genfigs) {
+    Vec f;
+    ierr = VecDuplicate(u,&f); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)f,"source f"); CHKERRQ(ierr);
+    ierr = FillWithSource(f,&user); CHKERRQ(ierr);
+    ierr = ViewToASCII(f,figsprefix,"f",0,0.0); CHKERRQ(ierr);
+    ierr = VecDestroy(&f); CHKERRQ(ierr);
+  }
+
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
   ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
@@ -150,18 +160,21 @@ int main(int argc,char **argv) {
       ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
     }
     for (n = 0; n < user.NN; ++n) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %7g: ", t+user.dt); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD, "  time[%3d]=%6g: ", n+1, t+user.dt); CHKERRQ(ierr);
       ierr = VecScale(u,0.99); CHKERRQ(ierr); // move u so that line search goes some distance
       ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
       ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
       ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
                          its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+      if (genfigs) {
+          ierr = ViewToASCII(u,figsprefix,"u",n+1,t+user.dt); CHKERRQ(ierr);
+      }
       if (reason < 0) {
-        SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
+          SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
       }
       if (!noshow) {
-        ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+          ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
       }
       ierr = VecCopy(u, user.uold); CHKERRQ(ierr);
       t += user.dt;
@@ -318,8 +331,26 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
 }
 
 
+PetscErrorCode FillWithSource(Vec f, const AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscFunctionBeginUser;
+  const PetscReal dx    = user->dx;
+  DMDALocalInfo info;
+  PetscReal     *af, x;
+  PetscInt      j;
+  ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, f, &af);CHKERRQ(ierr);
+  for (j=info.xs; j<info.xs+info.xm; j++) {
+      x = dx/2 + dx * (PetscReal)j;
+      af[j] = fsource(x,user);
+  }
+  ierr = DMDAVecRestoreArray(user->da, f, &af);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
 /* for call-back: evaluate residual FF(x) on local process patch */
-PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow) {
+PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfigs, char figsprefix[]) {
   PetscErrorCode ierr;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
@@ -332,6 +363,9 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow) {
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsString(
+      "-genfigs", "generate one ascii file for each frame using this prefix",
+      NULL,figsprefix,figsprefix,sizeof(figsprefix),genfigs); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-k", "q_1 = - k |u_x|^{p-2} u_x  is p-laplacian flux; this sets k",
       NULL,user->k,&user->k,NULL);CHKERRQ(ierr);
@@ -351,6 +385,25 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow) {
       "-vchoice","choose form of v(x): 0 constant, 1 quadratic",
       NULL,user->vchoice,&user->vchoice,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+//  we can write out the solution u and the source f into a given subdirectory (=prefix)
+PetscErrorCode ViewToASCII(Vec u, const char prefix[], const char name[], 
+                           const PetscInt nn, const PetscReal time) {
+    PetscErrorCode ierr;
+    PetscViewer viewer;
+    char filename[1024];
+    int  strerr;
+    strerr = sprintf(filename,"%s%s-%d-%g.txt",prefix,name,nn,time);
+    if (strerr < 0) {
+        SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
+    }
+    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer); CHKERRQ(ierr);
+    ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
+    ierr = VecView(u,viewer); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
