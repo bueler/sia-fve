@@ -1,13 +1,17 @@
-static const char help[] = "Solves advecting-layer problem in 1d:\n"
+static const char help[] =
+"Solves conservation-equation-for-layer problem in 1d:\n"
 "    u_t + q_x = f\n"
 "where the flux q combines an advecting layer\n"
-"    q = v(x) u\n"
+"    q_0 = v(x) u\n"
 "with a p-Laplacian\n"
-"    q = - k |u_x|^{p-2} u_x\n"
+"    q_1 = - k |u_x|^{p-2} u_x\n"
+"so\n"
+"    q = (1-lambda) q_0 + lambda q_1\n"
+"and 0 <= lambda <= 1.\n"
 "Domain is 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
-"Several O(dx^2) finite difference methods to choose among, and exact\n"
-"solution for v(x)=v0 case, and SNESVI.\n\n";
+"Uses SNESVI.  Several O(dx^2) finite difference methods to choose among, and\n"
+"exact solution for v(x)=v0 case, and.\n\n";
 
 //FIXME: add Jacobian
 
@@ -55,9 +59,14 @@ typedef struct {
             dx,   // fixed grid spacing
             L,    // domain is  0 <= x <= L
             v0,   // scale for velocity v(x)
-            f0;   // scale for source term f(x)
-  PetscInt  scheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
-            vchoice; // 0 = (v(x) = v0), 1 = (v(x) quadratic)
+            f0,   // scale for source term f(x)
+            p,    // exponent for p-laplacian term
+            k,    // scale for p-laplacian term
+            lambda;    // 0.0 = advection, 1.0 = p-Laplacian
+  PetscInt  adscheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
+            vchoice,   // 0 = (v(x) = v0), 1 = (v(x) quadratic)
+            NN;        // number of time steps
+  PetscBool exactinit; // initialize with exact solution
 } AppCtx;
 
 
@@ -75,7 +84,12 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
   if (user->vchoice > 0) {
-    SETERRQ(PETSC_COMM_WORLD,4,"exact solution only available in v(x)=v0 case\n");
+    SETERRQ(PETSC_COMM_WORLD,4,
+      "exact solution only available in v(x)=v0 case\n");
+  }
+  if (user->lambda > 0.0) {
+    SETERRQ(PETSC_COMM_WORLD,5,
+      "exact solution only available in pure-advection (lambda=0) case\n");
   }
   const PetscReal twopi = 2.0 * PETSC_PI,
                   x0    = (user->L/twopi) * asin(1.0/5.0),
@@ -132,7 +146,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   ierr = DMDAVecGetArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   for (j=info->xs; j<info->xs+info->xm; j++) {
       const PetscReal x = dx/2 + dx * (PetscReal)j;
-      switch (user->scheme) {
+      // FIXME: add p-laplacian term
+      switch (user->adscheme) {
         case 0 : { // backward-Euler, centered scheme
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
@@ -172,10 +187,47 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                   - dt * fsource(x,user);
           break; }
         default :
-          SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of scheme\n");
+          SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of adscheme\n");
       }
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+/* for call-back: evaluate residual FF(x) on local process patch */
+PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow) {
+  PetscErrorCode ierr;
+
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
+  ierr = PetscOptionsInt(
+      "-adscheme", "choose FD scheme for advection: 0 centered BEuler, 1 third-order, 2 box, 3 centered trapezoid",
+      NULL,user->adscheme,&user->adscheme,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-dt", "length of time step",
+      NULL,user->dt,&user->dt,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-exactinit", "initialize with exact solution",
+      NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-k", "q_1 = - k |u_x|^{p-2} u_x  is p-laplacian flux; this sets k",
+      NULL,user->k,&user->k,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-lambda", "q = (1-lambda) q_0 + lambda q_1 where q_0 is advective part and q_1 is p-laplacian",
+      NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-noshow", "do not show solution with X",
+      NULL,*noshow,noshow,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-p", "q_1 = - k |u_x|^{p-2} u_x  is p-laplacian flux; this sets p",
+      NULL,user->p,&user->p,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt(
+      "-steps", "number of time steps",
+      NULL,user->NN,&user->NN,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt(
+      "-vchoice","choose form of v(x): 0 constant, 1 quadratic",
+      NULL,user->vchoice,&user->vchoice,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -185,8 +237,7 @@ int main(int argc,char **argv) {
   SNES                snes;
   Vec                 u;
   AppCtx              user;
-  PetscInt            NN;
-  PetscBool           noshow, useexactinit;
+  PetscBool           noshow;
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -195,26 +246,16 @@ int main(int argc,char **argv) {
   user.v0 = 100.0;
   user.f0 = 1.0;
 
-  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
-  NN = 10;
-  ierr = PetscOptionsInt("-steps","number of time steps",
-                         NULL,NN,&NN,NULL);CHKERRQ(ierr);
+  user.adscheme = 0;
   user.dt = 0.05;
-  ierr = PetscOptionsReal("-dt","length of time step",
-                          NULL,user.dt,&user.dt,NULL);CHKERRQ(ierr);
-  noshow = PETSC_FALSE;
-  ierr = PetscOptionsBool("-noshow","do not show solution with X",
-                          NULL,noshow,&noshow,NULL);CHKERRQ(ierr);
-  useexactinit = PETSC_FALSE;
-  ierr = PetscOptionsBool("-exactinit","initialize with exact solution",
-                          NULL,useexactinit,&useexactinit,NULL);CHKERRQ(ierr);
+  user.exactinit = PETSC_FALSE;
+  user.k = 1.0;
+  user.lambda = 0.0;
+  user.p = 2.0;
+  user.NN = 10;
   user.vchoice = 0;
-  ierr = PetscOptionsInt("-vchoice","choose form of v(x): 0 constant, 1 quadratic",
-                         NULL,user.vchoice,&user.vchoice,NULL);CHKERRQ(ierr);
-  user.scheme = 0;
-  ierr = PetscOptionsInt("-scheme","choose FD scheme: 0 centered BEuler, 1 third-order, 2 box, 3 centered trapezoid",
-                          NULL,user.scheme,&user.scheme,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsEnd();CHKERRQ(ierr);
+  noshow = PETSC_FALSE;
+  ierr = ProcessOptions(&user,&noshow); CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
@@ -227,7 +268,7 @@ int main(int argc,char **argv) {
   ierr = PetscPrintf(PETSC_COMM_WORLD,
                      "doing %d steps of dt=%f on grid of %d points with spacing %g\n"
                      "[CFL time step is %g]\n",
-                     NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
+                     user.NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
   // cell-centered grid
   ierr = DMDASetUniformCoordinates(user.da,user.dx/2,user.L-user.dx/2,
                                    -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
@@ -240,7 +281,7 @@ int main(int argc,char **argv) {
   ierr = VecSetOptionsPrefix(user.uold,"uold_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)user.uold,"OLD solution uold"); CHKERRQ(ierr);
 
-  if (useexactinit) {
+  if (user.exactinit) {
     ierr = SetToExactSolution(user.uold,&user);CHKERRQ(ierr);
   } else {
     ierr = VecSet(user.uold,0.0); CHKERRQ(ierr);
@@ -267,7 +308,7 @@ int main(int argc,char **argv) {
     if (!noshow) {
       ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
     }
-    for (n = 0; n < NN; ++n) {
+    for (n = 0; n < user.NN; ++n) {
       ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %7g: ", t+user.dt); CHKERRQ(ierr);
       ierr = VecScale(u,0.99); CHKERRQ(ierr); // move u so that line search goes some distance
       ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
@@ -287,15 +328,17 @@ int main(int argc,char **argv) {
   }
 
   // evaluate numerical error relative to steady state
-  Vec uexact;
-  PetscScalar errnorm;
-  ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
-  ierr = SetToExactSolution(uexact,&user);CHKERRQ(ierr);
-  ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
-  ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "on dx=%.4e grid with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
-             user.dx,NN,user.dt,errnorm); CHKERRQ(ierr);
+  if ((user.vchoice==0) && (user.lambda==0.0)) {
+      Vec uexact;
+      PetscScalar errnorm;
+      ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
+      ierr = SetToExactSolution(uexact,&user);CHKERRQ(ierr);
+      ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
+      ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+               "on dx=%.4e grid with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
+               user.dx,user.NN,user.dt,errnorm); CHKERRQ(ierr);
+  }
 
   ierr = VecDestroy(&u);CHKERRQ(ierr);
   ierr = VecDestroy(&user.uold);CHKERRQ(ierr);
