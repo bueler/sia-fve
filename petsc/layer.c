@@ -40,7 +40,9 @@ static const char help[] =
 // run at 10^5 CFL with 1.6 million DOFs
 //   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_scheme 1
 
-// for lev in 0 1 2 3 4; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -da_refine $lev | grep error; done
+// for lev in 0 1 2 3 4 5 6; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
+
+// ./layer -lay_steps 500 -lay_adscheme 2 -lay_lambda 0.9 -lay_k 100.0 -da_refine 3
 
 #include <math.h>
 #include <petscdmda.h>
@@ -244,11 +246,16 @@ PetscReal velocity(const PetscReal x, const AppCtx *user) {
 }
 
 
-
 // without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
 PetscReal fsource(const PetscReal x, const AppCtx *user) {
   const PetscReal CC = 2.0 * PETSC_PI / user-> L;
   return - (user->f0/5.0) + user->f0 * sin(CC * x);
+}
+
+
+// p-Laplacian
+PetscReal plap(const PetscReal dudx, const PetscReal p) {
+  return PetscPowReal(PetscAbsReal(dudx),p-2.0) * dudx;
 }
 
 
@@ -257,21 +264,31 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                                  AppCtx *user) {
   PetscErrorCode  ierr;
   PetscInt        j;
-  const PetscReal dt = user->dt, dx = user->dx,
+  const PetscReal dt = user->dt, dx = user->dx, p = user->p,
                   nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
   PetscReal       *uold;
 
   PetscFunctionBeginUser;
   ierr = DMDAVecGetArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   for (j=info->xs; j<info->xs+info->xm; j++) {
+      // non-flux part of residual
       const PetscReal x = dx/2 + dx * (PetscReal)j;
-      // FIXME: add p-laplacian term
       FF[j] = u[j] - uold[j] - dt * fsource(x,user);
+      // add p-laplacian flux part
+      const PetscReal duright    = (u[j+1] - u[j]) / dx,
+                      duleft     = (u[j] - u[j-1]) / dx,
+                      duoldright = (uold[j+1] - uold[j]) / dx,
+                      duoldleft  = (uold[j] - uold[j-1]) / dx;
+      PetscReal plFF;
+      plFF = (plap(duright,p) - plap(duleft,p)) - (plap(duoldright,p) - plap(duoldleft,p));
+      FF[j] += user->lambda * (- user->k * nu2 * plFF);
+      // add advection part
+      PetscReal adFF;
       switch (user->adscheme) {
         case 0 : { // backward-Euler, centered scheme
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
-          FF[j] += - nu2 * vleft * u[j-1]
+          adFF =   - nu2 * vleft * u[j-1]
                    + nu2 * (vright - vleft) * u[j]
                    + nu2 * vright * u[j+1];
           break; }
@@ -280,7 +297,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
             SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
           }
           const PetscReal mu = user->v0 * nu / 6.0;
-          FF[j] +=      mu * u[j-2]
+          adFF =        mu * u[j-2]
                   - 6.0*mu * u[j-1]
                   + 3.0*mu * u[j]
                   + 2.0*mu * u[j+1];
@@ -288,12 +305,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
         case 2 : { // trapezoid rule, centered scheme;
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
-          FF[j] +=  nu4 * (vright * (u[j+1] + u[j]) - vleft * (u[j] + u[j-1]))
+          adFF =    nu4 * (vright * (u[j+1] + u[j]) - vleft * (u[j] + u[j-1]))
                   + nu4 * (vright * (uold[j+1] + uold[j]) - vleft * (uold[j] + uold[j-1]));
           break; }
         default :
           SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of adscheme\n");
       }
+      FF[j] += (1.0 - user->lambda) * adFF;
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   PetscFunctionReturn(0);
