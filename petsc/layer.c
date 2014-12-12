@@ -125,7 +125,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   PetscErrorCode  ierr;
   PetscInt        j;
   const PetscReal dt = user->dt, dx = user->dx,
-                  nu = dt / dx, nu2 = nu / 2.0;
+                  nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
   PetscReal       *uold;
 
   PetscFunctionBeginUser;
@@ -133,7 +133,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   for (j=info->xs; j<info->xs+info->xm; j++) {
       const PetscReal x = dx/2 + dx * (PetscReal)j;
       switch (user->scheme) {
-        case 0 : { // backward-Euler, centered scheme; works even if v=v(x)
+        case 0 : { // backward-Euler, centered scheme
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
           FF[j] = - nu2 * vleft * u[j-1]
@@ -141,7 +141,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                   + nu2 * vright * u[j+1]
                   - uold[j] - dt * fsource(x,user);
           break; }
-        case 1 : { // this third-order upwind biased implicit thing only works if v(x)=v0>0
+        case 1 : { // third-order upwind biased implicit thing; REQUIRES v(x)=v0>0
           if (user->vchoice > 0) {
             SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
           }
@@ -152,7 +152,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                   + 2.0*mu * u[j+1]
                   - uold[j] - dt * fsource(x,user);
           break; }
-        case 2 : { // the box scheme; works even if v=v(x)
+        case 2 : { // the box scheme
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
           //const PetscReal uoldleft  = 0.2 * uold[j-2] + 0.6 * uold[j-1] + 0.2 * uold[j],
@@ -162,6 +162,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           FF[j] = u[j-1] + u[j] - uoldleft - uoldright
                   + nu * ( vright * (u[j] + uoldright) - vleft * (u[j-1] + uoldleft) )
                   - 2.0 * dt * fsource(x,user);
+          break; }
+        case 3 : { // trapezoid rule, centered scheme;
+          const PetscReal vleft  = velocity(x - dx/2,user),
+                          vright = velocity(x + dx/2,user);
+          FF[j] = u[j] - uold[j]
+                  + nu4 * (vright * (u[j+1] + u[j]) - vleft * (u[j] + u[j-1]))
+                  + nu4 * (vright * (uold[j+1] + uold[j]) - vleft * (uold[j] + uold[j-1]))
+                  - dt * fsource(x,user);
           break; }
         default :
           SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of scheme\n");
