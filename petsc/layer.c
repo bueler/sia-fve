@@ -70,6 +70,132 @@ typedef struct {
 } AppCtx;
 
 
+extern PetscErrorCode FormBounds(SNES,Vec,Vec);
+extern PetscErrorCode SetToExactSolution(Vec,const AppCtx*);
+extern PetscReal velocity(const PetscReal,const AppCtx*);
+extern PetscReal fsource(const PetscReal, const AppCtx*);
+extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
+extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*);
+
+
+int main(int argc,char **argv) {
+  PetscErrorCode      ierr;
+  SNES                snes;
+  Vec                 u;
+  AppCtx              user;
+  PetscBool           noshow;
+  DMDALocalInfo       info;
+
+  PetscInitialize(&argc,&argv,(char*)0,help);
+
+  user.L  = 100.0;
+  user.v0 = 100.0;
+  user.f0 = 1.0;
+
+  user.adscheme = 0;
+  user.dt = 0.05;
+  user.exactinit = PETSC_FALSE;
+  user.k = 1.0;
+  user.lambda = 0.0;
+  user.p = 2.0;
+  user.NN = 10;
+  user.vchoice = 0;
+  noshow = PETSC_FALSE;
+  ierr = ProcessOptions(&user,&noshow); CHKERRQ(ierr);
+
+  ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
+                      -50,         // override with -da_grid_x or -da_refine
+                      1, 2, NULL,  // dof = 1 and stencil width = 2
+                      &user.da); CHKERRQ(ierr);
+  ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
+
+  ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
+  user.dx = user.L / (PetscReal)(info.mx);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "doing %d steps of dt=%f on grid of %d points with spacing %g\n"
+                     "[CFL time step is %g]\n",
+                     user.NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
+  // cell-centered grid
+  ierr = DMDASetUniformCoordinates(user.da,user.dx/2,user.L-user.dx/2,
+                                   -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
+
+  ierr = DMCreateGlobalVector(user.da,&u);CHKERRQ(ierr);
+  ierr = VecSetOptionsPrefix(u,"u_"); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)u,"solution u"); CHKERRQ(ierr);
+
+  ierr = DMCreateGlobalVector(user.da,&user.uold);CHKERRQ(ierr);
+  ierr = VecSetOptionsPrefix(user.uold,"uold_"); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)user.uold,"OLD solution uold"); CHKERRQ(ierr);
+
+  if (user.exactinit) {
+    ierr = SetToExactSolution(user.uold,&user);CHKERRQ(ierr);
+  } else {
+    ierr = VecSet(user.uold,0.0); CHKERRQ(ierr);
+  }
+
+  ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
+  ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
+  ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
+  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
+
+  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
+            (PetscErrorCode (*)(DMDALocalInfo*,void*,void*,void*))FormFunctionLocal,
+            &user);CHKERRQ(ierr);
+
+  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); CHKERRQ(ierr);
+
+  /* time-stepping loop */
+  {
+    PetscReal  t;
+    PetscInt   n, its;
+    SNESConvergedReason reason;
+    t = 0.0;
+    ierr = VecCopy(user.uold,u);CHKERRQ(ierr);
+    if (!noshow) {
+      ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+    }
+    for (n = 0; n < user.NN; ++n) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %7g: ", t+user.dt); CHKERRQ(ierr);
+      ierr = VecScale(u,0.99); CHKERRQ(ierr); // move u so that line search goes some distance
+      ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
+      ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
+      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
+                         its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+      if (reason < 0) {
+        SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
+      }
+      if (!noshow) {
+        ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+      }
+      ierr = VecCopy(u, user.uold); CHKERRQ(ierr);
+      t += user.dt;
+    }
+  }
+
+  // evaluate numerical error relative to steady state
+  if ((user.vchoice==0) && (user.lambda==0.0)) {
+      Vec uexact;
+      PetscScalar errnorm;
+      ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
+      ierr = SetToExactSolution(uexact,&user);CHKERRQ(ierr);
+      ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
+      ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+               "on dx=%.4e grid with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
+               user.dx,user.NN,user.dt,errnorm); CHKERRQ(ierr);
+  }
+
+  ierr = VecDestroy(&u);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.uold);CHKERRQ(ierr);
+  ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+  ierr = DMDestroy(&user.da);CHKERRQ(ierr);
+
+  PetscFinalize();
+  return 0;
+}
+
+
 //  for call-back: tell SNESVI (variational inequality) that we want  0.0 <= u < +infinity
 PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscErrorCode ierr;
@@ -229,123 +355,5 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow) {
       NULL,user->vchoice,&user->vchoice,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
-}
-
-
-int main(int argc,char **argv) {
-  PetscErrorCode      ierr;
-  SNES                snes;
-  Vec                 u;
-  AppCtx              user;
-  PetscBool           noshow;
-  DMDALocalInfo       info;
-
-  PetscInitialize(&argc,&argv,(char*)0,help);
-
-  user.L  = 100.0;
-  user.v0 = 100.0;
-  user.f0 = 1.0;
-
-  user.adscheme = 0;
-  user.dt = 0.05;
-  user.exactinit = PETSC_FALSE;
-  user.k = 1.0;
-  user.lambda = 0.0;
-  user.p = 2.0;
-  user.NN = 10;
-  user.vchoice = 0;
-  noshow = PETSC_FALSE;
-  ierr = ProcessOptions(&user,&noshow); CHKERRQ(ierr);
-
-  ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
-                      -50,         // override with -da_grid_x or -da_refine
-                      1, 2, NULL,  // dof = 1 and stencil width = 2
-                      &user.da); CHKERRQ(ierr);
-  ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
-
-  ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
-  user.dx = user.L / (PetscReal)(info.mx);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "doing %d steps of dt=%f on grid of %d points with spacing %g\n"
-                     "[CFL time step is %g]\n",
-                     user.NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
-  // cell-centered grid
-  ierr = DMDASetUniformCoordinates(user.da,user.dx/2,user.L-user.dx/2,
-                                   -1.0,-1.0,-1.0,-1.0);CHKERRQ(ierr);
-
-  ierr = DMCreateGlobalVector(user.da,&u);CHKERRQ(ierr);
-  ierr = VecSetOptionsPrefix(u,"u_"); CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)u,"solution u"); CHKERRQ(ierr);
-
-  ierr = DMCreateGlobalVector(user.da,&user.uold);CHKERRQ(ierr);
-  ierr = VecSetOptionsPrefix(user.uold,"uold_"); CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)user.uold,"OLD solution uold"); CHKERRQ(ierr);
-
-  if (user.exactinit) {
-    ierr = SetToExactSolution(user.uold,&user);CHKERRQ(ierr);
-  } else {
-    ierr = VecSet(user.uold,0.0); CHKERRQ(ierr);
-  }
-
-  ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
-  ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
-  ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
-  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
-
-  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
-            (PetscErrorCode (*)(DMDALocalInfo*,void*,void*,void*))FormFunctionLocal,
-            &user);CHKERRQ(ierr);
-
-  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); CHKERRQ(ierr);
-
-  /* time-stepping loop */
-  {
-    PetscReal  t;
-    PetscInt   n, its;
-    SNESConvergedReason reason;
-    t = 0.0;
-    ierr = VecCopy(user.uold,u);CHKERRQ(ierr);
-    if (!noshow) {
-      ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
-    }
-    for (n = 0; n < user.NN; ++n) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD, "  time %7g: ", t+user.dt); CHKERRQ(ierr);
-      ierr = VecScale(u,0.99); CHKERRQ(ierr); // move u so that line search goes some distance
-      ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
-      ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
-      ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
-                         its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
-      if (reason < 0) {
-        SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
-      }
-      if (!noshow) {
-        ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
-      }
-      ierr = VecCopy(u, user.uold); CHKERRQ(ierr);
-      t += user.dt;
-    }
-  }
-
-  // evaluate numerical error relative to steady state
-  if ((user.vchoice==0) && (user.lambda==0.0)) {
-      Vec uexact;
-      PetscScalar errnorm;
-      ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
-      ierr = SetToExactSolution(uexact,&user);CHKERRQ(ierr);
-      ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
-      ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-               "on dx=%.4e grid with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
-               user.dx,user.NN,user.dt,errnorm); CHKERRQ(ierr);
-  }
-
-  ierr = VecDestroy(&u);CHKERRQ(ierr);
-  ierr = VecDestroy(&user.uold);CHKERRQ(ierr);
-  ierr = SNESDestroy(&snes);CHKERRQ(ierr);
-  ierr = DMDestroy(&user.da);CHKERRQ(ierr);
-
-  PetscFinalize();
-  return 0;
 }
 
