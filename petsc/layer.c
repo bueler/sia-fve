@@ -39,11 +39,6 @@ static const char help[] =
 
 // run at 10^5 CFL with 1.6 million DOFs
 //   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_scheme 1
-//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_scheme 2
-
-// why the big difference in Newton iterations (box is bad, and pc choices do not affect):
-//   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit -lay_scheme 2
-//   mpiexec -n 4 ./layer -lay_noshow -lay_steps 10 -da_refine 5 -lay_exactinit
 
 // for lev in 0 1 2 3 4; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -da_refine $lev | grep error; done
 
@@ -137,11 +132,9 @@ int main(int argc,char **argv) {
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
   ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
-
   ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
             (PetscErrorCode (*)(DMDALocalInfo*,void*,void*,void*))FormFunctionLocal,
             &user);CHKERRQ(ierr);
-
   ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); CHKERRQ(ierr);
 
   /* time-stepping loop */
@@ -273,44 +266,30 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   for (j=info->xs; j<info->xs+info->xm; j++) {
       const PetscReal x = dx/2 + dx * (PetscReal)j;
       // FIXME: add p-laplacian term
+      FF[j] = u[j] - uold[j] - dt * fsource(x,user);
       switch (user->adscheme) {
         case 0 : { // backward-Euler, centered scheme
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
-          FF[j] = - nu2 * vleft * u[j-1]
-                  + (1.0 + nu2 * (vright - vleft)) * u[j]
-                  + nu2 * vright * u[j+1]
-                  - uold[j] - dt * fsource(x,user);
+          FF[j] += - nu2 * vleft * u[j-1]
+                   + nu2 * (vright - vleft) * u[j]
+                   + nu2 * vright * u[j+1];
           break; }
         case 1 : { // third-order upwind biased implicit thing; REQUIRES v(x)=v0>0
           if (user->vchoice > 0) {
             SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
           }
           const PetscReal mu = user->v0 * nu / 6.0;
-          FF[j] =   mu * u[j-2]
+          FF[j] +=      mu * u[j-2]
                   - 6.0*mu * u[j-1]
-                  + (1.0 + 3.0*mu) * u[j]
-                  + 2.0*mu * u[j+1]
-                  - uold[j] - dt * fsource(x,user);
+                  + 3.0*mu * u[j]
+                  + 2.0*mu * u[j+1];
           break; }
-        case 2 : { // the box scheme
+        case 2 : { // trapezoid rule, centered scheme;
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
-          //const PetscReal uoldleft  = 0.2 * uold[j-2] + 0.6 * uold[j-1] + 0.2 * uold[j],
-          //                uoldright = 0.2 * uold[j-1] + 0.6 * uold[j] + 0.2 * uold[j+1];
-          const PetscReal uoldleft  = uold[j-1],
-                          uoldright = uold[j];
-          FF[j] = u[j-1] + u[j] - uoldleft - uoldright
-                  + nu * ( vright * (u[j] + uoldright) - vleft * (u[j-1] + uoldleft) )
-                  - 2.0 * dt * fsource(x,user);
-          break; }
-        case 3 : { // trapezoid rule, centered scheme;
-          const PetscReal vleft  = velocity(x - dx/2,user),
-                          vright = velocity(x + dx/2,user);
-          FF[j] = u[j] - uold[j]
-                  + nu4 * (vright * (u[j+1] + u[j]) - vleft * (u[j] + u[j-1]))
-                  + nu4 * (vright * (uold[j+1] + uold[j]) - vleft * (uold[j] + uold[j-1]))
-                  - dt * fsource(x,user);
+          FF[j] +=  nu4 * (vright * (u[j+1] + u[j]) - vleft * (u[j] + u[j-1]))
+                  + nu4 * (vright * (uold[j+1] + uold[j]) - vleft * (uold[j] + uold[j-1]));
           break; }
         default :
           SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of adscheme\n");
@@ -327,7 +306,7 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow) {
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
   ierr = PetscOptionsInt(
-      "-adscheme", "choose FD scheme for advection: 0 centered BEuler, 1 third-order, 2 box, 3 centered trapezoid",
+      "-adscheme", "choose FD scheme for advection: 0 centered BEuler, 1 third-order, 2 centered trapezoid",
       NULL,user->adscheme,&user->adscheme,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-dt", "length of time step",
