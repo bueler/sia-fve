@@ -3,6 +3,8 @@ talk.pdf
 
 cartoon-*.pdf
 
+*.pyc
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof

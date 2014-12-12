@@ -46,9 +46,9 @@ def drawclimate(x,s,mycolor):
             magarr = 0.05
         arrow(xarr,s.max()+0.2,0.0,magarr,lw=1.5,head_width=0.1,color=mycolor)
 
-debug = False
-def mysave(name):
-    if debug:
+figdebug = False
+def figsave(name):
+    if figdebug:
         show()  # debug
     else:
         savefig(name,bbox_inches='tight')
@@ -57,13 +57,13 @@ def mysave(name):
 figure(figsize=(10,4))
 genbasicfig()
 hold(False)
-mysave('cartoon-layer.pdf')
+figsave('cartoon-layer.pdf')
 
 figure(figsize=(10,4))
 x, s, _ = genbasicfig()
 drawclimate(x,s,'b')
 hold(False)
-mysave('cartoon-wclimate.pdf')
+figsave('cartoon-wclimate.pdf')
 
 # for circles
 th = linspace(0.0,2.0*pi+pi/100.0,201)
@@ -73,21 +73,21 @@ x, s, _ = genbasicfig()
 drawclimate(x,s,'b')
 plot(x[850] + 0.4*cos(th), s.max()+0.3 + 0.4*sin(th),'-r',lw=3.0)
 hold(False)
-mysave('cartoon-sensitive-one.pdf')
+figsave('cartoon-sensitive-one.pdf')
 
 figure(figsize=(10,4))
 x, s, _ = genbasicfig()
 drawclimate(x,s,'b')
 plot(x[50] + 0.4*cos(th), s.max()+0.25 + 0.4*sin(th),'-r',lw=3.0)
 hold(False)
-mysave('cartoon-sensitive-two.pdf')
+figsave('cartoon-sensitive-two.pdf')
 
 figure(figsize=(10,4))
 x, s, _ = genbasicfig()
 drawclimate(x,s,'b')
 plot(x[795] + 0.4*cos(th), s[795] + 0.65*sin(th),'-r',lw=3.0)
 hold(False)
-mysave('cartoon-sensitive-three.pdf')
+figsave('cartoon-sensitive-three.pdf')
 
 figure(figsize=(10,4))
 x, s, b = genbasicfig(showqh=False)
@@ -115,5 +115,5 @@ t4 = text(x[500],-1.5,r'$\Omega_n$')
 t4.set_font_properties(font)
 axis([0.0,10.0,-1.0,4.5])
 hold(False)
-mysave('cartoon-sets.pdf')
+figsave('cartoon-sets.pdf')
 

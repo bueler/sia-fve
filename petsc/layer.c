@@ -72,7 +72,7 @@ extern PetscErrorCode SetToExactSolution(Vec,const AppCtx*);
 extern PetscErrorCode FillWithSource(Vec,const AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[]);
-extern PetscErrorCode ViewToASCII(Vec,const char[],const char[],const PetscInt,const PetscReal);
+extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[],const PetscInt);
 
 
 int main(int argc,char **argv) {
@@ -86,8 +86,8 @@ int main(int argc,char **argv) {
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
-  user.L  = 100.0;
-  user.v0 = 100.0;
+  user.L  = 10.0;
+  user.v0 = 10.0;
   user.f0 = 1.0;
 
   user.adscheme = 0;
@@ -110,7 +110,7 @@ int main(int argc,char **argv) {
   ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
   user.dx = user.L / (PetscReal)(info.mx);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "doing %d steps of dt=%f on grid of %d points with spacing %g\n"
+                     "doing %d steps of dt=%f on grid of %d points with spacing dx=%g\n"
                      "[CFL time step is %g]\n",
                      user.NN,user.dt,info.mx,user.dx,user.dx/user.v0); CHKERRQ(ierr);
   // cell-centered grid
@@ -136,7 +136,7 @@ int main(int argc,char **argv) {
     ierr = VecDuplicate(u,&f); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)f,"source f"); CHKERRQ(ierr);
     ierr = FillWithSource(f,&user); CHKERRQ(ierr);
-    ierr = ViewToASCII(f,figsprefix,"f",0,0.0); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(f,figsprefix,"f",-1); CHKERRQ(ierr);
     ierr = VecDestroy(&f); CHKERRQ(ierr);
   }
 
@@ -168,7 +168,7 @@ int main(int argc,char **argv) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
                          its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
       if (genfigs) {
-          ierr = ViewToASCII(u,figsprefix,"u",n+1,t+user.dt); CHKERRQ(ierr);
+          ierr = ViewToVTKASCII(u,figsprefix,"u",n+1); CHKERRQ(ierr);
       }
       if (reason < 0) {
           SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
@@ -390,13 +390,16 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
 
 
 //  we can write out the solution u and the source f into a given subdirectory (=prefix)
-PetscErrorCode ViewToASCII(Vec u, const char prefix[], const char name[], 
-                           const PetscInt nn, const PetscReal time) {
+PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[],
+                              const PetscInt nn) {
     PetscErrorCode ierr;
     PetscViewer viewer;
     char filename[1024];
     int  strerr;
-    strerr = sprintf(filename,"%s%s-%d-%g.txt",prefix,name,nn,time);
+    if (nn >= 0)
+        strerr = sprintf(filename,"%s%s-%d.txt",prefix,name,nn);
+    else
+        strerr = sprintf(filename,"%s%s.txt",prefix,name);
     if (strerr < 0) {
         SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
     }
