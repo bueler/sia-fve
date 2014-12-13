@@ -99,9 +99,9 @@ except IOError:
 f, Nf = readvecvtk(ffile,fname)
 
 huge = 1000  # limit number of frames
-for ucount in range(1,huge,stride):
-    uroot = args.prefix + 'u-%d' % ucount
-    uname = uroot + '.txt'
+pngk = 1
+for txtk in range(1,huge,stride):
+    uname = args.prefix + 'u-%d.txt' % txtk
     try:
         ufile = open(uname, 'r')
     except IOError:
@@ -110,8 +110,9 @@ for ucount in range(1,huge,stride):
     u, Nu = readvecvtk(ufile,uname)
     ufig = figure(figsize=(10,4))
     _, _ = genfig(Nu, u, f)
-    figname = '%s.png' % uroot
+    figname = args.prefix + 'u-%d.png' % pngk
     figsave(figname)
     print '  figure file %s generated' % figname
     close(ufig)
+    pngk = pngk + 1
 
