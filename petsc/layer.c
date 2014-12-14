@@ -21,7 +21,10 @@ static const char help[] =
 
 //   ./layer -snes_mf
 //   ./layer -snes_fd -snes_type vinewtonssls -snes_vi_monitor -snes_rtol 1.0e-10
+
 //   ./layer -lay_noshow -lay_steps 200 -lay_dt 0.1 -lay_exactinit -da_refine 3 -lay_adscheme 1
+
+// ./layer -lay_steps 500 -draw_pause 0.0 -lay_adscheme 1 -da_refine 3 -lay_lambda 1.0 -lay_dt 0.02 -lay_gamma 0.1 -lay_glenn 3.0
 
 // run at 10^5 CFL with 1.6 million DOFs
 //   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_adscheme 1
@@ -256,14 +259,15 @@ PetscReal velocity(const PetscReal x, const AppCtx *user) {
 // without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
 PetscReal fsource(const PetscReal x, const AppCtx *user) {
   const PetscReal CC = 2.0 * PETSC_PI / user-> L;
-  return - (user->f0/5.0) + user->f0 * sin(CC * x);
+  return - (user->f0/5.0) + user->f0 * sin(CC * (x - user->L/15.0));
 }
 
 
 // bed elevation for SIA-type flux
 PetscReal bedelevation(const PetscReal x, const AppCtx *user) {
-  const PetscReal pi = PETSC_PI, L = user->L, L2 = L / 2.0;
-  return 1.0 * (cos(2.0*pi*x/L) + 1.0) - 0.5 * sin(2.0*pi*x/L2);
+  const PetscReal pi = PETSC_PI, L = user->L, L2 = L / 2.0,
+                  xx = x - user->L/15.0;
+  return 1.0 * (cos(2.0*pi*xx/L) + 1.0) - 0.5 * sin(2.0*pi*xx/L2);
 }
 
 
@@ -382,7 +386,7 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
       NULL,user->gamma,&user->gamma,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-genfigs", "generate one ascii file for each frame using this prefix",
-      NULL,figsprefix,figsprefix,sizeof(figsprefix),genfigs); CHKERRQ(ierr);
+      NULL,figsprefix,figsprefix,512,genfigs); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-glenn", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets n",
       NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
