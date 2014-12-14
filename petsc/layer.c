@@ -69,7 +69,7 @@ typedef struct {
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactSolution(Vec,const AppCtx*);
-extern PetscErrorCode FillWithSource(Vec,const AppCtx*);
+extern PetscErrorCode FillVecs(Vec,Vec,Vec,const AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[]);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[],const PetscInt);
@@ -132,12 +132,20 @@ int main(int argc,char **argv) {
   }
 
   if (genfigs) {
-    Vec f;
+    Vec x,f,b;
+    ierr = VecDuplicate(u,&x); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)x,"source f"); CHKERRQ(ierr);
     ierr = VecDuplicate(u,&f); CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)f,"source f"); CHKERRQ(ierr);
-    ierr = FillWithSource(f,&user); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)f,"coordinate x"); CHKERRQ(ierr);
+    ierr = VecDuplicate(u,&b); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)b,"bed elevation b"); CHKERRQ(ierr);
+    ierr = FillVecs(x,f,b,&user); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(x,figsprefix,"x",-1); CHKERRQ(ierr);
     ierr = ViewToVTKASCII(f,figsprefix,"f",-1); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(b,figsprefix,"b",-1); CHKERRQ(ierr);
+    ierr = VecDestroy(&x); CHKERRQ(ierr);
     ierr = VecDestroy(&f); CHKERRQ(ierr);
+    ierr = VecDestroy(&b); CHKERRQ(ierr);
   }
 
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
@@ -331,20 +339,26 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
 }
 
 
-PetscErrorCode FillWithSource(Vec f, const AppCtx *user) {
+PetscErrorCode FillVecs(Vec vx, Vec vf, Vec vb, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-  const PetscReal dx    = user->dx;
+  const PetscReal dx = user->dx, pi = PETSC_PI;
   DMDALocalInfo info;
-  PetscReal     *af, x;
+  PetscReal     x, *ax, *af, *ab;
   PetscInt      j;
   ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, f, &af);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, vx, &ax);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, vf, &af);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, vb, &ab);CHKERRQ(ierr);
   for (j=info.xs; j<info.xs+info.xm; j++) {
-      x = dx/2 + dx * (PetscReal)j;
+      x     = dx/2 + dx * (PetscReal)j;
+      ax[j] = x;
       af[j] = fsource(x,user);
+      ab[j] = 1.0 * (cos(2.0*pi*x/10.0) + 1.0) - 0.5 * sin(2.0*pi*x/5.0);
   }
-  ierr = DMDAVecRestoreArray(user->da, f, &af);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, vx, &ax);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, vf, &af);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, vb, &ab);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
