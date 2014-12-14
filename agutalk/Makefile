@@ -6,15 +6,23 @@ cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensiti
 	python figs1d.py
 	pdfcrop cartoon-sets.pdf cartoon-sets.pdf
 
-anim/u-1.png: genfigs.py ../petsc/layer.c
+../petsc/layer: ../petsc/layer.c
 	(cd ../petsc/ && make layer)
-	../petsc/layer -lay_genfigs anim/ -da_refine 3 -lay_dt 0.01 -lay_steps 100 -lay_adscheme 1
-	python genfigs.py anim/ --stride 4
 
-talk.aux: talk.tex $(figures)
+anim/adv/u-1.png: genfigs.py ../petsc/layer
+	(cd anim/ && rm -rf adv/ && mkdir adv/)
+	../petsc/layer -lay_genfigs anim/adv/ -da_refine 3 -lay_dt 0.01 -lay_steps 100 -lay_adscheme 1
+	python genfigs.py anim/adv/ --stride 4 --uscale 12.0
+
+anim/sia/u-1.png: genfigs.py ../petsc/layer
+	(cd anim/ && rm -rf sia/ && mkdir sia/)
+	../petsc/layer -lay_genfigs anim/sia/ -da_refine 3 -lay_dt 0.02 -lay_steps 500 -lay_adscheme 1 -lay_lambda 1.0 -lay_gamma 0.1 -lay_glenn 3.0
+	python genfigs.py anim/sia/ --stride 20 --uscale 0.9
+
+talk.aux: talk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png
 	pdflatex talk
 
-talk.pdf: talk.aux $(figures) anim/u-1.png
+talk.pdf: talk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png
 	pdflatex talk
 
 .PHONY: clean

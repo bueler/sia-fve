@@ -481,9 +481,49 @@ $$\begin{array}{ll}
 
 \begin{frame}{Numerical solution of the weak problem}
 
-\begin{center}
-\animategraphics[autoplay,loop,height=4cm]{6}{anim/u-}{1}{25}
-\end{center}
+\only<1>{
+variational inequality for single time-step:
+\begin{itemize}
+\item is nonlinear because of constraint (i.e~for any $\bQ_n$)
+\item can be solved by Newton method modified for constraint
+  \begin{itemize}
+  \item[$\circ$]  reduced set method
+  \item[$\circ$]  semismooth method
+  \end{itemize}
+\item scalable implementations in PETSc 3.5
+\end{itemize}
+}
+\only<2->{
+\bigskip
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\only<3>{
+\scriptsize
+\vspace{20mm}
+
+$\bQ_n = \bX(x) H_n$
+
+hyperbolic
+
+\vspace{35mm}
+
+$\bQ_n = - \Gamma |H_n|^{n+2}$
+
+$\phantom{bQ_n = }\, \cdot |\grad h_n|^{n-1} \grad h_n$
+
+highly-nonlinear diffusion
+}
+\end{column}
+\begin{column}{0.6\textwidth}
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{25}
+
+\medskip
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{25}
+\end{column}
+\end{columns}
+}
 \end{frame}
 
 

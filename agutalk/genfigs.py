@@ -25,12 +25,14 @@ parser = argparse.ArgumentParser(description='FIXME')
 parser.add_argument('prefix', metavar='PREFIX',
                     help='root of file names f-0-0.txt and u-$N-$T.txt',
                     default='')
-# integer
-parser.add_argument('--stride', action='store', metavar='N',
-                    help='use slices 1:N:end',
+# parameter
+parser.add_argument('--stride', action='store', metavar='N', help='use slices 1:N:end',
                     default=1)
+parser.add_argument('--uscale', action='store', metavar='N', help='scale thickness by this',
+                    default=12.0)
 args = parser.parse_args()
 stride = int(args.stride)
+uscale = float(args.uscale)
 
 def readvecvtk(vfile,vfilename):
     headersread = 0
@@ -60,7 +62,6 @@ def readvecvtk(vfile,vfilename):
 
 L = 10.0
 def genfig(N, x, u, f, b):
-    uscale = 12.0
     s = b + uscale * u
     plot(x, b, '--k', lw=3.0)
     hold(True)
