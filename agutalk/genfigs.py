@@ -103,7 +103,7 @@ for vec in ['x','f','b']:
       sys.exit(99)
     ffile.close()
 
-huge = 1000  # limit number of frames
+huge = 1000  # limit number of input files, thus frames
 pngk = 1
 for txtk in range(1,huge,stride):
     uname = args.prefix + 'u-%d.txt' % txtk
