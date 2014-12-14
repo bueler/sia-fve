@@ -3,11 +3,11 @@ static const char help[] =
 "    u_t + q_x = f\n"
 "where the flux q combines an advecting layer\n"
 "    q_0 = v(x) u\n"
-"with a p-Laplacian\n"
-"    q_1 = - k |u_x|^{p-2} u_x\n"
-"so\n"
+"with a SIA-type flux\n"
+"    q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x\n"
+"where n >= 1 and b(x) is a smooth function given in bedelevation() below.\n"
+"The combination uses 0 <= lambda <= 1:\n"
 "    q = (1-lambda) q_0 + lambda q_1\n"
-"and 0 <= lambda <= 1.\n"
 "Domain is 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
 "Uses SNESVI.  Several O(dx^2) finite difference methods to choose among, and\n"
@@ -19,30 +19,16 @@ static const char help[] =
 
 //   ./layer -help |grep lay_
 
-//   ./layer -snes_fd -draw_pause 0.5
-//   ./layer -snes_mf -draw_pause 0.5
-
-//   ./layer -snes_fd -lay_noshow
-//   ./layer -snes_fd -lay_steps 100
-//   ./layer -snes_fd -lay_dt 0.1
-//   ./layer -snes_fd -lay_exactinit
-
-//   ./layer -snes_fd -lay_scheme 1 -draw_pause 0.5
-//   ./layer -snes_fd -lay_scheme 2 -draw_pause 0.5
-
-//   ./layer -snes_fd -snes_type vinewtonssls
-//   ./layer -snes_fd -snes_vi_monitor
-
-//   ./layer -snes_fd -lay_dt 0.01 -lay_steps 1000 -da_refine 2
-
-//   ./layer -snes_fd -lay_steps 1000 -da_refine 3 -lay_dt 0.0025 -snes_rtol 1.0e-10
+//   ./layer -snes_mf
+//   ./layer -snes_fd -snes_type vinewtonssls -snes_vi_monitor -snes_rtol 1.0e-10
+//   ./layer -lay_noshow -lay_steps 200 -lay_dt 0.1 -lay_exactinit -da_refine 3 -lay_adscheme 1
 
 // run at 10^5 CFL with 1.6 million DOFs
-//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_scheme 1
+//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_adscheme 1
 
-// for lev in 0 1 2 3 4 5 6; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
+// for lev in 0 1 2 3 4 5; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
 
-// ./layer -lay_steps 500 -lay_adscheme 2 -lay_lambda 0.9 -lay_k 100.0 -da_refine 3
+// ./layer -lay_steps 500 -lay_adscheme 2 -lay_lambda 0.9 FIXME-lay_k 100.0 -da_refine 3
 
 #include <math.h>
 #include <petscdmda.h>
@@ -57,9 +43,9 @@ typedef struct {
             L,    // domain is  0 <= x <= L
             v0,   // scale for velocity v(x)
             f0,   // scale for source term f(x)
-            p,    // exponent for p-laplacian term
-            k,    // scale for p-laplacian term
-            lambda;    // 0.0 = advection, 1.0 = p-Laplacian
+            n,    // Glen exponent for SIA flux term
+            gamma,// coefficient for SIA flux term
+            lambda;    // 0.0 = advection, 1.0 = SIA
   PetscInt  adscheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
             vchoice,   // 0 = (v(x) = v0), 1 = (v(x) quadratic)
             NN;        // number of time steps
@@ -81,7 +67,7 @@ int main(int argc,char **argv) {
   Vec                 u;
   AppCtx              user;
   PetscBool           noshow,genfigs;
-  char                figsprefix[512];
+  char                figsprefix[512] = "";
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -93,9 +79,9 @@ int main(int argc,char **argv) {
   user.adscheme = 0;
   user.dt = 0.05;
   user.exactinit = PETSC_FALSE;
-  user.k = 1.0;
+  user.n      = 3.0;
+  user.gamma  = 1.0;
   user.lambda = 0.0;
-  user.p = 2.0;
   user.NN = 10;
   user.vchoice = 0;
   noshow = PETSC_FALSE;
@@ -178,11 +164,11 @@ int main(int argc,char **argv) {
       if (genfigs) {
           ierr = ViewToVTKASCII(u,figsprefix,"u",n+1); CHKERRQ(ierr);
       }
-      if (reason < 0) {
-          SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
-      }
       if (!noshow) {
           ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+      }
+      if (reason < 0) {
+          SETERRQ(PETSC_COMM_WORLD,3,"SNESVI solve diverged; stopping ...\n");
       }
       ierr = VecCopy(u, user.uold); CHKERRQ(ierr);
       t += user.dt;
@@ -257,7 +243,7 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
 }
 
 
-// constant velocity
+// velocity function
 PetscReal velocity(const PetscReal x, const AppCtx *user) {
   if (user->vchoice == 1) {
     const PetscReal Lsqr = user->L * user->L;
@@ -274,9 +260,16 @@ PetscReal fsource(const PetscReal x, const AppCtx *user) {
 }
 
 
-// p-Laplacian
-PetscReal plap(const PetscReal dudx, const PetscReal p) {
-  return PetscPowReal(PetscAbsReal(dudx),p-2.0) * dudx;
+// bed elevation for SIA-type flux
+PetscReal bedelevation(const PetscReal x, const AppCtx *user) {
+  const PetscReal pi = PETSC_PI, L = user->L, L2 = L / 2.0;
+  return 1.0 * (cos(2.0*pi*x/L) + 1.0) - 0.5 * sin(2.0*pi*x/L2);
+}
+
+
+// flux formula for SIA
+PetscReal sia(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
+  return -user->gamma * PetscPowReal(u,user->n+2.0) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0) * dhdx;
 }
 
 
@@ -285,7 +278,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                                  AppCtx *user) {
   PetscErrorCode  ierr;
   PetscInt        j;
-  const PetscReal dt = user->dt, dx = user->dx, p = user->p,
+  const PetscReal dt = user->dt, dx = user->dx,
                   nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
   PetscReal       *uold;
 
@@ -296,13 +289,20 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       const PetscReal x = dx/2 + dx * (PetscReal)j;
       FF[j] = u[j] - uold[j] - dt * fsource(x,user);
       // add p-laplacian flux part
-      const PetscReal duright    = (u[j+1] - u[j]) / dx,
-                      duleft     = (u[j] - u[j-1]) / dx,
-                      duoldright = (uold[j+1] - uold[j]) / dx,
-                      duoldleft  = (uold[j] - uold[j-1]) / dx;
-      PetscReal plFF;
-      plFF = (plap(duright,p) - plap(duleft,p)) - (plap(duoldright,p) - plap(duoldleft,p));
-      FF[j] += user->lambda * (- user->k * nu2 * plFF);
+      const PetscReal
+          duright    = (u[j+1] - u[j]) / dx,
+          duleft     = (u[j] - u[j-1]) / dx,
+          duoldright = (uold[j+1] - uold[j]) / dx,
+          duoldleft  = (uold[j] - uold[j-1]) / dx,
+          dbright    = (bedelevation(x+dx,user) - bedelevation(x,user)) / dx,
+          dbleft     = (bedelevation(x,user) - bedelevation(x-dx,user)) / dx,
+          uright     = (u[j] + u[j+1]) / 2.0,
+          uleft      = (u[j-1] + u[j]) / 2.0,
+          uoldright  = (uold[j] + uold[j+1]) / 2.0,
+          uoldleft   = (uold[j-1] + uold[j]) / 2.0,
+          dq    = sia(uright,duright+dbright,user) - sia(uleft,duleft+dbleft,user),
+          dqold = sia(uoldright,duoldright+dbright,user) - sia(uoldleft,duoldleft+dbleft,user);
+      FF[j] += user->lambda * nu2 * (dq + dqold);
       // add advection part
       PetscReal adFF;
       switch (user->adscheme) {
@@ -342,7 +342,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
 PetscErrorCode FillVecs(Vec vx, Vec vf, Vec vb, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-  const PetscReal dx = user->dx, pi = PETSC_PI;
+  const PetscReal dx = user->dx;
   DMDALocalInfo info;
   PetscReal     x, *ax, *af, *ab;
   PetscInt      j;
@@ -354,7 +354,7 @@ PetscErrorCode FillVecs(Vec vx, Vec vf, Vec vb, const AppCtx *user) {
       x     = dx/2 + dx * (PetscReal)j;
       ax[j] = x;
       af[j] = fsource(x,user);
-      ab[j] = 1.0 * (cos(2.0*pi*x/10.0) + 1.0) - 0.5 * sin(2.0*pi*x/5.0);
+      ab[j] = bedelevation(x,user);
   }
   ierr = DMDAVecRestoreArray(user->da, vx, &ax);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, vf, &af);CHKERRQ(ierr);
@@ -377,21 +377,21 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-gamma", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets gamma",
+      NULL,user->gamma,&user->gamma,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-genfigs", "generate one ascii file for each frame using this prefix",
       NULL,figsprefix,figsprefix,sizeof(figsprefix),genfigs); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-k", "q_1 = - k |u_x|^{p-2} u_x  is p-laplacian flux; this sets k",
-      NULL,user->k,&user->k,NULL);CHKERRQ(ierr);
+      "-glenn", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets n",
+      NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-lambda", "q = (1-lambda) q_0 + lambda q_1 where q_0 is advective part and q_1 is p-laplacian",
+      "-lambda", "q = (1-lambda) q_0 + lambda q_1 where q_0 is advective part and q_1 is SIA",
       NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-noshow", "do not show solution with X",
       NULL,*noshow,noshow,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-p", "q_1 = - k |u_x|^{p-2} u_x  is p-laplacian flux; this sets p",
-      NULL,user->p,&user->p,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-steps", "number of time steps",
       NULL,user->NN,&user->NN,NULL);CHKERRQ(ierr);
