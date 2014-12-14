@@ -305,13 +305,13 @@ on steep terrain
   \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is ``strong form''
   \item define set of admissible thicknesses:
     $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\}$$
-  \item<2> define: $H_n \in \mathcal{K}$ \emph{solves the weak single time-step problem} if
+  \item define: $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
     $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
   for all $v \in \mathcal{K}$
   \small
   \medskip
     \begin{itemize}
-    \item[$\circ$] derive this ``variational inequality'' from:
+    \item[$\circ$] derive this \emph{variational inequality} from:
       \begin{itemize}
       \item[$\diamond$] the strong form \emph{and}
       \item[$\diamond$] integration-by-parts \emph{and}
@@ -458,10 +458,9 @@ see Aschwanden C51A-0245 on 12/19}
   \end{itemize}
 \item but form of $\bQ_n$ matters
   \begin{itemize}
-  \item[$\circ$] for well-posedness
-  \item[$\circ$] for numerical solutions
+  \item[$\circ$] for well-posedness and for numerical solutions
   \end{itemize}
-\item<2> cases to study:\small
+\item cases to study:\small
 $$\begin{array}{ll}
   \bQ_n = \bX(x) H_n & \text{\phantom{\Big|}\emph{transported layer}} \\
   \bQ_n = -k \grad H_n & \text{\phantom{\bigg|}\emph{linear diffusion}} \\
@@ -476,6 +475,7 @@ $$\begin{array}{ll}
         \text{\emph{ice shelf flow} \& \emph{sea ice} \& \dots}
         \end{array}
 \end{array}$$
+\item single time-step variational inequality is generally monotone; generally coercive if $\bQ_n \sim - \grad H_n$
 \end{itemize}
 \end{frame}
 
@@ -497,6 +497,28 @@ variational inequality for single time-step:
 \bigskip
 \begin{columns}
 \begin{column}{0.4\textwidth}
+\only<2>{
+\scriptsize
+
+\emph{pop quiz}:
+
+\begin{itemize}
+\item same equation
+
+\tiny
+\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
+
+\scriptsize
+\item same climate $f$
+\item same bed shape
+\end{itemize}
+
+\vspace{20mm}
+
+how different
+
+are the $\bQ_n$?
+}
 \only<3>{
 \scriptsize
 \vspace{20mm}
@@ -505,7 +527,9 @@ $\bQ_n = \bX(x) H_n$
 
 hyperbolic
 
-\vspace{35mm}
+(at $10 \times$ CFL)
+
+\vspace{33mm}
 
 $\bQ_n = - \Gamma |H_n|^{n+2}$
 

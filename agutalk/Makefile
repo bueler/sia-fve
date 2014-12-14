@@ -11,8 +11,8 @@ cartoon-layer.pdf cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensiti
 
 anim/adv/u-1.png: genfigs.py ../petsc/layer
 	(cd anim/ && rm -rf adv/ && mkdir adv/)
-	../petsc/layer -lay_genfigs anim/adv/ -da_refine 3 -lay_dt 0.01 -lay_steps 100 -lay_adscheme 1
-	python genfigs.py anim/adv/ --stride 4 --uscale 12.0
+	../petsc/layer -lay_genfigs anim/adv/ -da_refine 3 -lay_dt 0.04 -lay_steps 25 -lay_adscheme 1
+	python genfigs.py anim/adv/ --stride 1 --uscale 12.0
 
 anim/sia/u-1.png: genfigs.py ../petsc/layer
 	(cd anim/ && rm -rf sia/ && mkdir sia/)
