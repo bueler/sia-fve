@@ -244,11 +244,11 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
        \item<2->[$\diamond$] source $F_n$ depends on $H_n,x$
        \end{itemize}
     \end{itemize}
-  \item<3-> details of $\bQ_n$, $F_n$ come from time-step scheme
+  \item<2-> details of $\bQ_n$, $F_n$ come from time-step scheme
     \begin{itemize}
-    \item<3->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
+    \item<2->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
     \end{itemize}
-  \item<4> low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
+  \item<3> low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
   \end{itemize}
 \end{frame}
 
@@ -348,14 +348,14 @@ re part 2:
 
 \subsection{Limits to auditable discrete conservation.}
 
-\begin{frame}{Sets for single time-step problem}
+\begin{frame}{Subsets of domain for single time-step problem}
 \begin{itemize}
 \item $\Omega$ is the (fixed) computational domain
 \item suppose $H_n$ solves the weak single time-step problem
 \item define
 	\begin{align*}
-	\Omega_n &= \operatorname{supp} H_n = \left\{x \in \Omega\,\Big|\,H_n(x) > 0\right\} \\
-	\Omega_n^r &= \left\{x \in \Omega\,\Big|\,H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
+	\Omega_n &= \operatorname{supp} H_n = \left\{H_n(x) > 0\right\} \\
+	\Omega_n^r &= \left\{H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
 	\end{align*}
 \end{itemize}
 
@@ -404,9 +404,9 @@ re part 2:
   \item[$\circ$] climate over fluid-covered region:
      $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
   \item[$\circ$] retreat loss: $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
+  \item[$\circ$] so that
+     $$M_n = M_{n-1} + C_n - R_n$$
   \end{itemize}
-\item so that
-  $$M_n = M_{n-1} + C_n - R_n$$
 \end{itemize}
 \end{frame}
 
@@ -419,8 +419,8 @@ re part 2:
 \begin{column}{0.5\textwidth}
 \begin{itemize}
 \small
-\item for me: ice sheet modeling (e.g.~Greenland at right)
-\item icy region fractal and disconnected (blue + orange)
+\item practical ice sheet modeling (e.g.~Greenland at right)
+\item icy region nearly-fractal and disconnected
 \item currently in PISM$^*$:
   \begin{itemize}
   \item[$\circ$] explicit time-stepping
@@ -452,17 +452,16 @@ see Aschwanden C51A-0245 on 12/19}
 
 \begin{frame}{Well-posedness of the weak problem}
 \begin{itemize}
-\item I have been agnostic on form of $\bQ_n$
+\item I've been agnostic on form of $\bQ_n$
   \begin{itemize}
   \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' needed for layer
-  \item[$\circ$] \dots which excludes $\bQ_n(x)$ independent of thickness
   \end{itemize}
-\item<2-> but form of $\bQ_n$ matters
+\item but form of $\bQ_n$ matters
   \begin{itemize}
   \item[$\circ$] for well-posedness
   \item[$\circ$] for numerical solutions
   \end{itemize}
-\item<3> cases to study:\small
+\item<2> cases to study:\small
 $$\begin{array}{ll}
   \bQ_n = \bX(x) H_n & \text{\phantom{\Big|}\emph{transported layer}} \\
   \bQ_n = -k \grad H_n & \text{\phantom{\bigg|}\emph{linear diffusion}} \\
@@ -490,26 +489,23 @@ $$\begin{array}{ll}
 
 \section*{Summary}
 
-\begin{frame}{Wrap up slide}
+\begin{frame}{Terminal slide}
 
   \begin{itemize}
-  \item layer flow problems:
+  \item consider layer flow problems:
     \begin{itemize}
     \item[$\circ$]  e.g.~glaciers, sea ice, shallow water, \dots
-    \item[$\circ$]  conservation is modeled by eqn $h_t + \Div\bq = f$
-    \item[$\circ$]  include nonnegativity constraint on thickness
-    \item[$\circ$]  numerical models discretize in time
+    \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
     \end{itemize}
-  \item<2-> \emph{suggestion}:  single time-step problem can be
+  \item<2-> suggestions:  
     \begin{itemize}
-    \item[$\circ$]  posed weakly as variational inequality,
-    \item[$\circ$]  incorporating $h\ge 0$
+    \item[$\circ$]  \emph{include} constraint on thickness: $h\ge 0$
+    \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
     \end{itemize}
-  \item<3> \emph{claim}:  for \emph{any} numerical approach, exact discrete conservation
+  \item<3> claim:  for \emph{any} numerical approach,
     \begin{itemize}
-    \item[$\circ$]  requires tracking retreat loss or equivalent, but
-    \item[$\circ$]  \emph{isn't really possible},
-    \item[$\circ$]  except in refinement limit
+    \item[$\circ$]  exact discrete conservation \emph{requires tracking retreat loss} (or equivalent), in addition to computable integrals of climate,
+    \item[$\circ$]  but it \emph{isn't really possible} (except in refinement limit)
     \end{itemize}
   \end{itemize}
 
