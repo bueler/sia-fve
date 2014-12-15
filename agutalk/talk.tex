@@ -101,25 +101,6 @@
 \date{{\scriptsize AGU 2014}}
 
 
-% If you have a file called "university-logo-filename.xxx", where xxx
-% is a graphic format that can be processed by latex or pdflatex,
-% resp., then you can add a logo as follows:
-% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
-% \logo{\pgfuseimage{university-logo}}
-
-
-
-% Delete this, if you do not want the table of contents to pop up at
-% the beginning of each subsection:
-%\AtBeginSection[]
-%{
-%  \begin{frame}<beamer>{Outline}
-%    \tableofcontents[currentsection]
-%    %\tableofcontents[currentsection,currentsubsection]
-%  \end{frame}
-%}
-
-
 \begin{document}
 \graphicspath{{../images/}{../../talks-public/commonfigs/}}
 
@@ -132,23 +113,6 @@
 \end{frame}
 
 
-% Structuring a talk is a difficult task and the following structure
-% may not be suitable. Here are some rules that apply for this
-% solution: 
-
-% - Exactly two or three sections (other than the summary).
-% - At *most* three subsections per section.
-% - Talk about 30s to 2min per frame. So there should be between about
-%   15 and 30 frames, all told.
-
-% - A conference audience is likely to know very little of what you
-%   are going to talk about. So *simplify*!
-% - In a 20min talk, getting the main ideas across is hard
-%   enough. Leave out details, even if it means being less precise than
-%   you think necessary.
-% - If you omit details that are vital to the proof/implementation,
-%   just say so once. Everybody will be happy with that.
-
 \section{The problem I'm worried about:}
 
 \subsection{Time-stepping free-boundary fluid layer models.}
@@ -156,21 +120,21 @@
 \begin{frame}{A fluid layer in a climate}
 
 \begin{center}
-\only<1-4>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-layer}}
-\only<5>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}}
+\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-layer}}
+\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}}
 \end{center}
 
 \vspace{-7mm}
   \begin{itemize}
   \item mass conservation for a layer:
-     \only<1-4>{$$h_t + \Div\bq = f$$}
-     \only<5>{$$h_t + \Div\bq = {\color{blue} f}$$}
+     \only<1>{$$h_t + \Div\bq = f$$}
+     \only<2>{$$h_t + \Div\bq = {\color{blue} f}$$}
     \begin{itemize}
     \vspace{-4mm}
-    \item<2->[$\circ$] $h$ is a thickness: $h\ge 0$
-    \item<3->[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
-    \item<4->[$\circ$] $\bq$ is flow (vertically-integrated)
-    \item<5>[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
+    \item[$\circ$] $h$ is a thickness: $h\ge 0$
+    \item[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
+    \item[$\circ$] $\bq$ is flow (vertically-integrated)
+    \item<2>[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -235,20 +199,20 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 
   \begin{itemize}
   \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
-  \item<2-> the new equation is ``single time-step problem''
+  \item the new equation is a ``single time-step problem''
     \begin{itemize}
-    \item<2->[$\circ$] a PDE in space \alert{where $H_n>0$}
-    \item<2->[$\circ$] I'll assume:
+    \item[$\circ$] a PDE in space \alert{where $H_n>0$}
+    \item[$\circ$] I'll assume:
        \begin{itemize}
-       \item<2->[$\diamond$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
-       \item<2->[$\diamond$] source $F_n$ depends on $H_n,x$
+       \item[$\diamond$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
+       \item[$\diamond$] source $F_n$ depends on $H_n,x$
        \end{itemize}
     \end{itemize}
-  \item<2-> details of $\bQ_n$, $F_n$ come from time-step scheme
+  \item details come from time-step scheme
     \begin{itemize}
-    \item<2->[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
+    \item[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
     \end{itemize}
-  \item<3> low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
+  \item low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
   \end{itemize}
 \end{frame}
 
@@ -260,7 +224,10 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
     \begin{itemize}
     \item[$\circ$] generic result: ad hoc schemes for finite volume/difference mass conservation
     \end{itemize}
-  \only<2>{\bigskip \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!}
+  \only<2>{
+  \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!
+  \item we need to define the problem so that practical numerical implementation of boundary conditions is not so \emph{ad hoc}
+  }
   \end{itemize}
 
 \only<1>{
@@ -294,7 +261,7 @@ on steep terrain
 
 \only<2>{\phantom{foo}
 
-\vspace{33.8mm}
+\vspace{28mm}
 \phantom{bar}}
 \end{frame}
 
@@ -490,7 +457,10 @@ variational inequality for single time-step:
   \item[$\circ$]  reduced set method
   \item[$\circ$]  semismooth method
   \end{itemize}
-\item scalable implementations in PETSc 3.5
+\item scalable implementations of both in PETSc 3.5
+  \begin{itemize}
+  \item[$\circ$]  SNESVI class
+  \end{itemize}
 \end{itemize}
 }
 \only<2->{
@@ -511,9 +481,10 @@ variational inequality for single time-step:
 \scriptsize
 \item same climate $f$
 \item same bed shape
+\item both implicit
 \end{itemize}
 
-\vspace{20mm}
+\vspace{5mm}
 
 how different
 
@@ -523,13 +494,11 @@ are the $\bQ_n$?
 \scriptsize
 \vspace{20mm}
 
-$\bQ_n = \bX(x) H_n$
+$\bQ_n = v_0 H_n$
 
-hyperbolic
+hyperbolic (constant vel.)
 
-(at $10 \times$ CFL)
-
-\vspace{33mm}
+\vspace{36mm}
 
 $\bQ_n = - \Gamma |H_n|^{n+2}$
 
@@ -561,22 +530,18 @@ highly-nonlinear diffusion
     \item[$\circ$]  e.g.~glaciers, sea ice, shallow water, \dots
     \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
     \end{itemize}
-  \item<2-> suggestions:  
+  \item suggestions:
     \begin{itemize}
     \item[$\circ$]  \emph{include} constraint on thickness: $h\ge 0$
     \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
+    \item[$\circ$]  solve single time-step problem by constrained-Newton method
     \end{itemize}
-  \item<3> claim:  for \emph{any} numerical approach,
+  \item claim:  for \emph{any} numerical approach,
     \begin{itemize}
     \item[$\circ$]  exact discrete conservation \emph{requires tracking retreat loss} (or equivalent), in addition to computable integrals of climate,
     \item[$\circ$]  but it \emph{isn't really possible} (except in refinement limit)
     \end{itemize}
   \end{itemize}
-
-%  \begin{itemize}
-%  \item to do: FIXME better understanding of well-posedness
-%  \item to do: FIXME better numerical schemes
-%  \end{itemize}
 \end{frame}
 
 
