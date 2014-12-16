@@ -140,6 +140,29 @@
 \end{frame}
 
 
+\begin{frame}{Examples}
+
+\includegraphics[width=0.42\textwidth,keepaspectratio=true]{polaris}
+\hfill
+\includegraphics[width=0.47\textwidth,keepaspectratio=true]{supp4rignot-small}
+
+\small glaciers \hfill ice shelves \& sea ice
+
+\medskip
+\includegraphics[width=0.43\textwidth,keepaspectratio=true]{marsh-water}
+\hfill
+\includegraphics[width=0.44\textwidth,keepaspectratio=true]{tsunami-sendai}
+
+\small tidewater marsh \hfill tsunami inundation
+
+%\vspace{-2mm}
+%{\tiny {\color{gray} (Alonso, Santillana \& Dawson, 2008)}}
+
+\medskip
+\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
+\end{frame}
+
+
 \begin{frame}{A fluid layer in a climate: \emph{the troubles}}
 
 \begin{center}
@@ -168,65 +191,22 @@ $$h_t + \Div\bq = f$$
 \end{frame}
 
 
-\begin{frame}{Examples}
-
-\includegraphics[width=0.42\textwidth,keepaspectratio=true]{polaris}
-\hfill
-\includegraphics[width=0.47\textwidth,keepaspectratio=true]{supp4rignot-small}
-
-\small glaciers \hfill ice shelves \& sea ice
-
-\medskip
-\includegraphics[width=0.43\textwidth,keepaspectratio=true]{marsh-water}
-\hfill
-\includegraphics[width=0.44\textwidth,keepaspectratio=true]{tsunami-sendai}
-
-\small tidewater marsh \hfill tsunami inundation
-
-%\vspace{-2mm}
-%{\tiny {\color{gray} (Alonso, Santillana \& Dawson, 2008)}}
-
-\medskip
-\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
-
-
-\end{frame}
-
-
-\begin{frame}{Numerical models \emph{must} discretize time}
-
-$$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
-
-  \begin{itemize}
-  \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
-  \item the new equation is a ``single time-step problem''
-    \begin{itemize}
-    \item[$\circ$] a PDE in space \alert{where $H_n>0$}
-    \item[$\circ$] I'll assume:
-       \begin{itemize}
-       \item[$\diamond$] flux $\bQ_n$ depends on $H_n,\grad H_n,x$
-       \item[$\diamond$] source $F_n$ depends on $H_n,x$
-       \end{itemize}
-    \end{itemize}
-  \item details come from time-step scheme
-    \begin{itemize}
-    \item[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
-    \end{itemize}
-  \item low regularity of $h(t,x)$ for $x$ near margin means low accuracy expectations for time-step scheme
-  \end{itemize}
-\end{frame}
-
-
 \begin{frame}{Anyone faced these problems before?}
 
   \begin{itemize}
   \item yes, of course!
     \begin{itemize}
-    \item[$\circ$] generic result: ad hoc schemes for finite volume/difference mass conservation
+    \item[$\circ$] generic result: \emph{ad hoc} schemes for finite volume/difference mass conservation near the free boundary
     \end{itemize}
   \only<2>{
   \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!
-  \item we need to define the problem so that practical numerical implementation of boundary conditions is not so \emph{ad hoc}
+  \item my goals:
+    \begin{itemize}
+    \item[$\circ$]
+       \alert{redefine the problem so free boundary is part of solution}
+    \item[$\circ$]
+       \alert{use numerical schemes which automate the details}
+    \end{itemize}
   }
   \end{itemize}
 
@@ -246,14 +226,14 @@ on steep terrain
 \begin{column}{0.6\textwidth}
 \includegraphics[width=0.8\textwidth,keepaspectratio=true]{Albrechtetal2011}
 
-\small ice shelf fronts
+\small volume-of-fluid method at ice shelf fronts
 
 \tiny (Albrecht et al, 2011)
 
 \small \medskip
 \includegraphics[width=0.6\textwidth,keepaspectratio=true]{jouvet-two-grids}
 
-\small volume-of-fluid method on fine grid
+\small volume-of-fluid method (on fine grid) at glacier surface
 
 \tiny (Jouvet et al 2008)
 \end{column}
@@ -261,8 +241,28 @@ on steep terrain
 
 \only<2>{\phantom{foo}
 
-\vspace{28mm}
+\vspace{29mm}
 \phantom{bar}}
+\end{frame}
+
+
+\begin{frame}{Numerical models \emph{must} discretize time}
+
+$$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
+
+  \begin{itemize}
+  \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
+  \item the new equation is a ``single time-step problem''
+    \begin{itemize}
+    \item[$\circ$] a PDE in space \alert{where $H_n>0$}
+    \item[$\circ$] this PDE is the ``strong form''
+    \end{itemize}
+  \item details of flux $\bQ_n$ and source $F_n$ come from time-stepping scheme
+    \begin{itemize}
+    \item[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
+    \item[$\circ$] note low regularity of $h(t,x)$ for $x$ near margin
+    \end{itemize}
+  \end{itemize}
 \end{frame}
 
 
@@ -270,8 +270,8 @@ on steep terrain
 
   \begin{itemize}
   \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is ``strong form''
-  \item define set of admissible thicknesses:
-    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\}$$
+  \item define:
+    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\} = \text{\alert{admissible thicknesses}}$$
   \item define: $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
     $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
   for all $v \in \mathcal{K}$
@@ -313,11 +313,10 @@ re part 2:
 
 \section{Practical consequences:}
 
-\subsection{Limits to auditable discrete conservation.}
+\subsection{Limitations in reporting discrete conservation.}
 
-\begin{frame}{Subsets of domain for single time-step problem}
+\begin{frame}{Subsets for reporting conservation}
 \begin{itemize}
-\item $\Omega$ is the (fixed) computational domain
 \item suppose $H_n$ solves the weak single time-step problem
 \item define
 	\begin{align*}
@@ -328,12 +327,12 @@ re part 2:
 
 \vspace{-2mm}
 \begin{center}
-\includegraphics[width=1.0\textwidth,keepaspectratio=true]{cartoon-sets}
+\includegraphics[width=1.02\textwidth,keepaspectratio=true]{cartoon-sets}
 \end{center}
 \end{frame}
 
 
-\begin{frame}{Discrete mass conservation}
+\begin{frame}{Reporting discrete conservation}
 
 \begin{itemize}
 \item define:
@@ -356,7 +355,7 @@ re part 2:
 \end{frame}
 
 
-\begin{frame}{Discrete conservation: \emph{main claim}}
+\begin{frame}{Reporting discrete conservation: \emph{claim}}
 
 \begin{itemize}
 \item \alert{the retreat loss $R_n$ is not balanced by the climate}
@@ -380,7 +379,7 @@ re part 2:
 
 \subsection{Numerical weak free boundary solution needed.}
 
-\begin{frame}{Driven by practical modeling}
+\begin{frame}{I am driven by practical modeling}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
@@ -417,11 +416,29 @@ see Aschwanden C51A-0245 on 12/19}
 \end{frame}
 
 
+\begin{frame}{Numerical solution of the weak problem}
+
+the weak single time-step problem:
+\begin{itemize}
+\item is nonlinear because of constraint (even for $\bQ_n$ linear in $H_n$)
+\item can be solved by Newton method modified for constraint
+  \begin{itemize}
+  \item[$\circ$]  reduced set method
+  \item[$\circ$]  semismooth method
+  \end{itemize}
+\item scalable implementations of both in PETSc 3.5
+  \begin{itemize}
+  \item[$\circ$]  SNESVI class
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}{Well-posedness of the weak problem}
 \begin{itemize}
 \item I've been agnostic on form of $\bQ_n$
   \begin{itemize}
-  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' needed for layer
+  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' (i.e.~it's a layer)
   \end{itemize}
 \item but form of $\bQ_n$ matters
   \begin{itemize}
@@ -442,36 +459,24 @@ $$\begin{array}{ll}
         \text{\emph{ice shelf flow} \& \emph{sea ice} \& \dots}
         \end{array}
 \end{array}$$
-\item single time-step variational inequality is generally monotone; generally coercive if $\bQ_n \sim - \grad H_n$
+
+\vspace{-4mm}
+\item variational inequality is generally monotone
+  \begin{itemize}
+  \item[$\circ$] generally coercive if $\bQ_n \sim - \grad H_n$
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Numerical solution of the weak problem}
 
-\only<1>{
-variational inequality for single time-step:
-\begin{itemize}
-\item is nonlinear because of constraint (i.e~for any $\bQ_n$)
-\item can be solved by Newton method modified for constraint
-  \begin{itemize}
-  \item[$\circ$]  reduced set method
-  \item[$\circ$]  semismooth method
-  \end{itemize}
-\item scalable implementations of both in PETSc 3.5
-  \begin{itemize}
-  \item[$\circ$]  SNESVI class
-  \end{itemize}
-\end{itemize}
-}
-\only<2->{
-\bigskip
+\begin{frame}{Two numerical examples}
+
 \begin{columns}
 \begin{column}{0.4\textwidth}
-\only<2>{
-\scriptsize
-
+\only<1>{
 \emph{pop quiz}:
 
+\scriptsize
 \begin{itemize}
 \item same equation
 
@@ -486,11 +491,12 @@ variational inequality for single time-step:
 
 \vspace{5mm}
 
-how different
+\normalsize
+\alert{how different}
 
-are the $\bQ_n$?
+\alert{are the $\bQ_n$?}
 }
-\only<3>{
+\only<2>{
 \scriptsize
 \vspace{20mm}
 
@@ -516,7 +522,6 @@ highly-nonlinear diffusion
 \animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{25}
 \end{column}
 \end{columns}
-}
 \end{frame}
 
 
@@ -525,21 +530,24 @@ highly-nonlinear diffusion
 \begin{frame}{Terminal slide}
 
   \begin{itemize}
-  \item consider layer flow problems:
+  \item I'm considering layer flow problems:
     \begin{itemize}
-    \item[$\circ$]  e.g.~glaciers, sea ice, shallow water, \dots
     \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
+    \item[$\circ$]  $h$ is thickness
     \end{itemize}
   \item suggestions:
     \begin{itemize}
     \item[$\circ$]  \emph{include} constraint on thickness: $h\ge 0$
     \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
-    \item[$\circ$]  solve single time-step problem by constrained-Newton method
+    \item[$\circ$]  solve single time-step problem numerically by constrained-Newton method
     \end{itemize}
   \item claim:  for \emph{any} numerical approach,
     \begin{itemize}
-    \item[$\circ$]  exact discrete conservation \emph{requires tracking retreat loss} (or equivalent), in addition to computable integrals of climate,
-    \item[$\circ$]  but it \emph{isn't really possible} (except in refinement limit)
+    \item[$\circ$]  exact discrete conservation requires tracking \emph{retreat loss}
+      \begin{itemize}
+      \item[$\diamond$] in addition to computable integrals of climate
+      \end{itemize}
+    \item[$\circ$]  but it \emph{isn't really possible} except in $\Delta t\to 0$ limit
     \end{itemize}
   \end{itemize}
 \end{frame}
