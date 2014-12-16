@@ -120,21 +120,19 @@
 \begin{frame}{A fluid layer in a climate}
 
 \begin{center}
-\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-layer}}
-\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}}
+\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}
 \end{center}
 
 \vspace{-7mm}
   \begin{itemize}
   \item mass conservation for a layer:
-     \only<1>{$$h_t + \Div\bq = f$$}
-     \only<2>{$$h_t + \Div\bq = {\color{blue} f}$$}
+      $$h_t + \Div\bq = {\color{blue} f}$$
     \begin{itemize}
     \vspace{-4mm}
     \item[$\circ$] $h$ is a thickness: $h\ge 0$
     \item[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
     \item[$\circ$] $\bq$ is flow (vertically-integrated)
-    \item<2>[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
+    \item[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -269,7 +267,6 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \begin{frame}{Weak form incorporates constraint}
 
   \begin{itemize}
-  \item equation \,$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$\, is ``strong form''
   \item define:
     $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\} = \text{\alert{admissible thicknesses}}$$
   \item define: $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
@@ -299,7 +296,7 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
     $$H_{n-1} + \Delta t\, F_n \le 0$$
   \end{enumerate}
 
-\uncover<2>{
+\bigskip
 re part 2:
   \begin{itemize}
   \item ``climate is negative enough to remove old thickness''
@@ -307,7 +304,7 @@ re part 2:
     \begin{itemize}
     \item[$\circ$] \dots yes, we are talking about a \emph{layer}
     \end{itemize}
-  \end{itemize}}
+  \end{itemize}
 \end{frame}
 
 
@@ -321,7 +318,7 @@ re part 2:
 \item define
 	\begin{align*}
 	\Omega_n &= \operatorname{supp} H_n = \left\{H_n(x) > 0\right\} \\
-	\Omega_n^r &= \left\{H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
+	\Omega_n^r &= \left\{\phantom{\Big|}H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\phantom{\Big|}\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
 	\end{align*}
 \end{itemize}
 
@@ -345,12 +342,8 @@ re part 2:
     ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
 	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
 	\end{align*}
-\item thus change in mass is from
-  \begin{itemize}
-  \item[$\circ$] climate over fluid-covered region: $C_n = \Delta t\, \int_{\Omega_n} F_n \,dx$
-  \item[$\circ$] another term:
+\item new term:
      $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\emph{\alert{retreat loss} during step} $n$}$$
-  \end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -358,21 +351,22 @@ re part 2:
 \begin{frame}{Reporting discrete conservation: \emph{claim}}
 
 \begin{itemize}
+\item we want to ``balance the books'' for the model user
 \item \alert{the retreat loss $R_n$ is not balanced by the climate}
   \begin{itemize}
   \item[$\circ$] yes, $R_n$ is caused by the climate, but we don't know what \emph{computable integral} it balances
   \end{itemize}
-
-\medskip
-\item thus a numerical model must track \alert{three} time series to ``balance the books'':
+\item a numerical model must track \alert{three} time series:
   \begin{itemize}
-  \item[$\circ$] mass at time $t_n$: $M_n = \int_\Omega H_n(x)\,dx$
+  \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
+
+  \smallskip
   \item[$\circ$] climate over fluid-covered region:
      $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
-  \item[$\circ$] retreat loss: $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
-  \item[$\circ$] so that
-     $$M_n = M_{n-1} + C_n - R_n$$
+  \item[$\circ$] retreat loss: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
   \end{itemize}
+\item now it is balanced:
+     $$M_n = M_{n-1} + C_n - R_n$$
 \end{itemize}
 \end{frame}
 
@@ -486,7 +480,13 @@ $$\begin{array}{ll}
 \scriptsize
 \item same climate $f$
 \item same bed shape
-\item both implicit
+\item same
+
+constrained-
+
+Newton
+
+scheme
 \end{itemize}
 
 \vspace{5mm}
@@ -504,7 +504,7 @@ $\bQ_n = v_0 H_n$
 
 hyperbolic (constant vel.)
 
-\vspace{36mm}
+\vspace{34mm}
 
 $\bQ_n = - \Gamma |H_n|^{n+2}$
 
@@ -533,7 +533,6 @@ highly-nonlinear diffusion
   \item I'm considering layer flow problems:
     \begin{itemize}
     \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
-    \item[$\circ$]  $h$ is thickness
     \end{itemize}
   \item suggestions:
     \begin{itemize}

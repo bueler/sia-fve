@@ -55,11 +55,6 @@ def figsave(name):
 
 # basic figure
 figure(figsize=(10,4))
-genbasicfig()
-hold(False)
-figsave('cartoon-layer.pdf')
-
-figure(figsize=(10,4))
 x, s, _ = genbasicfig()
 drawclimate(x,s,'b')
 hold(False)
