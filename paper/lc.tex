@@ -329,9 +329,9 @@ From now on we use set decomposition \eqref{eq:omegadecomposition} when referrin
 
 \section{Monotonicity, coerciveness, and well-posedness} \label{sec:mono}
 
-We continue in this section to allow the flux function $\bQ_n$ to be quite arbitrary, in solving our weak single time-step problem \eqref{eq:theVI}, except that the flux function should satisfy the conditions in section \ref{sec:fluxassumptions}.
+We continue in this section to allow the flux function $\bQ_n$ to be quite arbitrary, except that the flux function should satisfy the conditions in section \ref{sec:fluxassumptions}.
 
-Let $\mathcal{X} = W_0^{1,p}(\Omega)$ for $p > 1$ with norm \eqref{eq:norm} denoted by $\|\cdot\|$.  Recall $\mathcal{X}$ is a reflexive Banach space, and denote its dual space by $\mathcal{X}'$.  Denote the pairing of $\mathcal{X}'$ and $\mathcal{X}$ by $\ip{\cdot}{\cdot}$.  We will also denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$, where $\frac{1}{p}+\frac{1}{q}=1$, by the same symbols $\ip{\cdot}{\cdot}$.
+Let $\mathcal{X} = W_0^{1,p}(\Omega)$ for $p > 1$ with norm \eqref{eq:norm} denoted by $\|\cdot\|$.  Recall $\mathcal{X}$ is a reflexive Banach space, denote its dual space by $\mathcal{X}'$, and denote the pairing of $\mathcal{X}'$ and $\mathcal{X}$ by $\ip{\cdot}{\cdot}$.  We will also denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$, where $\frac{1}{p}+\frac{1}{q}=1$, by the same symbols $\ip{\cdot}{\cdot}$.
 
 \medskip
 \newcommand{\An}{A_{n}}
@@ -346,23 +346,24 @@ for all $v \in \mathcal{K}$ and $\phi\in\mathcal{X}$.  We can write \eqref{eq:th
 for all $v \in \mathcal{K}$.
 \end{definition}
 
-Our goal now is to determine properties of the flux $\bQ_n$ which will lead to the problem \eqref{eq:theVI} or \eqref{eq:theVIabstract} being well-posed.  The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} is based on the idea that variational inequality \eqref{eq:theVIabstract} has a unique solution if the mapping $\An$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.  We define these terms now, and give the key lemma that relates properties of $\bQ_n$ to these functional-analytic properties of $\An$.
-
-Recalling that $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} if
+\medskip
+Our goal now is to determine which properties of the flux $\bQ_n$ will lead to the problem \eqref{eq:theVIabstract} being well-posed.  We start by defining terms.  Recall that $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} if
     $$\ip{A(u) - A(v)}{u-v} \ge 0$$
-for all $u,v\in\mathcal{K}$.  The mapping $A$ is \emph{strictly monotone} if also $\ip{A(u) - A(v)}{u-v} = 0$ implies $u=v$.  The mapping $A$ is \emph{coercive} if there is $\phi\in \mathcal{K}$ so that
+for all $u,v\in\mathcal{K}$.  The mapping $A$ is \emph{strictly monotone} if it is monotone and also
+    $$\ip{A(u) - A(v)}{u-v} = 0 \quad \implies \quad u=v.$$
+The mapping $A$ is \emph{coercive} if there is $\phi\in \mathcal{K}$ so that
     $$\lim_{\|u\|\to\infty} \frac{\ip{A(u) - A(\phi)}{u-\phi}}{\|u-\phi\|} = +\infty.$$
-where the limit is taken over $u\in\mathcal{K}$.
+where the limit is taken over $u\in\mathcal{K}$.  Intuitively, $A$ is coercive if the function $h(u)=\ip{A(u) - A(\phi)}{u-\phi}$ is ``confining'' at infinity, in the sense that it is bigger than the norm $\|u-\phi\|$ as $\|u\|\to\infty$.
 
-Suppose $A$ is monotone.  Observe that if $u_0 \in \mathcal{K}$ and $u_1 \in \mathcal{K}$ each solve \eqref{eq:theVIabstract} then $\ip{A(u_0)}{u_1-u_0} \ge 0$ and $\ip{A(u_1)}{u_0-u_1} \ge 0$.  By adding these, and using monotonicity,
+The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} says that variational inequality \eqref{eq:theVIabstract} has a unique solution if the mapping $\An$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.  For example, suppose $A$ is monotone.  Observe that if $u_0 \in \mathcal{K}$ and $u_1 \in \mathcal{K}$ each solve \eqref{eq:theVIabstract} then $\ip{A(u_0)}{u_1-u_0} \ge 0$ and $\ip{A(u_1)}{u_0-u_1} \ge 0$.  By adding these, and using monotonicity,
     $$\ip{A(u_0) - A(u_1)}{u_0 - u_1} = 0.$$
-If furthermore $A$ is strictly monotone then we see that $u_0=u_1$.  That is, strict monotonicity of $\An$ implies uniqueness for the solution to \eqref{eq:theVIabstract}, if any such solutions exist.
+Thus strict monotonicity of $\An$ implies uniqueness for the solution to \eqref{eq:theVIabstract}, if any such weak solutions exist.
 
-Lemma \ref{lem:monotonecoercive} below is proven via the following easy calculation that applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$:
+We now state a key lemma that relates properties of $\bQ_n$ to the above functional-analytic properties of $\An$.  It is proven via the following easy calculation that applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$:
    $$\ip{\An(u) - \An(v)}{u-v} = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).$$
-In considering the Lemma, note that if $\bQ_n(\grad u,u,x)$ scales with $\grad u$ then, for physical reasons, we expect the flux $\bQ_n$ to point in the direction of the negative of $\grad u$.  (By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then the corresponding PDE would be the ill-posed backward heat equation.)  The Lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans}.
+The lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans}.
 
-\begin{lemma}  \label{lem:monotonecoercive}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$.  Suppose that $F_n=F_n(x)\in L^q(\Omega)$.  The following facts hold:
+\begin{lemma}  \label{lem:monotonecoercive}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$ and that \eqref{eq:FisLq} holds for $F_n$.  The following facts hold:
 
 (i)  $\An$ is (strictly) monotone if there is ($C<1$) $C\le 1$ so that
 \begin{equation}
@@ -377,19 +378,26 @@ for all $u,v \in \mathcal{K}$.  Conversely, if $\An$ is monotone then \eqref{eq:
 for all $u,v \in \mathcal{K}$.
 \end{lemma}
 
-Note that the norm on the right side of \eqref{eq:Qncoercive} is \eqref{eq:norm} for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $\An$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $\An$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  (For example, if the expression on the left side of \eqref{eq:Qncoercive} were less than $-\eps \|u-v\| \log \|u-v\|$ then $\An$ would also be coercive.)
+Note that the norm on the right side of \eqref{eq:Qncoercive} is \eqref{eq:norm} for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $\An$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $\An$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if the expression on the left side of \eqref{eq:Qncoercive} were less than $-\eps \|u-v\| \log \|u-v\|$ then $\An$ would also be coercive.
 
-As the final prerequisite for a well-posedness theorem we consider continuity.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $M\subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap M \to \mathcal{X}'$ is weakly-continuous.  Thus, if we have $\{v_i\}_{i=1}^m$, with $v_i\in\mathcal{K}$ and with $M=\operatorname{span}\left<v_i\right>$, and if we fix $\phi\in\mathcal{X}$, then the map $g:\RR^m \to \RR$ defined by
+In considering lemma \eqref{lem:monotonecoercive}, note that if $\bQ_n(\grad u,u,x)$ scales with $\grad u$ then, for physical reasons, we expect the flux $\bQ_n$ to point in the direction of the negative of $\grad u$.  By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then the corresponding PDE would be the ill-posed backward heat equation.
+
+Returning to well-posedness, we must consider continuity.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $M\subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap M \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia}.  To prove the following lemma, choose $\{v_i\}_{i=1}^m \subset \mathcal{K}$ and let $M=\operatorname{span}\left<v_i\right>$ (as a subspace of $\mathcal{X}$).  Fix $\phi\in\mathcal{X}$.  The map $g:\RR^m \to \RR$ defined by
 \begin{equation}
   g(c_1,\dots,c_m) = \ip{\An\left(\sum_{i=1}^m c_i v_i\right)}{\phi}
 \end{equation}
-needs to be continuous.  But now the linearity of the integral, and the almost-forgotton continuity assumptions \eqref{eq:Qiscontinuous} and \eqref{eq:Fislip}, show that $g$ is indeed continuous.  Thus $\An$ is continuous on finite-dimensional subspaces.
+is continuous because of the linearity of the integral, and \eqref{eq:Qiscontinuous} and \eqref{eq:Fislip}.
 
-Corollary III.1.8 (for part (i)) and Theorem III.1.7 (for part (ii)) of \cite{KinderlehrerStampacchia} now gives the following two-part theorem.
+\medskip
+\begin{lemma}  \label{lem:continuous}  Assume \eqref{eq:Qiscontinuous} for $\bQ_n$ and \eqref{eq:Fislip} for $F_n$.  The map $\An : \mathcal{K}\cap M \to \mathcal{X}'$ is continuous on finite-dimensional subspaces
+\end{lemma}
 
-\begin{theorem}  \label{thm:firstwellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, and that conditions \eqref{eq:QisLq}--\eqref{eq:Qiszero} apply to $\bQ_n$.
+\medskip
+Corollary III.1.8 (for part (i)) and Theorem III.1.7 (for part (ii)) of \cite{KinderlehrerStampacchia} now gives the following two-part well-posedness theorem.
 
-(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$ so that the operator $\An$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
+\begin{theorem}  \label{thm:firstwellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.
+
+(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$, so that the operator $\An$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
 
 (ii) Suppose \eqref{eq:Qnmonotone} holds with $C<1$ for $\bQ_n$ so that $\An$ is strictly monotone.  For $R>0$ define
     $$\mathcal{K}_R = \mathcal{K} \cap \left\{v\in \mathcal{X} \,\Big|\, \|v\|\le R\right\},$$
