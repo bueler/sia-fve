@@ -415,26 +415,39 @@ FIXME: consider $L^1$-contractivity in general?
 
 We can now check conditions \eqref{eq:Qnmonotone} and/or \eqref{eq:Qncoercive} for certain particular flux formulae.
 
-\begin{example} FIXME: for $\bQ_n(\grad u,u,x) = \bX(x) u$ where $\bX \in W^{1,\infty}(\Omega;\RR^d)$, i.e.~transported layer with differentiable velocity, we have
-\begin{align*}
-   &\left|\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v}\right| = \Delta t\,\left|\int_\Omega \bX \cdot (u-v) \grad (u - v)\right| \\
-   &\quad = \frac{\Delta t}{2}\,\left|\int_\Omega \bX \cdot \grad (u - v)^2\right| = \frac{\Delta t}{2}\,\left|\int_\Omega \Div(\bX (u - v)^2) - (\Div\bX) (u-v)^2\right| \\
-   &\quad = \frac{\Delta t}{2}\,\left|0 - \int_\Omega (\Div\bX) (u-v)^2\right| \le \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty} \|u-v\|_{L^2}^2
-\end{align*}
-assuming $u=v$ on $\partial \Omega$.  In this case $\An$ is strictly monotone if there is $C<1$ so that
+\begin{example}  Consider a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
 \begin{equation}
-\frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty} \le C \label{eq:cfllayer}
+  \bQ_n(\grad u,u,x) = \bX(x) u.
 \end{equation}
-(and $\An$ is monotone if $C=1$ in this inequality).  Condition \eqref{eq:cfllayer} is a rather CFL-ish condition.  There is no good reason to suppose coercive, however.
+To check the conditions we take $u,v\in\mathcal{K}$ and compute
+\begin{align*}
+   &\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
+   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
+\end{align*}
+after integrating by parts, because $u=v=0$ on $\partial \Omega$.  Thus
+\begin{equation}
+\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0 \qquad \text{ if }\, \Div\bX\ge 0\, \text{ on } \Omega,
+\end{equation}
+so $\An$ is strictly monotone in that case.  More generally, \eqref{eq:Qnmonotone} applies with 
+\begin{equation}
+C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
+\end{equation}
+so it follows that $\An$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume preserving.
+
+There is no good reason to suppose that $\An$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $\An$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 \end{example}
 
-\begin{example} FIXME: For $p$-Laplacian $\bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u$ with $p>1$, including ordinary Laplacian ($p=2$ case), use Lemma 2.1 from \cite{BarrettLiu1993} which says there is $M>0$ such that
+\begin{example} FIXME: Consider the $p$-Laplacian flux
+\begin{equation}
+  \bQ_n(\grad u,u,x) = - k |\grad u|^{p-2} \grad u
+\end{equation}
+with $p\ge 2$.  This includes the ordinary Laplacian (or Fourier) flux as the $p=2$ case.  In this case we use Lemma 2.1 from \cite{BarrettLiu1993}, which says there is $M>0$ such that
 \begin{equation}
     (|\xi|^{p-2}\xi - |\eta|^{p-2}\eta)\cdot (\xi - \eta) \ge M \left(|\xi|+|\eta|\right)^{p-2} |\xi-\eta|^2  \label{eq:barrettliu}
 \end{equation}
 for all $\xi,\eta\in\RR^d$.  Assume $\partial \Omega$ is $C^1$.  On $W_0^{1,p}(\Omega)$ we have a Poincare-type inequality, namely  that there is a constant $C = C(\Omega,p)>0$ so that
 \begin{equation}
-  \int_\Omega |\grad \phi|^p \le \|\phi\|^p \le C(\Omega,p) \int_\Omega |\grad \phi|^p  \label{eq:poincareequivalence}
+  \|\phi\|^p \le C(\Omega,p) \int_\Omega |\grad \phi|^p  \label{eq:poincareequivalence}
 \end{equation}
 for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.  Thus if $p\ge 2$ then by \eqref{eq:barrettliu} for $\xi = \grad u$ and $\eta = \grad v$ and \eqref{eq:poincareequivalence} and
 \begin{align*}
