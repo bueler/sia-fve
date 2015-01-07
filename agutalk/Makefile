@@ -1,4 +1,4 @@
-all: talk.pdf
+all: agutalk.pdf liwgtalk.pdf
 
 figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf
 
@@ -19,11 +19,20 @@ anim/sia/u-1.png: genfigs.py ../petsc/layer
 	../petsc/layer -lay_genfigs anim/sia/ -da_refine 3 -lay_dt 0.02 -lay_steps 500 -lay_adscheme 1 -lay_lambda 1.0 -lay_gamma 0.1 -lay_glenn 3.0
 	python genfigs.py anim/sia/ --stride 20 --uscale 0.9
 
-talk.aux: talk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png
-	pdflatex talk
 
-talk.pdf: talk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png
-	pdflatex talk
+agutalk.aux: agutalk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png
+	pdflatex agutalk
+
+agutalk.pdf: agutalk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png
+	pdflatex agutalk
+
+
+liwgtalk.aux: liwgtalk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png
+	pdflatex liwgtalk
+
+liwgtalk.pdf: liwgtalk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png
+	pdflatex liwgtalk
+
 
 .PHONY: clean
 

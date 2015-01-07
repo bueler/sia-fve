@@ -1,0 +1,569 @@
+% on bueler-leopard see
+%   /usr/share/doc/latex-beamer/solutions/conference-talks/conference-ornate-20min.en.tex
+
+\documentclass{beamer}
+
+\usetheme{Boadilla}
+%\usetheme{Pittsburgh}
+\usecolortheme{beaver}
+
+\setbeamercovered{transparent}
+\setbeamertemplate{navigation symbols}{} %remove navigation symbols
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+
+\usepackage{times}
+\usepackage[T1]{fontenc}
+
+\usepackage{animate}
+
+% see http://tex.stackexchange.com/questions/86188/labelling-with-arrows-in-an-automated-way
+\usepackage{tikz}
+\usepackage{amsmath}
+
+\newif\ifclipme\clipmetrue
+\tikzset{labelstyle/.style={LabelStyle/.append style={#1}},linestyle/.style={LineStyle/.append style={#1}}}
+\tikzset{LabelStyle/.initial={},LineStyle/.initial={}}
+
+\newcommand{\mathWithDescription}[4][]{{%
+    \tikzset{#1}%
+    \tikz[baseline]{
+        \node[draw=red,rounded corners,anchor=base] (m#4) {$\displaystyle#2$};
+        \ifclipme\begin{pgfinterruptboundingbox}\fi
+            \node[above of=m#4,font=\strut, LabelStyle] (l#4) {#3};
+            \draw[-,red, LineStyle] (l#4) to (m#4);
+        \ifclipme\end{pgfinterruptboundingbox}\fi
+    }%
+}}
+
+\newcommand{\mathWithDescriptionStarred}[3][]{{%
+    \clipmefalse%
+    \mathWithDescription[#1]{#2}{#3}{\themathLabelNode}%
+}}
+
+\newcounter{mathLabelNode}
+
+\newcommand{\mathLabelBox}[3][]{%
+   \stepcounter{mathLabelNode}%
+   \mathWithDescription[#1]{#2}{#3}{\themathLabelNode}%
+   \vphantom{\mathWithDescriptionStarred[#1]{#2}{#3}{\themathLabelNode}}%
+}
+
+% math macros
+\newcommand\bb{\mathbf{b}}
+\newcommand\bbf{\mathbf{f}}
+\newcommand\bn{\mathbf{n}}
+\newcommand\bq{\mathbf{q}}
+\newcommand\bu{\mathbf{u}}
+\newcommand\bv{\mathbf{v}}
+\newcommand\by{\mathbf{y}}
+
+\newcommand\bQ{\mathbf{Q}}
+\newcommand\bV{\mathbf{V}}
+\newcommand\bX{\mathbf{X}}
+
+\newcommand\CC{\mathbb{C}}
+\newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
+\newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
+\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
+\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
+\newcommand{\ddxp}[1]{\ensuremath{\frac{\partial #1}{\partial x'}}}
+\newcommand{\ddz}[1]{\ensuremath{\frac{\partial #1}{\partial z}}}
+\newcommand{\ddxx}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x^2}}}
+\newcommand{\ddyy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial y^2}}}
+\newcommand{\ddxy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x \partial y}}}
+\newcommand{\ddzz}[1]{\ensuremath{\frac{\partial^2 #1}{\partial z^2}}}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand\eps{\epsilon}
+\newcommand{\grad}{\nabla}
+\newcommand{\ihat}{\mathbf{i}}
+\newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
+\newcommand{\jhat}{\mathbf{j}}
+\newcommand{\khat}{\mathbf{k}}
+\newcommand{\nhat}{\mathbf{n}}
+\newcommand\lam{\lambda}
+\newcommand\lap{\triangle}
+\newcommand\Matlab{\textsc{Matlab}\xspace}
+\newcommand\RR{\mathbb{R}}
+\newcommand\vf{\varphi}
+
+
+\title[Conservation in free-boundary layers] % (optional, use only with long paper titles)
+{Conservation \\ in \\ free-boundary fluid layer \\ models}
+
+
+\author{Ed Bueler}
+
+\institute[UAF] % (optional, but mostly needed)
+{
+  Dept of Mathematics and Statistics, and Geophysical Institute\\
+  University of Alaska Fairbanks%
+}
+
+\date{CESM LIWG 2015}
+
+
+\begin{document}
+\graphicspath{{../images/}{../../talks-public/commonfigs/}}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+
+\section{The problem I'm worried about:}
+
+\subsection{Time-stepping free-boundary fluid layer models.}
+
+\begin{frame}{A fluid layer in a climate}
+
+\begin{center}
+\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}
+\end{center}
+
+\vspace{-7mm}
+  \begin{itemize}
+  \item mass conservation for a layer:
+      $$h_t + \Div\bq = {\color{blue} f}$$
+    \begin{itemize}
+    \vspace{-4mm}
+    \item[$\circ$] $h$ is a thickness: $h\ge 0$
+    \item[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
+    \item[$\circ$] $\bq$ is flow (vertically-integrated)
+    \item[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Examples}
+
+\includegraphics[width=0.42\textwidth,keepaspectratio=true]{polaris}
+\hfill
+\includegraphics[width=0.47\textwidth,keepaspectratio=true]{supp4rignot-small}
+
+\small glaciers \hfill ice shelves \& sea ice
+
+\medskip
+\includegraphics[width=0.43\textwidth,keepaspectratio=true]{marsh-water}
+\hfill
+\includegraphics[width=0.44\textwidth,keepaspectratio=true]{tsunami-sendai}
+
+\small tidewater marsh \hfill tsunami inundation
+
+%\vspace{-2mm}
+%{\tiny {\color{gray} (Alonso, Santillana \& Dawson, 2008)}}
+
+\medskip
+\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
+\end{frame}
+
+
+\begin{frame}{A fluid layer in a climate: \emph{the troubles}}
+
+\begin{center}
+\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
+\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
+\only<3>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
+\end{center}
+
+\vspace{-18mm}
+$$h_t + \Div\bq = f$$
+
+  \begin{itemize}
+  \item<1-> $h=0$ \emph{and what else} at free boundary?
+     \begin{itemize}
+     \item<1->[$\circ$] shape at free boundary depends on both $\bq$ and $f$
+     \end{itemize}
+  \item<2-> $f<0$ not ``detected'' by model where $h=0$
+     \begin{itemize}
+     \item<2->[$\circ$] how to do mass conservation accounting?
+     \end{itemize}
+  \item<3> $f\approx 0$ threshold behavior
+     \begin{itemize}
+     \item<3>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
+     \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Anyone faced these problems before?}
+
+  \begin{itemize}
+  \item yes, of course!
+    \begin{itemize}
+    \item[$\circ$] generic result: \emph{ad hoc} schemes for finite volume/difference mass conservation near the free boundary
+    \end{itemize}
+  \only<2>{
+  \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!
+  \item my goals:
+    \begin{itemize}
+    \item[$\circ$]
+       \alert{redefine the problem so free boundary is part of solution}
+    \item[$\circ$]
+       \alert{use numerical schemes which automate the details}
+    \end{itemize}
+  }
+  \end{itemize}
+
+\only<1>{
+\begin{columns}
+\begin{column}{0.3\textwidth}
+\includegraphics[width=\textwidth,keepaspectratio=true]{JaroschSchoofAnslow2013}
+
+\small glacier ice
+
+on steep terrain
+
+\smallskip
+\tiny (Jarosch, Schoof, Anslow, 2013)
+\end{column}
+
+\begin{column}{0.6\textwidth}
+\includegraphics[width=0.8\textwidth,keepaspectratio=true]{Albrechtetal2011}
+
+\small volume-of-fluid method at ice shelf fronts
+
+\tiny (Albrecht et al, 2011)
+
+\small \medskip
+\includegraphics[width=0.6\textwidth,keepaspectratio=true]{jouvet-two-grids}
+
+\small volume-of-fluid method (on fine grid) at glacier surface
+
+\tiny (Jouvet et al 2008)
+\end{column}
+\end{columns}}
+
+\only<2>{\phantom{foo}
+
+\vspace{29mm}
+\phantom{bar}}
+\end{frame}
+
+
+\begin{frame}{Numerical models \emph{must} discretize time}
+
+$$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
+
+  \begin{itemize}
+  \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
+  \item the new equation is a ``single time-step problem''
+    \begin{itemize}
+    \item[$\circ$] a PDE in space \alert{where $H_n>0$}
+    \item[$\circ$] this PDE is the ``strong form''
+    \end{itemize}
+  \item details of flux $\bQ_n$ and source $F_n$ come from time-stepping scheme
+    \begin{itemize}
+    \item[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
+    \item[$\circ$] note low regularity of $h(t,x)$ for $x$ near margin
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Weak form incorporates constraint}
+
+  \begin{itemize}
+  \item define:
+    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\} = \text{\alert{admissible thicknesses}}$$
+  \item define: $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
+    $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
+  for all $v \in \mathcal{K}$
+  \small
+  \medskip
+    \begin{itemize}
+    \item[$\circ$] derive this \emph{variational inequality} from:
+      \begin{itemize}
+      \item[$\diamond$] the strong form \emph{and}
+      \item[$\diamond$] integration-by-parts \emph{and}
+      \item[$\diamond$] arguments about $H_n=0$ areas
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Theorem: weak solves strong}
+
+\emph{Theorem}.  Assume $\bQ_n=0$ when $H_n=0$.  Assume $H_n \in \mathcal{K}$ solves weak single time-step problem and is smooth.  Then
+  \begin{enumerate}
+  \item ``interior condition'' on set where $H_n>0$:
+    $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
+  \item on set where $H_n = 0$:
+    $$H_{n-1} + \Delta t\, F_n \le 0$$
+  \end{enumerate}
+
+\bigskip
+re part 2:
+  \begin{itemize}
+  \item ``climate is negative enough to remove old thickness''
+  \item assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
+    \begin{itemize}
+    \item[$\circ$] \dots yes, we are talking about a \emph{layer}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\section{Practical consequences:}
+
+\subsection{Limitations in reporting discrete conservation.}
+
+\begin{frame}{Subsets for reporting conservation}
+\begin{itemize}
+\item suppose $H_n$ solves the weak single time-step problem
+\item define
+	\begin{align*}
+	\Omega_n &= \operatorname{supp} H_n = \left\{H_n(x) > 0\right\} \\
+	\Omega_n^r &= \left\{\phantom{\Big|}H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\phantom{\Big|}\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
+	\end{align*}
+\end{itemize}
+
+\vspace{-2mm}
+\begin{center}
+\includegraphics[width=1.02\textwidth,keepaspectratio=true]{cartoon-sets}
+\end{center}
+\end{frame}
+
+
+\begin{frame}{Reporting discrete conservation}
+
+\begin{itemize}
+\item define:
+   $$M_n = \int_\Omega H_n(x)\,dx \qquad \text{\emph{mass at time} $t_n$}$$
+\item then \vspace{-5mm}
+	\begin{align*}
+	M_n - M_{n-1} &= \int_{\Omega_n} \mathLabelBox[
+    labelstyle={xshift=1cm,yshift=2mm},
+    linestyle={out=270,in=90, -latex}
+    ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
+	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
+	\end{align*}
+\item new term:
+     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\emph{\alert{retreat loss} during step} $n$}$$
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Reporting discrete conservation: \emph{claim}}
+
+\begin{itemize}
+\item we want to ``balance the books'' for the model user
+\item \alert{the retreat loss $R_n$ is not balanced by the climate}
+  \begin{itemize}
+  \item[$\circ$] yes, $R_n$ is caused by the climate, but we don't know what \emph{computable integral} it balances
+  \end{itemize}
+\item a numerical model must track \alert{three} time series:
+  \begin{itemize}
+  \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
+
+  \smallskip
+  \item[$\circ$] climate over fluid-covered region:
+     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
+  \item[$\circ$] retreat loss: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
+  \end{itemize}
+\item now it is balanced:
+     $$M_n = M_{n-1} + C_n - R_n$$
+\end{itemize}
+\end{frame}
+
+
+\subsection{Numerical weak free boundary solution needed.}
+
+\begin{frame}{I am driven by practical modeling}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\small
+\item practical ice sheet modeling (e.g.~Greenland at right)
+\item icy region nearly-fractal and disconnected
+\item currently in PISM$^*$:
+  \begin{itemize}
+  \item[$\circ$] explicit time-stepping
+  \item[$\circ$] free boundary by truncation
+  \end{itemize}
+\item want for PISM:
+  \begin{itemize}
+  \item[$\circ$] implicit time steps \emph{with free boundary}
+  \item[$\circ$] better conservation accounting to user
+  \end{itemize}
+\end{itemize}
+
+\vspace{10mm}
+\quad {\tiny $^*$= Parallel Ice Sheet Model, \texttt{pism-docs.org}}
+\end{column}
+\begin{column}{0.5\textwidth}
+\begin{center}
+\only<1>{\includegraphics[width=0.85\textwidth,keepaspectratio=true]{ice-mask-900m}}
+\only<2>{\includegraphics[width=0.87\textwidth,keepaspectratio=true]{jako-crop-mask-900m}
+
+\scriptsize PISM whole Greenland at 900m
+
+see Aschwanden C51A-0245 on 12/19}
+\end{center}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}{Numerical solution of the weak problem}
+
+the weak single time-step problem:
+\begin{itemize}
+\item is nonlinear because of constraint (even for $\bQ_n$ linear in $H_n$)
+\item can be solved by Newton method modified for constraint
+  \begin{itemize}
+  \item[$\circ$]  reduced set method
+  \item[$\circ$]  semismooth method
+  \end{itemize}
+\item scalable implementations of both in PETSc 3.5
+  \begin{itemize}
+  \item[$\circ$]  SNESVI class
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Well-posedness of the weak problem}
+\begin{itemize}
+\item I've been agnostic on form of $\bQ_n$
+  \begin{itemize}
+  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' (i.e.~it's a layer)
+  \end{itemize}
+\item but form of $\bQ_n$ matters
+  \begin{itemize}
+  \item[$\circ$] for well-posedness and for numerical solutions
+  \end{itemize}
+\item cases to study:\small
+$$\begin{array}{ll}
+  \bQ_n = \bX(x) H_n & \text{\phantom{\Big|}\emph{transported layer}} \\
+  \bQ_n = -k \grad H_n & \text{\phantom{\bigg|}\emph{linear diffusion}} \\
+  \bQ_n = - \grad(H_n^\gamma) = - \gamma H_n^{\gamma-1} \grad H_n
+     & \text{\phantom{\Big|}\emph{porous medium}}\phantom{\bigg|} \\
+  \bQ_n = - H_n^\alpha |\grad (H_n+b)|^\beta \grad (H_n+b)\phantom{\bigg|} &
+        \hspace{-0.75mm}\begin{array}{ll}
+        \text{\emph{shallow ice approx.}} \\
+        \text{\& \emph{diffusive shallow water}}
+        \end{array} \\
+  \bQ_n = \text{\emph{worse (non-local)}}\phantom{\bigg|} & \hspace{-0.75mm}\begin{array}{ll}
+        \text{\emph{ice shelf flow} \& \emph{sea ice} \& \dots}
+        \end{array}
+\end{array}$$
+
+\vspace{-4mm}
+\item variational inequality is generally monotone
+  \begin{itemize}
+  \item[$\circ$] generally coercive if $\bQ_n \sim - \grad H_n$
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Two numerical examples}
+
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\only<1>{
+\emph{pop quiz}:
+
+\scriptsize
+\begin{itemize}
+\item same equation
+
+\tiny
+\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
+
+\scriptsize
+\item same climate $f$
+\item same bed shape
+\item same
+
+constrained-
+
+Newton
+
+scheme
+\end{itemize}
+
+\vspace{5mm}
+
+\normalsize
+\alert{how different}
+
+\alert{are the $\bQ_n$?}
+}
+\only<2>{
+\scriptsize
+\vspace{20mm}
+
+$\bQ_n = v_0 H_n$
+
+hyperbolic (constant vel.)
+
+\vspace{34mm}
+
+$\bQ_n = - \Gamma |H_n|^{n+2}$
+
+$\phantom{bQ_n = }\, \cdot |\grad h_n|^{n-1} \grad h_n$
+
+highly-nonlinear diffusion
+}
+\end{column}
+\begin{column}{0.6\textwidth}
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{25}
+
+\medskip
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{25}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}{FIXME: add slides on}
+
+1. truncation in explicit step case is principled
+
+2. where in PISM this layer idea is, and will be, applied?
+\end{frame}
+
+
+
+\section*{Summary}
+
+\begin{frame}{Terminal slide}
+
+  \begin{itemize}
+  \item I'm considering layer flow problems:
+    \begin{itemize}
+    \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
+    \end{itemize}
+  \item suggestions:
+    \begin{itemize}
+    \item[$\circ$]  \emph{include} constraint on thickness: $h\ge 0$
+    \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
+    \item[$\circ$]  solve single time-step problem numerically by constrained-Newton method
+    \end{itemize}
+  \item claim:  for \emph{any} numerical approach,
+    \begin{itemize}
+    \item[$\circ$]  exact discrete conservation requires tracking \emph{retreat loss}
+      \begin{itemize}
+      \item[$\diamond$] in addition to computable integrals of climate
+      \end{itemize}
+    \item[$\circ$]  but it \emph{isn't really possible} except in $\Delta t\to 0$ limit
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\end{document}
+
+
