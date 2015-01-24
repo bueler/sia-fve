@@ -1,6 +1,3 @@
-% on bueler-leopard see
-%   /usr/share/doc/latex-beamer/solutions/conference-talks/conference-ornate-20min.en.tex
-
 \documentclass{beamer}
 
 \usetheme{Boadilla}
@@ -89,8 +86,8 @@
 \newcommand\vf{\varphi}
 
 
-\title[Conservation in free-boundary layers] % (optional, use only with long paper titles)
-{Conservation \\ in \\ free-boundary fluid layer \\ models}
+\title[Free boundaries and conservation equations] % (optional, use only with long paper titles)
+{Free boundaries \\ and \\ conservation equations \\  in ice sheet models}
 
 
 \author{Ed Bueler}
@@ -123,7 +120,7 @@
 \begin{frame}{A fluid layer in a climate}
 
 \begin{center}
-\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-wclimate}
+\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-wclimate}
 \end{center}
 
 \vspace{-7mm}
@@ -135,7 +132,7 @@
     \item[$\circ$] $h$ is a thickness: $h\ge 0$
     \item[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
     \item[$\circ$] $\bq$ is flow (vertically-integrated)
-    \item[$\circ$] source ${\color{blue} f}$ is ``climate''; $f>0$ shown downward
+    \item[$\circ$] source ${\color{blue} f}$ ({\color{blue} blue}) is ``climate''; ${\color{blue} f}>0$ shown downward
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -143,24 +140,84 @@
 
 \begin{frame}{Examples}
 
-\includegraphics[width=0.42\textwidth,keepaspectratio=true]{polaris}
+\includegraphics[width=0.4\textwidth,keepaspectratio=true]{polaris}
 \hfill
-\includegraphics[width=0.47\textwidth,keepaspectratio=true]{supp4rignot-small}
+\includegraphics[width=0.45\textwidth,keepaspectratio=true]{supp4rignot-small}
 
 \small glaciers \hfill ice shelves \& sea ice
 
 \medskip
-\includegraphics[width=0.43\textwidth,keepaspectratio=true]{marsh-water}
+\includegraphics[width=0.41\textwidth,keepaspectratio=true]{marsh-water}
 \hfill
-\includegraphics[width=0.44\textwidth,keepaspectratio=true]{tsunami-sendai}
+\includegraphics[width=0.42\textwidth,keepaspectratio=true]{tsunami-sendai}
 
 \small tidewater marsh \hfill tsunami inundation
 
-%\vspace{-2mm}
-%{\tiny {\color{gray} (Alonso, Santillana \& Dawson, 2008)}}
+\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
+\end{frame}
+
+
+\begin{frame}{Compare 1D examples}
+
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\only<1>{
+\scriptsize
+\begin{itemize}
+\item same equation
+
+\tiny
+\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
+
+\scriptsize
+\item same climate $f$
+\item same bed shape
+\item same
+
+constrained-
+
+Newton
+
+scheme
+\end{itemize}
+
+\vspace{5mm}
+
+\normalsize
+\alert{how different}
+
+\alert{are the fluxes}
+
+\alert{$\bQ_n$?}
+}
+\only<2>{
+\scriptsize
+\vspace{20mm}
+
+$\bQ_n = v_0 H_n$
+
+hyperbolic
+
+(constant velocity)
+
+\vspace{34mm}
+
+$\bQ_n = - \Gamma |H_n|^{n+2}$
+
+$\phantom{bQ_n = }\, \cdot |\grad h_n|^{n-1} \grad h_n$
+
+highly-nonlinear diffusion
+}
+\end{column}
+\begin{column}{0.6\textwidth}
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{25}
 
 \medskip
-\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{25}
+\end{column}
+\end{columns}
 \end{frame}
 
 
@@ -313,7 +370,7 @@ re part 2:
 
 \section{Practical consequences:}
 
-\subsection{Limitations in reporting discrete conservation.}
+\subsection{Limitations to discrete conservation.}
 
 \begin{frame}{Subsets for reporting conservation}
 \begin{itemize}
@@ -374,7 +431,7 @@ re part 2:
 \end{frame}
 
 
-\subsection{Numerical weak free boundary solution needed.}
+\subsection{Numerical free boundary solutions.}
 
 \begin{frame}{I am driven by practical modeling}
 
@@ -466,75 +523,12 @@ $$\begin{array}{ll}
 \end{frame}
 
 
-\begin{frame}{Two numerical examples}
-
-\begin{columns}
-\begin{column}{0.4\textwidth}
-\only<1>{
-\emph{pop quiz}:
-
-\scriptsize
-\begin{itemize}
-\item same equation
-
-\tiny
-\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
-
-\scriptsize
-\item same climate $f$
-\item same bed shape
-\item same
-
-constrained-
-
-Newton
-
-scheme
-\end{itemize}
-
-\vspace{5mm}
-
-\normalsize
-\alert{how different}
-
-\alert{are the $\bQ_n$?}
-}
-\only<2>{
-\scriptsize
-\vspace{20mm}
-
-$\bQ_n = v_0 H_n$
-
-hyperbolic (constant vel.)
-
-\vspace{34mm}
-
-$\bQ_n = - \Gamma |H_n|^{n+2}$
-
-$\phantom{bQ_n = }\, \cdot |\grad h_n|^{n-1} \grad h_n$
-
-highly-nonlinear diffusion
-}
-\end{column}
-\begin{column}{0.6\textwidth}
-\hspace{-20mm}
-\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{25}
-
-\medskip
-\hspace{-20mm}
-\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{25}
-\end{column}
-\end{columns}
-\end{frame}
-
-
 \begin{frame}{FIXME: add slides on}
 
 1. truncation in explicit step case is principled
 
 2. where in PISM this layer idea is, and will be, applied?
 \end{frame}
-
 
 
 \section*{Summary}
