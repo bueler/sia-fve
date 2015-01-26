@@ -10,14 +10,15 @@ static const char help[] =
 "    q = (1-lambda) q_0 + lambda q_1\n"
 "Domain is 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
-"Uses SNESVI.  Several O(dx^2) finite difference methods to choose among, and\n"
-"exact solution for v(x)=v0 case, and.\n\n";
-
-//FIXME: add Jacobian
+"Uses SNESVI.  Several O(dx^2) finite difference methods to choose among.\n"
+"Exact solution for v(x)=v0 case.  Either analytical Jacobian or\n"
+"finite-difference evaluation of Jacobian.\n\n";
 
 //FIXME: relate to event detection in \infty dimensions
 
 //   ./layer -help |grep lay_
+
+//   ./layer -lay_adscheme 1 -lay_jac
 
 //   ./layer -snes_mf
 //   ./layer -snes_fd -snes_type vinewtonssls -snes_vi_monitor -snes_rtol 1.0e-10
@@ -29,7 +30,7 @@ static const char help[] =
 // run at 10^5 CFL with 1.6 million DOFs
 //   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_adscheme 1
 
-// for lev in 0 1 2 3 4 5; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
+// for lev in 0 1 2 3 4 5; do ./layer -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
 
 
 #include <math.h>
@@ -293,6 +294,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                                  AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dt = user->dt, dx = user->dx,
+                  lam = user->lambda,
                   nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
   PetscInt        j;
   PetscReal       *uold;
@@ -321,7 +323,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           duoldright = (uold[j+1] - uold[j]) / dx,
           duoldleft  = (uold[j] - uold[j-1]) / dx,
           dqold      = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
-      FF[j] += user->lambda * nu2 * (dq + dqold);
+      FF[j] += lam * nu2 * (dq + dqold);
       // add advection part
       PetscReal adFF;
       switch (user->adscheme) {
@@ -346,7 +348,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
         default :
           SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of user.adscheme\n");
       }
-      FF[j] += (1.0 - user->lambda) * adFF;
+      FF[j] += (1.0 - lam) * adFF;
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -358,8 +360,6 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
                                  AppCtx *user) {
   PetscErrorCode  ierr;
 
-  SETERRQ(PETSC_COMM_WORLD,1,"Jacobian not implemented\n");
-
   if (user->adscheme != 1) {
       SETERRQ(PETSC_COMM_WORLD,2,"Jacobian only implemented for user.adscheme==1\n");
   }
@@ -368,6 +368,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
   }
 
   const PetscReal dt = user->dt,  dx = user->dx,
+                  lam = user->lambda,
                   nu = dt / dx,  nu2 = nu / 2.0,
                   mu = user->v0 * nu / 6.0;
   PetscInt        j, k;
@@ -389,20 +390,30 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
           duleft     = (u[j] - u[j-1]) / dx,
           dhright    = duright + dbright,
           dhleft     = duleft + dbleft;
-          //FIXME dq         = S(uright,dhright,user) - S(uleft,dhleft,user);
+      const PetscReal
+          S1left     = S1(uleft, dhleft, user),
+          S2left     = S2(uleft, dhleft, user),
+          S1right    = S1(uright, dhright, user),
+          S2right    = S2(uright, dhright, user);
 
       k = 0;  col[k].i = j-2;
-      v[k] = (1.0 - user->lambda) * mu;
+      v[k] = (1.0 - lam) * mu;
 
       k++;  col[k].i = j-1;
-      v[k] = FIXME
+      v[k] = lam * nu2 * ( - S1left * (1.0/2.0) - S2left * (-1.0/dx) )
+             + (1.0 - lam) * mu * (-6.0);
 
       k++;  col[k].i = j;
-      v[k] = FIXME
+      v[k] = 1.0
+             + lam * nu2 * ( S1right * (1.0/2.0) + S2right * (-1.0/dx)
+                            - S1left * (1.0/2.0) - S2left * (1.0/dx)   )
+             + (1.0 - lam) * mu * (3.0);
 
       k++;  col[k].i = j+1;
-      v[k] = FIXME
+      v[k] = lam * nu2 * ( S1right * (1.0/2.0) + S2right * (1.0/dx) )
+             + (1.0 - lam) * mu * (2.0);
 
+      k++;
       ierr = MatSetValuesStencil(jac,1,&row,k,col,v,INSERT_VALUES);CHKERRQ(ierr);
   }
 
