@@ -274,9 +274,17 @@ PetscReal bedelevation(const PetscReal x, const AppCtx *user) {
 }
 
 
-// flux formula for SIA
+// flux formula for SIA, and its partial derivatives
 PetscReal S(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
   return -user->gamma * PetscPowReal(u,user->n+2.0) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0) * dhdx;
+}
+
+PetscReal S1(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
+  return -user->gamma * (user->n+2.0) * PetscPowReal(u,user->n+1.0) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0) * dhdx;
+}
+
+PetscReal S2(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
+  return -user->gamma * PetscPowReal(u,user->n+2.0) * (user->n) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0);
 }
 
 
@@ -297,17 +305,19 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       FF[j] = u[j] - uold[j] - dt * fsource(x,user);
       // add p-laplacian flux part
       const PetscReal
-          duright    = (u[j+1] - u[j]) / dx,
-          duleft     = (u[j] - u[j-1]) / dx,
-          duoldright = (uold[j+1] - uold[j]) / dx,
-          duoldleft  = (uold[j] - uold[j-1]) / dx,
           dbright    = (bedelevation(x+dx,user) - bedelevation(x,user)) / dx,
-          dbleft     = (bedelevation(x,user) - bedelevation(x-dx,user)) / dx,
+          dbleft     = (bedelevation(x,user) - bedelevation(x-dx,user)) / dx;
+      const PetscReal
           uright     = (u[j] + u[j+1]) / 2.0,
           uleft      = (u[j-1] + u[j]) / 2.0,
+          duright    = (u[j+1] - u[j]) / dx,
+          duleft     = (u[j] - u[j-1]) / dx,
+          dq    = S(uright,duright+dbright,user) - S(uleft,duleft+dbleft,user);
+      const PetscReal
           uoldright  = (uold[j] + uold[j+1]) / 2.0,
           uoldleft   = (uold[j-1] + uold[j]) / 2.0,
-          dq    = S(uright,duright+dbright,user) - S(uleft,duleft+dbleft,user),
+          duoldright = (uold[j+1] - uold[j]) / dx,
+          duoldleft  = (uold[j] - uold[j-1]) / dx,
           dqold = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
       FF[j] += user->lambda * nu2 * (dq + dqold);
       // add advection part
@@ -316,19 +326,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
         case 0 : { // backward-Euler, centered scheme
           const PetscReal vleft  = velocity(x - dx/2,user),
                           vright = velocity(x + dx/2,user);
-          adFF =   - nu2 * vleft * u[j-1]
-                   + nu2 * (vright - vleft) * u[j]
-                   + nu2 * vright * u[j+1];
+          adFF = nu2 * ( - vleft * u[j-1] + (vright - vleft) * u[j] + vright * u[j+1] );
           break; }
-        case 1 : { // third-order upwind biased backward-Euler thing; REQUIRES v(x)=v0>0
+        case 1 : { // third-order upwind biased backward-Euler; REQUIRES v(x)=v0>0
           if (user->vchoice > 0) {
             SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
           }
           const PetscReal mu = user->v0 * nu / 6.0;
-          adFF =        mu * u[j-2]
-                  - 6.0*mu * u[j-1]
-                  + 3.0*mu * u[j]
-                  + 2.0*mu * u[j+1];
+          adFF =  mu * ( u[j-2] - 6.0 * u[j-1] + 3.0 * u[j] + 2.0 * u[j+1] );
           break; }
         case 2 : { // trapezoid rule, centered scheme;
           const PetscReal vleft  = velocity(x - dx/2,user),
@@ -349,7 +354,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
 /* for call-back: evaluate Jacobian, for rows corresponding to local process patch */
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre, Mat jac,
                                  AppCtx *user) {
+  PetscErrorCode  ierr;
+
   SETERRQ(PETSC_COMM_WORLD,1,"Jacobian not implemented\n");
+
+  ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  ierr = MatAssemblyEnd(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  ierr = MatSetOption(jac,MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
