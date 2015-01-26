@@ -292,9 +292,9 @@ PetscReal S2(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar *FF,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
-  PetscInt        j;
   const PetscReal dt = user->dt, dx = user->dx,
                   nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
+  PetscInt        j;
   PetscReal       *uold;
 
   PetscFunctionBeginUser;
@@ -312,13 +312,15 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           uleft      = (u[j-1] + u[j]) / 2.0,
           duright    = (u[j+1] - u[j]) / dx,
           duleft     = (u[j] - u[j-1]) / dx,
-          dq    = S(uright,duright+dbright,user) - S(uleft,duleft+dbleft,user);
+          dhright    = duright + dbright,
+          dhleft     = duleft + dbleft,
+          dq         = S(uright,dhright,user) - S(uleft,dhleft,user);
       const PetscReal
           uoldright  = (uold[j] + uold[j+1]) / 2.0,
           uoldleft   = (uold[j-1] + uold[j]) / 2.0,
           duoldright = (uold[j+1] - uold[j]) / dx,
           duoldleft  = (uold[j] - uold[j-1]) / dx,
-          dqold = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
+          dqold      = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
       FF[j] += user->lambda * nu2 * (dq + dqold);
       // add advection part
       PetscReal adFF;
@@ -357,6 +359,52 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
   PetscErrorCode  ierr;
 
   SETERRQ(PETSC_COMM_WORLD,1,"Jacobian not implemented\n");
+
+  if (user->adscheme != 1) {
+      SETERRQ(PETSC_COMM_WORLD,2,"Jacobian only implemented for user.adscheme==1\n");
+  }
+  if (user->vchoice > 0) {
+      SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
+  }
+
+  const PetscReal dt = user->dt,  dx = user->dx,
+                  nu = dt / dx,  nu2 = nu / 2.0,
+                  mu = user->v0 * nu / 6.0;
+  PetscInt        j, k;
+  PetscReal       v[4];
+  MatStencil      row,col[4];
+
+  PetscFunctionBeginUser;
+  for (j=info->xs; j<info->xs+info->xm; j++) {
+      row.i = j;
+
+      const PetscReal x = dx/2 + dx * (PetscReal)j;
+      const PetscReal
+          dbright    = (bedelevation(x+dx,user) - bedelevation(x,user)) / dx,
+          dbleft     = (bedelevation(x,user) - bedelevation(x-dx,user)) / dx;
+      const PetscReal
+          uright     = (u[j] + u[j+1]) / 2.0,
+          uleft      = (u[j-1] + u[j]) / 2.0,
+          duright    = (u[j+1] - u[j]) / dx,
+          duleft     = (u[j] - u[j-1]) / dx,
+          dhright    = duright + dbright,
+          dhleft     = duleft + dbleft;
+          //FIXME dq         = S(uright,dhright,user) - S(uleft,dhleft,user);
+
+      k = 0;  col[k].i = j-2;
+      v[k] = (1.0 - user->lambda) * mu;
+
+      k++;  col[k].i = j-1;
+      v[k] = FIXME
+
+      k++;  col[k].i = j;
+      v[k] = FIXME
+
+      k++;  col[k].i = j+1;
+      v[k] = FIXME
+
+      ierr = MatSetValuesStencil(jac,1,&row,k,col,v,INSERT_VALUES);CHKERRQ(ierr);
+  }
 
   ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   ierr = MatAssemblyEnd(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
