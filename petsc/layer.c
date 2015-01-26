@@ -31,7 +31,6 @@ static const char help[] =
 
 // for lev in 0 1 2 3 4 5; do ./layer -snes_fd -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
 
-// ./layer -lay_steps 500 -lay_adscheme 2 -lay_lambda 0.9 FIXME-lay_k 100.0 -da_refine 3
 
 #include <math.h>
 #include <petscdmda.h>
@@ -52,7 +51,8 @@ typedef struct {
   PetscInt  adscheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
             vchoice,   // 0 = (v(x) = v0), 1 = (v(x) quadratic)
             NN;        // number of time steps
-  PetscBool exactinit; // initialize with exact solution
+  PetscBool exactinit, // initialize with exact solution
+            usejacobian;// use analytical jacobian
 } AppCtx;
 
 
@@ -60,6 +60,7 @@ extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactSolution(Vec,const AppCtx*);
 extern PetscErrorCode FillVecs(Vec,Vec,Vec,const AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
+extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[]);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[],const PetscInt);
 
@@ -82,6 +83,7 @@ int main(int argc,char **argv) {
   user.adscheme = 0;
   user.dt = 0.05;
   user.exactinit = PETSC_FALSE;
+  user.usejacobian = PETSC_FALSE;
   user.n      = 3.0;
   user.gamma  = 1.0;
   user.lambda = 0.0;
@@ -141,10 +143,11 @@ int main(int argc,char **argv) {
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
   ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
-  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
-            (PetscErrorCode (*)(DMDALocalInfo*,void*,void*,void*))FormFunctionLocal,
-            &user);CHKERRQ(ierr);
-  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr); CHKERRQ(ierr);
+  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,(DMDASNESFunction)FormFunctionLocal,&user); CHKERRQ(ierr);
+  if (user.usejacobian) {
+    ierr = DMDASNESSetJacobianLocal(user.da,(DMDASNESJacobian)FormJacobianLocal,&user); CHKERRQ(ierr);
+  }
+  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
 
   /* time-stepping loop */
   {
@@ -272,7 +275,7 @@ PetscReal bedelevation(const PetscReal x, const AppCtx *user) {
 
 
 // flux formula for SIA
-PetscReal sia(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
+PetscReal S(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
   return -user->gamma * PetscPowReal(u,user->n+2.0) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0) * dhdx;
 }
 
@@ -304,8 +307,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           uleft      = (u[j-1] + u[j]) / 2.0,
           uoldright  = (uold[j] + uold[j+1]) / 2.0,
           uoldleft   = (uold[j-1] + uold[j]) / 2.0,
-          dq    = sia(uright,duright+dbright,user) - sia(uleft,duleft+dbleft,user),
-          dqold = sia(uoldright,duoldright+dbright,user) - sia(uoldleft,duoldleft+dbleft,user);
+          dq    = S(uright,duright+dbright,user) - S(uleft,duleft+dbleft,user),
+          dqold = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
       FF[j] += user->lambda * nu2 * (dq + dqold);
       // add advection part
       PetscReal adFF;
@@ -317,7 +320,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                    + nu2 * (vright - vleft) * u[j]
                    + nu2 * vright * u[j+1];
           break; }
-        case 1 : { // third-order upwind biased implicit thing; REQUIRES v(x)=v0>0
+        case 1 : { // third-order upwind biased backward-Euler thing; REQUIRES v(x)=v0>0
           if (user->vchoice > 0) {
             SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
           }
@@ -334,11 +337,19 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                   + nu4 * (vright * (uold[j+1] + uold[j]) - vleft * (uold[j] + uold[j-1]));
           break; }
         default :
-          SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of adscheme\n");
+          SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of user.adscheme\n");
       }
       FF[j] += (1.0 - user->lambda) * adFF;
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+/* for call-back: evaluate Jacobian, for rows corresponding to local process patch */
+PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre, Mat jac,
+                                 AppCtx *user) {
+  SETERRQ(PETSC_COMM_WORLD,1,"Jacobian not implemented\n");
   PetscFunctionReturn(0);
 }
 
@@ -373,7 +384,7 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
   ierr = PetscOptionsInt(
-      "-adscheme", "choose FD scheme for advection: 0 centered BEuler, 1 third-order, 2 centered trapezoid",
+      "-adscheme", "choose FD scheme for advection: 0 centered BEuler, 1 third-order BEuler, 2 centered trapezoid",
       NULL,user->adscheme,&user->adscheme,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-dt", "length of time step",
@@ -390,6 +401,9 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
   ierr = PetscOptionsReal(
       "-glenn", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets n",
       NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-jac", "use analytical jacobian; default is to do finite difference (-snes_fd) or matrix-free (-snes_mf)",
+      NULL,user->usejacobian,&user->usejacobian,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-lambda", "q = (1-lambda) q_0 + lambda q_1 where q_0 is advective part and q_1 is SIA",
       NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
@@ -407,7 +421,10 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
 }
 
 
-//  we can write out the solution u and the source f into a given subdirectory (=prefix)
+//  write a vector into a given subdirectory (=prefix), with filename
+//      prefix/name.txt
+//  or
+//      prefix/name-nn.txt    if nn >= 0
 PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[],
                               const PetscInt nn) {
     PetscErrorCode ierr;
