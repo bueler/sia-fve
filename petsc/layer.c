@@ -18,19 +18,20 @@ static const char help[] =
 
 //   ./layer -help |grep lay_
 
-//   ./layer -lay_adscheme 1 -lay_jac
+//   ./convtest.sh
+
+//   ./layer -lay_jac
 
 //   ./layer -snes_mf
-//   ./layer -snes_fd -snes_type vinewtonssls -snes_vi_monitor -snes_rtol 1.0e-10
+//   ./layer -snes_type vinewtonssls
+//   ./layer -lay_noshow -snes_vi_monitor -snes_rtol 1.0e-10
 
-//   ./layer -lay_noshow -lay_steps 200 -lay_dt 0.1 -lay_exactinit -da_refine 3 -lay_adscheme 1
+//   ./layer -lay_dt 0.1 -lay_exactinit -da_refine 3 -lay_adscheme 1
 
 // ./layer -lay_steps 500 -draw_pause 0.0 -lay_adscheme 1 -da_refine 3 -lay_lambda 1.0 -lay_dt 0.02 -lay_gamma 0.1 -lay_glenn 3.0
 
 // run at 10^5 CFL with 1.6 million DOFs
-//   ./layer -lay_noshow -lay_steps 10 -da_refine 15 -lay_exactinit -lay_adscheme 1
-
-// for lev in 0 1 2 3 4 5; do ./layer -lay_exactinit -lay_noshow -lay_dt 0.01 -lay_steps 10 -lay_adscheme 1 -da_refine $lev | grep error; done
+//   ./layer -lay_noshow -lay_steps 5 -da_refine 15 -lay_exactinit -lay_adscheme 1 -lay_jac
 
 
 #include <math.h>
@@ -189,8 +190,8 @@ int main(int argc,char **argv) {
       ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
       ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-               "on dx=%.4e grid with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
-               user.dx,user.NN,user.dt,errnorm); CHKERRQ(ierr);
+               "on dx=%.4e grid (%6d pts) with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
+               user.dx,info.mx,user.NN,user.dt,errnorm); CHKERRQ(ierr);
   }
 
   ierr = VecDestroy(&u);CHKERRQ(ierr);
@@ -221,7 +222,11 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
       "exact solution only available in pure-advection (lambda=0) case\n");
   }
   const PetscReal twopi = 2.0 * PETSC_PI,
-                  x0    = (user->L/twopi) * asin(1.0/5.0),
+                  L     = user->L,
+                  shift = L / 15.0,
+                  fdown = - 1.0 / 5.0;
+  const PetscReal
+                  x0    = (L/twopi) * asin(-fdown) + shift,
                   scale = user->f0/user->v0,
                   dx    = user->dx;
   DMDALocalInfo info;
@@ -234,9 +239,8 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
       if (x <= x0) {
         au[j] = 0.0;
       } else {
-//FIXME: this is currently broken
-        cosdiff = cos(twopi*x0/user->L) - cos(twopi*x/user->L);
-        au[j]   = scale * ( (user->L/twopi) * cosdiff - (x-x0)/5.0 );
+        cosdiff = cos((twopi/L)*(x0-shift)) - cos((twopi/L)*(x-shift));
+        au[j]   = scale * ( (L/twopi) * cosdiff + fdown * (x-x0) );
         au[j]   = PetscMax(0.0,au[j]);
       }
   }
@@ -247,8 +251,11 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
 
 // without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
 PetscReal fsource(const PetscReal x, const AppCtx *user) {
-  const PetscReal CC = 2.0 * PETSC_PI / user-> L;
-  return - (user->f0/5.0) + user->f0 * sin(CC * (x - user->L/15.0));
+  const PetscReal twopi = 2.0 * PETSC_PI,
+                  L     = user->L,
+                  shift = L / 15.0,
+                  fdown = - 1.0 / 5.0;
+  return user->f0 * ( fdown + sin((twopi/L) * (x - shift)) );
 }
 
 
@@ -310,9 +317,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                   nu = dt / dx;
   PetscInt        j;
   PetscReal       *uold;
+  Vec             uoldloc;
 
   PetscFunctionBeginUser;
-  ierr = DMDAVecGetArray(info->da, user->uold, &uold);CHKERRQ(ierr);
+  ierr = DMCreateLocalVector(info->da,&uoldloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalBegin(info->da,user->uold,INSERT_VALUES,uoldloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(info->da,user->uold,INSERT_VALUES,uoldloc);CHKERRQ(ierr);
+
+  ierr = DMDAVecGetArray(info->da, uoldloc, &uold);CHKERRQ(ierr);
   for (j=info->xs; j<info->xs+info->xm; j++) {
       // non-flux part of residual
       const PetscReal x = dx/2 + dx * (PetscReal)j;
@@ -344,7 +356,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       adFF += v0 * nu * ( c[0] * u[j-2] + c[1] * u[j-1] + c[2] * u[j] + c[3] * u[j+1] );
       FF[j] += (1.0 - lam) * adFF;
   }
-  ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(info->da, uoldloc, &uold);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
