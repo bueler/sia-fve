@@ -1,17 +1,17 @@
 static const char help[] =
 "Solves conservation-equation-for-layer problem in 1d:\n"
-"    u_t + q_x = f\n"
-"where the flux q combines an advecting layer\n"
-"    q_0 = v(x) u\n"
+"    u_t + q_x = f,\n"
+"where the flux\n"
+"    q = (1-lambda) q_0 + lambda q_1,\n"
+"with  0 <= lambda <= 1, combines an advecting layer\n"
+"    q_0 = v0 u\n"
 "with a SIA-type flux\n"
-"    q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x\n"
-"where n >= 1 and b(x) is a smooth function given in bedelevation() below.\n"
-"The combination uses 0 <= lambda <= 1:\n"
-"    q = (1-lambda) q_0 + lambda q_1\n"
+"    q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x.\n"
+"Here n >= 1 and b(x) is a smooth function given in bedelevation() below.\n"
 "Domain is 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
 "Uses SNESVI.  Several O(dx^2) finite difference methods to choose among.\n"
-"Exact solution for v(x)=v0 case.  Either analytical Jacobian or\n"
+"Exact solution for lambda=0 case.  Either analytical Jacobian or\n"
 "finite-difference evaluation of Jacobian.\n\n";
 
 //FIXME: relate to event detection in \infty dimensions
@@ -44,13 +44,12 @@ typedef struct {
   PetscReal dt,   // fixed positive time step
             dx,   // fixed grid spacing
             L,    // domain is  0 <= x <= L
-            v0,   // scale for velocity v(x)
+            v0,   // velocity (constant)
             f0,   // scale for source term f(x)
             n,    // Glen exponent for SIA flux term
             gamma,// coefficient for SIA flux term
             lambda;    // 0.0 = advection, 1.0 = SIA
   PetscInt  adscheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
-            vchoice,   // 0 = (v(x) = v0), 1 = (v(x) quadratic)
             NN;        // number of time steps
   PetscBool exactinit, // initialize with exact solution
             usejacobian;// use analytical jacobian
@@ -89,7 +88,6 @@ int main(int argc,char **argv) {
   user.gamma  = 1.0;
   user.lambda = 0.0;
   user.NN = 10;
-  user.vchoice = 0;
   noshow = PETSC_FALSE;
   ierr = ProcessOptions(&user,&noshow,&genfigs,figsprefix); CHKERRQ(ierr);
 
@@ -183,7 +181,7 @@ int main(int argc,char **argv) {
   }
 
   // evaluate numerical error relative to steady state
-  if ((user.vchoice==0) && (user.lambda==0.0)) {
+  if (user.lambda==0.0) {
       Vec uexact;
       PetscScalar errnorm;
       ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
@@ -218,10 +216,6 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-  if (user->vchoice > 0) {
-    SETERRQ(PETSC_COMM_WORLD,4,
-      "exact solution only available in v(x)=v0 case\n");
-  }
   if (user->lambda > 0.0) {
     SETERRQ(PETSC_COMM_WORLD,5,
       "exact solution only available in pure-advection (lambda=0) case\n");
@@ -240,6 +234,7 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
       if (x <= x0) {
         au[j] = 0.0;
       } else {
+//FIXME: this is currently broken
         cosdiff = cos(twopi*x0/user->L) - cos(twopi*x/user->L);
         au[j]   = scale * ( (user->L/twopi) * cosdiff - (x-x0)/5.0 );
         au[j]   = PetscMax(0.0,au[j]);
@@ -247,16 +242,6 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
   }
   ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
   PetscFunctionReturn(0);
-}
-
-
-// velocity function
-PetscReal velocity(const PetscReal x, const AppCtx *user) {
-  if (user->vchoice == 1) {
-    const PetscReal Lsqr = user->L * user->L;
-    return (4.0 / Lsqr) * user->v0 * x * (user->L - x);
-  } else
-    return user->v0;
 }
 
 
@@ -294,7 +279,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
                                  AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dt = user->dt, dx = user->dx,
-                  lam = user->lambda,
+                  lam = user->lambda, v0 = user->v0,
                   nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
   PetscInt        j;
   PetscReal       *uold;
@@ -328,22 +313,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       PetscReal adFF;
       switch (user->adscheme) {
         case 0 : { // backward-Euler, centered scheme
-          const PetscReal vleft  = velocity(x - dx/2,user),
-                          vright = velocity(x + dx/2,user);
-          adFF = nu2 * ( - vleft * u[j-1] + (vright - vleft) * u[j] + vright * u[j+1] );
+          adFF = v0 * nu2 * ( u[j+1] - u[j-1] );
           break; }
-        case 1 : { // third-order upwind biased backward-Euler; REQUIRES v(x)=v0>0
-          if (user->vchoice > 0) {
-            SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
-          }
+        case 1 : { // third-order upwind biased backward-Euler
           const PetscReal mu = user->v0 * nu / 6.0;
-          adFF =  mu * ( u[j-2] - 6.0 * u[j-1] + 3.0 * u[j] + 2.0 * u[j+1] );
+          adFF = mu * ( u[j-2] - 6.0 * u[j-1] + 3.0 * u[j] + 2.0 * u[j+1] );
           break; }
         case 2 : { // trapezoid rule, centered scheme;
-          const PetscReal vleft  = velocity(x - dx/2,user),
-                          vright = velocity(x + dx/2,user);
-          adFF =    nu4 * (vright * (u[j+1] + u[j]) - vleft * (u[j] + u[j-1]))
-                  + nu4 * (vright * (uold[j+1] + uold[j]) - vleft * (uold[j] + uold[j-1]));
+          adFF = v0 * nu4 * ( u[j+1] - u[j-1] + uold[j+1] - uold[j-1] );
           break; }
         default :
           SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of user.adscheme\n");
@@ -362,9 +339,6 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
 
   if (user->adscheme != 1) {
       SETERRQ(PETSC_COMM_WORLD,2,"Jacobian only implemented for user.adscheme==1\n");
-  }
-  if (user->vchoice > 0) {
-      SETERRQ(PETSC_COMM_WORLD,4,"only v(x)=v0 is allowed with third-order scheme\n");
   }
 
   const PetscReal dt = user->dt,  dx = user->dx,
@@ -483,9 +457,6 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
   ierr = PetscOptionsInt(
       "-steps", "number of time steps",
       NULL,user->NN,&user->NN,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt(
-      "-vchoice","choose form of v(x): 0 constant, 1 quadratic",
-      NULL,user->vchoice,&user->vchoice,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
