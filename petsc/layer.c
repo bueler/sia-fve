@@ -30,8 +30,11 @@ static const char help[] =
 
 // ./layer -lay_steps 500 -draw_pause 0.0 -lay_adscheme 1 -da_refine 3 -lay_lambda 1.0 -lay_dt 0.02 -lay_gamma 0.1 -lay_glenn 3.0
 
-// run at 10^5 CFL with 1.6 million DOFs
-//   ./layer -lay_noshow -lay_steps 5 -da_refine 15 -lay_exactinit -lay_adscheme 1 -lay_jac
+// run steady state at 10^5 CFL with 1.6 million DOFs (fd Jacobian)
+//   ./layer -lay_noshow -lay_steps 5 -da_refine 15 -lay_exactinit -lay_adscheme 1
+
+// run steady state at 6 x 10^5 CFL with 13 million DOFs (analytical Jacobian)
+//   ./layer -lay_noshow -lay_steps 5 -da_refine 18 -lay_exactinit -lay_adscheme 1 -lay_jac
 
 
 #include <math.h>
