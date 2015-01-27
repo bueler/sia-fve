@@ -274,13 +274,40 @@ PetscReal S2(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
 }
 
 
+PetscErrorCode setadconstants(PetscInt scheme, PetscReal *c) {
+  switch (scheme) {
+    case 0 : { // backward-Euler, centered scheme
+      c[0] = 0.0;
+      c[1] = -1.0/2.0;
+      c[2] = 0.0;
+      c[3] = 1.0/2.0;
+      break; }
+    case 1 : { // third-order upwind biased backward-Euler
+      c[0] = 1.0/6.0;
+      c[1] = -6.0/6.0;
+      c[2] = 3.0/6.0;
+      c[3] = 2.0/6.0;
+      break; }
+    case 2 : { // trapezoid rule, centered scheme;
+      c[0] = 0.0;
+      c[1] = -1.0/4.0;
+      c[2] = 0.0;
+      c[3] = 1.0/4.0;
+      break; }
+    default :
+      SETERRQ(PETSC_COMM_WORLD,1,"not allowed value of scheme\n");
+  }
+  return 0;
+}
+
+
 /* for call-back: evaluate residual FF(x) on local process patch */
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar *FF,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dt = user->dt, dx = user->dx,
                   lam = user->lambda, v0 = user->v0,
-                  nu = dt / dx, nu2 = nu / 2.0, nu4 = nu / 4.0;
+                  nu = dt / dx;
   PetscInt        j;
   PetscReal       *uold;
 
@@ -308,23 +335,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           duoldright = (uold[j+1] - uold[j]) / dx,
           duoldleft  = (uold[j] - uold[j-1]) / dx,
           dqold      = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
-      FF[j] += lam * nu2 * (dq + dqold);
+      FF[j] += lam * (nu / 2.0) * (dq + dqold);
       // add advection part
-      PetscReal adFF;
-      switch (user->adscheme) {
-        case 0 : { // backward-Euler, centered scheme
-          adFF = v0 * nu2 * ( u[j+1] - u[j-1] );
-          break; }
-        case 1 : { // third-order upwind biased backward-Euler
-          const PetscReal mu = user->v0 * nu / 6.0;
-          adFF = mu * ( u[j-2] - 6.0 * u[j-1] + 3.0 * u[j] + 2.0 * u[j+1] );
-          break; }
-        case 2 : { // trapezoid rule, centered scheme;
-          adFF = v0 * nu4 * ( u[j+1] - u[j-1] + uold[j+1] - uold[j-1] );
-          break; }
-        default :
-          SETERRQ(PETSC_COMM_WORLD,2,"not allowed value of user.adscheme\n");
-      }
+      PetscReal adFF = 0.0, c[4];
+      ierr = setadconstants(user->adscheme,c); CHKERRQ(ierr);
+      if (user->adscheme == 2)
+          adFF += v0 * (nu / 4.0) * ( uold[j+1] - uold[j-1] );
+      adFF += v0 * nu * ( c[0] * u[j-2] + c[1] * u[j-1] + c[2] * u[j] + c[3] * u[j+1] );
       FF[j] += (1.0 - lam) * adFF;
   }
   ierr = DMDAVecRestoreArray(info->da, user->uold, &uold);CHKERRQ(ierr);
@@ -336,15 +353,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre, Mat jac,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
-
-  if (user->adscheme != 1) {
-      SETERRQ(PETSC_COMM_WORLD,2,"Jacobian only implemented for user.adscheme==1\n");
-  }
-
   const PetscReal dt = user->dt,  dx = user->dx,
-                  lam = user->lambda,
-                  nu = dt / dx,  nu2 = nu / 2.0,
-                  mu = user->v0 * nu / 6.0;
+                  lam = user->lambda, v0 = user->v0,
+                  nu = dt / dx;
   PetscInt        j, k;
   PetscReal       v[4];
   MatStencil      row,col[4];
@@ -370,25 +381,23 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
           S1right    = S1(uright, dhright, user),
           S2right    = S2(uright, dhright, user);
 
-      k = 0;  col[k].i = j-2;
-      v[k] = (1.0 - lam) * mu;
+      col[0].i = j-2;
+      v[0] = 0.0;
+      col[1].i = j-1;
+      v[1] = lam * (nu / 2.0) * ( - S1left * (1.0/2.0) - S2left * (-1.0/dx) );
+      col[2].i = j;
+      v[2] = 1.0
+             + lam * (nu / 2.0) * ( S1right * (1.0/2.0) + S2right * (-1.0/dx)
+                                   - S1left * (1.0/2.0) - S2left * (1.0/dx)   );
+      col[3].i = j+1;
+      v[3] = lam * (nu / 2.0) * ( S1right * (1.0/2.0) + S2right * (1.0/dx) );
 
-      k++;  col[k].i = j-1;
-      v[k] = lam * nu2 * ( - S1left * (1.0/2.0) - S2left * (-1.0/dx) )
-             + (1.0 - lam) * mu * (-6.0);
+      PetscReal c[4];
+      ierr = setadconstants(user->adscheme,c); CHKERRQ(ierr);
+      for (k=0; k<4; k++)
+          v[k] += (1.0 - lam) * v0 * nu * c[k];
 
-      k++;  col[k].i = j;
-      v[k] = 1.0
-             + lam * nu2 * ( S1right * (1.0/2.0) + S2right * (-1.0/dx)
-                            - S1left * (1.0/2.0) - S2left * (1.0/dx)   )
-             + (1.0 - lam) * mu * (3.0);
-
-      k++;  col[k].i = j+1;
-      v[k] = lam * nu2 * ( S1right * (1.0/2.0) + S2right * (1.0/dx) )
-             + (1.0 - lam) * mu * (2.0);
-
-      k++;
-      ierr = MatSetValuesStencil(jac,1,&row,k,col,v,INSERT_VALUES);CHKERRQ(ierr);
+      ierr = MatSetValuesStencil(jac,1,&row,4,col,v,INSERT_VALUES);CHKERRQ(ierr);
   }
 
   ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
