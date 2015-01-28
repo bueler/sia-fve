@@ -373,6 +373,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       FF[j] += (1.0 - lam) * adFF;
   }
   ierr = DMDAVecRestoreArray(info->da, uoldloc, &uold);CHKERRQ(ierr);
+
+  ierr = VecDestroy(&uoldloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -477,7 +479,7 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
       "-gamma", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets gamma",
       NULL,user->gamma,&user->gamma,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
-      "-genfigs", "generate one ascii file for each frame using this prefix",
+      "-genfigs", "if set, generate one ascii file for each frame using this prefix",
       NULL,figsprefix,figsprefix,512,genfigs); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-glenn", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets n",
