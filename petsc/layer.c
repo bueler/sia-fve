@@ -65,8 +65,9 @@ extern PetscErrorCode SetToExactSolution(Vec,const AppCtx*);
 extern PetscErrorCode FillVecs(Vec,Vec,Vec,const AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*);
-extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[]);
+extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[],PetscBool*,char[]);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[],const PetscInt);
+extern PetscErrorCode GetMassAccounts(Vec,Vec,PetscReal*,PetscReal*,const AppCtx*);
 
 
 int main(int argc,char **argv) {
@@ -74,8 +75,9 @@ int main(int argc,char **argv) {
   SNES                snes;
   Vec                 u;
   AppCtx              user;
-  PetscBool           noshow,genfigs;
-  char                figsprefix[512] = "";
+  PetscBool           noshow,genfigs,genmassfile;
+  char                figsprefix[512] = "",
+                      massfilename[512] = "";
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -93,7 +95,7 @@ int main(int argc,char **argv) {
   user.lambda = 0.0;
   user.NN = 10;
   noshow = PETSC_FALSE;
-  ierr = ProcessOptions(&user,&noshow,&genfigs,figsprefix); CHKERRQ(ierr);
+  ierr = ProcessOptions(&user,&noshow,&genfigs,figsprefix,&genmassfile,massfilename); CHKERRQ(ierr);
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
@@ -142,6 +144,11 @@ int main(int argc,char **argv) {
     ierr = VecDestroy(&b); CHKERRQ(ierr);
   }
 
+  FILE *massfile;
+  if (genmassfile) {
+    ierr = PetscFOpen(PETSC_COMM_WORLD,massfilename,"w",&massfile); CHKERRQ(ierr);
+  }
+
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
   ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
@@ -154,10 +161,9 @@ int main(int argc,char **argv) {
 
   /* time-stepping loop */
   {
-    PetscReal  t;
+    PetscReal  t = 0.0, M, R;
     PetscInt   n, its;
     SNESConvergedReason reason;
-    t = 0.0;
     ierr = VecCopy(user.uold,u);CHKERRQ(ierr);
     if (!noshow) {
       ierr = VecView(u, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
@@ -170,6 +176,11 @@ int main(int argc,char **argv) {
       ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
                          its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+      if (genmassfile) {
+        ierr = GetMassAccounts(u,user.uold,&M,&R,&user); CHKERRQ(ierr);
+        if (fprintf(massfile,"%12.4f  %.12e  %.12e\n",t+user.dt,M,R) < 0)
+          SETERRQ1(PETSC_COMM_WORLD,4,"fprintf() reports error writing to file %s\n",massfilename);
+      }
       if (genfigs) {
           ierr = ViewToVTKASCII(u,figsprefix,"u",n+1); CHKERRQ(ierr);
       }
@@ -195,6 +206,10 @@ int main(int argc,char **argv) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
                "on dx=%.4e grid (%6d pts) with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
                user.dx,info.mx,user.NN,user.dt,errnorm); CHKERRQ(ierr);
+  }
+
+  if (genmassfile) {
+    ierr = PetscFClose(PETSC_COMM_WORLD,massfile); CHKERRQ(ierr);
   }
 
   ierr = VecDestroy(&u);CHKERRQ(ierr);
@@ -445,7 +460,7 @@ PetscErrorCode FillVecs(Vec vx, Vec vf, Vec vb, const AppCtx *user) {
 
 
 /* for call-back: evaluate residual FF(x) on local process patch */
-PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfigs, char figsprefix[]) {
+PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfigs, char figsprefix[], PetscBool *genmassfile, char massfilename[]) {
   PetscErrorCode ierr;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
@@ -473,6 +488,9 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
   ierr = PetscOptionsReal(
       "-lambda", "q = lambda q^0 + (1-lambda) q^1 where q^0 is SIA part and q^1 is advective part",
       NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsString(
+      "-massfile", "if set, write mass time-series to this file",
+      NULL,massfilename,massfilename,512,genmassfile);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-noshow", "do _not_ show solution with X window viewers",
       NULL,*noshow,noshow,NULL);CHKERRQ(ierr);
@@ -480,6 +498,32 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
       "-steps", "number of time steps",
       NULL,user->NN,&user->NN,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode GetMassAccounts(Vec u, Vec uold, PetscReal *M, PetscReal *R, const AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscInt       j;
+  PetscReal      *au, *auold;
+  DMDALocalInfo  info;
+
+  ierr = VecSum(u,M); CHKERRQ(ierr);
+  *M *= user->dx;
+
+  *R = 0.0;
+  ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, u, &au);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, uold, &auold);CHKERRQ(ierr);
+  for (j=info.xs; j<info.xs+info.xm; j++) {
+      if (au[j] < 0.0)
+          SETERRQ1(PETSC_COMM_WORLD,1,"thickness negative (u[j]<0.0 at j=%d) in GetMassAccounts()\n",j);
+      if ((au[j] == 0.0) && (auold[j] > 0.0))
+          *R += auold[j];
+  }
+  ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, uold, &auold);CHKERRQ(ierr);
+  *R *= user->dx;
   PetscFunctionReturn(0);
 }
 
@@ -505,6 +549,6 @@ PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[],
     ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
     ierr = VecView(u,viewer); CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
-  PetscFunctionReturn(0);
+    PetscFunctionReturn(0);
 }
 
