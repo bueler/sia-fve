@@ -2,11 +2,11 @@ static const char help[] =
 "Solves conservation-equation-for-layer problem in 1d:\n"
 "    u_t + q_x = f,\n"
 "where the flux\n"
-"    q = (1-lambda) q_0 + lambda q_1,\n"
-"with  0 <= lambda <= 1, combines an advecting layer\n"
-"    q_0 = v0 u\n"
-"with a SIA-type flux\n"
-"    q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x.\n"
+"    q = lambda q^0 + (1-lambda) q^1,\n"
+"with  0 <= lambda <= 1, combines an SIA-type flux\n"
+"    q^0 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x\n"
+"with an advecting layer\n"
+"    q^1 = v0 u.\n"
 "Here n >= 1 and b(x) is a smooth function given in bedelevation() below.\n"
 "Domain is 0 < x < L, with periodic boundary conditions, subject to constraint\n"
 "    u >= 0.\n"
@@ -332,7 +332,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
       // non-flux part of residual
       const PetscReal x = dx/2 + dx * (PetscReal)j;
       FF[j] = u[j] - uold[j] - dt * fsource(x,user);
-      // add p-laplacian flux part
+      // add p-laplacian (SIA) flux part q^0
       const PetscReal
           dbright    = (bedelevation(x+dx,user) - bedelevation(x,user)) / dx,
           dbleft     = (bedelevation(x,user) - bedelevation(x-dx,user)) / dx;
@@ -351,7 +351,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           duoldleft  = (uold[j] - uold[j-1]) / dx,
           dqold      = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
       FF[j] += lam * (nu / 2.0) * (dq + dqold);
-      // add advection part
+      // add advection part q^1
       PetscReal adFF = 0.0, c[4];
       ierr = setadconstants(user->adscheme,c); CHKERRQ(ierr);
       if (user->adscheme == 2)
@@ -473,10 +473,10 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
       "-jac", "use analytical jacobian; default is to do finite difference (-snes_fd) or matrix-free (-snes_mf)",
       NULL,user->usejacobian,&user->usejacobian,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-lambda", "q = (1-lambda) q_0 + lambda q_1 where q_0 is advective part and q_1 is SIA",
+      "-lambda", "q = lambda q^0 + (1-lambda) q^1 where q^0 is SIA part and q^1 is advective part",
       NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-noshow", "do not show solution with X",
+      "-noshow", "do _not_ show solution with X window viewers",
       NULL,*noshow,noshow,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-steps", "number of time steps",

@@ -1,0 +1,135 @@
+\documentclass[11pt]{amsart}
+
+\usepackage{geometry}
+\geometry{letterpaper, margin=1in}
+
+\usepackage{verbatim}
+
+% math macros
+\newcommand\bb{\mathbf{b}}
+\newcommand\bbf{\mathbf{f}}
+\newcommand\bn{\mathbf{n}}
+\newcommand\bq{\mathbf{q}}
+\newcommand\bu{\mathbf{u}}
+\newcommand\bv{\mathbf{v}}
+\newcommand\by{\mathbf{y}}
+
+\newcommand\bQ{\mathbf{Q}}
+\newcommand\bV{\mathbf{V}}
+\newcommand\bX{\mathbf{X}}
+
+\newcommand\CC{\mathbb{C}}
+\newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
+\newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
+\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
+\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
+\newcommand{\ddxp}[1]{\ensuremath{\frac{\partial #1}{\partial x'}}}
+\newcommand{\ddz}[1]{\ensuremath{\frac{\partial #1}{\partial z}}}
+\newcommand{\ddxx}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x^2}}}
+\newcommand{\ddyy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial y^2}}}
+\newcommand{\ddxy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x \partial y}}}
+\newcommand{\ddzz}[1]{\ensuremath{\frac{\partial^2 #1}{\partial z^2}}}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand\eps{\epsilon}
+\newcommand{\grad}{\nabla}
+\newcommand{\ihat}{\mathbf{i}}
+\newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
+\newcommand{\jhat}{\mathbf{j}}
+\newcommand{\khat}{\mathbf{k}}
+\newcommand{\nhat}{\mathbf{n}}
+\newcommand\lam{\lambda}
+\newcommand\lap{\triangle}
+\newcommand\Matlab{\textsc{Matlab}\xspace}
+\newcommand\RR{\mathbb{R}}
+\newcommand\vf{\varphi}
+
+
+\title{Documentation of code \texttt{layer.c}}
+
+\author{Ed Bueler}
+
+
+\begin{document}
+
+\begin{abstract}
+This brief document will help the user understand the code \texttt{layer.c}.  It mostly covers the way the PDE (strong) form is discretized into a nonlinear system solved by a \texttt{SNESVI} instance.
+\end{abstract}
+
+\maketitle
+
+\thispagestyle{empty}
+
+\baselineskip=14pt
+\parskip=7pt
+
+\section{Introduction}
+
+The code solves a conservation equation for a layer in one dimension,
+\begin{equation}
+u_t + q_x = f  \label{eq:conserve}
+\end{equation}
+where $u(t,x)$ is the layer thickness, thus
+\begin{equation}
+u \ge 0. \label{eq:constraint}
+\end{equation}
+The source term $f=f(x)$ only depends on space.
+
+The flux $q(x,u,u_x)$ is a mix of advective and non-linearly diffusive parts according to a parameter $0\le \lambda \le 1$.  The two parts are $q^0(x,u,u_x)$, a shallow ice approximation flux using a continuously-differentiable bed elevation $b(x)$, and $q^1(u)$, a constant-velocity advection.  In detail,
+\begin{align}
+    q &= \lambda q^0 + (1-\lambda) q^1,  \label{eq:fluxform} \\
+  q^0 &= - \gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x, \notag \\
+  q^1 &= v_0 u. \notag
+\end{align}
+Here $n\ge 1$ is the Glen exponent and $\gamma>0$ is a scaling.  We assume the advection is \emph{right-ward}, so $v_0 \ge 0$.
+
+The spatial domain is $[0,L]$, where $L=10$, with periodic boundary conditions.  The temporal domain is $[0,T]$.  The temporal grid is $t_n = n\Delta t$ where $\Delta t = T/N$ where $N$ defaults to 10 and is set by \verb|-lay_steps|.  In fact $\Delta t$ is set by \verb|-lay_dt|, and $T$ is computed by $T=N\Delta t$.
+
+Let
+  $$\Delta x = L / m$$
+where $m$ defaults to $50$ and is set by \verb|-da_grid_x| or \verb|-da_refine|.  The spatial grid (i.e.~\emph{regular} grid) points are
+    $$x_j = \frac{\Delta x}{2} + j \Delta x$$
+for $j=0,\dots,m-1$.  Thus the grid point $x_j$ is centered in $[j\Delta x,(j+1)\Delta x]$.
+
+The basic discretization of \eqref{eq:conserve} is the trapezoid rule in time and centered in space,
+\begin{equation}
+\frac{u_j^n - u_j^{n-1}}{\Delta t} + \frac{1}{2} \frac{q_{j+1/2}(\bu^n) - q_{j-1/2}(\bu^n)}{\Delta x} + \frac{1}{2} \frac{q_{j+1/2}(\bu^{n-1}) - q_{j-1/2}(\bu^{n-1})}{\Delta x} = f(x_j) \label{eq:basediscret}
+\end{equation}
+where $\bu^n$ is the vector in $\RR^m$ of all unknowns $u_j^n$, for $j=0,\dots,m-1$, and where $\bu^{n-1}$ is the vector of all $u_j^{n-1}$.  We write the unknowns more simply as
+  $$u_j = u_j^n,$$
+so $\bu_j = \bu_j^n$.
+
+To do the time-step implicitly we reformulate \eqref{eq:basediscret} as a nonlinear system of $m$ equations in $m$ unknowns $u_j$.  Furthermore we recall the flux split \eqref{eq:fluxform}.  Thus the nonlinear system is
+\begin{equation}
+F_j(\bu) = 0 \qquad \text{ for } j = 0,\dots,m-1
+\end{equation}
+where
+\begin{align}
+F_j(\bu) &= u_j - u_j^{n-1} - \Delta t\,f(x_j) \\
+   &\qquad + \lambda \nu_2 \left[q^0_{j+1/2}(\bu) - q^0_{j-1/2}(\bu)\right] + \lambda \nu_2 \left[q^0_{j+1/2}(\bu^{n-1}) - q^0_{j-1/2}(\bu^{n-1})\right] \notag \\
+   &\qquad + (1-\lambda) \nu_2 \left[q^1_{j+1/2}(\bu) -  q^1_{j-1/2}(\bu)\right] + (1-\lambda) \nu_2 \left[q^1_{j+1/2}(\bu^{n-1}) - q^1_{j-1/2}(\bu^{n-1})\right] \notag
+\end{align}
+where
+    $$\nu_2 = \frac{\Delta t}{2\Delta x}.$$
+
+The details of the code is largely determined by the flux-discretization scheme for the parts inside square brackets.  See the next section.
+
+\section{Flux discretization}
+
+Consider flux form \eqref{eq:fluxform}, with diffusive part $q^0$ and advective part $q^1$.
+
+FIXME
+
+%Uses SNESVI.  Several O(dx^2) finite difference methods to choose among.\n"
+%Exact solution for lambda=0 case.  Either analytical Jacobian or\n"
+%finite-difference evaluation of Jacobian.
+
+
+
+%         References
+%\bibliography{lc}
+%\bibliographystyle{siam}
+
+
+
+
+\end{document}
