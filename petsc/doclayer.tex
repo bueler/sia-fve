@@ -115,18 +115,18 @@ The details of the code is largely determined by the flux-discretization scheme 
 
 \section{Flux discretization}
 
-Consider flux form \eqref{eq:fluxform}, with diffusive part $q^0$ and advective part $q^1$.  We start with approximations of the former.
+Consider flux form \eqref{eq:fluxform}, with diffusive part $q^0$ and advective part $q^1$.  The approximations of these fluxes appear in method \verb|FormFunctionLocal()|, which is called-back by SNES using DMDA information.
 
-Let
+We start with approximations of $q^0$.  Let
 	$$S(u,z) = - \gamma u^{n+2} |z|^{n-1} z,$$
 so that $q^0(x,u,u_x) = S(u,u_x+b_x)$.  Also define derivatives of the bed
 	$$b'_{j+1/2} = \frac{b(x_{j+1}) - b(x_j)}{\Delta x}, \quad b'_{j-1/2} = \frac{b(x_j) - b(x_{j-1})}{\Delta x}.$$
 Then the diffusive fluxes appearing in \eqref{eq:defineFj}, at time $t_n$, i.e.~using unknown thicknesses $\bu$, are
     $$q^0_{j+1/2}(\bu) = S\left(\frac{u_j+u_{j+1}}{2},\frac{u_{j+1}-u_j}{\Delta x} + b'_{j+1/2}\right),$$
     $$q^0_{j-1/2}(\bu) = S\left(\frac{u_{j-1}+u_j}{2},\frac{u_j-u_{j-1}}{\Delta x} + b'_{j-1/2}\right),$$
-The ``old'' diffusive fluxes $q^0_{j+1/2}(\bu^{n-1})$ and $q^0_{j-1/2}(\bu^{n-1})$ in \eqref{eq:defineFj} are defined the same way but with thicknesses at time $t_{n-1}$.
+The ``old'' diffusive fluxes $q^0_{j+1/2}(\bu^{n-1})$ and $q^0_{j-1/2}(\bu^{n-1})$ in \eqref{eq:defineFj} are defined the same way.
 
-The discretization of the advective flux differences in \eqref{eq:basediscret}, i.e.~the differences of $q^1$ inside square brackets, is user-chooseable according to the option
+The discretization of the advective flux differences in \eqref{eq:defineFj}, i.e.~the differences of $q^1$ inside square brackets, is user-chooseable according to the option
 \begin{quote}
 \verb|-lay_adscheme X|
 \end{quote}
@@ -161,8 +161,6 @@ In fact, the unified form in the code uses a vector of four coefficients $c_k$:
    q^1_{j+1/2}(\bu) - q^1_{j-1/2}(\bu) = v_0 \left( c_0 u_{j-2} + c_1 u_{j-1} + c_2 u_j + c_3 u_{j+1} \right). \label{eq:dfluxunified}
 \end{equation}
 Thus an array \verb|c[4]| of coefficients is set according to the option \verb|-lay_adscheme|.  Also, a PETSc stencil width of 2 is needed for multi-processor cases.
-
-The above formulas appear in method \verb|FormFunctionLocal()|, which is called-back by SNES using DMDA information.
 
 
 \section{Jacobian calculation}
