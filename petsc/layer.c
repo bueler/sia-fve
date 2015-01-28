@@ -36,6 +36,10 @@ static const char help[] =
 // run steady state at 6 x 10^5 CFL with 13 million DOFs (analytical Jacobian)
 //   ./layer -lay_noshow -lay_steps 5 -da_refine 18 -lay_exactinit -lay_adscheme 1 -lay_jac
 
+// ./layer -da_refine 3 -lay_dt 0.04 -lay_steps 150 -lay_adscheme 1 -lay_jac -draw_pause 0.05 -lay_timedependentsource -lay_massfile bar.txt
+// in octave: >> load('bar.txt')
+//            >> semilogy(bar(:,1),bar(:,2:3))
+
 
 #include <math.h>
 #include <petscdmda.h>
@@ -52,10 +56,12 @@ typedef struct {
             f0,   // scale for source term f(x)
             n,    // Glen exponent for SIA flux term
             gamma,// coefficient for SIA flux term
-            lambda;    // 0.0 = advection, 1.0 = SIA
+            lambda,    // 0.0 = advection, 1.0 = SIA
+            midtime;   // current time, in middle of time-step [t_{n-1},t_n]
   PetscInt  adscheme,  // 0 = centered, 1 = third-order upwind-biased, 2 = box
             NN;        // number of time steps
   PetscBool exactinit, // initialize with exact solution
+            fusest,    // source f = f(t,x) is time dependent
             usejacobian;// use analytical jacobian
 } AppCtx;
 
@@ -88,14 +94,16 @@ int main(int argc,char **argv) {
 
   user.adscheme = 0;
   user.dt = 0.05;
-  user.exactinit = PETSC_FALSE;
+  user.exactinit   = PETSC_FALSE;
   user.usejacobian = PETSC_FALSE;
+  user.fusest      = PETSC_FALSE;
   user.n      = 3.0;
   user.gamma  = 1.0;
   user.lambda = 0.0;
   user.NN = 10;
   noshow = PETSC_FALSE;
   ierr = ProcessOptions(&user,&noshow,&genfigs,figsprefix,&genmassfile,massfilename); CHKERRQ(ierr);
+  user.midtime = user.dt / 2.0;  // initialize as middle of the first time step
 
   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC,
                       -50,         // override with -da_grid_x or -da_refine
@@ -170,6 +178,7 @@ int main(int argc,char **argv) {
     }
     for (n = 0; n < user.NN; ++n) {
       ierr = PetscPrintf(PETSC_COMM_WORLD, "  time[%3d]=%6g: ", n+1, t+user.dt); CHKERRQ(ierr);
+      user.midtime = t + user.dt/2.0;
       ierr = VecScale(u,0.99); CHKERRQ(ierr); // move u so that line search goes some distance
       ierr = SNESSolve(snes, NULL, u); CHKERRQ(ierr);
       ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
@@ -196,7 +205,7 @@ int main(int argc,char **argv) {
   }
 
   // evaluate numerical error relative to steady state
-  if (user.lambda==0.0) {
+  if ((user.lambda==0.0) && (user.fusest==PETSC_FALSE)) {
       Vec uexact;
       PetscScalar errnorm;
       ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
@@ -239,6 +248,10 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
     SETERRQ(PETSC_COMM_WORLD,5,
       "exact solution only available in pure-advection (lambda=0) case\n");
   }
+  if (user->fusest) {
+    SETERRQ(PETSC_COMM_WORLD,6,
+      "exact solution only available when f=f(x), i.e. when user.fusest=FALSE\n");
+  }
   const PetscReal twopi = 2.0 * PETSC_PI,
                   L     = user->L,
                   shift = L / 15.0,
@@ -268,11 +281,15 @@ PetscErrorCode SetToExactSolution(Vec u, const AppCtx *user) {
 
 
 // without constraint, with this f(x), \int_0^L u(t,x) dt --> - \infty
-PetscReal fsource(const PetscReal x, const AppCtx *user) {
+PetscReal fsource(const PetscReal t, const PetscReal x, const AppCtx *user) {
   const PetscReal twopi = 2.0 * PETSC_PI,
                   L     = user->L,
-                  shift = L / 15.0,
-                  fdown = - 1.0 / 5.0;
+                  shift = L / 15.0;
+  PetscReal fdown;
+  if (user->fusest)
+      fdown = - 1.0 / 5.0 - 0.75 * PetscAbsReal(sin(t));
+  else
+      fdown = - 1.0 / 5.0;
   return user->f0 * ( fdown + sin((twopi/L) * (x - shift)) );
 }
 
@@ -346,7 +363,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
   for (j=info->xs; j<info->xs+info->xm; j++) {
       // non-flux part of residual
       const PetscReal x = dx/2 + dx * (PetscReal)j;
-      FF[j] = u[j] - uold[j] - dt * fsource(x,user);
+      FF[j] = u[j] - uold[j] - dt * fsource(user->midtime,x,user);
       // add p-laplacian (SIA) flux part q^0
       const PetscReal
           dbright    = (bedelevation(x+dx,user) - bedelevation(x,user)) / dx,
@@ -451,7 +468,7 @@ PetscErrorCode FillVecs(Vec vx, Vec vf, Vec vb, const AppCtx *user) {
   for (j=info.xs; j<info.xs+info.xm; j++) {
       x     = dx/2 + dx * (PetscReal)j;
       ax[j] = x;
-      af[j] = fsource(x,user);
+      af[j] = fsource(user->midtime,x,user);
       ab[j] = bedelevation(x,user);
   }
   ierr = DMDAVecRestoreArray(user->da, vx, &ax);CHKERRQ(ierr);
@@ -475,6 +492,9 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-timedependentsource", "use an f(t,x) formula which is actually time-dependent",
+      NULL,user->fusest,&user->fusest,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-gamma", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets gamma",
       NULL,user->gamma,&user->gamma,NULL);CHKERRQ(ierr);
