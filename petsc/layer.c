@@ -271,16 +271,16 @@ PetscReal bedelevation(const PetscReal x, const AppCtx *user) {
 
 
 // flux formula for SIA, and its partial derivatives
-PetscReal S(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
-  return -user->gamma * PetscPowReal(u,user->n+2.0) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0) * dhdx;
+PetscReal S(const PetscReal u, const PetscReal z, const AppCtx *user) {
+  return -user->gamma * PetscPowReal(u,user->n+2.0) * PetscPowReal(PetscAbsReal(z),user->n-1.0) * z;
 }
 
-PetscReal S1(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
-  return -user->gamma * (user->n+2.0) * PetscPowReal(u,user->n+1.0) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0) * dhdx;
+PetscReal S1(const PetscReal u, const PetscReal z, const AppCtx *user) {
+  return -user->gamma * (user->n+2.0) * PetscPowReal(u,user->n+1.0) * PetscPowReal(PetscAbsReal(z),user->n-1.0) * z;
 }
 
-PetscReal S2(const PetscReal u, const PetscReal dhdx, const AppCtx *user) {
-  return -user->gamma * PetscPowReal(u,user->n+2.0) * (user->n) * PetscPowReal(PetscAbsReal(dhdx),user->n-1.0);
+PetscReal S2(const PetscReal u, const PetscReal z, const AppCtx *user) {
+  return -user->gamma * PetscPowReal(u,user->n+2.0) * (user->n) * PetscPowReal(PetscAbsReal(z),user->n-1.0);
 }
 
 
@@ -288,21 +288,21 @@ PetscErrorCode setadconstants(PetscInt scheme, PetscReal *c) {
   switch (scheme) {
     case 0 : { // backward-Euler, centered scheme
       c[0] = 0.0;
-      c[1] = -1.0/2.0;
+      c[1] = -1.0;
       c[2] = 0.0;
-      c[3] = 1.0/2.0;
+      c[3] = 1.0;
       break; }
     case 1 : { // third-order upwind biased backward-Euler
-      c[0] = 1.0/6.0;
-      c[1] = -6.0/6.0;
-      c[2] = 3.0/6.0;
-      c[3] = 2.0/6.0;
+      c[0] = 1.0/3.0;
+      c[1] = -6.0/3.0;
+      c[2] = 3.0/3.0;
+      c[3] = 2.0/3.0;
       break; }
     case 2 : { // trapezoid rule, centered scheme;
       c[0] = 0.0;
-      c[1] = -1.0/4.0;
+      c[1] = -1.0/2.0;
       c[2] = 0.0;
-      c[3] = 1.0/4.0;
+      c[3] = 1.0/2.0;
       break; }
     default :
       SETERRQ(PETSC_COMM_WORLD,1,"not allowed value of scheme\n");
@@ -340,23 +340,21 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar 
           uright     = (u[j] + u[j+1]) / 2.0,
           uleft      = (u[j-1] + u[j]) / 2.0,
           duright    = (u[j+1] - u[j]) / dx,
-          duleft     = (u[j] - u[j-1]) / dx,
-          dhright    = duright + dbright,
-          dhleft     = duleft + dbleft,
-          dq         = S(uright,dhright,user) - S(uleft,dhleft,user);
+          duleft     = (u[j] - u[j-1]) / dx;
       const PetscReal
           uoldright  = (uold[j] + uold[j+1]) / 2.0,
           uoldleft   = (uold[j-1] + uold[j]) / 2.0,
           duoldright = (uold[j+1] - uold[j]) / dx,
-          duoldleft  = (uold[j] - uold[j-1]) / dx,
-          dqold      = S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user);
-      FF[j] += lam * (nu / 2.0) * (dq + dqold);
+          duoldleft  = (uold[j] - uold[j-1]) / dx;
+      FF[j] += lam * (nu / 2.0) *
+               (  S(uright,   duright   +dbright,user) - S(uleft,   duleft   +dbleft,user)
+                + S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user) );
       // add advection part q^1
-      PetscReal adFF = 0.0, c[4];
+      PetscReal adFF, c[4];
       ierr = setadconstants(user->adscheme,c); CHKERRQ(ierr);
+      adFF = v0 * (nu / 2.0) * ( c[0] * u[j-2] + c[1] * u[j-1] + c[2] * u[j] + c[3] * u[j+1] );
       if (user->adscheme == 2)
-          adFF += v0 * (nu / 4.0) * ( uold[j+1] - uold[j-1] );
-      adFF += v0 * nu * ( c[0] * u[j-2] + c[1] * u[j-1] + c[2] * u[j] + c[3] * u[j+1] );
+          adFF += v0 * (nu / 2.0) * (1.0 / 2.0) * ( uold[j+1] - uold[j-1] );
       FF[j] += (1.0 - lam) * adFF;
   }
   ierr = DMDAVecRestoreArray(info->da, uoldloc, &uold);CHKERRQ(ierr);
@@ -410,7 +408,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar *u, Mat jacpre
       PetscReal c[4];
       ierr = setadconstants(user->adscheme,c); CHKERRQ(ierr);
       for (k=0; k<4; k++)
-          v[k] += (1.0 - lam) * v0 * nu * c[k];
+          v[k] += (1.0 - lam) * (nu / 2.0) * v0 * c[k];
 
       ierr = MatSetValuesStencil(jac,1,&row,4,col,v,INSERT_VALUES);CHKERRQ(ierr);
   }

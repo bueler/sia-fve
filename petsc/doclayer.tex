@@ -59,8 +59,8 @@ This brief document will help the user understand the code \texttt{layer.c}.  It
 
 \thispagestyle{empty}
 
-\baselineskip=14pt
-\parskip=7pt
+%\baselineskip=14pt
+%\parskip=7pt
 
 \section{Introduction}
 
@@ -104,7 +104,7 @@ F_j(\bu) = 0 \qquad \text{ for } j = 0,\dots,m-1
 \end{equation}
 where
 \begin{align}
-F_j(\bu) &= u_j - u_j^{n-1} - \Delta t\,f(x_j) \\
+F_j(\bu) &= u_j - u_j^{n-1} - \Delta t\,f(x_j)  \label{eq:defineFj} \\
    &\qquad + \lambda \nu_2 \left[q^0_{j+1/2}(\bu) - q^0_{j-1/2}(\bu)\right] + \lambda \nu_2 \left[q^0_{j+1/2}(\bu^{n-1}) - q^0_{j-1/2}(\bu^{n-1})\right] \notag \\
    &\qquad + (1-\lambda) \nu_2 \left[q^1_{j+1/2}(\bu) -  q^1_{j-1/2}(\bu)\right] + (1-\lambda) \nu_2 \left[q^1_{j+1/2}(\bu^{n-1}) - q^1_{j-1/2}(\bu^{n-1})\right] \notag
 \end{align}
@@ -115,13 +115,79 @@ The details of the code is largely determined by the flux-discretization scheme 
 
 \section{Flux discretization}
 
-Consider flux form \eqref{eq:fluxform}, with diffusive part $q^0$ and advective part $q^1$.
+Consider flux form \eqref{eq:fluxform}, with diffusive part $q^0$ and advective part $q^1$.  We start with approximations of the former.
 
-FIXME
+Let
+	$$S(u,z) = - \gamma u^{n+2} |z|^{n-1} z,$$
+so that $q^0(x,u,u_x) = S(u,u_x+b_x)$.  Also define derivatives of the bed
+	$$b'_{j+1/2} = \frac{b(x_{j+1}) - b(x_j)}{\Delta x}, \quad b'_{j-1/2} = \frac{b(x_j) - b(x_{j-1})}{\Delta x}.$$
+Then the diffusive fluxes appearing in \eqref{eq:defineFj}, at time $t_n$, i.e.~using unknown thicknesses $\bu$, are
+    $$q^0_{j+1/2}(\bu) = S\left(\frac{u_j+u_{j+1}}{2},\frac{u_{j+1}-u_j}{\Delta x} + b'_{j+1/2}\right),$$
+    $$q^0_{j-1/2}(\bu) = S\left(\frac{u_{j-1}+u_j}{2},\frac{u_j-u_{j-1}}{\Delta x} + b'_{j-1/2}\right),$$
+The ``old'' diffusive fluxes $q^0_{j+1/2}(\bu^{n-1})$ and $q^0_{j-1/2}(\bu^{n-1})$ in \eqref{eq:defineFj} are defined the same way but with thicknesses at time $t_{n-1}$.
 
-%Uses SNESVI.  Several O(dx^2) finite difference methods to choose among.\n"
-%Exact solution for lambda=0 case.  Either analytical Jacobian or\n"
-%finite-difference evaluation of Jacobian.
+The discretization of the advective flux differences in \eqref{eq:basediscret}, i.e.~the differences of $q^1$ inside square brackets, is user-chooseable according to the option
+\begin{quote}
+\verb|-lay_adscheme X|
+\end{quote}
+where \verb|X| is 0,1,2:
+\medskip
+\renewcommand{\labelenumi}{\texttt{X}$=$\arabic{enumi}: \quad}
+\begin{enumerate}
+\setcounter{enumi}{-1}
+\item %0
+In this case we use a backward-Euler time-discretization and a centered (second-order) space-discretization, so the first line approximates ``$2 \Delta x\,(v_0 u)_x$'':
+\begin{align*}
+q^1_{j+1/2}(\bu) - q^1_{j-1/2}(\bu)             &= v_0 \left( - u_{j-1} + u_{j+1} \right), \\
+q^1_{j+1/2}(\bu^{n-1}) - q^1_{j-1/2}(\bu^{n-1}) &= 0.
+\end{align*}
+\item %1
+This case uses a backward-Euler time-discretization and a third-order, upwind-biased space-discretization.  As above, the first line approximates ``$2 \Delta x\,(v_0 u)_x$'':
+\begin{align*}
+q^1_{j+1/2}(\bu) - q^1_{j-1/2}(\bu)             &= v_0 \left( \tfrac{1}{3} u_{j-2} - \tfrac{6}{3} u_{j-1} + \tfrac{3}{3} u_j - \tfrac{2}{3} u_{j+1} \right), \\
+q^1_{j+1/2}(\bu^{n-1}) - q^1_{j-1/2}(\bu^{n-1}) &= 0.
+\end{align*}
+\item %2
+This case uses the trapezoid rule time-discretization and a centered (second-order) space-discretization.  Thus each of these lines is an approximation of ``$\Delta x\,(v_0 u)_x$'':
+\begin{align*}
+q^1_{j+1/2}(\bu) - q^1_{j-1/2}(\bu)             &= v_0 \left( - \tfrac{1}{2} u_{j-1} + \tfrac{1}{2} u_{j+1} \right), \\
+q^1_{j+1/2}(\bu^{n-1}) - q^1_{j-1/2}(\bu^{n-1}) &= v_0 \left( - \tfrac{1}{2} u_{j-1}^{n-1} + \tfrac{1}{2} u_{j+1}^{n-1} \right).
+\end{align*}
+\end{enumerate}
+
+\medskip
+In fact, the unified form in the code uses a vector of four coefficients $c_k$:
+\begin{equation}
+   q^1_{j+1/2}(\bu) - q^1_{j-1/2}(\bu) = v_0 \left( c_0 u_{j-2} + c_1 u_{j-1} + c_2 u_j + c_3 u_{j+1} \right). \label{eq:dfluxunified}
+\end{equation}
+Thus an array \verb|c[4]| of coefficients is set according to the option \verb|-lay_adscheme|.  Also, a PETSc stencil width of 2 is needed for multi-processor cases.
+
+The above formulas appear in method \verb|FormFunctionLocal()|, which is called-back by SNES using DMDA information.
+
+
+\section{Jacobian calculation}
+
+We want to compute the nonzero derivatives
+   $$\frac{\partial F_j(\bu)}{\partial u_k}$$
+and insert them into a sparse matrix, the Jacobian; this is the $j$ row and $k$ column entry, in particular.  This section's computation occurs in method \verb|FormJacobianLocal()|, another call-back function, but it only happens if option \verb|-lay_jac| is set.  Otherwise the entries of the Jacobian are approximated within PETSc by calls to \verb|FormFunctionLocal()| and finite-differencing, which are made efficient by graph coloring.  There turns out to be a modest, but noticeable, benefit to having the analytical Jacobian computation we describe here.
+
+Let
+	$$S_1(u,z) = \frac{\partial}{\partial u} S(u,z) = - \gamma (n+2) u^{n+1} |z|^{n-1} z,$$
+	$$S_2(u,z) = \frac{\partial}{\partial z} S(u,z) = - \gamma u^{n+2} (n) |z|^{n-1}.$$
+The second formula uses the fact that the derivative of $\varphi(z) = |z|^{n-1} z$ on the whole real line is $\varphi'(z) = n |z|^{n-1}$.  Also define
+\begin{align*}
+S_k^{\text{left}} &= S_k\left(\frac{u_{j-1}+u_j}{2},\frac{u_j-u_{j-1}}{\Delta x} + b'_{j-1/2}\right), \\
+S_k^{\text{right}} &= S_k\left(\frac{u_j+u_{j+1}}{2},\frac{u_{j+1}-u_j}{\Delta x} + b'_{j+1/2}\right),
+\end{align*}
+for $k=1,2$.
+
+There are at most four nonzero entries per row $j$ of the Jacobian:
+\begin{align*}
+\frac{\partial F_j(\bu)}{\partial u_{j-2}} &= (1-\lambda) \nu_2 v_0 c_0 \\
+\frac{\partial F_j(\bu)}{\partial u_{j-1}} &= \lambda \nu_2 \left( - S_1^{\text{left}} (\tfrac{1}{2}) - S_2^{\text{left}} (\tfrac{-1}{\Delta x}) \right) + (1-\lambda) \nu_2 v_0 c_1 \\
+\frac{\partial F_j(\bu)}{\partial u_j} &= 1 + \lambda \nu_2 \left( S_1^{\text{right}} (\tfrac{1}{2}) + S_2^{\text{right}} (\tfrac{-1}{\Delta x}) - S_1^{\text{left}} (\tfrac{1}{2}) - S_2^{\text{left}} (\tfrac{1}{\Delta x}) \right) + (1-\lambda) \nu_2 v_0 c_2 \\
+\frac{\partial F_j(\bu)}{\partial u_{j+1}} &= \lambda \nu_2 \left( S_1^{\text{right}} (\tfrac{1}{2}) + S_2^{\text{right}} (\tfrac{1}{\Delta x}) \right) + (1-\lambda) \nu_2 v_0 c_3
+\end{align*}
 
 
 
