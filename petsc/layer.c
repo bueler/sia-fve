@@ -204,11 +204,9 @@ int main(int argc,char **argv) {
 
   // evaluate numerical error relative to steady state
   if ((user.lambda==0.0) && (user.fusest==PETSC_FALSE)) {
-      Vec uexact;
       PetscScalar errnorm;
-      ierr = DMCreateGlobalVector(user.da,&uexact);CHKERRQ(ierr);
-      ierr = SetToExactSolution(uexact,&user);CHKERRQ(ierr);
-      ierr = VecAXPY(u,-1.0,uexact); CHKERRQ(ierr);    // u <- u + (-1.0) uxact
+      ierr = SetToExactSolution(user.uold,&user);CHKERRQ(ierr);
+      ierr = VecAXPY(u,-1.0,user.uold); CHKERRQ(ierr);    // u <- u + (-1.0) uexact
       ierr = VecNorm(u,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,
                "on dx=%.4e grid (%6d pts) with N=%4d steps of dt=%.4e:  error |u-uexact|_inf = %g\n",
