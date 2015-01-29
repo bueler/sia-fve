@@ -16,8 +16,7 @@
 \usepackage{animate}
 
 % see http://tex.stackexchange.com/questions/86188/labelling-with-arrows-in-an-automated-way
-\usepackage{tikz}
-\usepackage{amsmath}
+\usepackage{tikz,amsmath,verbatim}
 
 \newif\ifclipme\clipmetrue
 \tikzset{labelstyle/.style={LabelStyle/.append style={#1}},linestyle/.style={LineStyle/.append style={#1}}}
@@ -125,14 +124,14 @@
 
 \vspace{-7mm}
   \begin{itemize}
-  \item mass conservation for a layer:
+  \item mass conservation PDE for a layer:
       $$h_t + \Div\bq = {\color{blue} f}$$
     \begin{itemize}
     \vspace{-4mm}
     \item[$\circ$] $h$ is a thickness: $h\ge 0$
     \item[$\circ$] mass conservation PDE applies \emph{only where} $h>0$
     \item[$\circ$] $\bq$ is flow (vertically-integrated)
-    \item[$\circ$] source ${\color{blue} f}$ ({\color{blue} blue}) is ``climate''; ${\color{blue} f}>0$ shown downward
+    \item[$\circ$] source ${\color{blue} f}$ is ``climate''; ${\color{blue} f}>0$ shown downward
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -157,65 +156,34 @@
 \end{frame}
 
 
-\begin{frame}{Compare 1D examples}
+\begin{frame}{A concern driven by practical modeling}
 
 \begin{columns}
-\begin{column}{0.4\textwidth}
-\only<1>{
-\scriptsize
+\begin{column}{0.5\textwidth}
 \begin{itemize}
-\item same equation
-
-\tiny
-\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
-
-\scriptsize
-\item same climate $f$
-\item same bed shape
-\item same
-
-constrained-
-
-Newton
-
-scheme
+\small
+\item the icy region is nearly-fractal and disconnected
+\item currently in PISM$^*$:
+  \begin{itemize}
+  \item[$\circ$] explicit time-stepping
+  \item[$\circ$] free boundary by truncation
+  \end{itemize}
+\item want for PISM:
+  \begin{itemize}
+  \item[$\circ$] implicit time steps
+  \item[$\circ$] better conservation accounting to user
+  \end{itemize}
 \end{itemize}
 
-\vspace{5mm}
-
-\normalsize
-\alert{how different}
-
-\alert{are the fluxes}
-
-\alert{$\bQ_n$?}
-}
-\only<2>{
-\scriptsize
-\vspace{20mm}
-
-$\bQ_n = v_0 H_n$
-
-hyperbolic
-
-(constant velocity)
-
-\vspace{34mm}
-
-$\bQ_n = - \Gamma |H_n|^{n+2}$
-
-$\phantom{bQ_n = }\, \cdot |\grad h_n|^{n-1} \grad h_n$
-
-highly-nonlinear diffusion
-}
+\vspace{10mm}
+{\scriptsize $^*$= Parallel Ice Sheet Model, \texttt{pism-docs.org}}
 \end{column}
-\begin{column}{0.6\textwidth}
-\hspace{-20mm}
-\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{25}
+\begin{column}{0.5\textwidth}
+\vspace{-5mm}
 
-\medskip
-\hspace{-20mm}
-\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{25}
+\begin{center}
+\includegraphics[width=0.8\textwidth,keepaspectratio=true]{ice-mask-900m}
+\end{center}
 \end{column}
 \end{columns}
 \end{frame}
@@ -256,19 +224,8 @@ $$h_t + \Div\bq = f$$
     \begin{itemize}
     \item[$\circ$] generic result: \emph{ad hoc} schemes for finite volume/difference mass conservation near the free boundary
     \end{itemize}
-  \only<2>{
-  \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem it reflects!
-  \item my goals:
-    \begin{itemize}
-    \item[$\circ$]
-       \alert{redefine the problem so free boundary is part of solution}
-    \item[$\circ$]
-       \alert{use numerical schemes which automate the details}
-    \end{itemize}
-  }
   \end{itemize}
 
-\only<1>{
 \begin{columns}
 \begin{column}{0.3\textwidth}
 \includegraphics[width=\textwidth,keepaspectratio=true]{JaroschSchoofAnslow2013}
@@ -289,18 +246,28 @@ on steep terrain
 \tiny (Albrecht et al, 2011)
 
 \small \medskip
-\includegraphics[width=0.6\textwidth,keepaspectratio=true]{jouvet-two-grids}
+\includegraphics[width=0.5\textwidth,keepaspectratio=true]{jouvet-two-grids}
 
-\small volume-of-fluid method (on fine grid) at glacier surface
+\small volume-of-fluid method at glacier surface
 
 \tiny (Jouvet et al 2008)
 \end{column}
-\end{columns}}
+\end{columns}
+\end{frame}
 
-\only<2>{\phantom{foo}
 
-\vspace{29mm}
-\phantom{bar}}
+\begin{frame}{New goals}
+
+  \begin{itemize}
+  \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem is behind it
+  \item my goals:
+    \begin{itemize}
+    \item[$\circ$]
+       \alert{redefine the problem so free boundary is part of solution}
+    \item[$\circ$]
+       \alert{find numerical schemes which automate the details}
+    \end{itemize}
+  \end{itemize}
 \end{frame}
 
 
@@ -310,7 +277,7 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 
   \begin{itemize}
   \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
-  \item the new equation is a ``single time-step problem''
+  \item the new equation (right) is a ``single time-step problem''
     \begin{itemize}
     \item[$\circ$] a PDE in space \alert{where $H_n>0$}
     \item[$\circ$] this PDE is the ``strong form''
@@ -324,12 +291,150 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \end{frame}
 
 
+\begin{frame}{Compare 1D examples}
+
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\only<1>{
+
+\noindent \alert{same:}
+\scriptsize
+\begin{itemize}
+\item equation
+
+\tiny
+\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
+
+\scriptsize
+\item climate $f$
+\item bed shape
+\item constrained-
+
+Newton scheme
+\end{itemize}
+
+\vspace{5mm}
+
+\normalsize
+\alert{how different}
+
+\alert{are the fluxes}
+
+\alert{$\bQ_n$?}
+}
+\only<2>{
+\scriptsize
+\vspace{20mm}
+
+$\bQ_n = v_0 H_n$
+
+hyperbolic
+
+(constant velocity)
+
+\vspace{34mm}
+
+$\bQ_n = - \Gamma |H_n|^{n+2}$
+
+$\phantom{bQ_n = }\, \cdot |\grad h_n|^{n-1} \grad h_n$
+
+highly-nonlinear diffusion
+}
+\end{column}
+\begin{column}{0.6\textwidth}
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{50}
+
+\medskip
+\hspace{-20mm}
+\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{50}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+\section{Practical consequences:}
+
+\subsection{Limitations to discrete conservation.}
+
+\begin{frame}{Subsets for reporting conservation}
+\begin{itemize}
+\item we want to ``balance the books'' for the model user
+\item suppose $H_n$ solves the single time-step problem
+\item define
+	\begin{align*}
+	\Omega_n &= \left\{H_n(x) > 0\right\} \\
+	\Omega_n^r &= \left\{H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
+	\end{align*}
+\end{itemize}
+
+\vspace{-3mm}
+\begin{center}
+\includegraphics[width=1.0\textwidth,keepaspectratio=true]{cartoon-sets}
+\end{center}
+\end{frame}
+
+
+\begin{frame}{Reporting discrete conservation}
+
+\begin{itemize}
+\item define:
+   $$M_n = \int_\Omega H_n(x)\,dx \qquad \text{\emph{mass at time} $t_n$}$$
+\item then \vspace{-5mm}
+	\begin{align*}
+	M_n - M_{n-1} &= \int_{\Omega_n} \mathLabelBox[
+    labelstyle={xshift=1cm,yshift=2mm},
+    linestyle={out=270,in=90, -latex}
+    ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
+	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
+	\end{align*}
+\item new term:
+     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\emph{\alert{retreat loss} during step} $n$}$$
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Reporting discrete conservation: \emph{claim}}
+
+\begin{itemize}
+\item \alert{the retreat loss $R_n$ is not balanced by the climate}
+  \begin{itemize}
+  \item[$\circ$] yes, $R_n$ is caused by the climate, but we don't know what \emph{computable integral} it balances
+  \end{itemize}
+\item a numerical model must track \alert{three} time series:
+  \begin{itemize}
+  \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
+
+  \smallskip
+  \item[$\circ$] climate over fluid-covered region:
+     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
+  \item[$\circ$] retreat loss: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
+  \end{itemize}
+\item now it is balanced:
+     $$M_n = M_{n-1} + C_n - R_n$$
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Reporting discrete conservation: $R_n\to 0$ as $\Delta t\to 0$}
+
+\begin{center}
+FIXME: animation here
+
+\bigskip
+\includegraphics[width=0.6\textwidth,keepaspectratio=true]{masstimeseries}
+\end{center}
+\end{frame}
+
+
+\subsection{Weak numerical free boundary solutions.}
+
 \begin{frame}{Weak form incorporates constraint}
 
   \begin{itemize}
   \item define:
     $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\} = \text{\alert{admissible thicknesses}}$$
-  \item define: $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
+  \item we say $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
     $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
   for all $v \in \mathcal{K}$
   \small
@@ -368,119 +473,6 @@ re part 2:
 \end{frame}
 
 
-\section{Practical consequences:}
-
-\subsection{Limitations to discrete conservation.}
-
-\begin{frame}{Subsets for reporting conservation}
-\begin{itemize}
-\item suppose $H_n$ solves the weak single time-step problem
-\item define
-	\begin{align*}
-	\Omega_n &= \operatorname{supp} H_n = \left\{H_n(x) > 0\right\} \\
-	\Omega_n^r &= \left\{\phantom{\Big|}H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\phantom{\Big|}\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
-	\end{align*}
-\end{itemize}
-
-\vspace{-2mm}
-\begin{center}
-\includegraphics[width=1.02\textwidth,keepaspectratio=true]{cartoon-sets}
-\end{center}
-\end{frame}
-
-
-\begin{frame}{Reporting discrete conservation}
-
-\begin{itemize}
-\item define:
-   $$M_n = \int_\Omega H_n(x)\,dx \qquad \text{\emph{mass at time} $t_n$}$$
-\item then \vspace{-5mm}
-	\begin{align*}
-	M_n - M_{n-1} &= \int_{\Omega_n} \mathLabelBox[
-    labelstyle={xshift=1cm,yshift=2mm},
-    linestyle={out=270,in=90, -latex}
-    ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
-	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
-	\end{align*}
-\item new term:
-     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\emph{\alert{retreat loss} during step} $n$}$$
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Reporting discrete conservation: \emph{claim}}
-
-\begin{itemize}
-\item we want to ``balance the books'' for the model user
-\item \alert{the retreat loss $R_n$ is not balanced by the climate}
-  \begin{itemize}
-  \item[$\circ$] yes, $R_n$ is caused by the climate, but we don't know what \emph{computable integral} it balances
-  \end{itemize}
-\item a numerical model must track \alert{three} time series:
-  \begin{itemize}
-  \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
-
-  \smallskip
-  \item[$\circ$] climate over fluid-covered region:
-     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
-  \item[$\circ$] retreat loss: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
-  \end{itemize}
-\item now it is balanced:
-     $$M_n = M_{n-1} + C_n - R_n$$
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Reporting discrete conservation: \emph{example}}
-
-\begin{center}
-FIXME: animation here
-
-\bigskip
-\includegraphics[width=0.7\textwidth,keepaspectratio=true]{masstimeseries}
-\end{center}
-\end{frame}
-
-
-\subsection{Numerical free boundary solutions.}
-
-\begin{frame}{I am driven by practical modeling}
-
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\begin{itemize}
-\small
-\item practical ice sheet modeling (e.g.~Greenland at right)
-\item icy region nearly-fractal and disconnected
-\item currently in PISM$^*$:
-  \begin{itemize}
-  \item[$\circ$] explicit time-stepping
-  \item[$\circ$] free boundary by truncation
-  \end{itemize}
-\item want for PISM:
-  \begin{itemize}
-  \item[$\circ$] implicit time steps \emph{with free boundary}
-  \item[$\circ$] better conservation accounting to user
-  \end{itemize}
-\end{itemize}
-
-\vspace{10mm}
-\quad {\tiny $^*$= Parallel Ice Sheet Model, \texttt{pism-docs.org}}
-\end{column}
-\begin{column}{0.5\textwidth}
-\begin{center}
-\only<1>{\includegraphics[width=0.85\textwidth,keepaspectratio=true]{ice-mask-900m}}
-\only<2>{\includegraphics[width=0.87\textwidth,keepaspectratio=true]{jako-crop-mask-900m}
-
-\scriptsize PISM whole Greenland at 900m
-
-see Aschwanden C51A-0245 on 12/19}
-\end{center}
-\end{column}
-\end{columns}
-\end{frame}
-
-
 \begin{frame}{Numerical solution of the weak problem}
 
 the weak single time-step problem:
@@ -499,6 +491,7 @@ the weak single time-step problem:
 \end{frame}
 
 
+\begin{comment}
 \begin{frame}{Well-posedness of the weak problem}
 \begin{itemize}
 \item I've been agnostic on form of $\bQ_n$
@@ -540,30 +533,29 @@ $$\begin{array}{ll}
 
 2. where in PISM this layer idea is, and will be, applied?
 \end{frame}
+\end{comment}
 
 
-\section*{Summary}
-
-\begin{frame}{Terminal slide}
+\begin{frame}{Summary}
 
   \begin{itemize}
-  \item I'm considering layer flow problems:
+  \item layer flow problems:
     \begin{itemize}
     \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
-    \end{itemize}
-  \item suggestions:
-    \begin{itemize}
-    \item[$\circ$]  \emph{include} constraint on thickness: $h\ge 0$
-    \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
-    \item[$\circ$]  solve single time-step problem numerically by constrained-Newton method
     \end{itemize}
   \item claim:  for \emph{any} numerical approach,
     \begin{itemize}
     \item[$\circ$]  exact discrete conservation requires tracking \emph{retreat loss}
       \begin{itemize}
       \item[$\diamond$] in addition to computable integrals of climate
+      \item[$\diamond$]  retreat loss only disappears in $\Delta t\to 0$ limit
       \end{itemize}
-    \item[$\circ$]  but it \emph{isn't really possible} except in $\Delta t\to 0$ limit
+    \end{itemize}
+  \item suggestions:
+    \begin{itemize}
+    \item[$\circ$]  \emph{include} constraint on thickness: $h\ge 0$
+    \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
+    \item[$\circ$]  solve it numerically by constrained-Newton method
     \end{itemize}
   \end{itemize}
 \end{frame}
