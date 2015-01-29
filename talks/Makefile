@@ -19,6 +19,11 @@ anim/sia/u-1.png: genfigs.py ../petsc/layer
 	../petsc/layer -lay_noshow -lay_genfigs anim/sia/ -da_refine 3 -lay_dt 0.02 -lay_steps 1000 -lay_adscheme 1 -lay_lambda 1.0 -lay_gamma 0.1 -lay_glenn 3.0 -lay_jac
 	python genfigs.py anim/sia/ --stride 20 --uscale 0.9
 
+anim/tdep/u-1.png: genfigs.py ../petsc/layer
+	(cd anim/ && rm -rf tdep/ && mkdir tdep/)
+	../petsc/layer -lay_noshow -lay_genfigs anim/tdep/ -da_refine 3 -lay_dt 0.04 -lay_steps 250 -lay_adscheme 1 -lay_jac -lay_timedependentsource
+	python genfigs.py anim/tdep/ --stride 1 --uscale 12.0 --taxis 250
+
 # generating mass0.txt, mass1.txt, mass2.txt is slowish
 mass0.txt:
 	./refinemass.sh
@@ -33,10 +38,10 @@ agutalk.pdf: agutalk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png
 	pdflatex agutalk
 
 
-liwgtalk.aux: liwgtalk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png
+liwgtalk.aux: liwgtalk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png anim/tdep/u-1.png
 	pdflatex liwgtalk
 
-liwgtalk.pdf: liwgtalk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png
+liwgtalk.pdf: liwgtalk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png anim/tdep/u-1.png
 	pdflatex liwgtalk
 
 

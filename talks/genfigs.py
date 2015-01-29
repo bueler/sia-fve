@@ -28,9 +28,12 @@ parser.add_argument('--stride', action='store', metavar='N', help='use slices 1:
                     default=1)
 parser.add_argument('--uscale', action='store', metavar='N', help='scale thickness by this',
                     default=12.0)
+parser.add_argument('--taxis', action='store', metavar='N', type=int, help='if set, add time axis along bottom, marked at time-step, with N total timesteps',
+                    default=0)
 args = parser.parse_args()
 stride = int(args.stride)
 uscale = float(args.uscale)
+taxisN = args.taxis
 
 def readvecvtk(vfile,vfilename):
     headersread = 0
@@ -59,21 +62,28 @@ def readvecvtk(vfile,vfilename):
     return v, N
 
 L = 10.0
-def genfig(N, x, u, f, b):
+def genfig(N, x, u, f, b, k):
     s = b + uscale * u
     plot(x, b, '--k', lw=3.0)
     hold(True)
     plot(x, s, 'k', lw=3.0)
-    axis([0.0,L,-0.5,4.5])
+    if (taxisN > 0):  # show t-axis at bottom, but not f(x) at top
+        axis([0.0,L,-0.7,2.8])
+        y = (b.min() - 0.2) * ones(shape(x))
+        plot(x,y, 'k', lw=2.0)
+        xt = (float(k) / float(taxisN)) * (x.max() - x.min()) + x.min()
+        plot([xt, xt], [y[0]-0.2,y[0]+0.2], 'k', lw=2.0)
+    else:             # show f(x) at top
+        axis([0.0,L,-0.4,4.5])
+        astart = N/40
+        astep  = N/20
+        ascale = f.max() - f.min()
+        for j in range(20):
+            jj = astart + astep * j
+            xarr = x[jj]
+            magarr = f[jj] / ascale
+            arrow(xarr,3.75,0.0,-magarr,lw=1.0,head_width=0.1,color='b')
     axis('off')
-    astart = N/40
-    astep  = N/20
-    ascale = f.max() - f.min()
-    for j in range(20):
-        jj = astart + astep * j
-        xarr = x[jj]
-        magarr = f[jj] / ascale
-        arrow(xarr,3.75,0.0,-magarr,lw=1.0,head_width=0.1,color='b')
     hold(False)
 
 figdebug = False
@@ -114,7 +124,7 @@ for txtk in range(1,huge,stride):
     u, Nu = readvecvtk(ufile,uname)
     ufile.close()
     ufig = figure(figsize=(10,4))
-    genfig(Nu, x, u, f, b)
+    genfig(Nu, x, u, f, b, txtk)
     figname = args.prefix + 'u-%d.png' % pngk
     figsave(figname)
     print '  figure file %s generated' % figname
