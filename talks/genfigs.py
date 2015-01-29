@@ -18,9 +18,7 @@ import argparse
 import sys
 from pylab import *
 
-commandline = " ".join(sys.argv[:])
-
-parser = argparse.ArgumentParser(description='FIXME')
+parser = argparse.ArgumentParser(description='Generate .png figures from ASCII VTK time-step files written by layer.c.')
 # positional
 parser.add_argument('prefix', metavar='PREFIX',
                     help='root of file names f-0-0.txt and u-$N-$T.txt',
