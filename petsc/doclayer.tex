@@ -52,7 +52,7 @@
 \begin{document}
 
 \begin{abstract}
-This brief document will help the user understand the code \texttt{layer.c}.  It mostly covers the way the PDE (strong) form is discretized into a nonlinear system solved by a \texttt{SNESVI} instance.
+This brief document will help the user understand the code \texttt{layer.c}.  It covers the way the PDE (strong) form is discretized into a nonlinear system solved by a \texttt{SNESVI} instance.
 \end{abstract}
 
 \maketitle
@@ -82,7 +82,12 @@ The flux $q(x,u,u_x)$ is a mix of advective and non-linearly diffusive parts acc
 \end{align}
 Here $n\ge 1$ is the Glen exponent and $\gamma>0$ is a scaling.  We assume the advection is \emph{right-ward}, so $v_0 \ge 0$.
 
-The spatial domain is $[0,L]$, where $L=10$, with periodic boundary conditions.  The temporal domain is $[0,T]$.  The temporal grid is $t_n = n\Delta t$ where $\Delta t = T/N$ where $N$ defaults to 10 and is set by \verb|-lay_steps|.  In fact $\Delta t$ is set by \verb|-lay_dt|, and $T$ is computed by $T=N\Delta t$.
+The spatial domain is $[0,L]$, where $L=10$, with periodic boundary conditions.  The temporal domain is $[0,T]$.  
+
+
+\section{PDE discretization}
+
+The temporal grid is $t_n = n\Delta t$ where $\Delta t = T/N$ where $N$ defaults to 10 and is set by \verb|-lay_steps|.  In fact $\Delta t$ is set by \verb|-lay_dt|, and $T$ is computed by $T=N\Delta t$.
 
 Let
   $$\Delta x = L / m$$
@@ -111,7 +116,7 @@ F_j(\bu) &= u_j - u_j^{n-1} - \Delta t\,f(x_j)  \label{eq:defineFj} \\
 where
     $$\nu_2 = \frac{\Delta t}{2\Delta x}.$$
 
-The details of the code is largely determined by the flux-discretization scheme for the parts inside square brackets.  See the next section.
+Details in the code are, however, largely-determined by the flux-discretization scheme for the parts inside square brackets.  See the next section.
 
 \section{Flux discretization}
 
