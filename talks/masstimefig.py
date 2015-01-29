@@ -8,8 +8,8 @@
 # Example of usage:
 #   $ (cd ../petsc/ && make layer)
 # Generate time-series in ASCII files:
-#   $ ./layer -lay_dt 0.02 -lay_steps 50 -lay_timedependentsource -lay_massfile foo1.txt
-#   $ ./layer -lay_dt 0.01 -lay_steps 100 -lay_timedependentsource -lay_massfile foo2.txt
+#   $ ../petsc/layer -lay_dt 0.02 -lay_steps 500 -lay_timedependentsource -lay_massfile foo1.txt
+#   $ ../petsc/layer -lay_dt 0.01 -lay_steps 1000 -lay_timedependentsource -lay_massfile foo2.txt
 # Make image file from time-series:
 #   $ python masstimefig.py -o bar.pdf foo1.txt foo2.txt
 # or simply
@@ -22,7 +22,7 @@ from pylab import *
 
 parser = argparse.ArgumentParser(description='Generate .png figures from time-series mass files written by layer.c.')
 parser.add_argument('files', metavar='FILE', nargs='+',
-                    help='an ASCII file with numbers in three columns: t_n M_n R_n')
+                    help='an ASCII file with these numbers in its first three columns: t_n M_n R_n')
 parser.add_argument('-o', metavar='OUTFILE',
                     help='name of output image file (e.g. .png or .pdf); uses show() if not given',
                     default='')

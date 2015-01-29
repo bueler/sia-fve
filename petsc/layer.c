@@ -71,7 +71,7 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*,PetscBool*,PetscBool*,char[],PetscBool*,char[]);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[],const PetscInt);
-extern PetscErrorCode GetMassAccounts(Vec,Vec,PetscReal*,PetscReal*,const AppCtx*);
+extern PetscErrorCode GetMassAccounts(PetscReal,PetscReal,Vec,Vec,PetscReal*,PetscReal*,PetscReal*,const AppCtx*);
 
 
 int main(int argc,char **argv) {
@@ -167,7 +167,7 @@ int main(int argc,char **argv) {
 
   /* time-stepping loop */
   {
-    PetscReal  t = 0.0, M, R;
+    PetscReal  t = 0.0, Mold, M, R, C, balance;
     PetscInt   n, its;
     SNESConvergedReason reason;
     ierr = VecCopy(user.uold,u);CHKERRQ(ierr);
@@ -184,9 +184,11 @@ int main(int argc,char **argv) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
                          its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
       if (genmassfile) {
-        ierr = GetMassAccounts(u,user.uold,&M,&R,&user); CHKERRQ(ierr);
-        if (fprintf(massfile,"%12.4f  %.12e  %.12e\n",t+user.dt,M,R) < 0)
+        ierr = GetMassAccounts(user.dt,user.midtime,u,user.uold,&M,&R,&C,&user); CHKERRQ(ierr);
+        balance = (n > 0) ? M - Mold - C + R : 0.0;
+        if (fprintf(massfile,"%12.4f  %.12e  %.12e  %.12e  %.12e\n",t+user.dt,M,R,C,balance) < 0)
           SETERRQ1(PETSC_COMM_WORLD,4,"fprintf() reports error writing to file %s\n",massfilename);
+        Mold = M;
       }
       if (genfigs) {
           ierr = ViewToVTKASCII(u,figsprefix,"u",n+1); CHKERRQ(ierr);
@@ -520,28 +522,34 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
 }
 
 
-PetscErrorCode GetMassAccounts(Vec u, Vec uold, PetscReal *M, PetscReal *R, const AppCtx *user) {
+PetscErrorCode GetMassAccounts(PetscReal dt, PetscReal tmid, Vec u, Vec uold,
+                               PetscReal *M, PetscReal *R, PetscReal *C, const AppCtx *user) {
   PetscErrorCode ierr;
   PetscInt       j;
-  PetscReal      *au, *auold;
+  PetscReal      *au, *auold, dx = user->dx, x;
   DMDALocalInfo  info;
 
   ierr = VecSum(u,M); CHKERRQ(ierr);
-  *M *= user->dx;
+  *M *= dx;
 
+  *C = 0.0;
   *R = 0.0;
   ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, u, &au);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, uold, &auold);CHKERRQ(ierr);
   for (j=info.xs; j<info.xs+info.xm; j++) {
+      x = dx/2 + dx * (PetscReal)j;
       if (au[j] < 0.0)
           SETERRQ1(PETSC_COMM_WORLD,1,"thickness negative (u[j]<0.0 at j=%d) in GetMassAccounts()\n",j);
+      if (au[j] > 0.0)
+          *C += fsource(tmid,x,user);
       if ((au[j] == 0.0) && (auold[j] > 0.0))
           *R += auold[j];
   }
   ierr = DMDAVecRestoreArray(user->da, u, &au);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, uold, &auold);CHKERRQ(ierr);
-  *R *= user->dx;
+  *C *= dt * dx;
+  *R *= dx;
   PetscFunctionReturn(0);
 }
 
