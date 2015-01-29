@@ -1,6 +1,6 @@
 all: agutalk.pdf liwgtalk.pdf
 
-figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf
+figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf masstimeseries.pdf
 
 cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf: figs1d.py
 	python figs1d.py
@@ -19,6 +19,11 @@ anim/sia/u-1.png: genfigs.py ../petsc/layer
 	../petsc/layer -lay_genfigs anim/sia/ -da_refine 3 -lay_dt 0.02 -lay_steps 500 -lay_adscheme 1 -lay_lambda 1.0 -lay_gamma 0.1 -lay_glenn 3.0 -lay_jac
 	python genfigs.py anim/sia/ --stride 20 --uscale 0.9
 
+mass0.txt:
+	./refinemass.sh
+
+masstimeseries.pdf: mass0.txt
+	python ./masstimefig.py -o masstimeseries.pdf mass?.txt
 
 agutalk.aux: agutalk.tex $(figures) anim/adv/u-1.png anim/sia/u-1.png
 	pdflatex agutalk
