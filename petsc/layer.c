@@ -37,8 +37,6 @@ static const char help[] =
 //   ./layer -lay_noshow -lay_steps 5 -da_refine 18 -lay_exactinit -lay_adscheme 1 -lay_jac
 
 // ./layer -da_refine 3 -lay_dt 0.04 -lay_steps 150 -lay_adscheme 1 -lay_jac -draw_pause 0.05 -lay_timedependentsource -lay_massfile bar.txt
-// in octave: >> load('bar.txt')
-//            >> semilogy(bar(:,1),bar(:,2:3))
 
 
 #include <math.h>
