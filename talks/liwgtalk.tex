@@ -265,6 +265,8 @@ on steep terrain
     \item[$\circ$]
        \alert{redefine the problem so free boundary is part of solution}
     \item[$\circ$]
+       \alert{tell the model user what is going on at the free boundary}
+    \item[$\circ$]
        \alert{find numerical schemes which automate the details}
     \end{itemize}
   \end{itemize}
@@ -277,21 +279,27 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 
   \begin{itemize}
   \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
-  \item the new equation (right) is a ``single time-step problem''
+  \item the new equation is a ``single time-step problem''
     \begin{itemize}
     \item[$\circ$] a PDE in space \alert{where $H_n>0$}
-    \item[$\circ$] this PDE is the ``strong form''
+    \item[$\circ$] called the ``strong form''
     \end{itemize}
   \item details of flux $\bQ_n$ and source $F_n$ come from time-stepping scheme
     \begin{itemize}
     \item[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
-    \item[$\circ$] note low regularity of $h(t,x)$ for $x$ near margin
+    \end{itemize}
+
+  \bigskip
+  \item low regularity of $h(t,x)$ for $x$ near margin
+    \begin{itemize}
+    \item[$\circ$] low expectations for accuracy there
+    \item[$\circ$] ``event detection'' in $\infty$-dimensions is hard
     \end{itemize}
   \end{itemize}
 \end{frame}
 
 
-\begin{frame}{Compare 1D examples}
+\begin{frame}{1D examples}
 
 \begin{columns}
 \begin{column}{0.4\textwidth}
@@ -394,23 +402,23 @@ highly-nonlinear diffusion
 \end{frame}
 
 
-\begin{frame}{Reporting discrete conservation: \emph{claim}}
+\begin{frame}{Reporting discrete conservation: \emph{limitation}}
 
 \begin{itemize}
 \item \alert{the retreat loss $R_n$ is not balanced by the climate}
   \begin{itemize}
-  \item[$\circ$] yes, $R_n$ is caused by the climate, but we don't know what \emph{computable integral} it balances
+  \item[$\circ$] $R_n$ is \emph{caused} by the climate, but we don't know a \emph{computable integral} to balance it
   \end{itemize}
-\item a numerical model must track \alert{three} time series:
+\item so a numerical model must track \alert{three} time series:
   \begin{itemize}
   \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
 
   \smallskip
-  \item[$\circ$] climate over fluid-covered region:
+  \item[$\circ$] climate (surface mass balance) over current fluid-covered region:
      $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
-  \item[$\circ$] retreat loss: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
+  \item[$\circ$] retreat loss during time step: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
   \end{itemize}
-\item now it is balanced:
+\item now it balances:
      $$M_n = M_{n-1} + C_n - R_n$$
 \end{itemize}
 \end{frame}
@@ -419,15 +427,17 @@ highly-nonlinear diffusion
 \begin{frame}{Reporting discrete conservation: $R_n\to 0$ as $\Delta t\to 0$}
 
 \begin{center}
-FIXME: animation here
+\vspace{-3.3mm}
 
-\bigskip
-\includegraphics[width=0.6\textwidth,keepaspectratio=true]{masstimeseries}
+\animategraphics[autoplay,loop,height=2.9cm]{15}{anim/tdep/u-}{1}{250}
+
+\vspace{-1.1mm}
+\includegraphics[width=0.59\textwidth,keepaspectratio=true]{masstimeseries} \, \phantom{!}
 \end{center}
 \end{frame}
 
 
-\subsection{Weak numerical free boundary solutions.}
+\subsection{Need for weak numerical free boundary solutions.}
 
 \begin{frame}{Weak form incorporates constraint}
 
@@ -451,25 +461,26 @@ FIXME: animation here
 \end{frame}
 
 
-\begin{frame}{Theorem: weak solves strong}
+\begin{frame}{Weak solves strong \emph{and} it gives more info}
 
-\emph{Theorem}.  Assume $\bQ_n=0$ when $H_n=0$.  Assume $H_n \in \mathcal{K}$ solves weak single time-step problem and is smooth.  Then
-  \begin{enumerate}
-  \item ``interior condition'' on set where $H_n>0$:
-    $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
-  \item on set where $H_n = 0$:
-    $$H_{n-1} + \Delta t\, F_n \le 0$$
-  \end{enumerate}
-
-\bigskip
-re part 2:
-  \begin{itemize}
-  \item ``climate is negative enough to remove old thickness''
-  \item assumption ``$\bQ_n=0$ when $H_n=0$'' is needed
+\begin{itemize}
+  \item assume $\bQ_n=0$ when $H_n=0$
     \begin{itemize}
-    \item[$\circ$] \dots yes, we are talking about a \emph{layer}
+    \item[$\circ$] this means $\bQ_n$ describes a \emph{layer}
     \end{itemize}
-  \end{itemize}
+  \item assume $H_n \in \mathcal{K}$ solves weak single time-step problem
+  \item then
+	  \begin{enumerate}
+	  \item ``interior condition'' (=PDE) on the set where $H_n>0$:
+	    $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
+	  \item information on the set where $H_n = 0$:
+	    $$H_{n-1} + \Delta t\, F_n \le 0$$
+	    \vspace{-6mm}
+	    \begin{itemize}
+	    \item[$\circ$] this means ``mass balance was negative enough during time step to remove old thickness''
+	    \end{itemize}
+	  \end{enumerate}
+\end{itemize}
 \end{frame}
 
 
@@ -478,62 +489,17 @@ re part 2:
 the weak single time-step problem:
 \begin{itemize}
 \item is nonlinear because of constraint (even for $\bQ_n$ linear in $H_n$)
-\item can be solved by Newton method modified for constraint
+\item can be solved by a Newton method modified for constraint
   \begin{itemize}
   \item[$\circ$]  reduced set method
   \item[$\circ$]  semismooth method
   \end{itemize}
-\item scalable implementations of both in PETSc 3.5
+\item scalable implementations are in PETSc 3.5
   \begin{itemize}
-  \item[$\circ$]  SNESVI class
+  \item[$\circ$]  see ``SNESVI'' object
   \end{itemize}
 \end{itemize}
 \end{frame}
-
-
-\begin{comment}
-\begin{frame}{Well-posedness of the weak problem}
-\begin{itemize}
-\item I've been agnostic on form of $\bQ_n$
-  \begin{itemize}
-  \item[$\circ$] except ``$\bQ_n=0$ where $H_n=0$'' (i.e.~it's a layer)
-  \end{itemize}
-\item but form of $\bQ_n$ matters
-  \begin{itemize}
-  \item[$\circ$] for well-posedness and for numerical solutions
-  \end{itemize}
-\item cases to study:\small
-$$\begin{array}{ll}
-  \bQ_n = \bX(x) H_n & \text{\phantom{\Big|}\emph{transported layer}} \\
-  \bQ_n = -k \grad H_n & \text{\phantom{\bigg|}\emph{linear diffusion}} \\
-  \bQ_n = - \grad(H_n^\gamma) = - \gamma H_n^{\gamma-1} \grad H_n
-     & \text{\phantom{\Big|}\emph{porous medium}}\phantom{\bigg|} \\
-  \bQ_n = - H_n^\alpha |\grad (H_n+b)|^\beta \grad (H_n+b)\phantom{\bigg|} &
-        \hspace{-0.75mm}\begin{array}{ll}
-        \text{\emph{shallow ice approx.}} \\
-        \text{\& \emph{diffusive shallow water}}
-        \end{array} \\
-  \bQ_n = \text{\emph{worse (non-local)}}\phantom{\bigg|} & \hspace{-0.75mm}\begin{array}{ll}
-        \text{\emph{ice shelf flow} \& \emph{sea ice} \& \dots}
-        \end{array}
-\end{array}$$
-
-\vspace{-4mm}
-\item variational inequality is generally monotone
-  \begin{itemize}
-  \item[$\circ$] generally coercive if $\bQ_n \sim - \grad H_n$
-  \end{itemize}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{FIXME: add slides on}
-
-1. truncation in explicit step case is principled
-
-2. where in PISM this layer idea is, and will be, applied?
-\end{frame}
-\end{comment}
 
 
 \begin{frame}{Summary}

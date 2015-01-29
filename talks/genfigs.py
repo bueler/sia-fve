@@ -68,7 +68,7 @@ def genfig(N, x, u, f, b, k):
     hold(True)
     plot(x, s, 'k', lw=3.0)
     if (taxisN > 0):  # show t-axis at bottom, but not f(x) at top
-        axis([0.0,L,-0.7,2.8])
+        axis([0.0,L,-0.7,3.0])
         y = (b.min() - 0.2) * ones(shape(x))
         plot(x,y, 'k', lw=2.0)
         xt = (float(k) / float(taxisN)) * (x.max() - x.min()) + x.min()
