@@ -137,22 +137,33 @@
 \end{frame}
 
 
-\begin{frame}{Examples}
+\begin{frame}{A fluid layer in a climate: \emph{the troubles}}
 
-\includegraphics[width=0.4\textwidth,keepaspectratio=true]{polaris}
-\hfill
-\includegraphics[width=0.45\textwidth,keepaspectratio=true]{supp4rignot-small}
+\vspace{-1.2mm}
 
-\small glaciers \hfill ice shelves \& sea ice
+\begin{center}
+\only<1>{\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
+\only<2>{\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
+\only<3>{\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
+\end{center}
 
-\medskip
-\includegraphics[width=0.41\textwidth,keepaspectratio=true]{marsh-water}
-\hfill
-\includegraphics[width=0.42\textwidth,keepaspectratio=true]{tsunami-sendai}
+\vspace{-18mm}
+$$h_t + \Div\bq = f$$
 
-\small tidewater marsh \hfill tsunami inundation
-
-\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
+  \begin{itemize}
+  \item<1-> $h=0$ \emph{and what else} at free boundary?
+     \begin{itemize}
+     \item<1->[$\circ$] shape at free boundary depends on both $\bq$ and $f$
+     \end{itemize}
+  \item<2-> $f<0$ not ``detected'' by model where $h=0$
+     \begin{itemize}
+     \item<2->[$\circ$] how to do mass conservation accounting?
+     \end{itemize}
+  \item<3> $f\approx 0$ threshold behavior
+     \begin{itemize}
+     \item<3>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
+     \end{itemize}
+  \end{itemize}
 \end{frame}
 
 
@@ -189,43 +200,35 @@
 \end{frame}
 
 
-\begin{frame}{A fluid layer in a climate: \emph{the troubles}}
+\begin{frame}{Examples}
 
-\begin{center}
-\only<1>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
-\only<2>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
-\only<3>{\includegraphics[width=\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
-\end{center}
+\includegraphics[width=0.4\textwidth,keepaspectratio=true]{polaris}
+\hfill
+\includegraphics[width=0.45\textwidth,keepaspectratio=true]{supp4rignot-small}
 
-\vspace{-18mm}
-$$h_t + \Div\bq = f$$
+\small glaciers \hfill ice shelves \& sea ice
 
-  \begin{itemize}
-  \item<1-> $h=0$ \emph{and what else} at free boundary?
-     \begin{itemize}
-     \item<1->[$\circ$] shape at free boundary depends on both $\bq$ and $f$
-     \end{itemize}
-  \item<2-> $f<0$ not ``detected'' by model where $h=0$
-     \begin{itemize}
-     \item<2->[$\circ$] how to do mass conservation accounting?
-     \end{itemize}
-  \item<3> $f\approx 0$ threshold behavior
-     \begin{itemize}
-     \item<3>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
-     \end{itemize}
-  \end{itemize}
+\medskip
+\includegraphics[width=0.41\textwidth,keepaspectratio=true]{marsh-water}
+\hfill
+\includegraphics[width=0.42\textwidth,keepaspectratio=true]{tsunami-sendai}
+
+\small tidewater marsh \hfill tsunami inundation
+
+\scriptsize and subglacial hydrology, supraglacial runoff, surface hydrology, \dots
 \end{frame}
 
 
-\begin{frame}{Anyone faced these problems before?}
+\begin{frame}{Anyone numerically-solved these problems before?}
 
   \begin{itemize}
   \item yes, of course!
     \begin{itemize}
-    \item[$\circ$] generic result: \emph{ad hoc} schemes for finite volume/difference mass conservation near the free boundary
+    \item[$\circ$] generic result: \emph{ad hoc} schemes near the free boundary
     \end{itemize}
   \end{itemize}
 
+\medskip
 \begin{columns}
 \begin{column}{0.3\textwidth}
 \includegraphics[width=\textwidth,keepaspectratio=true]{JaroschSchoofAnslow2013}
@@ -260,6 +263,9 @@ on steep terrain
 
   \begin{itemize}
   \item I don't mind ``\texttt{if \dots then \dots}'' in my code, \emph{but} I want to know what mathematical problem is behind it
+    \begin{itemize}
+    \item[$\circ$] maintaining code with those \emph{ad hoc} schemes scares the \#!*\& out of me
+    \end{itemize}
   \item my goals:
     \begin{itemize}
     \item[$\circ$]
@@ -285,21 +291,11 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
     \item[$\circ$] called the ``strong form''
     \end{itemize}
   \item details of flux $\bQ_n$ and source $F_n$ come from time-stepping scheme
-    \begin{itemize}
-    \item[$\circ$] forward/backward Euler, trapezoid, RK all o.k.
-    \end{itemize}
-
-  \bigskip
-  \item low regularity of $h(t,x)$ for $x$ near margin
-    \begin{itemize}
-    \item[$\circ$] low expectations for accuracy there
-    \item[$\circ$] ``event detection'' in $\infty$-dimensions is hard
-    \end{itemize}
   \end{itemize}
 \end{frame}
 
 
-\begin{frame}{1D examples}
+\begin{frame}{1D time-stepping examples}
 
 \begin{columns}
 \begin{column}{0.4\textwidth}
@@ -365,9 +361,8 @@ highly-nonlinear diffusion
 
 \subsection{Limitations to discrete conservation.}
 
-\begin{frame}{Subsets for reporting conservation}
+\begin{frame}{Subsets for time-stepping and conservation}
 \begin{itemize}
-\item we want to ``balance the books'' for the model user
 \item suppose $H_n$ solves the single time-step problem
 \item define
 	\begin{align*}
@@ -409,12 +404,12 @@ highly-nonlinear diffusion
   \begin{itemize}
   \item[$\circ$] $R_n$ is \emph{caused} by the climate, but we don't know a \emph{computable integral} to balance it
   \end{itemize}
-\item so a numerical model must track \alert{three} time series:
+\item we must track \alert{three} time series:
   \begin{itemize}
   \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
 
   \smallskip
-  \item[$\circ$] climate (surface mass balance) over current fluid-covered region:
+  \item[$\circ$] climate (e.g.~surface mass bal.) over current fluid-covered region:
      $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
   \item[$\circ$] retreat loss during time step: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
   \end{itemize}
@@ -461,7 +456,7 @@ highly-nonlinear diffusion
 \end{frame}
 
 
-\begin{frame}{Weak solves strong \emph{and} it gives more info}
+\begin{frame}{Weak solves strong, \emph{and} it gives more info}
 
 \begin{itemize}
   \item assume $\bQ_n=0$ when $H_n=0$
@@ -471,7 +466,7 @@ highly-nonlinear diffusion
   \item assume $H_n \in \mathcal{K}$ solves weak single time-step problem
   \item then
 	  \begin{enumerate}
-	  \item ``interior condition'' (=PDE) on the set where $H_n>0$:
+	  \item PDE applies on the set where $H_n>0$:
 	    $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
 	  \item information on the set where $H_n = 0$:
 	    $$H_{n-1} + \Delta t\, F_n \le 0$$
@@ -505,17 +500,14 @@ the weak single time-step problem:
 \begin{frame}{Summary}
 
   \begin{itemize}
-  \item layer flow problems:
+  \item layer flow model has conservation eqn. \, $h_t + \Div\bq = f$
     \begin{itemize}
-    \item[$\circ$]  model has conservation eqn: $h_t + \Div\bq = f$
+    \item[$\circ$]  long time steps wanted, but this is a free-boundary problem \dots
     \end{itemize}
-  \item claim:  for \emph{any} numerical approach,
+  \item claim: exact discrete conservation requires tracking \emph{retreat loss}
     \begin{itemize}
-    \item[$\circ$]  exact discrete conservation requires tracking \emph{retreat loss}
-      \begin{itemize}
-      \item[$\diamond$] in addition to computable integrals of climate
-      \item[$\diamond$]  retreat loss only disappears in $\Delta t\to 0$ limit
-      \end{itemize}
+    \item[$\circ$] in addition to computable integrals of climate
+    \item[$\circ$] it only disappears in $\Delta t\to 0$ limit
     \end{itemize}
   \item suggestions:
     \begin{itemize}
@@ -523,9 +515,18 @@ the weak single time-step problem:
     \item[$\circ$]  pose single time-step problem \emph{weakly} as variational inequality
     \item[$\circ$]  solve it numerically by constrained-Newton method
     \end{itemize}
+  \item these are agnostic claims/suggestions, with respect to:
+    \begin{itemize}
+    \item[$\circ$]  form of the flux $\bq$
+    \item[$\circ$]  spatial discretization paradigm (i.e.~finite diff./volume/element)
+    \end{itemize}
   \end{itemize}
-\end{frame}
 
+\begin{center}
+\animategraphics[autoplay,loop,height=2.0cm]{6}{anim/sia/u-}{1}{50}
+\end{center}
+
+\end{frame}
 
 \end{document}
 
