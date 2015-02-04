@@ -73,11 +73,32 @@ FIXME
 
 \section{Introduction}  \label{sec:intro}
 
-Consider a fluid which moves in some manner over a substrate.  Suppose that fluid mass can be added or removed at the boundary of the three-dimensional fluid region, either by a process like precipitation or aggregation, or by phase change (if we define the fluid region as being only a single phase).  Through both flow and such boundary sources, the region occupied by the fluid changes in time, thus the problem is of moving-boundary type.
+Consider a fluid which moves in a thin layer over a substrate.  Fluid mass can be added or removed at the boundary of the three-dimensional fluid by processes like precipitation, evaporation, ablation, and so on.  Fluid can even be added/removed by phase change if we define the fluid region as being only a single phase.  Through both flow and such boundary sources, the substrate area covered by the fluid changes in time.  A balance of precipitation and flow can extend the fluid-covered region, or a balance of flow and ablation can reduce the region or even remove the layer entirely.
 
-In this paper we only consider models which describe the fluid by a \emph{layer thickness}, or equivalent quantity, typically by integrating in one direction (e.g.~vertically along gravity).  In such models the boundary sources become source terms in a two-spatial-dimensional conservation equation.  Generally the layer occupies a subset of a larger fixed region of the plane, but the domain where the fluid layer is present, i.e.~where its thickness is positive, changes in time, so the problem is of free-boundary type.
+We will only consider models which describe such fluid layers by a \emph{thickness}, or equivalent quantity, typically by integrating vertically (e.g.~along gravity).  In such models the boundary addition/removal processes become signed source terms in a two-spatial-dimension conservation equation.  The layer occupies a subset of a larger fixed region of the plane, and the domain where the fluid layer is present, and the conservation equation applies, is the set where the thickness is positive.  This domain changes in time, so the conservation problem is of free-boundary type.
 
-In layer models for constant density fluids the thickness is the conserved quantity, equivalent to mass, and this thickness must be nonnegative.  In layer models of variable density fluids the vertical integral of density is the conserved quantity, and it must be nonnegative.  In layer models of conservation of energy, the vertical integral of internal energy is the conserved quantity, and in some such cases this vertical energy must be bounded below \cite{AschwandenBuelerKhroulevBlatter}.  However, as we consider only conservation of scalar properties, of which mass is a primary example, we will for simplicity persist in calling the conserved quantity ``mass'' and the corresponding nonnegative variable ``thickness''.
+In such layer models for constant density fluids the thickness is the conserved quantity, equivalent to mass, and this thickness must be nonnegative.  In layer models for variable density fluids the vertical integral of density is the conserved quantity, and it must be nonnegative.  In layer models of conservation of energy, the vertical integral of internal energy or temperature is the conserved quantity, and in some such cases this vertical energy must be bounded below because the layer is only one phase \cite{AschwandenBuelerKhroulevBlatter}.  However, we consider only conservation of scalar properties, and not, for example conservation of vectors like momentum.  As the mass of a constant-density fluid is a primary example of the conserved scalar in such layer models, we will for simplicity call the conserved quantity ``mass'' and the corresponding nonnegative variable ``thickness''.
+
+Thus we suppose $\Omega \subset \RR^d$, $d\ge 1$, is a bounded open region with regular (Lipshitz) boundary.  Our time-dependent model is usually stated in strong form, combining a conservation equation and an oft-ignored constraint:
+\begin{align}
+u_t + \Div \bq &= f(u,x,t) &&\text{in } \Omega, \text{ where } u > 0 \label{eq:massconserve} \\
+u &\ge 0 &&\text{in } \bar\Omega. \label{eq:constraint}
+\end{align}
+Note $u(x,t)$ is defined for all $x\in \bar\Omega$ and $t>0$, even where there is no fluid and $u(x,t)=0$.
+
+The form of the flux $\bq$, that is, how it depends on the unknown $u$ or its gradient $\grad u$, is quite general here,
+\begin{equation}
+\bq = \bq(\grad u,u,x,t), \label{eq:fluxdepends}
+\end{equation}
+but with more detail below in section \ref{sec:fluxassumptions}.
+
+In fact our broader conclusions apply equally to models where $\bq$ depends \emph{globally} on the conserved quantity $u$ and its derivatives, perhaps through integrals but more likely through coupling to other variables and equations.  Such integro-differential or coupled models are exactly our interest, and the reader should think that while we focus only on the mass-conservation equation in such systems, we don't intend that this equation be decoupled.  However, so as to find rigorous and precise results here, we need to have some assurance of well-posedness at each time step (section \ref{sec:mono}), and so we mostly restrict to cases \eqref{eq:fluxdepends}.  An exception occurs in subsection FIXME, which covers an example where the form of $\bq$ involves a spatial integral.
+
+Furthermore, in many examples we may think of the fluid moving at some vertically-averaged velocity $\bX=\bX(x,t)$ determined by ``external'' factors, and thus $\bq = \bX u$.  We address such cases in subsection FIXME.  The broader results we find there will apply equally if that velocity if actually a result of a coupled solution of a mass conservation plus momentum conservation system, for example, as long as the velocity field has the regularity we need to apply the theory (i.e.~as in section \ref{sec:fluxassumptions}).
+
+Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  We say that the layer exists where $u(x,t)>0$, and that it is absent otherwise ($u(x,t)=0$).  Finding the evolution of the support of $u$, and of its free boundary, is essential to problems of this type.
+
+Conservation equation \eqref{eq:massconserve} only applies, in this strong form, where the layer exists.  Well-posedness of problem \eqref{eq:massconserve}--\eqref{eq:constraint} requires a precise specification of admissible functions and a weak formulation.  We do so in sections \ref{sec:fluxassumptions}--\ref{sec:mono}.
 
 Numerical fluid layer codes, as appear within earth-system and climate models for the ocean, sea-ice, and ice sheet components in particular, are obliged to discretize time in some manner.  Our approach here is based on this fact.  We semi-discretize the mass conservation equation in time by a one-step method and pose the single time-step, continuous-space problem in weak variational form.  Multi-stage but one step time-discretization methods, such as Runge-Kutta methods, are allowed (see the Appendix).  A broad selection of methods, including finite difference/volume/element methods and grid free spectral methods, are, of course, possible when discretizing space, but our approach is essentially independent of any chosen \emph{spatial} discretization.
 
@@ -111,22 +132,8 @@ We define the ``retreat area'' as the portion of the domain in which the single 
 We believe that the avoidance of, or at least clearer understanding of, essentially \emph{ad hoc} discrete schemes to maintain conservation at free boundaries will be easier once theoretical limits on discrete conservation are acknowledged, as here.  With the retreat area correction term identified here, for example, when a large area of ice sheet or sea-ice melts then the discrete-time model will can report accurately on the degree of conservation of the mass of water in all phases.  Generally climate models will be able to more accurately report important mass transfers between the phases of water, in particular, as these phases occupy changing regions.
 
 
-\section{Continuous-time strong formulation}  \label{sec:strongform}
 
-Let $\Omega \subset \RR^d$ be a bounded open region with regular (e.g.~$C^1$) boundary.  The time-dependent model we consider is usually stated in strong form, combining a conservation equation and a constraint:
-\begin{align}
-u_t + \Div \bq &= f(u,x,t) &&\text{in } \Omega, \text{ where } u > 0 \label{eq:massconserve} \\
-u &\ge 0 &&\text{in } \bar\Omega. \label{eq:constraint}
-\end{align}
-We call the unknown $u$ the \emph{layer thickness} $u(x,t)$.  It is defined for all $x\in \Omega$ and $t>0$.  The form of the flux $\bq$, that is, how it depends on the unknown $u$ or its gradient $\grad u$, is quite general here,
-\begin{equation}
-\bq = \bq(\grad u,u,x,t), \label{eq:fluxdepends}
-\end{equation}
-but with more detail below in section \ref{sec:fluxassumptions}.
 
-Constraint \eqref{eq:constraint} comes from the meaning of $u$ as a thickness, which cannot be negative.  We say that the layer exists where $u(x,t)>0$, and that it is absent otherwise ($u(x,t)=0$).  Finding the evolution of the support of $u$, and of its free boundary, is essential to problems of this type.
-
-Conservation equation \eqref{eq:massconserve} only applies, in this strong form, where the layer exists.  Well-posedness of problem \eqref{eq:massconserve}--\eqref{eq:constraint} requires a precise specification of admissible functions and a weak formulation.  We do so in sections \ref{sec:fluxassumptions}--\ref{sec:mono}.
 
 \section{Discrete-time strong formulation and associated set decomposition}  \label{sec:discreteform}
 
