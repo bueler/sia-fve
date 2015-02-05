@@ -275,36 +275,33 @@ Thus $F_n$ is continuous as a function of $v$.
 
 We do note require that $F_n$ be strictly increasing in $v$, which would be natural if we sought monotonicity of the variational form in the $\Delta t \to \infty$ (i.e.~steady state) limit.  See section \ref{sec:mono} and compare the discussion of monotonicity in  \cite{JouvetBueler2012}.
 
-\subsection{Derivation of the variational inequality form}  \label{subsec:derivevi}  To use the strong form in deriving a weak form, which will replace it, we need the extra assumption that $\bQ_n$ is smooth:  Let $S \subset \Omega$ be an open subset.  If $v\in W^{1,p}(S)$ then
+\subsection{Derivation of the variational inequality form}  \label{subsec:derivevi}  To use the strong form in deriving a weak form we need an extra assumption that $\bQ_n$ is smooth:  Let $S \subset \Omega$ be an open subset.  If $v\in W^{1,p}(S)$ then
 \begin{equation}
 \frac{\partial}{\partial x_i} \bQ_n(\grad v,v,x) \in L^q(S). \label{eq:Qissmooth}
 \end{equation}
+This assumption is not made after the current subsection \ref{subsec:derivevi}.
 
 \medskip
-\begin{theorem} \label{thm:strongimpliesweak} Suppose $u_n\ge 0$ and $v\ge 0$ are continuous on $\overline{\Omega}$ and that $\grad u_n,\grad v$ are in $L^p(\Omega)$.  Suppose that the boundaries of the sets $\Omega_n$, $\Omega_n^r$, $\Omega_n^0$ in decomposition \eqref{eq:omegadecomposition} are all sufficiently smooth (e.g.~Lipshitz).  Suppose $u_n$ solves \eqref{eq:semimassconserve} on $\Omega_n$.  Suppose the function $\bQ_n(\bX,v,x)$ satisfies assumptions \eqref{eq:QisLq}, \eqref{eq:Qiscontinuous}, and \eqref{eq:Qiszero}, and the extra smoothness assumption \eqref{eq:Qissmooth}.  Define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n(u_n,x)$.  Then
+\begin{theorem} \label{thm:strongimpliesweak} Suppose $u_n\ge 0$ and $v\ge 0$ are continuous functions on $\overline{\Omega}$ and that $\grad u_n,\grad v$ are in $L^p(\Omega)$.  Suppose that the boundaries of the sets $\Omega_n$ and $\Omega_n^r \cup \Omega_n^0$ in decomposition \eqref{eq:omegadecomposition} are all sufficiently smooth (e.g.~Lipshitz).  Suppose $u_n$ solves \eqref{eq:semimassconserve} on $\Omega_n$ and \eqref{eq:strongconditionswherezero} on $\Omega_n^r \cup \Omega_n^0$.  Suppose the function $\bQ_n(\bX,v,x)$ satisfies assumptions \eqref{eq:QisLq}, \eqref{eq:Qiscontinuous}, \eqref{eq:Qiszero}, and \eqref{eq:Qissmooth}.  Define $\bQ_n=\bQ_n(\grad u_n,u_n,x)$ and $F_n = F_n(u_n,x)$.  Then
 \begin{equation}
 -\int_{\Omega} \bQ_n \cdot \grad(v-u_n) \ge \int_{\Omega} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n). \label{eq:morallytheVI}
 \end{equation}
 \end{theorem}
 
-\begin{proof}
-Using decomposition \eqref{eq:omegadecomposition} and integration by parts (i.e.~divergence theorem)---here we use regularity of $\partial \Omega_n$ and $\partial(\Omega_n^r \cup \Omega_n^0)$ and assumption \eqref{eq:Qissmooth} on $S=\Omega_n$ and $S=(\Omega_n^r \cup \Omega_n^0)^\circ$---we get
-\begin{align*}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) &= \int_{\Omega_n} (\Div \bQ_n) (v-u_n) - \int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) \\
-  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n) - \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n).
-\end{align*}
-Because $u_n$ is continuous, $u_n=0$ along $\partial \Omega_n$.  It follows from \eqref{eq:Qiszero} that
-       $$\int_{\partial \Omega_n} (\bQ_n \cdot \bn) (v-u_n) = \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) (v-u_n) = 0.$$
-By using \eqref{eq:semimassconserve} we get
+\begin{proof}  Let $w=v-u_n$.  Using decomposition \eqref{eq:omegadecomposition} and integration by parts (i.e.~divergence theorem)---here we use regularity of $\partial \Omega_n$ and $\partial(\Omega_n^r \cup \Omega_n^0)$ and assumption \eqref{eq:Qissmooth} on $S=\Omega_n$ and $S=(\Omega_n^r \cup \Omega_n^0)^\circ$---we get
+\begin{align}
+-\int_{\Omega} \bQ_n \cdot \grad w &= \int_{\Omega_n} (\Div \bQ_n) w - \int_{\partial \Omega_n} (\bQ_n \cdot \bn) w \label{eq:intbypartsfromstrong} \\
+  &\qquad\quad + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) w - \int_{\partial(\Omega_n^r \cup \Omega_n^0)} (\bQ_n \cdot \bn) w. \notag
+\end{align}
+Because $u_n$ is continuous, $u_n=0$ on $\partial \Omega_n$ and $\partial(\Omega_n^r \cup \Omega_n^0)$ so by \eqref{eq:Qiscontinuous} and \eqref{eq:Qiszero} we see that $\bQ_n=0$ on these boundaries.  Thus the boundary integrals in \eqref{eq:intbypartsfromstrong} are zero.  On the other hand, by \eqref{eq:semimassconserve} we get
 \begin{equation}
--\int_{\Omega} \bQ_n \cdot \grad(v-u_n) = \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n) + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) (v-u_n). \label{eq:equalitybeforeVI}
+-\int_{\Omega} \bQ_n \cdot \grad w = \int_{\Omega_n} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) w + \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) w. \label{eq:equalitybeforeVI}
 \end{equation}
-
-By \eqref{eq:Qiszero} we have $\Div \bQ_n=0$ on $\Omega_n^r \cup \Omega_n^0$.  However, by \eqref{eq:strongconditionswherezero}, $F_n \le 0$ on $\Omega_n^0$, and since $u_n=u_{n-1}=0$ and $v-u_n = v \ge 0$ on $\Omega_n^0$, thus
+By \eqref{eq:Qiszero} and \eqref{eq:Qissmooth} we have $\Div \bQ_n=0$ on $\Omega_n^r \cup \Omega_n^0$.  However, by \eqref{eq:strongconditionswherezero}, $F_n \le 0$ on $\Omega_n^r \cup \Omega_n^0$.  Since also $u_n=0$, $u_{n-1}\ge 0$, and $w = v-u_n = v \ge 0$ on $\Omega_n^r \cup \Omega_n^0$, we have
 \begin{equation}
-    \int_R (\Div \bQ_n) (v-u_n) = 0 \ge \int_R \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) (v-u_n)  \label{eq:inequalitybeforeVI}
+    \int_{\Omega_n^r \cup \Omega_n^0} (\Div \bQ_n) w = 0 \ge \int_{\Omega_n^r \cup \Omega_n^0} \left(F_n - \frac{u_n - u_{n-1}}{\Delta t}\right) w. \label{eq:inequalitybeforeVI}
 \end{equation}
-where $R=\Omega_n^0$.  Almost the same, by \eqref{eq:Qiszero} and \eqref{eq:strongconditionswherezero} on $\Omega_n^r$, and because $u_n=0$, $F_n + u_{n-1}/\Delta t \le 0$, and $v-u_n = v \ge 0$ on $\Omega_n^r$, we get \eqref{eq:inequalitybeforeVI} on $R=\Omega_n^r$.  Thus if we return to \eqref{eq:equalitybeforeVI} and substitute \eqref{eq:inequalitybeforeVI} for $R=\Omega_n^r \cup \Omega_n^0$ then we have \eqref{eq:morallytheVI}, which is written without decomposition \eqref{eq:omegadecomposition}.
+Combining \eqref{eq:equalitybeforeVI} and \eqref{eq:inequalitybeforeVI} we have \eqref{eq:morallytheVI}, which is written without decomposition \eqref{eq:omegadecomposition}.
 \end{proof}
 
 \medskip
