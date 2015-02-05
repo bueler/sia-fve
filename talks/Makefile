@@ -48,4 +48,4 @@ liwgtalk.pdf: liwgtalk.aux $(figures) anim/adv/u-1.png anim/sia/u-1.png anim/tde
 .PHONY: clean
 
 clean:
-	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz *.nav *.snm *.toc *~ cartoon-*.pdf anim/f.txt anim/u-*txt anim/u-*png
+	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz *.nav *.snm *.toc *~ *cartoon*.pdf anim/f.txt anim/u-*txt anim/u-*png
