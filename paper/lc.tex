@@ -230,48 +230,50 @@ The intuition behind conditions \eqref{eq:strongconditionswherezero}, which will
 
 \section{Weak formulation of the single time-step problem}  \label{sec:weakform}
 
-FIXME The strong form \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint} is generally understood to be inadequate as a problem definition for the solution function $u_n$ because the behavior of $u_n$ along free boundary $\partial\Omega_n$ is not clear.  Statements \eqref{eq:strongconditionswherezero}, while intuitively correct, apply on the sets of decomposition \eqref{eq:omegadecomposition} which are defined in terms of the solution.  By contrast, we now propose a weak form of the single time-step problem, namely a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex set of admissible functions.  This weak problem refers only to the set $\Omega$ and its boundary, not to decomposition \eqref{eq:omegadecomposition}.  We start by arguing that a solution to the discrete-time strong problem is a solution to a certain variational inequality.  This argument also serves as a derivation of the variational inequality by using equations \eqref{eq:semimassconserve}, \eqref{eq:semiconstraint} and facts \eqref{eq:strongconditionswherezero}.  Then we show the converse, that a sufficiently-smooth solution of the weak problem solves the strong problem.  Only in section \ref{sec:mono} do we address well-posedness, which depends on details of the flux function $\bQ_n$ which we do not need here.
+A strong form of a free-boundary problem, such as PDE \eqref{eq:semimassconserve} subject to inequality \eqref{eq:semiconstraint}, is inadequate because the boundary conditions satisfied by $u_n$ along the free boundary $\partial\Omega_n$ are not clear.  Also, as noted already, statements \eqref{eq:semimassconserve} and \eqref{eq:strongconditionswherezero}, while intuitively correct, apply on solution-dependent sets.  By contrast, the weak form of the single time-step problem, which we derive in this section, namely a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex set of admissible functions, can be well-posed.  This weak form refers only to the set $\Omega$ and its boundary $\partial\Omega$.
 
-\subsection{Flux assumptions} \label{subsec:fluxassumptions}  Let $p\ge 1$ and recall that $L^p (\Omega)$ is the Banach space of functions with norm $\|v\|_{L^p} = \left(\int_\Omega |v|^p\,dx\right)^{1/p}$.  The Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v,\partial_1 v,\dots,\partial_d v \in L^p(\Omega)$ \cite{Evans}.  This space has norm
+We will state conditions on the discrete-time flux $\bQ_n$ first (subsection \ref{subsec:fluxassumptions}) so that we can then argue that a solution to the discrete-time strong problem is a solution to a certain variational inequality (subsection \ref{subsec:derivevi}); thereby we derive the weak form.  Then we show a converse, that a sufficiently-smooth solution of the weak problem solves the strong problem (subsection \ref{subsec:interior}).  Only in the next section \ref{sec:mono} do we address well-posedness, however, which depends on details of $\bQ_n$ which we do not need here.
+
+\subsection{Flux assumptions} \label{subsec:fluxassumptions}  Let $p\ge 1$ and recall that $L^p (\Omega)$ is the Banach space of functions with norm $\|v\|_{L^p} = \left(\int_\Omega |v|^p\,dx\right)^{1/p}$.  The Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v,\partial_1 v,\dots,\partial_d v \in L^p(\Omega)$ \cite{Evans}, with norm
 \begin{equation}
   \|v\|_{1,p} = \left(\|v\|_{L^p} + \sum_i \|v\|_{L^p}\right)^{1/p}.  \label{eq:norm}
 \end{equation}
 Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans}, but otherwise $v$ may be discontinuous.  Denote by $W_0^{1,p}(\Omega)$ the closure of $C_c^\infty(\Omega)$ in $W^{1,p}(\Omega)$.
 
-We now itemize the assumptions about $\bQ_n$ which apply for the remainder of this work:
-\begin{itemize}
-\item If $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$, we assume
+We require these assumptions about $\bQ_n$ for the remainder of this work:
+
+\medskip
+\renewcommand{\labelenumi}{(\roman{enumi})}
+\begin{enumerate}
+\item If $v \in W^{1,p}(\Omega)$ then, for $1/p + 1/q = 1$,
 \begin{equation}
 \bQ_n(\grad v,v,x) \in L^q(\Omega). \label{eq:QisLq}
 \end{equation}
-\item For fixed $x\in \Omega$, we assume $\bQ_n(\bX,v,x)$ is continuous as a function of $\bX$ and $v$:
+\item For fixed $x\in \Omega$, $\bQ_n(\bX,v,x)$ is continuous as a function of $\bX$ and $v$:
 \begin{equation}
 (\bX,v) \mapsto \bQ_n(\bX,v,x) \text{ is continuous on } \RR^d \times \RR.  \label{eq:Qiscontinuous}
 \end{equation}
-\item For $v \in W^{1,p}(\Omega)$, define
-    $$E_v = \left\{x\in\Omega \,\big|\, v(x) = 0\right\}$$
-and assume that
+\item For $v \in W^{1,p}(\Omega)$, define $E_v = \left\{x\in\Omega \,\big|\, v(x) = 0\right\}$.  Then
 \begin{equation}
 \bQ_n(\grad v,v,x)=0 \quad \text{a.e.~on } E_v. \label{eq:Qiszero}
 \end{equation}
-(Note that $\grad v = 0$ a.e.~on $E_v$ \cite[lemma A.4 of chapter II]{KinderlehrerStampacchia}.)
-\end{itemize}
+\end{enumerate}
+Note that $\grad v = 0$ a.e.~on $E_v$ by lemma A.4 in chapter II of \cite{KinderlehrerStampacchia}.
 
-Thus we make two kinds of assumptions about the discrete-time flux $\bQ_n(\grad u,u,x)$: \begin{itemize}
-\item the flux is regular (i.e.~\eqref{eq:QisLq} and \eqref{eq:Qiscontinuous}) and
-\item the flux is zero if the thickness is zero (i.e.~\eqref{eq:Qiszero}).
-\end{itemize}
-The latter assumption relates to the meaning of $\bQ_n$ in \eqref{eq:semimassconserve}, namely that this flux transports a layer with nonnegative thickness.
+Thus we make two kinds of assumptions about the discrete-time flux, namely that $\bQ_n$ is a well-behaved function (i.e.~\eqref{eq:QisLq} and \eqref{eq:Qiscontinuous}) and
+that $\bQ_n=0$ if the thickness is zero (i.e.~\eqref{eq:Qiszero}).  The latter assumption relates to the core meaning of $\bQ_n$ in \eqref{eq:semimassconserve}, namely that $\bQ_n$ is the flux of a layer with nonnegative thickness.
 
-Regarding the source term $F_n$, we assume first that for $v\in W^{1,p}(\Omega)$ it follows that
+Regarding the source term $F_n$, we assume first that if $v\in W^{1,p}(\Omega)$ then
 \begin{equation}
-F_n(v(x),x) \in L^q(\Omega),  \label{eq:FisLq}
+F_n(v(x),x) \in L^q(\Omega).  \label{eq:FisLq}
 \end{equation}
-and second that $F_n$ is uniformly Lipshitz as a function of $v$: there is $L>0$ so that for all $x\in\Omega$ and $v_1,v_2 \in [0,\infty)$, we have
+Secondly we assume that $F_n$ is uniformly Lipshitz as a function of $v$: there is $L>0$ so that for all $x\in\Omega$ and $v_1,v_2 \in [0,\infty)$, we have
 \begin{equation}
 \left|F_n(v_1,x)-F_n(v_2,x)\right| \le L |v_1-v_2|.  \label{eq:Fislip}
 \end{equation}
-Thus $F_n$ is continuous as a function of $v$.  (We do \emph{not} require that $F_n$ be strictly increasing in $v$, which would be natural if we sought monotonicity of the variational form in the $\Delta t \to \infty$ (i.e.~steady state) limit; see section \ref{sec:mono} and compare the discussion of monotonicity in  \cite{JouvetBueler2012}.)
+Thus $F_n$ is continuous as a function of $v$.
+
+We do note require that $F_n$ be strictly increasing in $v$, which would be natural if we sought monotonicity of the variational form in the $\Delta t \to \infty$ (i.e.~steady state) limit.  See section \ref{sec:mono} and compare the discussion of monotonicity in  \cite{JouvetBueler2012}.
 
 \subsection{Derivation of the variational inequality form}  \label{subsec:derivevi}  To use the strong form in deriving a weak form, which will replace it, we need the extra assumption that $\bQ_n$ is smooth:  Let $S \subset \Omega$ be an open subset.  If $v\in W^{1,p}(S)$ then
 \begin{equation}
