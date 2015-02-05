@@ -110,13 +110,14 @@ for useH in [True,False]:
         labelstr = r'$u_n$'
     t2 = text(x[750]+0.4,s[750]+0.5,labelstr)
     t2.set_font_properties(font)
-    # under bars for sets
-    plot([x[80],x[195]],[-0.7,-0.7],'k',lw=4.0)
-    t3 = text(x[120],-1.5,r'$\Omega_n^r$')
-    t3.set_font_properties(font)
-    plot([x[215],x[795]],[-0.7,-0.7],'k',lw=4.0)
-    t4 = text(x[500],-1.5,r'$\Omega_n$')
-    t4.set_font_properties(font)
+    if useH:
+        # under bars for sets
+        plot([x[80],x[195]],[-0.7,-0.7],'k',lw=4.0)
+        t3 = text(x[120],-1.5,r'$\Omega_n^r$')
+        t3.set_font_properties(font)
+        plot([x[215],x[795]],[-0.7,-0.7],'k',lw=4.0)
+        t4 = text(x[500],-1.5,r'$\Omega_n$')
+        t4.set_font_properties(font)
     axis([0.0,10.0,-1.0,4.5])
     hold(False)
     if useH:
