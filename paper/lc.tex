@@ -370,9 +370,9 @@ The mapping $A$ is \emph{coercive} if there is $\phi\in \mathcal{K}$ so that
     $$\lim_{\|u\|\to\infty} \frac{\ip{A(u) - A(\phi)}{u-\phi}}{\|u-\phi\|} = +\infty.$$
 where the limit is taken over $u\in\mathcal{K}$.  Intuitively, $A$ is coercive if the function $h(u)=\ip{A(u) - A(\phi)}{u-\phi}$ is ``confining'' at infinity, in the sense that it is bigger than the norm $\|u-\phi\|$ as $\|u\|\to\infty$.
 
-The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} says that variational inequality \eqref{eq:theVIabstract} has a unique solution if the mapping $A$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.  For example, suppose $A$ is monotone.  Observe that if $u_0 \in \mathcal{K}$ and $u_1 \in \mathcal{K}$ each solve \eqref{eq:theVIabstract} then $\ip{A(u_0)}{u_1-u_0} \ge 0$ and $\ip{A(u_1)}{u_0-u_1} \ge 0$.  By adding these, and using monotonicity,
+The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} says that variational inequality \eqref{eq:theVI} has a unique solution if the mapping $A$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.  For example, suppose $A$ is monotone.  Observe that if $u_0 \in \mathcal{K}$ and $u_1 \in \mathcal{K}$ each solve \eqref{eq:theVI} then $\ip{A(u_0)}{u_1-u_0} \ge 0$ and $\ip{A(u_1)}{u_0-u_1} \ge 0$.  By adding these, and using monotonicity,
     $$\ip{A(u_0) - A(u_1)}{u_0 - u_1} = 0.$$
-Thus strict monotonicity of $A_n$ implies uniqueness for the solution to \eqref{eq:theVIabstract}, if any such weak solutions exist.
+Thus strict monotonicity of $A_n$ implies uniqueness for the solution to \eqref{eq:theVI}, if any such weak solutions exist.
 
 We now state a key lemma that relates properties of $\bQ_n$ to the above functional-analytic properties of $A_n$.  It is proven via the following easy calculation that applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$:
    $$\ip{A_n(u) - A_n(v)}{u-v} = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).$$
@@ -412,15 +412,15 @@ Corollary III.1.8 (for part (i)) and Theorem III.1.7 (for part (ii)) of \cite{Ki
 
 \begin{theorem}  \label{thm:firstwellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.
 
-(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$, so that the operator $A_n$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
+(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$, so that the operator $A_n$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 
 (ii) Suppose \eqref{eq:Qnmonotone} holds with $C<1$ for $\bQ_n$ so that $A_n$ is strictly monotone.  For $R>0$ define
     $$\mathcal{K}_R = \mathcal{K} \cap \left\{v\in \mathcal{X} \,\Big|\, \|v\|\le R\right\},$$
 a closed, convex subset of $\mathcal{X}$ which is also bounded.  The solution $u_R\in \mathcal{K}_R$ of the variational inequality
 \begin{equation}
-  \ip{A_n(u_R)}{v-u_R} \ge 0, \label{eq:theVIabstractR}
+  \ip{A_n(u_R)}{v-u_R} \ge 0, \label{eq:theVIwithR}
 \end{equation}
-for all $v \in \mathcal{K}_R$, exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIabstractR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
+for all $v \in \mathcal{K}_R$, exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIwithR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
 FIXME: Consider the $p$-Laplacian flux
