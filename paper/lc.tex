@@ -353,12 +353,12 @@ To prove (ii) and (iii) we start with \emph{nonnegative} $\phi\in C_c^\infty(S)$
 It follows as before that $u_{n-1} + \Delta t\, F_n \le 0$ a.e.~on $S$.  In the case that also $u_{n-1}=0$ on $S$, i.e.~in case (ii), this implies $F_n \le 0$ a.e.~on $S$.\end{proof}
 
 \medskip
-From now on we use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.  FIXME:  We will show [ONLY IF $\bQ_n$ HAS $\grad u_n$] that along the free boundary $\partial\Omega_n$ we have both $u_n=0$ and $\bQ_n = 0$.
+From now on we will use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.
 
 
-\section{Monotonicity, coerciveness, and well-posedness} \label{sec:mono}
+\section{Well-posedness for the single time-step problem} \label{sec:wellposed}
 
-We continue in this section to allow the flux function $\bQ_n$ to be quite arbitrary, except that the flux function should satisfy the conditions in subsection \ref{subsec:fluxassumptions}.
+\subsection{Case I: Monotonicity and quasilinear parabolic fluxes} \label{sec:mono}  FIXME  We continue in this section to allow the flux function $\bQ_n$ to be quite arbitrary, except that the flux function should satisfy the conditions in subsection \ref{subsec:fluxassumptions}.
 
 In this section we also denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$, where $\frac{1}{p}+\frac{1}{q}=1$, by the same symbols $\ip{\cdot}{\cdot}$.
 
@@ -423,36 +423,7 @@ a closed, convex subset of $\mathcal{X}$ which is also bounded.  The solution $u
 for all $v \in \mathcal{K}_R$, exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIabstractR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVIabstract} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-FIXME: consider $L^1$-contractivity in general?
-
-
-\section{Examples, non-examples, and well-posedness} \label{sec:examples}
-
-We can now check conditions \eqref{eq:Qnmonotone} and/or \eqref{eq:Qncoercive} for certain particular flux formulae.
-
-\begin{example}  Consider a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
-\begin{equation}
-  \bQ_n(\grad u,u,x) = \bX(x) u.
-\end{equation}
-To check the conditions we take $u,v\in\mathcal{K}$ and compute
-\begin{align*}
-   &\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
-   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
-\end{align*}
-after integrating by parts, because $u=v=0$ on $\partial \Omega$.  Thus
-\begin{equation}
-\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0 \qquad \text{ if }\, \Div\bX\ge 0\, \text{ on } \Omega,
-\end{equation}
-so $A_n$ is strictly monotone in that case.  More generally, \eqref{eq:Qnmonotone} applies with 
-\begin{equation}
-C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
-\end{equation}
-so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume preserving.
-
-There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
-\end{example}
-
-\begin{example} FIXME: Consider the $p$-Laplacian flux
+FIXME: Consider the $p$-Laplacian flux
 \begin{equation}
   \bQ_n(\grad u,u,x) = - k |\grad u|^{p-2} \grad u
 \end{equation}
@@ -472,13 +443,36 @@ for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.  Thus if $p\ge 
   &\le - \frac{k M}{C(\Omega,p)} \|u-v\|^p
 \end{align*}
 and thus \eqref{eq:Qncoercive} with $\eps = kM/C(\Omega,p) > 0$ and $r=p>1$.  Step $\ast$ holds from the triangle inequality, and the fact that $s\mapsto s^{p-2}$ is nondecreasing, so that $-(|a| + |b|)^{p-2} \le - |a-b|^{p-2}$ for $a,b\in\RR^d$.
-\end{example}
 
-FIXME: some examples need this assumption?: a maximum principle property: for every smooth $v(x)$ on $\Omega$, if $\alpha>0$ then
+
+FIXME: consider $L^1$-contractivity in general?
+
+
+\subsection{Case II: Other parabolic fluxes by semi-linear techniques} \label{subsec:semilinear}  FIXME:  on porous medium equation with $\bQ_n = - k \grad(u^\gamma)$ use results from subsection III.3 of \cite{KinderlehrerStampacchia} after transformation $u^\gamma=w$
+
+
+\subsection{Case III: Hyperbolic fluxes} \label{subsec:hyperbolic}  FIXME  We can now check conditions \eqref{eq:Qnmonotone} and/or \eqref{eq:Qncoercive} for certain particular flux formulae.
+
+Consider a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
 \begin{equation}
-v(x) + \alpha\, (\Div \bQ_n)(\grad v,v,x) > 0 \quad \implies \quad v(x) > 0 \label{eq:maxprincQn}
+  \bQ_n(\grad u,u,x) = \bX(x) u.
 \end{equation}
-for all $x\in\Omega$.
+To check the conditions we take $u,v\in\mathcal{K}$ and compute
+\begin{align*}
+   &\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
+   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
+\end{align*}
+after integrating by parts, because $u=v=0$ on $\partial \Omega$.  Thus
+\begin{equation}
+\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0 \qquad \text{ if }\, \Div\bX\ge 0\, \text{ on } \Omega,
+\end{equation}
+so $A_n$ is strictly monotone in that case.  More generally, \eqref{eq:Qnmonotone} applies with 
+\begin{equation}
+C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
+\end{equation}
+so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume preserving.
+
+There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 
 \begin{example}  Let $v_0>0$ and $f_0>0$ be scales for the velocity and source term.  Consider an advecting-layer problem in one dimension, with constant velocity.  That is, if $q = v_0 u$ then the strong form problem for $u(t,x)$ is
 \begin{equation}
@@ -493,6 +487,8 @@ so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
 
 But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
 \end{example}
+
+\subsection{Case IV: Explicit time-steps} \label{subsec:explicit}  FIXME
 
 
 \section{Time-series for mass, and the retreat loss}  \label{sec:timeseries}
