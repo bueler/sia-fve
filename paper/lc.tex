@@ -8,7 +8,6 @@
 
 %\theoremstyle{definition}
 \newtheorem{example}{Example}
-%\newtheorem*{examplecont}{Example, continued}
 
 % math macros
 \newcommand\bb{\mathbf{b}}
@@ -55,15 +54,11 @@
 
 \begin{document}
 \maketitle
-\slugger{siap}{xxxx}{xx}{x}{x--x}%slugger should be set to mms, siap, sicomp, sicon, sidma, sima, simax, sinum, siopt, sisc, or sirev
+\slugger{siap}{xxxx}{xx}{x}{x--x}
 
 \begin{abstract}
 FIXME
 \end{abstract}
-
-%\begin{keywords}\end{keywords}
-
-%\begin{AMS}\end{AMS}
 
 
 \pagestyle{myheadings}
@@ -109,7 +104,7 @@ FIGURE (FIXME)
 \label{fig:climatepictures}
 \end{figure}
 
-Our first questions about such models is
+In the time-semi-discretized case, each time-step requires the solution of a (continuous) free boundary problem in space.  Our first questions about such models is
   \begin{quote}
   \renewcommand{\labelenumi}{(\roman{enumi})}
   \begin{enumerate}
@@ -126,9 +121,7 @@ Our second question is perhaps less obvious, but of substantial importance in mo
   \item \emph{Can the modeled total mass of the fluid layer, inside its free boundary, be conserved exactly in the sense that a computable space-time integral of the source term $f$, over the time step, is equal to the change in total mass in that time step?}
   \end{enumerate}
   \end{quote}
-By considering this question abstractly, we conclude that the answer is ``no,'' in particular in the case where the answer to (i) is ``yes.''  That is, our answer to the brief question ``can a numerical model of a fluid layer governed by \eqref{eq:massconserve} and \eqref{eq:constraint} conserve mass?'' is ``no''.
-
-In the time-semi-discretized case, where each time-step involves a continuous free boundary problem in space, we propose (section \ref{sec:timeseries}) a solution-dependent correction term that can be added to a computable integral of the source $f$ so that a numerical model can exactly (i.e.~up to rounding error) ``balance the books'' in a manner which properly reflects the continuum model of the fluid layer.  In the fully-discretized case we propose an additional solution-dependent correction that is needed to balance the conservation books (section FIXME).  The former correction goes away in the temporal refinement limit (i.e.~$\Delta t\to 0$) and the latter in the joint refinement limit ($\Delta t\to 0$ and $\Delta x\to 0$).
+By considering this question abstractly, we conclude that the answer is ``no,'' in particular in the case where the answer to (i) is ``yes.''  That is, our answer to the brief question ``can a numerical model of a fluid layer governed by \eqref{eq:massconserve} and \eqref{eq:constraint} conserve mass?'' is ``no''.  We can, however, quantify the non-conservation error associated to the free boundary (below).
 
 Free-boundary problems of the above kind appear for the evolution of ice sheets \cite{BLKCB,CDDSV,EgholmNielsen2010,JouvetBueler2012}, shallow liquid water flowing over marshes \cite{AlonsoSantillanaDawson}, shallow water equation models for tsunumi run-up \cite{LeVequeGeorge2008}, coupled surface/subsurface hydrological modelling \cite{Maxwelletal2014}, subglacial hydrology \cite{AschwandenBuelerKhroulevBlatter,BuelervanPeltDRAFT,Schoofetal2012}, supraglacial runoff \cite{AschwandenBuelerKhroulevBlatter}, ice shelves [FIXME], and sea ice [FIXME], among many other applications.  FIXME: point out categorization by diffusive versus hyperbolic
 
@@ -136,18 +129,26 @@ Theoretical guidance as to the degree of achievable numerical (i.e.~discrete) co
 
 Climate-scale circulation models generally claims exact discrete conservation as a goal [FIXME: CITE], but apparently always in a context without free boundary.  Such climate models are ``multiphysics'' models which generally attempt to conserve masses of the phases of water (in particular) separately, as these phases have different physical properties relevant to earth system dynamics.  For example, snow and ice have higher albedo and lower density than the liquid ocean.  In many such models, one or more fluids or phases form a layer with a moving free boundary.  We believe that auditable mass conservation does not generally occur in that case, except perhaps through \emph{ad hoc} redistribution of mass, or \emph{ad hoc} discrete schemes to locally balance the books at the free boundary.  Discrete conservation is presumably recovered in the temporal and spatial refinement limit in such models.
 
-As noted above, the single time-step problem is put in weak form.  More specifically it is a variational inequality.  The nonnegativity of the thickness of the fluid layer provides the constraint, determining a closed, convex subset of a Banach space of admissible thickness functions.  The constraint is active when negativity of the source term would otherwise send the thickness below zero.  Maximum principles for the higher-order terms, if present, play a minimal role because they do not maintain the constraint in the presence of negative values of the source term.
+In our work, the single time-step problem is put in weak form, specifically a variational inequality (section \ref{sec:weakform}).  The nonnegativity of the thickness, $u\ge 0$, is a constraint which determines a closed, convex subset of a Banach space, the set of admissible thickness functions.  The constraint is active when negativity of the combined terms $f - \Div \bq$ in \eqref{eq:massconserve} would send the thickness below zero.  Maximum principles for the higher-order terms $\Div\bq$ in \eqref{eq:massconserve}, if applicable at all, play no role because they cannot maintain the constraint when $f<0$.  Though the form of the flux certainly affects the well-posedness, stability, and approximate-ability of the single time-step problem, our conclusions about conservation corrections at the free boundary are insensitive to the form or provenance of the flux $\bq$.
 
-We identify the ``retreat area'' during the time step as fundamental.  By definition this area is the set where the fluid layer thickness is positive at the beginning of the time step, and, through flow and boundary-source terms, the thickness is zero at the end of the time step.  That is, fluid was completely lost from the retreat area at some time during the time-step.  Even for well-behaved source terms (e.g.~smooth in time and space) and short time steps, the retreat area can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of a layer of surface water on ground can evaporate, and so on, in the duration of one time step.
+We identify the ``retreat area'' during the time step as fundamental.  By definition this is the region where the fluid layer thickness is positive at the beginning of the time step, and, through flow and boundary-source terms, the thickness is zero at the end of the time step.  That is, fluid was completely lost from the retreat area at some time during the time-step.  Even for well-behaved source terms (e.g.~smooth in time and space) and short time steps, the retreat area can be of essentially arbitrary size.  For example, in a varying climate a large area of thin ice sheet or sea ice can melt, or a large area of a layer of surface water on ground can evaporate, and so on, during one time step.
 
-We define the ``retreat area'' as the portion of the domain in which the single time-step thickness solution is zero but the thickness was positive at the start of the time-step.   We then define the ``retreat loss'' as the change in mass, during the time step, within the retreat area.  In these terms we can answer our second question precisely, though informally for the moment:\begin{itemize}
+We then define the ``retreat loss'' $R_n$ as the change in mass, during the time step $[t_{n-1},t_n]$, within the retreat area.  In these terms we can answer our second question more precisely:
+\begin{itemize}
 \item  \emph{The retreat loss cannot be exactly balanced by a computable integrals of the source during the discrete time-step.}
-\item  \emph{A time-stepping model which reports mass conservation quantities, so as to ``balance the books'' for the model user, must track and report a retreat loss time-series, or equivalent quantity, additional to any integrals of the source terms.}
+\item  \emph{A time-stepping model which reports mass conservation quantities, so as to ``balance the books'' for the model user, should report a retreat loss time-series $\{R_n\}$, or equivalent quantity, additional to any integrals of the source terms.}
 \end{itemize}
+The details appear in section \ref{sec:timeseries}.  Note that the retreat losses $R_n$ becomes zero under temporal refinement only.
 
-We believe that the avoidance of, or at least clearer understanding of, essentially \emph{ad hoc} discrete schemes to maintain conservation at free boundaries will be easier once theoretical limits on discrete conservation are acknowledged, as here.  With the retreat area correction term identified here, for example, when a large area of ice sheet or sea-ice melts then the discrete-time model will can report accurately on the degree of conservation of the mass of water in all phases.  Generally climate models will be able to more accurately report important mass transfers between the phases of water, in particular, as these phases occupy changing regions.
+The above conclusions apply in the time-semi-discretized case and thus are independent of particular spatial discretization schemes.  However, in the case where the single time-step problem is well-posed in a sufficiently well-behaved Banach space (e.g.~in $W_0^{1,p}(\Omega)$; see sections \ref{sec:weakform} and \ref{sec:mono}), and if space is discretized using a scheme that allows a finite volume (cell-wise) mass conservation interpretation, we identify an additional, computable free-boundary-related conservation error.  This error $S_n$, which we call a ``shell error'' for convenience, occurs along that part of the free boundary where the flux goes to zero in the continuous case, generically has a nonzero value in the space-discretized case; see section FIXME for details.  In summary we can say,
+\begin{itemize}
+\item  \emph{A time- and space-discretized model should report, as a conservation error which goes to zero under spatial refinement only, an additional time-series $\{S_n\}$ which is the sum over the free boundary of the discrete flux, in cells where that flux would be zero in the continuous-space case.}
+\end{itemize}
+The shell errors $S_n$ go to zero under spatial refinement even when the time-step is not reduced.
 
+With the conservation-correction time-series $\{R_n\}$ and $\{S_n\}$, a numerical model can ``balance the books'' exactly (i.e.~up to rounding error) in a manner which properly reflects the continuum model of the fluid layer.  A user of such models can adequately assess whether these free-boundary-related conservation errors are acceptably small, just in the way \emph{a posteriori} estimates are used to assess whether truncation errors are acceptably small.
 
+We believe that avoidance of, or at least clearer understanding of, \emph{ad hoc} discrete schemes to maintain conservation at free boundaries will be easier once theoretical limits on discrete conservation are acknowledged, as here.  With the retreat loss correction, for example, when a large area of ice sheet or sea-ice is modeled as melting entirely in a climate simulation model, that model can measure the amount of non-conservation of the mass of water in each phase, even if that model simply uses the retreat loss as a mass transfer into the liquid phase.  More powerfully, adaptive time-stepping schemes can be modified to reduce this kind of conservation error, and adaptive mesh refinement or other paradigms can reduce the shell error (see above).  Climate models will, in any case, be able to more-accurately report uncertainty in important mass transfers between component fluids of the climate.
 
 
 
