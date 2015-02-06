@@ -484,26 +484,29 @@ FIXME use results from subsection III.3 of \cite{KinderlehrerStampacchia}, based
 
 FIXME: of course assumptions on $G$ are assumptions on $F_n$.  if $F_n=F_n(x)$ we are done. because of $\Delta t$ we can still solve with increasing $F_n(u)$ as long as time steps are short
 
-\subsection{Case III: Hyperbolic fluxes} \label{subsec:hyperbolic}  FIXME  We can now check conditions \eqref{eq:Qnmonotone} and/or \eqref{eq:Qncoercive} for certain particular flux formulae.
-
-Consider a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
+\subsection{Case III: Hyperbolic fluxes} \label{subsec:hyperbolic}  FIXME  We are certainly not interested in restricting to parabolic problems.  The simplest hyperbolic problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
 \begin{equation}
   \bQ_n(\grad u,u,x) = \bX(x) u.
 \end{equation}
-To check the conditions we take $u,v\in\mathcal{K}$ and compute
+
+We can check conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive}.  Take $u,v\in\mathcal{K}$ and compute
 \begin{align*}
    &\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
    &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
 \end{align*}
-after integrating by parts, because $u=v=0$ on $\partial \Omega$.  Thus
+after integrating by parts, because $u=v=0$ on $\partial \Omega$.
+
+This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then
 \begin{equation}
-\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0 \qquad \text{ if }\, \Div\bX\ge 0\, \text{ on } \Omega,
+\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0,
 \end{equation}
-so $A_n$ is strictly monotone in that case.  More generally, \eqref{eq:Qnmonotone} applies with 
+so $A_n$ is strictly monotone.
+
+More generally, \eqref{eq:Qnmonotone} applies with 
 \begin{equation}
 C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
 \end{equation}
-so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume preserving.
+so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume (area) preserving.
 
 There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 
@@ -521,36 +524,57 @@ so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
 But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
 \end{example}
 
-\subsection{Case IV: Explicit time-steps} \label{subsec:explicit}  FIXME
+
+\subsection{Case IV: Explicit time-steps} \label{subsec:explicit}  FIXME  Presumably go to $L^2(\Omega)$ as Banach space and use truncation result for the variational inequality, i.e.~from page 27 of \cite{KinderlehrerStampacchia}
+
+FIXME then add example where $\bq$ comes from integrating over $\Omega$ with a kernel
 
 
-\section{Time-series for mass, and the retreat loss}  \label{sec:timeseries}
+\section{Time-series corrections when reporting on mass conservation}  \label{sec:timeseries}
 
-Now define
+From now on our major assumption is that the weak problem for a single time-step, i.e.~\eqref{eq:theVI}, is well-posed.  In particular, there is a unique sequence of states $\{u_n\}$ for $n=0,\dots,N$ where $N\Delta t = T$.  We call the subinterval $[t_{n-1},t_n]$ the \emph{$n$th time-step}.  Define
 \begin{equation}
-M_n = \int_\Omega u_n(x)\,dx, \label{eq:totalmassdefn}
+M_n = \int_\Omega u_n(x)\,dx, \label{eq:totalmassseries}
 \end{equation}
-which we naturally call the \emph{(total) mass} at time $t_n$, and define
+the \emph{(total) mass} at time $t_n$, and define
 \begin{equation}
-R_n = \int_{\Omega_n^r} u_{n-1}\,dx, \label{eq:retreatlossdefn}
+C_n = \Delta t\, \int_\Omega F_n(u_n,x)\,dx, \label{eq:climateseries}
 \end{equation}
-which we call the \emph{retreat loss} at time $t_n$.  The total mass and the retreat loss at time $t_n$ are related by our equations.  In fact, by \eqref{eq:semimassconserve} we have
+the \emph{climate input} during the $n$th time step.
+
+Heuristically, numerical models assert exact discrete conservation when $M_n$ and $C_n$ have computable approximations and
+	$$M_n = M_{n-1} + C_n$$
+is true for $n=1,\dots,N$, at least to within rounding error.
+
+\subsection{The retreat loss}  \label{subsec:retreatloss}  Define
+\begin{equation}
+R_n = \int_{\Omega_n^r} u_{n-1}\,dx, \label{eq:retreatlossseries}
+\end{equation}
+which we call the \emph{retreat loss} during the $n$th time step.
+
+The total mass and retreat loss are related.  In fact, by \eqref{eq:semimassconserve} we have
 \begin{align}
-M_n - M_{n-1} &=  - \int_{\Omega_n^r} u_{n-1}\,dx + \int_{\Omega_n} (u_n - u_{n-1})\,dx \label{eq:massstep} \\
-   &= - R_n + \Delta t \int_{\Omega_n} (- \Div \bQ_n + F_n) \,dx \notag \\
-   &= - R_n + \Delta t \int_{\Omega_n} F_n\,dx \notag
+M_n - M_{n-1} &= \int_{\Omega_n} (u_n - u_{n-1})\,dx - \int_{\Omega_n^r} (0 - u_{n-1})\,dx \label{eq:massstep} \\
+   &= \Delta t \int_{\Omega_n} (- \Div \bQ_n + F_n) \,dx \, + R_n \notag \\
+   &= C_n + R_n \notag
 \end{align}
-because $\bQ_n=0$ along $\partial \Omega$ by \eqref{eq:Qiszero}.
+because $\bQ_n=0$ along $\partial \Omega$ by \eqref{eq:Qiscontinuous} and \eqref{eq:Qiszero}.
+
+FIXME: discuss
 
 Given the continuous-time solution $u(x,t)$ to problem \eqref{eq:massconserve}--\eqref{eq:constraint} starting with initial condition $u(x,t_{n-1}) = u_{n-1}(x)$, at points $x$ within $\Omega_n^r$ we could define the time at which $u(x,t)$ first becomes zero.  This \emph{time-of-loss function} is well-defined on the retreat set $\Omega_n^r$:
 \begin{equation}
 \bar t(x) = \inf\left\{t \,\big|\, u(x,t)>0 \,\text{ and }\, t_{n-1} < t \le t_n\right\}.
 \end{equation}
-While $\bar t(x)$ varies over $\Omega_n^r$, as $\Delta t \to 0$ then $\bar t(x) \to t_{n-1}$.  We might even expect that the area of $\Omega_n^r$ might decrease to zero as $\Delta t \to 0$, though this has not been proven.  But for numerical models, which necessarily have discrete time, the variation in $\bar t(x)$, over $\Omega_n^r$ during the time-step $t_{n-1} < t \le t_n$, is unknown.  Not accounting for the unknown variation of $\bar t(x)$ over the retreat set $\Omega_n^r$ is a barrier to the conservation of discrete (or merely time-discretized) modeled mass.
+While $\bar t(x)$ varies over $\Omega_n^r$, as $\Delta t \to 0$ then $\bar t(x) \to t_{n-1}$.  We cannot reasonably expect that the area of $\Omega_n^r$ will decrease to zero as $\Delta t \to 0$, however, at least in general.
 
-As an operational statement about discrete-time models, we can rephrase our major assertion from section \ref{sec:intro} as
+For numerical models, however, the variation in $\bar t(x)$, over $\Omega_n^r$ during the time-step $t_{n-1} < t \le t_n$, is unknown.  Not accounting for the unknown variation of $\bar t(x)$ over the retreat set $\Omega_n^r$ is a barrier to the conservation of discrete (or merely time-discretized) modeled mass.
+
+\subsection{The discrete-space ``shell error''}  \label{subsec:shellerror}  FIXME: define it
+
+\subsection{Comments on model reporting}  \label{subsec:comments}  FIXME As an operational statement about discrete-time models, we can rephrase our major assertion from section \ref{sec:intro} as
 \begin{quote}
-\emph{The model must store a time series for $R_n$, in addition to the expected time series $\int_{\Omega_n} F_n$, in order to provide auditable mass conservation.}
+\emph{The model must store a time series for $R_n$, in addition to the expected time series $C_n$, in order to provide auditable mass conservation.}
 \end{quote}
 In stating this assertion, we note that the retreat loss $R_n$ should vanish in the $\Delta t\to 0$ limit, which is a consistency statement about the time-discretized model.
 
