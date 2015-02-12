@@ -153,9 +153,9 @@ We believe that avoidance of, or at least clearer understanding of, \emph{ad hoc
 
 
 
-\section{Discrete-time formulation}  \label{sec:discreteform}
+\section{Strong formulation of the single time-step problem}  \label{sec:strongform}
 
-\subsection{Strong formulation of the single time-step problem}  \label{subsec:strongsingle}  To construct the time-semi-discretized problem, let $T>0$ and let $\{t_n\}_{n=0}^N$ be a sequence of increasing times on $[0,T]$ with $t_0=0$ and $t_N=T$.  The single time-step problem determines a new thickness function $u_n(x) \approx u(x,t_n)$ given the old value $u_{n-1}(x) \approx u(x,t_{n-1})$ (Figure \ref{fig:timestepcartoon}).
+\subsection{Time semi-discretization}  \label{subsec:strongsingle}  To construct the time-semi-discretized problem, let $T>0$ and let $\{t_n\}_{n=0}^N$ be a sequence of increasing times on $[0,T]$ with $t_0=0$ and $t_N=T$.  The single time-step problem determines a new thickness function $u_n(x) \approx u(x,t_n)$ given the old value $u_{n-1}(x) \approx u(x,t_{n-1})$ (Figure \ref{fig:timestepcartoon}).
 
 \begin{figure}[ht]
 \begin{center}
@@ -276,7 +276,7 @@ Thus $F_n$ is continuous as a function of $v$.
 
 We do note require that $F_n$ be strictly increasing in $v$, which would be natural if we sought monotonicity of the variational form in the $\Delta t \to \infty$ (i.e.~steady state) limit.  See section \ref{sec:wellposed} and compare the discussion of monotonicity in  \cite{JouvetBueler2012}.
 
-\subsection{Derivation of the variational inequality form}  \label{subsec:derivevi}  To use the strong form in deriving a weak form we need an extra assumption that $\bQ_n$ is smooth:  Let $S \subset \Omega$ be an open subset.  If $v\in W^{1,p}(S)$ then
+\subsection{Derivation of the variational inequality}  \label{subsec:derivevi}  To use the strong form in deriving a weak form we need an extra assumption that $\bQ_n$ is smooth:  Let $S \subset \Omega$ be an open subset.  If $v\in W^{1,p}(S)$ then
 \begin{equation}
 \frac{\partial}{\partial x_i} \bQ_n(\grad v,v,x) \in L^q(S). \label{eq:Qissmooth}
 \end{equation}
@@ -356,13 +356,12 @@ It follows as before that $u_{n-1} + \Delta t\, F_n \le 0$ a.e.~on $S$.  In the 
 From now on we will use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.
 
 
-\section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to determine which properties of the flux $\bQ_n$ will lead to the problem \eqref{eq:theVI} being well-posed.  Techniques for proving well-posedness of time-independent variational inequalities are relatively well-established for linear and even nonlinear elliptic problems which correspond to monotonic forms \cite{KinderlehrerStampacchia}, and we look at this case first (subsection \ref{subsec:mono}).  Because fluid layer conservation equations can use a variety of non-parabolic and non-linear flux forms $\bq$, and because we want to allow for a variety of time-discretizations, we then consider a diverse range of variational inequality problems in subsections \ref{subsec:semilinear}--\ref{subsec:explicit}, and we get a range of generally less-complete results compare to the parabolic, monotonic case in \ref{subsec:mono}.
+\section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to determine which properties of the flux $\bQ_n$ can lead to a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  Except for the last subsection (\ref{subsec:explicit}), in this section we consider implicit time-stepping schemes so that the highest-order term is at least first order.
 
-In this section we denote the pairing $L^q(\Omega;\RR^d) \times L^p(\Omega;\RR^d)$, where $\frac{1}{p}+\frac{1}{q}=1$, by the same symbols $\ip{\cdot}{\cdot}$ used for the pairing of the dual $\mathcal{X}'$ with the Banach space $\mathcal{X}$ itself (definition \ref{def:spaces}).  No confusion should result.
+Techniques for proving well-posedness of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems, namely those which correspond to monotonic variational inequalities \cite{KinderlehrerStampacchia}.  We recall these tools first in subsection \ref{subsec:mono}.  In \ref{subsec:plapadvect} we look at direct applications of these monotonicity techniques to $p$-Laplacian-type diffusion, and linear advection flux cases, and combinations thereof.  Then we show in \ref{subsec:powertransform} that certain other nonlinear parabolic flux cases, including porous medium \cite{Vazquez2007} and doubly-nonlinear cases \cite{AlonsoSantillanaDawson,BLKCB}, can be transformed to variational inequalities also subject to techniques from \ref{subsec:mono}.  Then in \ref{subsec:nonlocal} we significantly-extend the allowed flux dependence, beyond the original pointwise form \eqref{eq:fluxdepends}, to allow nonlocal dependence through an integral kernel; again we can apply the \ref{subsec:mono} techniques.  Finally, in \ref{subsec:explicit} we examine explicit time-semidiscretizations, and we see that regularity ``issues'' stop us from having the well-posed, \emph{continuous}-space single time-step problems.  (However, the fully-discretized schemes in section \ref{sec:spacediscretized} will allow re-consideration of explicit time steps.)
 
-FIXME: consider $L^1$-contractivity in general?
 
-\subsection{Case I: Monotonicity and quasilinear parabolic fluxes} \label{subsec:mono}  We start by defining terms.  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
+\subsection{Monotonicity and sufficient conditions for well-posedness} \label{subsec:mono}  We start by defining terms.  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
 \begin{equation}
    \ip{A(u) - A(v)}{u-v} \ge 0  \label{eq:monodef}
 \end{equation}
@@ -388,22 +387,22 @@ The lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>
 
 (i)  $A_n$ is (strictly) monotone if there is ($C<1$) $C\le 1$ so that
 \begin{equation}
-\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad(u-v)} \le C \|u-v\|_{L^2}^2 \label{eq:Qnmonotone}
+\Delta t\, \int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le C \|u-v\|_{L^2}^2 \label{eq:Qnmonotone}
 \end{equation}
 for all $u,v \in \mathcal{K}$.  Conversely, if $A_n$ is monotone then \eqref{eq:Qnmonotone} holds with $C=1$.
 
 (ii)  $A_n$ is coercive if there is $\eps>0$ and $r>1$ so that
 \begin{equation}
-\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad(u-v)} \le -\eps \|u-v\|^r \label{eq:Qncoercive}
+\int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le -\eps \|u-v\|^r \label{eq:Qncoercive}
 \end{equation}
 for all $u,v \in \mathcal{K}$.
 \end{lemma}
 
-Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$-\eps \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
+Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$, independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$-\eps \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
 
 In considering lemma \ref{lem:monotonecoercive}, note that in cases where $\bQ_n(\grad u,u,x)$ is proportional to $\grad u$ we expect, for physical reasons, that the flux $\bQ_n$ points in the direction of the negative of $\grad u$.  By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then PDE \eqref{eq:massconserve} would be the ill-posed backward heat equation.
 
-Returning to well-posedness, we must consider continuity.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $M\subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap M \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia}.  To prove the following lemma, choose $\{v_i\}_{i=1}^m \subset \mathcal{K}$ and let $M=\operatorname{span}\left<v_i\right>$, as a subspace of $\mathcal{X}$.  Fix $\phi\in\mathcal{X}$.  The map $g:\RR^m \to \RR$ defined by
+Returning to well-posedness, we need some degree of continuity.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $M\subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap M \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia}.  To prove the following lemma, choose $\{v_i\}_{i=1}^m \subset \mathcal{K}$ and let $M=\operatorname{span}\left<v_i\right>$, as a subspace of $\mathcal{X}$.  Fix $\phi\in\mathcal{X}$.  The map $g:\RR^m \to \RR$ defined by
 \begin{equation}
   g(c_1,\dots,c_m) = \ip{A_n\left(\sum_{i=1}^m c_i v_i\right)}{\phi}
 \end{equation}
@@ -430,9 +429,9 @@ a \emph{bounded}, closed, convex subset of $\mathcal{X}$.  The solution $u_R\in 
 exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIwithR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-We can directly apply these well-posedness results to some non-linear parabolic cases.  Consider the $p$-Laplacian \cite{Evans} flux
+\subsection{$p$-Laplacian and advective fluxes} \label{subsec:plapadvect}  We can immediately apply these tools to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ points in the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
 \begin{equation}
-  \bQ_n(\grad u,u,x) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
+  \bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
 \end{equation}
 with $p\ge 2$.  This includes the ordinary Laplacian (or Fourier) flux, and thus the linear heat equation, as the $p=2$ case.  In this case we use Lemma 2.1 from \cite{BarrettLiu1993}, which says there is $M>0$ such that
 \begin{equation}
@@ -449,10 +448,36 @@ for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.  Thus if $p\ge 
   &\stackrel{\ast}{\le} - k M  \int_\Omega |\grad u - \grad v|^p \\
   &\le - \frac{k M}{C(\Omega,p)} \|u-v\|^p
 \end{align*}
-and thus \eqref{eq:Qncoercive} with $\eps = kM/C(\Omega,p) > 0$ and $r=p>1$.  Step $\ast$ holds from the triangle inequality, and the fact that $s\mapsto s^{p-2}$ is nondecreasing, so that $-(|a| + |b|)^{p-2} \le - |a-b|^{p-2}$ for $a,b\in\RR^d$.
+and thus \eqref{eq:Qncoercive} with $\eps = kM/C(\Omega,p)$ and $r=p$.  Step $\ast$ holds from the triangle inequality, and the fact that $s\mapsto s^{p-2}$ is nondecreasing, so that $-(|a| + |b|)^{p-2} \le - |a-b|^{p-2}$ for $a,b\in\RR^d$.  Thus problem \eqref{eq:theVI} is well-posed for any $\Delta t$ if the flux is of $p$-Laplacian form for $p\ge 2$.
+
+FIXME  We are certainly interested in non-parabolic problems too.  The simplest hyperbolic problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
+\begin{equation}
+  \bQ_n(u,x) = \bX(x) u.
+\end{equation}
+
+We can check conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive}.  Take $u,v\in\mathcal{K}$ and compute
+\begin{align*}
+   &\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
+   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
+\end{align*}
+after integrating by parts, because $u=v=0$ on $\partial \Omega$.
+
+This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then
+\begin{equation}
+\Delta t\, \int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad (u - v) \le 0,
+\end{equation}
+so $A_n$ is strictly monotone.
+
+More generally, \eqref{eq:Qnmonotone} applies with 
+\begin{equation}
+C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
+\end{equation}
+so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume (area) preserving.
+
+FIXME There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 
 
-\subsection{Case II: Other parabolic fluxes by semi-linear techniques} \label{subsec:semilinear}  Now we consider the porous medium  \cite{Evans} flux
+\subsection{Transformation of the solution variable} \label{subsec:powertransform}  Now we consider the porous medium  \cite{Evans} flux
 \begin{equation}
   \bQ_n(\grad u,u,x) = - k \grad(u^\gamma) \label{eq:porousflux}
 \end{equation}
@@ -484,33 +509,9 @@ FIXME use results from subsection III.3 of \cite{KinderlehrerStampacchia}, based
 
 FIXME: of course assumptions on $G$ are assumptions on $F_n$.  if $F_n=F_n(x)$ we are done. because of $\Delta t$ we can still solve with increasing $F_n(u)$ as long as time steps are short
 
-\subsection{Case III: Hyperbolic fluxes} \label{subsec:hyperbolic}  FIXME  We are certainly not interested in restricting to parabolic problems.  The simplest hyperbolic problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
-\begin{equation}
-  \bQ_n(\grad u,u,x) = \bX(x) u.
-\end{equation}
 
-We can check conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive}.  Take $u,v\in\mathcal{K}$ and compute
-\begin{align*}
-   &\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
-   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
-\end{align*}
-after integrating by parts, because $u=v=0$ on $\partial \Omega$.
 
-This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then
-\begin{equation}
-\Delta t\,\ip{\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)}{\grad u - \grad v} \le 0,
-\end{equation}
-so $A_n$ is strictly monotone.
-
-More generally, \eqref{eq:Qnmonotone} applies with 
-\begin{equation}
-C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
-\end{equation}
-so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume (area) preserving.
-
-There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
-
-\begin{example}  Let $v_0>0$ and $f_0>0$ be scales for the velocity and source term.  Consider an advecting-layer problem in one dimension, with constant velocity.  That is, if $q = v_0 u$ then the strong form problem for $u(t,x)$ is
+\begin{example}  FIXME move later; make into 1d example poss. with p-lap and advection; 2d example could be quite nontrivial; FIXME: Let $v_0>0$ and $f_0>0$ be scales for the velocity and source term.  Consider an advecting-layer problem in one dimension, with constant velocity.  That is, if $q = v_0 u$ then the strong form problem for $u(t,x)$ is
 \begin{equation}
 u_t + v_0 u_x = f(x) \quad \text{ subject to } \quad u\ge 0.  \label{eq:ex:advectlayer}
 \end{equation}
@@ -524,13 +525,17 @@ so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
 But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
 \end{example}
 
+\subsection{Nonlocal dependence through an integral kernel} \label{subsec:nonlocal} FIXME  
 
-\subsection{Case IV: Explicit time-steps} \label{subsec:explicit}  FIXME  Presumably go to $L^2(\Omega)$ as Banach space and use truncation result for the variational inequality, i.e.~from page 27 of \cite{KinderlehrerStampacchia}
+\subsection{Explicit time-steps} \label{subsec:explicit}  FIXME  Presumably go to $L^2(\Omega)$ as Banach space and use truncation result for the variational inequality, i.e.~from page 27 of \cite{KinderlehrerStampacchia}
 
 FIXME then add example where $\bq$ comes from integrating over $\Omega$ with a kernel
 
 
-\section{Time-series corrections when reporting on mass conservation}  \label{sec:timeseries}
+\section{The fully-discretized single time-step problem}  \label{sec:spacediscretized} FIXME
+
+
+\section{\emph{A posteriori} analysis of mass conservation on the free boundary}  \label{sec:timeseries}
 
 From now on our major assumption is that the weak problem for a single time-step, i.e.~\eqref{eq:theVI}, is well-posed.  In particular, there is a unique sequence of states $\{u_n\}$ for $n=0,\dots,N$ where $N\Delta t = T$.  We call the subinterval $[t_{n-1},t_n]$ the \emph{$n$th time-step}.  Define
 \begin{equation}
@@ -589,7 +594,7 @@ In stating this assertion, we note that the retreat loss $R_n$ should vanish in 
 
 \appendix
 
-\section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:discreteform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
+\section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:strongform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
 
 For the $m$-dimensional ODE system
 \begin{equation}
@@ -608,7 +613,7 @@ representing the formulas
   \by_{n,i} &= \by_{n-1} + h \sum_{j=1}^2 a_{ij} \bbf(t_{n-1} + \tau_j h, \by_{n,j}), \\
       \by_n &= \by_{n-1} + h \sum_{i=1}^2 b_i \bbf(t_{n-1} + \tau_i h, \by_{n,i}),
 \end{align*}
-with $i=1,2$ in the first equation.  \emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal) and, by definition, \emph{semi-implicit} methods have $a_{12}=0$.  We consider only explicit and semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:discreteform} have tableau
+with $i=1,2$ in the first equation.  \emph{Explicit} methods have $a_{ij}=0$ for $j\ge i$ (i.e.~zeros on and above the diagonal) and, by definition, \emph{semi-implicit} methods have $a_{12}=0$.  We consider only explicit and semi-implicit methods in this paper.  For example, the $\theta$-methods used in Section \ref{sec:strongform} have tableau
 \begin{equation*}
 \begin{array}{c|cc}
 0 &          &   \\
