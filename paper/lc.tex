@@ -477,11 +477,11 @@ so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$
 FIXME There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 
 
-\subsection{Transformation of the solution variable} \label{subsec:powertransform}  Now we consider the porous medium  \cite{Evans} flux
+\subsection{Transformation of the solution variable} \label{subsec:powertransform}  Now consider the doubly-nonlinear flux
 \begin{equation}
-  \bQ_n(\grad u,u,x) = - k \grad(u^\gamma) \label{eq:porousflux}
+  \bQ_n(\grad u,u) = - k u^r |\grad u|^{p-2} \grad u \label{eq:porousflux}
 \end{equation}
-where $k>0$ and $\gamma > 0$.  Leaving the relevant Sobolev space undetermined for a moment, let
+where $k>0$ and $\gamma > 0$.  \cite{AlonsoSantillanaDawson,BLKCB,CDDSV}  Leaving the relevant Sobolev space undetermined for a moment, let
 	$$w = (u_n)^\gamma$$
 and note that PDE \eqref{eq:semimassconserve} with flux \eqref{eq:porousflux} is formally equivalent to
     $$\frac{w^{1/\gamma} - u_{n-1}}{\Delta t} + \Div \left(- k \grad w\right) = F_n(w^{1/\gamma},x).$$
@@ -593,6 +593,26 @@ In stating this assertion, we note that the retreat loss $R_n$ should vanish in 
 
 
 \appendix
+
+\section{Inequalities for $p$-norms and monotonicity}   Though versions of the following inequalities appear in the literature, at least as early as \cite{GlowinskiMarroco1975}, the lemmas below apply in $\RR^d$---contrast \cite{BarrettLiu1993,GlowinskiMarroco1975} which are for $\RR^2$---and have complete proofs and explicit constants.  The proofs follow, and correct, those in \cite[Appendix A]{Peral1997}.
+
+\begin{lemma}  If $1<p<\infty$ and $x,y\in\RR^n$ then
+\begin{equation}
+\left(|x|^{p-2} x - |y|^{p-2} y\right)\cdot(x-y) \ge c_p \begin{cases} |x-y|^p, & p\ge 2, \\
+\frac{|x-y|^2}{\left(|x|+|y|\right)^{2-p}}, & 1 < p < 2,\end{cases} \label{eq:pinequality}
+\end{equation}
+where
+   $$c_p = \begin{cases} \frac{2^{3-p}}{p}, & p\ge 3, \\
+                         \frac{1}{p},      & 2 \le p < 3, \\
+                         p-1,              & 1 < p < 2. \end{cases}$$
+\end{lemma}
+
+\begin{proof}  \underline{Case $p \ge 2$:}  The case where $x=y=0$ is trivial, so assume, by swapping $x$ and $y$ if necessary, that $|y|\le |x| \ne 0$.  Define $t=|y|/|x|$ and $s = (x\cdot y)/(|x||y|)$ so that $0\le t \le 1$ and $|s|\le 1$.  The case $s=1$ is the case where $x=y$; in that case \eqref{eq:pinequality} is true.  Otherwise expand \eqref{eq:pinequality} and divide it by $|x|^p$, to get the equivalent statement
+    $$1 - (t^{p-1}+t) s + t^p \ge c_p \left(1 - 2 s t + t^2\right)^{p/2}.$$
+Thus we are trying to prove that $c_p$ is a lower bound for
+	$$f(t,s) = \frac{1 - (t^{p-1}+t) s + t^p}{\left(1 - 2 s t + t^2\right)^{p/2}}$$
+on $(t,s) \in [0,1]\times[-1,1)$.  But $\partial_s f = 0$ FIXME: I think I need to show $\partial_s f \ge 0$ so min is where $s=-1$.
+\end{proof}
 
 \section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:strongform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
 
