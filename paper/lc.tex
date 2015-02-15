@@ -598,39 +598,41 @@ In stating this assertion, we note that the retreat loss $R_n$ should vanish in 
 
 \begin{lemma}  If $1<p<\infty$ and $x,y\in\RR^n$ then
 \begin{equation}
-\left(|x|^{p-2} x - |y|^{p-2} y\right)\cdot(x-y) \ge c_p \begin{cases} |x-y|^p, & p\ge 2, \\
-\frac{|x-y|^2}{\left(|x|+|y|\right)^{2-p}}, & 1 < p < 2,\end{cases} \label{eq:pinequality}
+\left(|x|^{p-2} x - |y|^{p-2} y\right)\cdot(x-y) \ge
+   \begin{cases}
+       2^{2-p} |x-y|^p, & p\ge 2, \\
+       (p-1)\, |x-y|^2 \, \left(|x|+|y|\right)^{p-2}, & 1 < p \le 2.
+   \end{cases} \label{eq:pinequality}
 \end{equation}
-where
-   $$c_p = \begin{cases} \frac{1}{2^{p-2}}, & 2 \le p, \\
-                         p-1,               & 1 < p < 2. \end{cases}$$
 \end{lemma}
 
-\begin{proof}  \underline{Case $p \ge 2$:}  The case where $x=y=0$ is trivial, so assume, by swapping $x$ and $y$ if necessary, that $|y|\le |x| \ne 0$.  Define $t=|y|/|x|$ and $s = (x\cdot y)/(|x||y|)$ so that $0\le t \le 1$ and $|s|\le 1$.  The case $s=1$ is the case where $x=y$; in that case \eqref{eq:pinequality} is true.  Otherwise expand \eqref{eq:pinequality} and divide it by $|x|^p$, to get the equivalent statement
-    $$1 - (t^{p-1}+t) s + t^p \ge c_p \left(1 - 2 s t + t^2\right)^{p/2}.$$
-Thus we are trying to prove that $c_p$ is a lower bound for
-	$$f(t,s) = \frac{1 - (t^{p-1}+t) s + t^p}{\left(1 - 2 s t + t^2\right)^{p/2}}$$
-on $(t,s) \in R=[0,1]\times[-1,1)$; note $1-2st+t^2 > 0$ on $ R$, so $f(t,s)$ is well-defined and differentiable on $R$.
+\begin{proof}  \underline{Case $p \ge 2$:}  The case where $x=0$ or $y=0$ is trivial, so assume, by swapping $x$ and $y$ as necessary, that $0 < |y| \le |x|$.  Define $t=|y|/|x|$ and $s = (x\cdot y)/(|x||y|)$ so that $0\le t \le 1$ and $|s|\le 1$.  Expand \eqref{eq:pinequality} and divide it by $|x|^p$, to get the equivalent statement
+    $$1 - (t^{p-1}+t) s + t^p \ge 2^{2-p} \left(1 - 2 s t + t^2\right)^{p/2}.$$
+Thus we are trying to prove that $2^{2-p}$ is a lower bound for
+	$$f(t,s) = \frac{1 - (t^{p-1}+t) s + t^p}{\left(1 - 2 s t + t^2\right)^{p/2}}.$$
+Note $s=1$ if and only if $x=y$, and in that case \eqref{eq:pinequality} is true.  We find a lower bound of $f$ on $(t,s) \in R=[0,1]\times[-1,1)$.  Note $1-2st+t^2 > 0$ on $ R$, so $f(t,s)$ is well-defined and differentiable on $R$.
 
 Now, $f(t,-1) = \left(1 + t^{p-1}\right) / \left(1 + t\right)^{p-1}$ on $t\in[0,1]$.  Because $h(t)=t^{p-1}$ is convex for $p \ge 2$,
     $$\frac{1}{2^{p-1}} (1+t)^{p-1} = h(\tfrac{1}{2} 1 + \tfrac{1}{2} t) \le \tfrac{1}{2} h(1) + \tfrac{1}{2} h(t) = \tfrac{1}{2} (1 + t^{p-1}),$$
-and thus $f(t,-1) \ge 1 / 2^{p-2}$.  On the other hand, a quick calculation shows
-    $$\frac{\partial f}{\partial s} = \frac{t}{\left(1 - 2 s t + t^2\right)^{(p-2)/2}} g(t,s)$$
+and thus $f(t,-1) \ge 2^{2-p}$.  On the other hand, a quick calculation shows
+    $$\frac{\partial f}{\partial s} = \frac{t}{\left(1 - 2 s t + t^2\right)^{(p+2)/2}} g(t,s)$$
 where
     $$g(t,s) = s(2-p) t (t^{p-2} + 1) + (p-1) (t^p+1) - t^{p-2} - t^2$$
-is continuous on the closed rectangle $\bar R = [0,1]\times[-1,1]$.  We will show $g(t,s)\ge 0$ on $\bar R$, thus that $\partial f/\partial s \ge 0$ on $R$, and thus that $f(t,s)\ge f(t,-1) \ge  1 / 2^{p-2}$ on $R$.
+is continuous on the closed rectangle $\bar R = [0,1]\times[-1,1]$.  We will show $g(t,s)\ge 0$ on $\bar R$, thus that $\partial f/\partial s \ge 0$ on $R$, and thus that $f(t,s)\ge f(t,-1) \ge  2^{2-p}$ on $R$.
 
 Now,
     $$\frac{\partial g}{\partial s} = (2-p) t (t^{p-2} + 1) \le 0$$
-on $\bar R$.  Define $G(t) = g(t,1)$.  We will show $G(t)\ge 0$, thus that $g(t,s)\ge g(t,1)\ge 0$ on $\bar R$.  But
+on $\bar R$.  Define $G(t) = g(t,1)$.  We will show $G(t)\ge 0$ on $[0,1]$, thus that $g(t,s)\ge g(t,1)\ge 0$ on $\bar R$.  But
 \begin{align*}
 G(t) &\ge 0 &\iff && (2-p) t (t^{p-2} + 1) + (p-1) (t^p+1) - t^{p-2} - t^2 \ge 0 \\
           & &\iff && (p-1) (t-1) (t^{p-1}-1) \ge (t^{p-2} - t) (1 - t)  \\
           & &\iff && (p-1) (1 - t^{p-1}) \ge t^{p-2} - t.
 \end{align*}
-If $p\ge 3$ then $(p-1) (1 - t^{p-1}) \ge 0$ while $t^{p-2} - t \le 0$ so the last inequality is true.  On the other hand,  if $2\le p < 3$ then the last inequality is equivalent to
-	$$p-1 \ge t^{p-2} \frac{1 - t^{3-p}}{1 - t^{p-1}}$$
-FIXME
+Note $(p-1) (1 - t^{p-1}) \ge 0$.  If $p\ge 3$ then $t^{p-2} - t \le 0$ so $G(t)\ge 0$ in that case.  On the other hand, if $2\le p < 3$ then
+	$$\frac{t^{p-2} - t}{1 - t^{p-1}} = t^{p-2} \frac{1 - t^{3-p}}{1 - t^{p-1}} \le t^{p-2} \le 1 \le p-1$$
+on $t\in[0,1)$, because $t^{p-1}\le t^{3-p}$ and thus $1 - t^{p-1} \ge 1 - t^{3-p}$.  But also $G(1)=0$, so $G(t)\ge 0$ on $[0,1]$.
+
+\noindent \underline{Case $1 < p \le 2$:}  FIXME
 \end{proof}
 
 \section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:strongform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
