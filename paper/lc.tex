@@ -632,7 +632,30 @@ Note $(p-1) (1 - t^{p-1}) \ge 0$.  If $p\ge 3$ then $t^{p-2} - t \le 0$ so $G(t)
 	$$\frac{t^{p-2} - t}{1 - t^{p-1}} = t^{p-2} \frac{1 - t^{3-p}}{1 - t^{p-1}} \le t^{p-2} \le 1 \le p-1$$
 on $t\in[0,1)$, because $t^{p-1}\le t^{3-p}$ and thus $1 - t^{p-1} \ge 1 - t^{3-p}$.  But also $G(1)=0$, so $G(t)\ge 0$ on $[0,1]$.
 
-\noindent \underline{Case $1 < p \le 2$:}  FIXME
+\medskip
+\noindent \underline{Case $1 < p \le 2$:}  Assuming $x,y$ are not both zero, by symmetry (swapping $x$ and $y$) and homogeneity (replacing $x,y$ with $\lambda x,\lambda y$), we can assume $|x| = 1 \ge |y|$.  Furthermore, by choosing a basis of $\RR^n$ we can have $x=(1,0,\dots,0)$ and $y=(y_1,y_2,0,\dots,0)$ where $y_1^2+y_2^2 \le 1$.  In these terms, the inequality we seek to prove is
+\begin{align*}
+&\left(1 - (y_1^2+y_2^2)^{\frac{p-2}{2}} y_1\right) (1-y_1) + (y_1^2+y_2^2)^{\frac{p-2}{2}} y_2^2 \\
+&\qquad\qquad \ge (p-1)\, \left((1-y_1)^2+y_2^2\right) \left(1 + \sqrt{y_1^2+y_2^2} \right)^{p-2}.
+\end{align*}
+(Compare equation (A.4) in \cite{Peral1997}.)  But
+\begin{align*}
+1 - \frac{y_1}{\left( \sqrt{y_1^2+y_2^2} \right)^{2-p}}
+      &\ge \begin{cases} 1-y_1, & y_1 \le 0, \\
+                        1-\frac{y_1}{y_1^{2-p}}, & 0 \le y_1 \le 1 \end{cases}\Bigg\} \\
+      &\ge \begin{cases} 1-y_1, & y_1 \le 0, \\
+                        1-y_1^{p-1}, & 0 \le y_1 \le 1 \end{cases}\Bigg\}
+      \ge (p-1) (1-y_1).
+\end{align*}
+(The lower case in the last inequality is easy to prove by the mean-value-theorem applied to $\varphi(t)=t^{p-1}$, for which $\varphi'(1)=p-1$.)  Also noting $(y_1^2+y_2^2)^{\frac{p-2}{2}} \ge 1$ and $\left(1 + \sqrt{y_1^2+y_2^2} \right)^{2-p} \ge 1$, because $|y|\le 1$ and $p-2\le 0$, thus
+\begin{align*}
+&\frac{\left(1 - (y_1^2+y_2^2)^{\frac{p-2}{2}} y_1\right) (1-y_1) + (y_1^2+y_2^2)^{\frac{p-2}{2}} y_2^2}
+      {\left((1-y_1)^2+y_2^2\right) \left(1 + \sqrt{y_1^2+y_2^2} \right)^{p-2}} \\
+&\qquad \ge \frac{(p-1) (1-y_1)^2 + y_2^2}
+      {(1-y_1)^2+y_2^2} \,  \left(1 + \sqrt{y_1^2+y_2^2} \right)^{2-p} \\
+&\qquad \ge \frac{(p-1) (1-y_1)^2 + (p-1) y_2^2}{(1-y_1)^2+y_2^2} = p-1.
+\end{align*}
+This proves \eqref{eq:pinequality} in the case $1<p\le 2$.
 \end{proof}
 
 \section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:strongform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
