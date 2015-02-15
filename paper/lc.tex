@@ -525,11 +525,25 @@ so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
 But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
 \end{example}
 
-\subsection{Nonlocal dependence through an integral kernel} \label{subsec:nonlocal} FIXME  
+\subsection{Nonlocal dependence through an integral kernel} \label{subsec:nonlocal}
 
-\subsection{Explicit time-steps} \label{subsec:explicit}  FIXME  Presumably go to $L^2(\Omega)$ as Banach space and use truncation result for the variational inequality, i.e.~from page 27 of \cite{KinderlehrerStampacchia}
+%FIXME add example where $\bq$ comes from integrating over $\Omega$ with a kernel
 
-FIXME then add example where $\bq$ comes from integrating over $\Omega$ with a kernel
+\subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
+    $$\bQ_n=0 \quad \text{ and } \quad F_n = - \Div \bq(\grad u_{n-1},u_{n-1},x) + f(u_{n-1},x).$$
+The weak problem seeks $u\in\mathcal{K} \subset \mathcal{X}$ so that
+\begin{equation}
+\ip{A_n(u)}{\phi} = \int_\Omega (u - u_{n-1} - \Delta t\,F_n)\phi \ge 0 \quad \text{ for all } \phi \in \mathcal{K}.  \label{eq:explicitweakstep}
+\end{equation}
+But the previous state $u_{n-1}$ must be regular enough so that $F_n$ is well defined, that is, so that $\Div \bq(\grad u_{n-1},u_{n-1},x) \in \mathcal{X}'$ and thus $F_n\in\mathcal{X}'$.
+
+However, even if $F_n$ is in the dual space, the variational inequality is not elliptic.  If $\mathcal{X}=L^2(\Omega)$ then the single time step \eqref{eq:explicitweakstep} is a well-posed problem, namely a truncation problem with solution
+\begin{equation}
+u_n = \max\{0,u_{n-1} + \Delta t\,F_n\} \in L^2(\Omega)  \label{eq:explicittruncation}
+\end{equation}
+\cite[page 27]{KinderlehrerStampacchia}.  But this is not very helpful because $u_n \in L^2(\Omega)$ is not regular enough so that $\Div \bq(\grad u_{n-1},u_{n-1},x) \in \mathcal{X}' \in L^2(\Omega)$, even in the closest case where $\bq = \bX(x) u$ (i.e.~$\bq$ is zeroth-order in $u$).  In summary, for explicit steps the solution to a single weakly-posed time step is truncation \eqref{eq:explicittruncation}, but that solution cannot be expected to be regular enough to yield a well-posed problem at the next step.
+
+On the other hand, fully-explicit and \emph{fully-discretized} numerical schemes are in widespread use for solving first-order and even second-order PDE problems.  So we return to these explicit schemes after adding spatial discretization in the next section.
 
 
 \section{The fully-discretized single time-step problem}  \label{sec:spacediscretized} FIXME
