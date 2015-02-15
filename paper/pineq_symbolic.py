@@ -12,11 +12,13 @@ dfds = diff(f,s)
 
 y = dfds / (t * (1 - 2*s*t + t**2)**(-1-p/2))
 
-z = powsimp( collect(simplify(y), s) )
+g = powsimp( collect(simplify(y), s) )
 
-print z
+print g
+#print collect(z.coeff(s), t)
+#print collect(simplify(z - s*z.coeff(s)), t)
 
-print collect(z.coeff(s), t)
+G = g.subs(s,1)
 
-print collect(simplify(z - s*z.coeff(s)), t)
-
+print G
+print factor(simplify(G + t**(p-2) + t**2 - (p-1)*(t**p+1)))
