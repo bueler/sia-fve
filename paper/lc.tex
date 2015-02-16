@@ -319,7 +319,7 @@ It is easy to see that $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$
     $$A_n:\mathcal{K} \to \mathcal{X}'$$
 by
 \begin{equation}
-  \ip{A_n(v)}{\phi} = \int_\Omega v \phi - \Delta t\, \bQ_n(\grad v,v,x) \cdot \grad\phi - \left(u_{n-1} + \Delta t\, F_n(v,x) \right) \phi. \label{eq:defineAn}
+  \ip{A_n(v)}{\phi} = \int_\Omega \left(v - \Delta t\, F_n(v,x) - u_{n-1}\right)\phi - \Delta t\, \bQ_n(\grad v,v,x) \cdot \grad\phi. \label{eq:defineAn}
 \end{equation}
 We can write \eqref{eq:morallytheVI} as
 \begin{equation}
@@ -327,7 +327,7 @@ We can write \eqref{eq:morallytheVI} as
 \end{equation}
 \end{definition}
 
-So now the weak formulation of the single time-step problem is this:  Given $u_{n-1}\in\mathcal{K}$, solve \eqref{eq:theVI} for $u_n\in\mathcal{K}$.  Relative to the strong form, this statement both avoids using the solution to say on which subset of $\Omega$ a pointwise equality or inequality applies, and it requires much less regularity of the functions $u_{n-1}$ and $u_n$.  However, only in section \ref{sec:wellposed}, and only in particular cases for $\bQ_n$, will we show that it determines $u_n$ uniquely, i.e.~that it is a well-posed problem.
+So now the weak formulation of the single time-step problem is this:  Given $u_{n-1}\in\mathcal{K}$, solve \eqref{eq:theVI} for $u_n\in\mathcal{K}$.  Relative to the strong form, this statement both avoids using the solution to say on which subset of $\Omega$ a pointwise equality or inequality applies, and it requires much less regularity of the functions $u_{n-1}$ and $u_n$.  In section \ref{sec:wellposed}, for a variety of cases for $\bQ_n$, we will show that it determines $u_n$ uniquely, i.e.~that \eqref{eq:theVI} is a well-posed problem.
 
 \subsection{Interior condition}  \label{subsec:interior}  We can further justify the weak form by showing a converse of Theorem \ref{thm:strongimpliesweak}.  Unlike that theorem, in Theorem \ref{thm:weakimpliesstrong} below we need no regularity assumptions on set boundaries in decomposition \eqref{eq:omegadecomposition}.  This ``interior condition'' theorem says, in particular, that a continuous weak solution $u_n$ of \eqref{eq:theVI} solves the PDE \eqref{eq:semimassconserve} where it is positive, and otherwise it satisfies inequalities \eqref{eq:strongconditionswherezero}.
 
@@ -343,9 +343,9 @@ So now the weak formulation of the single time-step problem is this:  Given $u_{
 
 \medskip
 \begin{proof}  To prove (i) let $\phi\in C_c^\infty(S)$ be extended by zero to all of $\Omega$; note that $\phi$ can have either sign, but that $\phi=0$ on $\partial\Omega$.  Let $v = u_n + \eps \phi$ and note that $v \in \mathcal{K}$ as long as $\eps\in\RR$ is sufficiently small in magnitude.  Specifically, $\eps$ is sufficiently small if $|\eps|\le \eps_0$ where $\eps_0 = \min u_n(x) / \max |\phi(x)| > 0$, with the minimum and maximum taken over the compact set $\overline{\supp \phi}$.  It follows from variational inequality \eqref{eq:theVI} that
-   $$\eps \int_\Omega u_n \phi - \Delta t\,\bQ_n \cdot \grad \phi - (u_{n-1} + \Delta t\,F_n)\phi \ge 0.$$
+   $$\eps \int_\Omega \left(u_n - \Delta t\,F_n - u_{n-1}\right)\phi - \Delta t\,\bQ_n \cdot \grad \phi \ge 0.$$
 This is true for all $\eps$ of either sign which are sufficiently small (i.e.~for $-\eps_0 \le \eps \le \eps_0$), so the integral is zero.  Integration by parts, using assumption \eqref{eq:Qissmooth} and $\phi\big|_{\partial\Omega}=0$, gives
-   $$\int_\Omega \left[u_n + \Delta t\,\Div\bQ_n - u_{n-1} - \Delta t\,F_n \right]\phi = 0.$$
+   $$\int_\Omega \left[ u_n - \Delta t\,F_n - u_{n-1} + \Delta t\,\Div\bQ_n \right]\phi = 0.$$
 Because $\phi\in C_c^\infty(S)$ is arbitrary, the quantity in square brackets is zero a.e., thus equation \eqref{eq:semimassconserve} applies a.e.
 
 To prove (ii) and (iii) we start with \emph{nonnegative} $\phi\in C_c^\infty(S)$.  Again extending $\phi$ by zero to all of $\Omega$, let $v = u_n + \phi$, so $v\in\mathcal{K}$.  Because $S\subset \Omega_n^r\cup\Omega_n^0$, $u_n=0$ on the support of $\phi$.  By assumptions \eqref{eq:Qiscontinuous} and \eqref{eq:Qiszero}, $\bQ_n=0$ on the support of $\phi$ also.  Thus by \eqref{eq:theVI}, or equivalently \eqref{eq:morallytheVI},
@@ -549,7 +549,7 @@ FIXME example where $\bq$ comes from integrating over $\Omega$ with a kernel; wr
     $$\bQ_n=0 \quad \text{ and } \quad F_n = - \Div \bq(\grad u_{n-1},u_{n-1},x) + f(u_{n-1},x).$$
 The weak problem seeks $u\in\mathcal{K} \subset \mathcal{X}$ so that
 \begin{equation}
-\ip{A_n(u)}{\phi} = \int_\Omega (u - u_{n-1} - \Delta t\,F_n)\phi \ge 0 \quad \text{ for all } \phi \in \mathcal{K}.  \label{eq:explicitweakstep}
+\ip{A_n(u)}{\phi} = \int_\Omega (u - \Delta t\,F_n - u_{n-1})\phi \ge 0 \quad \text{ for all } \phi \in \mathcal{K}.  \label{eq:explicitweakstep}
 \end{equation}
 But the previous state $u_{n-1}$ must be regular enough so that $F_n$ is well defined, that is, so that $\Div \bq(\grad u_{n-1},u_{n-1},x) \in \mathcal{X}'$ and thus $F_n\in\mathcal{X}'$.
 
