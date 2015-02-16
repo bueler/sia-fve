@@ -358,7 +358,7 @@ From now on we will use set decomposition \eqref{eq:omegadecomposition} when ref
 
 \section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to determine which properties of the flux $\bQ_n$ can lead to a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  Except for the last subsection (\ref{subsec:explicit}), in this section we consider implicit time-stepping schemes so that the highest-order term is at least first order.
 
-Techniques for proving well-posedness of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems, namely those which correspond to monotonic variational inequalities \cite{KinderlehrerStampacchia}.  We recall these tools first in subsection \ref{subsec:mono}.  In \ref{subsec:plapadvect} we look at direct applications of these monotonicity techniques to $p$-Laplacian-type diffusion, and linear advection flux cases, and combinations thereof.  Then we show in \ref{subsec:powertransform} that certain other nonlinear parabolic flux cases, including porous medium \cite{Vazquez2007} and doubly-nonlinear cases \cite{AlonsoSantillanaDawson,BLKCB}, can be transformed to variational inequalities also subject to techniques from \ref{subsec:mono}.  Then in \ref{subsec:nonlocal} we significantly-extend the allowed flux dependence, beyond the original pointwise form \eqref{eq:fluxdepends}, to allow nonlocal dependence through an integral kernel; again we can apply the \ref{subsec:mono} techniques.  Finally, in \ref{subsec:explicit} we examine explicit time-semidiscretizations, and we see that regularity ``issues'' stop us from having the well-posed, \emph{continuous}-space single time-step problems.  (However, the fully-discretized schemes in section \ref{sec:spacediscretized} will allow re-consideration of explicit time steps.)
+Techniques for proving well-posedness of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems, namely those which correspond to monotonic variational inequalities \cite{KinderlehrerStampacchia}.  We recall these tools first in subsection \ref{subsec:mono}.  In \ref{subsec:plap} we look at a direct application of these monotonicity techniques to $p$-Laplacian-type diffusions.  Perhaps surprisingly, the same tools help with linear advection flux cases also, as we show in \ref{subsec:advect}.  Then we show in \ref{subsec:powertransform} that certain other nonlinear parabolic flux cases, including porous medium \cite{Vazquez2007} and doubly-nonlinear cases \cite{AlonsoSantillanaDawson,BLKCB}, can be transformed to variational inequalities also subject to techniques from \ref{subsec:mono}.  Then in \ref{subsec:nonlocal} we significantly-extend the allowed flux dependence, beyond the original pointwise form \eqref{eq:fluxdepends}, to allow nonlocal dependence through an integral kernel; again we can apply the \ref{subsec:mono} techniques.  Finally, in \ref{subsec:explicit} we examine explicit time-semidiscretizations, and we see that regularity ``issues'' stop us from having the well-posed, \emph{continuous}-space single time-step problems.  (However, the fully-discretized schemes in section \ref{sec:spacediscretized} will allow re-consideration of explicit time steps.)
 
 
 \subsection{Monotonicity and sufficient conditions for well-posedness} \label{subsec:mono}  We start by defining terms.  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
@@ -429,33 +429,32 @@ a \emph{bounded}, closed, convex subset of $\mathcal{X}$.  The solution $u_R\in 
 exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIwithR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-\subsection{$p$-Laplacian and advective fluxes} \label{subsec:plapadvect}  We can immediately apply these tools to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ points in the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
+\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply these tools to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ points in the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
 \begin{equation}
   \bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
 \end{equation}
-with $p\ge 2$.  [FIXME: cases $1<p<2$ can also be handled, at least in part]  This includes the ordinary Laplacian (or Fourier) flux, and thus the linear heat equation, as the $p=2$ case.  In this case we use Lemma 2.1 from \cite{BarrettLiu1993}, which says there is $M>0$ such that
-\begin{equation}
-    (|\xi|^{p-2}\xi - |\eta|^{p-2}\eta)\cdot (\xi - \eta) \ge M \left(|\xi|+|\eta|\right)^{p-2} |\xi-\eta|^2  \label{eq:barrettliu}
-\end{equation}
-for all $\xi,\eta\in\RR^d$.  Assume $\partial \Omega$ is $C^1$.  On $W_0^{1,p}(\Omega)$ we have a Poincare-type inequality, namely that there is a constant $C = C(\Omega,p)>0$ so that
+with $p\ge 2$.  [FIXME: cases $1<p<2$ can also be handled, at least in part]  This includes the ordinary Laplacian (or Fourier) flux, and thus the linear heat equation, as the $p=2$ case.
+
+For the proof we need a pointwise inequality which is related to the above definition of coercivity, namely inequality \eqref{eq:pinequality} from Lemma \ref{lem:pinequality} in the Appendix.  Assuming also that $\partial \Omega$ is $C^1$, on $W_0^{1,p}(\Omega)$ we have a Poincare-type inequality, namely that there is a constant $C = C(\Omega,p)>0$ so that
 \begin{equation}
   \|\phi\|^p \le C(\Omega,p) \int_\Omega |\grad \phi|^p  \label{eq:poincareequivalence}
 \end{equation}
-for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.  Thus if $p\ge 2$ then by \eqref{eq:barrettliu} for $\xi = \grad u$ and $\eta = \grad v$ and \eqref{eq:poincareequivalence} and
+for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.
+
+Thus if $p\ge 2$ then
 \begin{align*}
 \int_\Omega \left(\bQ_n(\grad u) - \bQ_n(\grad v)\right)\cdot (\grad u - \grad v) &= -k  \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad v\right)\cdot (\grad u - \grad v) \\
-  &\le - k M  \int_\Omega \left(|\grad u| + |\grad v|\right)^{p-2} |\grad u - \grad v|^2 \\
-  &\stackrel{\ast}{\le} - k M  \int_\Omega |\grad u - \grad v|^p \\
-  &\le - \frac{k M}{C(\Omega,p)} \|u-v\|^p
+  &\le - \frac{k}{2^{p-2}} \int_\Omega |\grad u - \grad v|^p \\
+  &\le - \frac{k}{2^{p-2}\,C(\Omega,p)} \|u-v\|^p
 \end{align*}
-and thus \eqref{eq:Qncoercive} with $\eps = kM/C(\Omega,p)$ and $r=p$.  Step $\ast$ holds from the triangle inequality, and the fact that $s\mapsto s^{p-2}$ is nondecreasing, so that $-(|a| + |b|)^{p-2} \le - |a-b|^{p-2}$ for $a,b\in\RR^d$.  Thus problem \eqref{eq:theVI} is well-posed for any $\Delta t$ if the flux is of $p$-Laplacian form for $p\ge 2$.
+and thus \eqref{eq:Qncoercive} with $r=p$ and a formula for $\eps$ that depends on $p$ and $\Omega$ (in particular).  Thus problem \eqref{eq:theVI} is well-posed for any $\Delta t$ if the flux is of $p$-Laplacian form \eqref{eq:plapflux} for $p\ge 2$.
 
-FIXME  We are certainly interested in non-parabolic problems too.  The simplest hyperbolic problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
+\subsection{Advective fluxes} \label{subsec:advect}  We are certainly interested in hyperbolic problems too.  The simplest such problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
 \begin{equation}
-  \bQ_n(u,x) = \bX(x) u.
+  \bQ_n(u,x) = \bX(x) u. \label{eq:advectflux}
 \end{equation}
 
-We can check conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive}.  Take $u,v\in\mathcal{K}$ and compute
+Consider conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive} applied to \eqref{eq:advectflux}.  Take $u,v\in\mathcal{K}$ and compute
 \begin{align*}
    &\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
    &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
@@ -466,16 +465,21 @@ This result can be exploited in a couple of ways.  If the vector field is diverg
 \begin{equation}
 \Delta t\, \int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad (u - v) \le 0,
 \end{equation}
-so $A_n$ is strictly monotone.
-
-More generally, \eqref{eq:Qnmonotone} applies with 
+so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with 
 \begin{equation}
 C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
 \end{equation}
-so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume (area) preserving.
+so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.
+
+FIXME Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume (area) preserving.
 
 FIXME There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 
+FIXME However, if we add just a little bit of diffusion,
+\begin{equation}
+  \bQ_n(\grad u,u,x) = -\eps |\grad u|^p \grad u + \bX(x) u \label{eq:plapadvectflux}
+\end{equation}
+then the single time-step weak problem is well-posed for $\bX$ giving $C<1$ in \eqref{eq:cfllayer} and sufficiently small $\Delta t$.  (FIXME write a theorem to that effect)
 
 \subsection{Doubly-nonlinear fluxes} \label{subsec:powertransform}  Now consider the doubly-nonlinear \cite{Raviart1970} flux
 \begin{equation}
@@ -534,7 +538,8 @@ FIXME: deficiency is no bedrock
 
 \subsection{Nonlocal dependence through an integral kernel} \label{subsec:nonlocal}
 
-FIXME example where $\bq$ comes from integrating over $\Omega$ with a kernel
+FIXME example where $\bq$ comes from integrating over $\Omega$ with a kernel; write as $\bQ_n[u](x)$ to emphasize non-pointwise dependence on $u$
+
 
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
     $$\bQ_n=0 \quad \text{ and } \quad F_n = - \Div \bq(\grad u_{n-1},u_{n-1},x) + f(u_{n-1},x).$$
@@ -617,7 +622,7 @@ In stating this assertion, we note that the retreat loss $R_n$ should vanish in 
 
 \section{Inequalities for $p$-norms and monotonicity}   Though versions of the following inequalities appear in the literature, at least as early as \cite{GlowinskiMarroco1975}, the lemmas below apply in $\RR^d$---contrast \cite{BarrettLiu1993,GlowinskiMarroco1975} which are for $\RR^2$---and have complete proofs and explicit constants.  The proofs follow, and correct, those in \cite[Appendix A]{Peral1997}.
 
-\begin{lemma}  If $1<p<\infty$ and $x,y\in\RR^n$ then
+\begin{lemma}  \label{lem:pinequality}  If $1<p<\infty$ and $x,y\in\RR^n$ then
 \begin{equation}
 \left(|x|^{p-2} x - |y|^{p-2} y\right)\cdot(x-y) \ge
    \begin{cases}
