@@ -433,7 +433,7 @@ exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to 
 \begin{equation}
   \bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
 \end{equation}
-with $p\ge 2$.  This includes the ordinary Laplacian (or Fourier) flux, and thus the linear heat equation, as the $p=2$ case.  In this case we use Lemma 2.1 from \cite{BarrettLiu1993}, which says there is $M>0$ such that
+with $p\ge 2$.  [FIXME: cases $1<p<2$ can also be handled, at least in part]  This includes the ordinary Laplacian (or Fourier) flux, and thus the linear heat equation, as the $p=2$ case.  In this case we use Lemma 2.1 from \cite{BarrettLiu1993}, which says there is $M>0$ such that
 \begin{equation}
     (|\xi|^{p-2}\xi - |\eta|^{p-2}\eta)\cdot (\xi - \eta) \ge M \left(|\xi|+|\eta|\right)^{p-2} |\xi-\eta|^2  \label{eq:barrettliu}
 \end{equation}
@@ -477,57 +477,64 @@ so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$
 FIXME There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
 
 
-\subsection{Transformation of the solution variable} \label{subsec:powertransform}  Now consider the doubly-nonlinear flux
+\subsection{Doubly-nonlinear fluxes} \label{subsec:powertransform}  Now consider the doubly-nonlinear \cite{Raviart1970} flux
 \begin{equation}
-  \bQ_n(\grad u,u) = - k u^r |\grad u|^{p-2} \grad u \label{eq:porousflux}
+  \bQ_n(\grad u,u) = - k u^r |\grad u|^{p-2} \grad u \label{eq:doubleflux}
 \end{equation}
-where $k>0$ and $\gamma > 0$.  \cite{AlonsoSantillanaDawson,BLKCB,CDDSV}  Leaving the relevant Sobolev space undetermined for a moment, let
-	$$w = (u_n)^\gamma$$
-and note that PDE \eqref{eq:semimassconserve} with flux \eqref{eq:porousflux} is formally equivalent to
-    $$\frac{w^{1/\gamma} - u_{n-1}}{\Delta t} + \Div \left(- k \grad w\right) = F_n(w^{1/\gamma},x).$$
-We want to solve this on the set where $u_n>0$, that is, where $w>0$.  This is a semilinear (i.e.~linear in the highest order term) PDE which can be rewritten
+where $k>0$, $r\ge 0$, and $1<p<\infty$.  Of course this includes, as the $r=0$ case, the $p$-Laplacian \eqref{eq:plapflux}.  However, at the opposite extreme it arises in the porous medium equation \cite{Vazquez2007}, where $p=2$ and $r=\gamma-1$ so that the flux is frequently written $- \tilde k \grad(u^\gamma)$.  However, both powers are nontrivial for the diffusive shallow water equations \cite{AlonsoSantillanaDawson}, where $1<r<2$ and $1<p\le 2$, and for the shallow ice approximation \cite{CDDSV,JouvetBueler2012}, where $r=n+2$ and $p=n+1$ for an experimentally-determined exponent $1 < n \lesssim 4$ \cite{GoldsbyKohlstedt2001}.  Thus
+
+Leaving the correct Sobolev space undetermined for a moment, we apply a power transformation
 \begin{equation}
-    - k \lap w + G(w,x) = \frac{u_{n-1}(x)}{\Delta t} \label{eq:transformedporouseqn}
+	u = w^m \qquad \text{ where } \quad m = \frac{p-1}{r+p-1} > 0. \label{eq:doubletransform}
+\end{equation}
+Straightforward calculation turns \eqref{eq:doubleflux} into
+\begin{equation}
+	\bQ_n(\grad w) = - K |\grad w|^{p-2} \grad w, \label{eq:doublenewflux}
+\end{equation}
+with $K=k m^{p-1}>0$, giving the $p$-Laplacian flux \eqref{eq:plapflux}.
+
+In fact, PDE \eqref{eq:semimassconserve} with flux \eqref{eq:doubleflux} is formally equivalent to
+\begin{equation}
+    \frac{w^m - u_{n-1}}{\Delta t} + \Div \bQ_n(\grad w) = F_n(w^m,x).  \label{eq:doublestrong}
+\end{equation}
+This is a semilinear (i.e.~linear in the highest order term) PDE which can be rewritten
+\begin{equation}
+    - k \lap w + G(w,x) = \frac{u_{n-1}(x)}{\Delta t} \label{eq:doublesemilinear}
 \end{equation}
 where
 \begin{equation}
-    G(w,x) = \frac{w^{1/\gamma}}{\Delta t} - F_n(w^{1/\gamma},x). \label{eq:transformedporousG}
+   G(w,x) = w^m - \Delta t\, F_n(w^m,x) + u_{n-1}. \label{eq:doubleGdefn}
 \end{equation}
-The corresponding variational inequality is well-posed in a closed, convex subset of admissible functions in the Hilbert space $W_0^{1,2}(\Omega)$.
 
-\medskip
-\begin{theorem}  \label{thm:porouswellposed}  Let $\mathcal{K}_2 = \{v \in W_0^{1,2}(\Omega)\big| v(x) \ge 0\}$.  [FIXME: assumptions on $F_n$ and $u_{n-1}$ so integrals make sense]  Assume $G$ is bounded and measureable on compact subsets of $\RR\times \bar\Omega$, and assume that it is continuous and nondecreasing in its first argument.  Then the solution $w\in \mathcal{K}_2$ of
+Noting $u\ge 0$ if and only if $w\ge 0$ in transformation \eqref{eq:doubletransform}, define $\mathcal{X} = W_0^{1,p}(\Omega)$, and the admissible functions $\mathcal{K}\subset \mathcal{X}$, just as before in section \ref{sec:weakform}.  Define $A_n: \mathcal{K} \to \mathcal{X}'$ by
 \begin{equation}
-  \int_\Omega k\, \grad w \cdot \grad (v-w) + G(w,x) (v-w)  \ge  \frac{1}{\Delta t} \int_\Omega u_{n-1} (v-w), \label{eq:porousVIforw}
+\ip{A_n(w)}{\phi} = \int_\Omega \Delta t\, K |\grad w|^{p-2} \grad w\cdot \grad \phi + G(w,x)\phi. \label{eq:doubleform}
 \end{equation}
-for all $v\in\mathcal{K}_2$, exists and is unique.
+The weak formulation of \eqref{eq:doublestrong} is \eqref{eq:theVI} with $A_n$ defined in \eqref{eq:doubleform}.  The following theorem is, essentially, the argument in subsection III.3 of \cite{KinderlehrerStampacchia}.
+
+\begin{theorem}
+Assume $p\ge 2$.  Assume that if $w\in\mathcal{K}$ then $G(w,x)\in \mathcal{X}'$, and that $G$ is nondecreasing in $w$.  Then $A_n$ in \eqref{eq:doubleform} is strictly monotone and coercive.  Thus \eqref{eq:theVI} is well-posed.
 \end{theorem}
 
 \begin{proof}
-FIXME use results from subsection III.3 of \cite{KinderlehrerStampacchia}, based on fact that
+If $w,v\in\mathcal{X}$ then by \eqref{eq:pinequality} and Poincare inequality \eqref{eq:poincareequivalence},
+\begin{align*}
+\ip{A_n(w)-A_n(v)}{w-v} &= \int_\Omega \Delta t\, K \left(|\grad w|^{p-2} \grad w - |\grad v|^{p-2} \grad v\right) \cdot \grad (w-v) \\
+  &\qquad\qquad + \left(G(w,x) - G(v,x)\right) (w-v) \\
+  &\ge \frac{\Delta t\,K}{2^{p-2}} \int_\Omega |\grad (w-v)|^p + 0 \ge \frac{\Delta t\,K}{2^{p-2}\, C(\Omega,p)} \|w-v\|^p.
+\end{align*}
 \end{proof}
+
+FIXME: how about $1<p<2$?
 
 FIXME: of course assumptions on $G$ are assumptions on $F_n$.  if $F_n=F_n(x)$ we are done. because of $\Delta t$ we can still solve with increasing $F_n(u)$ as long as time steps are short
 
+FIXME: deficiency is no bedrock
 
-
-\begin{example}  FIXME move later; make into 1d example poss. with p-lap and advection; 2d example could be quite nontrivial; FIXME: Let $v_0>0$ and $f_0>0$ be scales for the velocity and source term.  Consider an advecting-layer problem in one dimension, with constant velocity.  That is, if $q = v_0 u$ then the strong form problem for $u(t,x)$ is
-\begin{equation}
-u_t + v_0 u_x = f(x) \quad \text{ subject to } \quad u\ge 0.  \label{eq:ex:advectlayer}
-\end{equation}
-Specifically, suppose $x\in[0,L]$ and periodic boundary conditions $u(t,0)=u(t,L)$ and $u_x(t,0)=u_x(t,L)$.  For the source term, consider this particular source that is negative on average:
-    $$f(x) = f_0 \left(\sin\left(\frac{2\pi x}{L}\right) - \frac{1}{5}\right).$$
-
-If $\tilde u(t,x)$ solves the same problem without the constraint, and if $\tilde M(t) = \int_0^L \tilde u(t,x)\,dx$ is the continuous-time mass for the unconstrained problem then
-    $$\dot{\tilde M}(t) = \int_0^L f(x)\,dx = -\frac{f_0 L}{5} < 0$$
-so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
-
-But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
-\end{example}
 
 \subsection{Nonlocal dependence through an integral kernel} \label{subsec:nonlocal}
 
-%FIXME add example where $\bq$ comes from integrating over $\Omega$ with a kernel
+FIXME example where $\bq$ comes from integrating over $\Omega$ with a kernel
 
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
     $$\bQ_n=0 \quad \text{ and } \quad F_n = - \Div \bq(\grad u_{n-1},u_{n-1},x) + f(u_{n-1},x).$$
@@ -565,7 +572,7 @@ Heuristically, numerical models assert exact discrete conservation when $M_n$ an
 	$$M_n = M_{n-1} + C_n$$
 is true for $n=1,\dots,N$, at least to within rounding error.
 
-\subsection{The retreat loss}  \label{subsec:retreatloss}  Define
+\subsection{The discrete-time ``retreat loss''}  \label{subsec:retreatloss}  Define
 \begin{equation}
 R_n = \int_{\Omega_n^r} u_{n-1}\,dx, \label{eq:retreatlossseries}
 \end{equation}
@@ -749,5 +756,23 @@ and
    $$F_n(v,x) = (1-\alpha) f(\tilde u,x,t_{n;\alpha}) + \alpha f(v,x,t_n) - (1-\alpha) \Div \bq(\grad\tilde u,\tilde u,x,t_{n;\alpha})$$
 where $\tilde u$ denotes the weak solution to the first stage.
 \end{itemize}
+
+\section{Extra stuff}
+
+FIXME make into 1d example poss. with p-lap and advection; 2d example could be quite nontrivial
+
+\begin{example}  Let $v_0>0$ and $f_0>0$ be scales for the velocity and source term.  Consider an advecting-layer problem in one dimension, with constant velocity.  That is, if $q = v_0 u$ then the strong form problem for $u(t,x)$ is
+\begin{equation}
+u_t + v_0 u_x = f(x) \quad \text{ subject to } \quad u\ge 0.  \label{eq:ex:advectlayer}
+\end{equation}
+Specifically, suppose $x\in[0,L]$ and periodic boundary conditions $u(t,0)=u(t,L)$ and $u_x(t,0)=u_x(t,L)$.  For the source term, consider this particular source that is negative on average:
+    $$f(x) = f_0 \left(\sin\left(\frac{2\pi x}{L}\right) - \frac{1}{5}\right).$$
+
+If $\tilde u(t,x)$ solves the same problem without the constraint, and if $\tilde M(t) = \int_0^L \tilde u(t,x)\,dx$ is the continuous-time mass for the unconstrained problem then
+    $$\dot{\tilde M}(t) = \int_0^L f(x)\,dx = -\frac{f_0 L}{5} < 0$$
+so $\tilde M(t)$ goes to $-\infty$ as a linear function in $t$.
+
+But the constrained solution $u(t,x)$ and the total mass $M(t) = \int_0^L u(t,x)\,dx$ approach finite limits which are independent of the initial state $u(0,x)$.  FIXME: prove this?
+\end{example}
 
 \end{document}
