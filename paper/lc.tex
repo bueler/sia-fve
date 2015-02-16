@@ -380,7 +380,10 @@ has a unique solution if $A$ is strictly monotone, coercive, and continuous on f
 Note that strict monotonicity by itself implies uniqueness.  Indeed, if $u_i \in \mathcal{K}$ ($i=0,1$) each solve variational inequality \eqref{eq:VIabstract}, then $\ip{A(u_i)}{u_{1-i}-u_i} \ge 0$ for $i=0,1$.  If $A$ is monotone then, by addition, $\ip{A(u_0) - A(u_1)}{u_0 - u_1} = 0$.  If $A$ is strictly monotonic then $u_0=u_1$.
 
 Returning to our particular variational inequality \eqref{eq:theVI}, with mapping $A_n$ defined by \eqref{eq:defineAn}, we now state a key lemma that relates properties of the flux $\bQ_n$ to the monotonicity/coerciveness properties of $A_n$.  It is proven via an easy calculation that applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$.  Namely
-   $$\ip{A_n(u) - A_n(v)}{u-v} = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).$$
+\begin{align}
+   &\ip{A_n(u) - A_n(v)}{u-v}  \label{eq:AtoQcalculation} \\
+   &\qquad = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).  \notag
+\end{align}
 The lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans}.
 
 \begin{lemma}  \label{lem:monotonecoercive}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$.  Suppose that $F_n=F_n(x) \in L^q(\Omega)$.  Then
@@ -391,14 +394,14 @@ The lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>
 \end{equation}
 for all $u,v \in \mathcal{K}$.  Conversely, if $A_n$ is monotone then \eqref{eq:Qnmonotone} holds with $C=1$.
 
-(ii)  $A_n$ is coercive if there is $\eps>0$ and $r>1$ so that
+(ii)  $A_n$ is coercive if there is $c>0$ and $r>1$ so that
 \begin{equation}
-\int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le -\eps \|u-v\|^r \label{eq:Qncoercive}
+\int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le - c \|u-v\|^r \label{eq:Qncoercive}
 \end{equation}
 for all $u,v \in \mathcal{K}$.
 \end{lemma}
 
-Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$, independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$-\eps \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
+Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$, independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$- c \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
 
 In considering lemma \ref{lem:monotonecoercive}, note that in cases where $\bQ_n(\grad u,u,x)$ is proportional to $\grad u$ we expect, for physical reasons, that the flux $\bQ_n$ points in the direction of the negative of $\grad u$.  By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then PDE \eqref{eq:massconserve} would be the ill-posed backward heat equation.
 
@@ -442,11 +445,11 @@ For the proof we need a pointwise inequality which is related to the above defin
 for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.
 
 Thus if $p\ge 2$ then
-\begin{align*}
-\int_\Omega \left(\bQ_n(\grad u) - \bQ_n(\grad v)\right)\cdot (\grad u - \grad v) &= -k  \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad v\right)\cdot (\grad u - \grad v) \\
-  &\le - \frac{k}{2^{p-2}} \int_\Omega |\grad u - \grad v|^p \\
-  &\le - \frac{k}{2^{p-2}\,C(\Omega,p)} \|u-v\|^p
-\end{align*}
+\begin{align}
+\int_\Omega \left(\bQ_n(\grad u) - \bQ_n(\grad v)\right)\cdot (\grad u - \grad v) &= -k  \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad v\right)\cdot (\grad u - \grad v) \notag \\
+  &\le - \frac{k}{2^{p-2}} \int_\Omega |\grad u - \grad v|^p \notag \\
+  &\le - \frac{k}{2^{p-2}\,C(\Omega,p)} \|u-v\|^p \label{eq:plapQnmono}
+\end{align}
 and thus \eqref{eq:Qncoercive} with $r=p$ and a formula for $\eps$ that depends on $p$ and $\Omega$ (in particular).  Thus problem \eqref{eq:theVI} is well-posed for any $\Delta t$ if the flux is of $p$-Laplacian form \eqref{eq:plapflux} for $p\ge 2$.
 
 \subsection{Advective fluxes} \label{subsec:advect}  We are certainly interested in hyperbolic problems too.  The simplest such problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
@@ -455,31 +458,32 @@ and thus \eqref{eq:Qncoercive} with $r=p$ and a formula for $\eps$ that depends 
 \end{equation}
 
 Consider conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive} applied to \eqref{eq:advectflux}.  Take $u,v\in\mathcal{K}$ and compute
-\begin{align*}
-   &\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) = \int_\Omega \bX (u-v) \cdot \grad (u - v) \\
-   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2,
-\end{align*}
+\begin{align}
+   &\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) = \int_\Omega \bX (u-v) \cdot \grad (u - v)   \label{eq:advectQnmono} \\
+   &\qquad\qquad = \frac{1}{2}\,\int_\Omega \bX \cdot \grad (u - v)^2 = - \frac{1}{2}\,\int_\Omega \left(\Div\bX\right) (u - v)^2, \notag
+\end{align}
 after integrating by parts, because $u=v=0$ on $\partial \Omega$.
 
-This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then
-\begin{equation}
-\Delta t\, \int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad (u - v) \le 0,
-\end{equation}
-so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with 
-\begin{equation}
-C = \frac{\Delta t}{2}\,\|\Div\bX\|_{L^\infty}, \label{eq:cfllayer}
-\end{equation}
-so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.
+This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then clearly \eqref{eq:Qnmonotone} applies with $C=0$, and so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with $C = \frac{1}{2}\Delta t\,\|\Div\bX\|_{L^\infty}$, so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Note that any bound on this $C$ can be regarded as a CFL-type condition \cite{LeVeque}, though here the bound is not on the velocity magnitude but rather on a measure of the size of that part of the velocity field that is not ($\RR^d$-)volume-preserving.
 
-FIXME Any bound on $C$ in \eqref{eq:cfllayer} is a CFL-type condition, though not on the velocity magnitude but rather on the part of the velocity field that is not volume (area) preserving.
+However, there is no good reason to suppose that the operator $A_n$ corresponding to \eqref{eq:advectflux}, as defined as an operator from the convex subset $\mathcal{K} \subset \mathcal{X} = W_0^{1,p}(\Omega)$, to the dual $\mathcal{X}'$, is coercive.  FIXME On the other hand, we can not do integration-by-parts in  \eqref{eq:defineAn} to put the problem into a subset of the Hilbert space $L^2(\Omega)$?
 
-FIXME There is no good reason to suppose that $A_n$, as defined as an operator from a convex subset of $W^{1,p}(\Omega)$ to its dual, is coercive, however.  FIXME: perhaps we can do int-by-parts on \eqref{eq:defineAn} and redefine $A_n$ on $L^2$ and get coercivity etc.; maybe this should go in later section
-
-FIXME However, if we add just a little bit of diffusion,
+If we add just a little bit of diffusion, here in the form of a $p$-Laplacian leading-order term with coefficient $\eps>0$,
 \begin{equation}
-  \bQ_n(\grad u,u,x) = -\eps |\grad u|^p \grad u + \bX(x) u \label{eq:plapadvectflux}
+  \bQ_n(\grad u,u,x) = -\eps |\grad u|^p \grad u + \bX(x) u,   \label{eq:plapadvectflux}
 \end{equation}
-then the single time-step weak problem is well-posed for $\bX$ giving $C<1$ in \eqref{eq:cfllayer} and sufficiently small $\Delta t$.  (FIXME write a theorem to that effect)
+then the corresponding operator $A_n$ on $W_0^{1,p}(\Omega)$ is coercive.  In fact, combining calculations \eqref{eq:plapQnmono} and \eqref{eq:advectQnmono} gives
+\begin{equation}
+\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) \le - c \|u-v\|^p + C \|u-v\|_{L^2}^2
+\end{equation}
+where $c=\eps\, 2^{2-p}/C(\Omega,p)>0$ and $C = \frac{1}{2}\|\Div\bX\|_{L^\infty}$.  But then by \eqref{eq:AtoQcalculation} we have
+\begin{equation}
+\ip{A_n(u) - A_n(v)}{u-v} \ge c \Delta t\, \|u-v\|^p + (1-\Delta t\,C) \|u-v\|_{L^2}^2.
+\end{equation}
+This proves the following theorem for the variational inequality problem in $W_0^{1,p}(\Omega)$:
+
+\begin{theorem}  \label{thm:plabadvectwellposed}  If $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$ and $\bX \in W^{1,\infty}(\Omega;\RR^d)$ then \eqref{eq:theVI} is well-posed for any $\Delta t \le 4 / \|\Div \bX\|_{L^\infty}$.
+\end{theorem}
 
 \subsection{Doubly-nonlinear fluxes} \label{subsec:powertransform}  Now consider the doubly-nonlinear \cite{Raviart1970} flux
 \begin{equation}
