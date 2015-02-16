@@ -12,6 +12,7 @@
 % math macros
 \newcommand\bb{\mathbf{b}}
 \newcommand\bbf{\mathbf{f}}
+\newcommand\bG{\mathbf{G}}
 \newcommand\bn{\mathbf{n}}
 \newcommand\bq{\mathbf{q}}
 \newcommand\bu{\mathbf{u}}
@@ -540,9 +541,48 @@ FIXME: of course assumptions on $G$ are assumptions on $F_n$.  if $F_n=F_n(x)$ w
 FIXME: deficiency is no bedrock
 
 
-\subsection{Nonlocal dependence through an integral kernel} \label{subsec:nonlocal}
+\subsection{Non-local dependence through an integral kernel} \label{subsec:nonlocal}   This part of the paper (i.e.~section \ref{sec:wellposed}) demonstrates that a wide variety of flux forms yield a well-posed single time-step problems \eqref{eq:theVI}.  The examples so far are all cases where $\bQ_n$ is a vector field with its value at $x\in\Omega$ determined by the values $u(x)$ and $\grad u(x)$.  Because in fact the flux in realistic models is often computed by coupling to another equation, for instance an energy or momentum conservation equation additional to the mass-conservation equation \eqref{eq:massconserve}, we now look at fluxes that are \emph{non}-local functions of the thickness $u$ and its derivative(s).  For clarity we restrict to the linear case.
 
-FIXME example where $\bq$ comes from integrating over $\Omega$ with a kernel; write as $\bQ_n[u](x)$ to emphasize non-pointwise dependence on $u$
+Let $\mathcal{X} = W_0^{1,2}(\Omega)$, a Hilbert space, and $\mathcal{K}=\{u\in\mathcal{X}|u\ge 0\}$ as before.  Suppose $G_1(x,y), \dots, G_d(x,y)$ and $K(x,y)$ are functions (integral kernels) in $L^2(\Omega\times \Omega)$, and define
+\begin{equation}
+\bq[u](x,t) = \int_\Omega \bG(x,y) u(y,t)\,dy - \int_\Omega K(x,y) \grad u(y)\,dy, \label{eq:nonlocaldefnq}
+\end{equation}
+where $\bG(x,y) = (G_1(x,y), \dots, G_d(x,y))$ is a vector kernel.  (Note we change notation slightly, replacing \eqref{eq:fluxdepends} with ``$\bq[u]$'' to emphasize the more general dependence.)  Suppose $K$ is positive definite in the sense that there is $C>0$ so that if $\phi \in L^2(\Omega)$ then
+\begin{equation}
+   \int_\Omega \int_\Omega K(x,y) \phi(x) \phi(y)\,dx\,dy \ge C \|\phi\|_{L^2(\Omega)}^2.  \label{eq:nonlocalKpos}
+\end{equation}
+
+Again discretizing in time by backward-Euler, let $\bQ_n[u](x)=\bq[u_n](x,t_n)$.  The time-discretization procedure replaces
+	$$u_t + \Div \bq[u] = f \quad \to \quad \frac{u_n - u_{n-1}}{\Delta t} + \Div \bQ_n[u_n] = F_n,$$
+and the latter is a linear, time-independent integro-differential equation over $\Omega$.  We want to solve it subject to the constraint $u_n\ge 0$.
+
+Suppose $F_n=F_n(x)$ is independent of $u$ and $F_n\in L^2(\Omega)$.  Let $A_n:\mathcal{K} \to \mathcal{X}'=\mathcal{X}$ be defined by \eqref{eq:defineAn}, but with $\bQ_n[u]$ as the flux so that
+\begin{align*}
+    \ip{A_n(v)}{\phi} &= \int_\Omega \bigg[(v - \Delta t\,F_n + u_{n-1})\phi - \Delta t\,\left(\int_\Omega \bG(x,y) v(y)\,dy\right)\cdot \grad \phi \\
+                      &\qquad\qquad + \Delta t\,\left(\int_\Omega K(x,y) \grad v(y)\,dy\right)\cdot \grad \phi\,\bigg]\,dx.
+\end{align*}
+Under our assumptions we will be able to show $A_n$ is coercive, and we will be able to show it is strictly monotone if $\Delta t$ is bounded in terms of the norm of the kernel $\bG$.
+
+We do two preliminary calculations.  First, if $\phi\in\mathcal{X}$ then
+\begin{equation*}
+  \int_\Omega \int_\Omega K(x,y) \grad \phi(x) \grad \phi(y)\,dx\,dy \ge C \|\grad\phi\|_{L^2(\Omega)\times \RR^d}^2
+\end{equation*}
+by $d$ applications of bound \eqref{eq:nonlocalKpos}.  Second, by Cauchy-Schwarz,
+\begin{align*}
+\left|\int_\Omega \int_\Omega \bG(x,y) \cdot \grad \phi(x)\,\phi(y) \,dx\,dy\right| &\le \sum_{i=1}^d \left|\int_\Omega \int_\Omega G_i(x,y) \cdot \frac{\partial \phi}{\partial x_i} (x)\,\phi(y) \,dx\,dy\right| \\
+  &\le \sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)} \left(\int_\Omega \int_\Omega \left|\frac{\partial \phi}{\partial x_i} (x)\,\phi(y)\right|^2 \,dx\,dy\right)^{1/2} \\
+  &= \sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)} \left\|\frac{\partial \phi}{\partial x_i}\right\|_{L^2(\Omega)} \left\|\phi\right\|_{L^2(\Omega)} \\
+  &\le \left(\sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)}^2\right)^{1/2} \|\grad \phi\|_{L^2(\Omega)\times \RR^d} \left\|\phi\right\|_{L^2(\Omega)} \\
+  &\le FIXME
+\end{align*}
+Then, if $u,v\in\mathcal{K}$ we have a coercivity bound, FIXME
+\begin{align*}
+    \ip{A_n(u)-A_n(v)}{u-v} &\ge \|u-v\|_{L^2(\Omega)}^2 - \Delta t\,\left(\int_\Omega \bG(x,y) v(y)\,dy\right)\cdot \grad \phi \\
+                      &\qquad\qquad + \Delta t\,\left(\int_\Omega K(x,y) \grad v(y)\,dy\right)\cdot \grad \phi\,\bigg]\,dx. FIXME
+\end{align*}
+
+
+
 
 
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
