@@ -360,12 +360,20 @@ It follows as before that $u_{n-1} + \Delta t\, F_n \le 0$ a.e.~on $S$.  In the 
 From now on we will use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.
 
 
-\section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to determine which properties of the flux $\bQ_n$ can lead to a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  Except for the last subsection (\ref{subsec:explicit}), in this section we consider implicit time-stepping schemes so that the highest-order term is at least first order.
+\section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to demonstrate that a variety of different fluxes $\bQ_n$ allow a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  The reader who already believes in well-posed mass conservation equation models with free boundaries can proceed to section \ref{sec:spacediscretized} where fully-discrete numerical schemes are described, so that the \emph{a posterior} analysis of free boundary conservation errors in section \ref{sec:timeseries} can be understood.
 
-Techniques for proving well-posedness of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems, namely those which correspond to monotonic variational inequalities \cite{KinderlehrerStampacchia}.  We recall these tools first in subsection \ref{subsec:mono}.  In \ref{subsec:plap} we look at a direct application of these monotonicity techniques to $p$-Laplacian-type diffusions.  Perhaps surprisingly, the same tools help with linear advection flux cases also, as we show in \ref{subsec:advect}.  Then we show in \ref{subsec:powertransform} that certain other nonlinear parabolic flux cases, including porous medium \cite{Vazquez2007} and doubly-nonlinear cases \cite{AlonsoSantillanaDawson,BLKCB}, can be transformed to variational inequalities also subject to techniques from \ref{subsec:mono}.  Then in \ref{subsec:nonlocal} we significantly-extend the allowed flux dependence, beyond the original pointwise form \eqref{eq:fluxdepends}, to allow nonlocal dependence through an integral kernel; again we can apply the \ref{subsec:mono} techniques.  Finally, in \ref{subsec:explicit} we examine explicit time-semidiscretizations, and we see that regularity ``issues'' stop us from having the well-posed, \emph{continuous}-space single time-step problems.  (However, the fully-discretized schemes in section \ref{sec:spacediscretized} will allow re-consideration of explicit time steps.)
+Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems.  We recall these tools, which correspond to monotonic variational inequalities \cite{KinderlehrerStampacchia}, in subsection \ref{subsec:mono}.  Then in the next four subsections we prove existence and uniqueness for these flux cases:
+\begin{itemize}
+\item[\ref{subsec:plap}] $p$-Laplacian-type parabolic (diffusion) fluxes for $1<p<\infty$;
+\item[\ref{subsec:advect}] linear advection fluxes with differentiable velocity fields, with the addition of small parabolic leading-order terms;
+\item[\ref{subsec:powertransform}] doubly-nonlinear parabolic fluxes including the porous medium case; and
+\item[\ref{subsec:nonlocal}] linear non-local fluxes computed by integrals over $\Omega$.
+\end{itemize}
 
+\smallskip
+Except for subsection \ref{subsec:explicit}, we only consider fully-implicit (i.e.~backward Euler) time-stepping schemes.  In \ref{subsec:explicit} we see how regularity issues stop us from having the well-posed, \emph{continuous}-space single time-step free boundary problems if time-stepping is explicit or semi-explicit.  The fully-discretized schemes in section \ref{sec:spacediscretized} will allow re-consideration of explicitness.
 
-\subsection{Monotonicity and sufficient conditions for well-posedness} \label{subsec:mono}  We start by defining terms.  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
+\subsection{Monotonicity and sufficient conditions on flux for well-posedness} \label{subsec:mono}  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
 \begin{equation}
    \ip{A(u) - A(v)}{u-v} \ge 0  \label{eq:monodef}
 \end{equation}
@@ -373,30 +381,30 @@ for all $u,v\in\mathcal{K}$.  A monotone mapping $A$ is \emph{strictly monotone}
 \begin{equation}
    \lim_{\|u\|\to\infty} \frac{\ip{A(u) - A(\phi)}{u-\phi}}{\|u-\phi\|} = +\infty, \label{eq:coercivedef}
 \end{equation}
-where the limit is taken over $u\in\mathcal{K}$.  Intuitively, $A$ is coercive if the function $h(u)=\ip{A(u) - A(\phi)}{u-\phi}$ is ``confining'' as $\|u\|\to\infty$, in the sense that it is bigger than the norm $\|u-\phi\|$.
+where the limit is taken over $u\in\mathcal{K}$.  Intuitively, $A$ is coercive if the function $h(u)=\ip{A(u) - A(\phi)}{u-\phi}$ is ``confining'' at $\infty$, in the sense that it is bigger than the norm $\|u-\phi\|$.
 
 The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} says that the variational inequality
 \begin{equation}
-    \ip{A(u)}{v-u} \ge 0 \quad \text{for all $v\in\mathcal{K}$} \label{eq:VIabstract}
+    \ip{A(u)}{v-u} \ge 0 \quad \text{for all $v\in\mathcal{K}$}, \label{eq:VIabstract}
 \end{equation}
-has a unique solution if $A$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.
+i.e.~the problem \eqref{eq:theVI}, has a unique solution if $A$ is strictly monotone, coercive, and continuous on finite-dimensional subspaces.
 
-Note that strict monotonicity by itself implies uniqueness.  Indeed, if $u_i \in \mathcal{K}$ ($i=0,1$) each solve variational inequality \eqref{eq:VIabstract}, then $\ip{A(u_i)}{u_{1-i}-u_i} \ge 0$ for $i=0,1$.  If $A$ is monotone then, by addition, $\ip{A(u_0) - A(u_1)}{u_0 - u_1} = 0$.  If $A$ is strictly monotonic then $u_0=u_1$.
+Strict monotonicity by itself implies uniqueness.  Indeed, if $u_i \in \mathcal{K}$ ($i=0,1$) each solve variational inequality \eqref{eq:VIabstract}, then both $\ip{A(u_0)}{u_1-u_0} \ge 0$ and $\ip{A(u_1)}{u_0-u_1} \ge 0$.  If $A$ is monotone then, by addition, $\ip{A(u_0) - A(u_1)}{u_0 - u_1} = 0$.  If $A$ is strictly monotone then $u_0=u_1$.
 
-Returning to our particular variational inequality \eqref{eq:theVI}, with mapping $A_n$ defined by \eqref{eq:defineAn}, we now state a key lemma that relates properties of the flux $\bQ_n$ to the monotonicity/coerciveness properties of $A_n$.  It is proven via an easy calculation that applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$.  Namely
+For \eqref{eq:theVI} with $A_n$ defined by \eqref{eq:defineAn}, we want to relate the properties of the flux $\bQ_n$ to monotonicity and coerciveness properties of $A_n$.  An easy calculation applies in the case that $F_n=F_n(x)$, i.e.~when the source function $F_n(v,x)$ is independent of the thickness $v$:
 \begin{align}
    &\ip{A_n(u) - A_n(v)}{u-v}  \label{eq:AtoQcalculation} \\
    &\qquad = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).  \notag
 \end{align}
-The lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans}.
+The following lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans}.
 
 \begin{lemma}  \label{lem:monotonecoercive}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$.  Suppose that $F_n=F_n(x) \in L^q(\Omega)$.  Then
 
 (i)  $A_n$ is (strictly) monotone if there is ($C<1$) $C\le 1$ so that
 \begin{equation}
-\Delta t\, \int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le C \|u-v\|_{L^2}^2 \label{eq:Qnmonotone}
+\int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le \frac{C}{\Delta t} \|u-v\|_{L^2}^2 \label{eq:Qnmonotone}
 \end{equation}
-for all $u,v \in \mathcal{K}$.  Conversely, if $A_n$ is monotone then \eqref{eq:Qnmonotone} holds with $C=1$.
+for all $u,v \in \mathcal{K}$.
 
 (ii)  $A_n$ is coercive and strictly-monotone if there is $c>0$ and $r>1$ so that
 \begin{equation}
@@ -405,42 +413,35 @@ for all $u,v \in \mathcal{K}$.  Conversely, if $A_n$ is monotone then \eqref{eq:
 for all $u,v \in \mathcal{K}$.
 \end{lemma}
 
-Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$ independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$- c \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
+Note that the right side of \eqref{eq:Qncoercive} is non-positive, and that it uses the norm in $W^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$, independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while \eqref{eq:Qncoercive} is merely sufficient for coercivity.  (For example, if the right side of \eqref{eq:Qncoercive} were ``$- c \|u-v\| \log \|u-v\|$'' then $A_n$ would be coercive.)
 
 In considering lemma \ref{lem:monotonecoercive}, note that in cases where $\bQ_n(\grad u,u,x)$ is proportional to $\grad u$ we expect, for physical reasons, that the flux $\bQ_n$ points in the direction of the negative of $\grad u$.  By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then PDE \eqref{eq:massconserve} would be the ill-posed backward heat equation.
 
-Returning to well-posedness, we need some degree of continuity.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $M\subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap M \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia}.  To prove the following lemma, choose $\{v_i\}_{i=1}^m \subset \mathcal{K}$ and let $M=\operatorname{span}\left<v_i\right>$, as a subspace of $\mathcal{X}$.  Fix $\phi\in\mathcal{X}$.  The map $g:\RR^m \to \RR$ defined by
+We need a bit of continuity to prove existence.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $\mathcal{M} \subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap \mathcal{M} \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia}.
+
+\medskip
+\begin{lemma}  \label{lem:continuous}  Assume \eqref{eq:Qiscontinuous} for $\bQ_n$ and \eqref{eq:Fislip} for $F_n$.  The map $A_n$ defined by \eqref{eq:defineAn} is continuous on finite-dimensional subspaces.
+\end{lemma}
+
+\begin{proof} Choose $\{v_i\}_{i=1}^m \subset \mathcal{K}$ and let $\mathcal{M}=\operatorname{span}\left<v_i\right>$, as a subspace of $\mathcal{X}$.  Fix $\phi\in\mathcal{X}$.  The map $g:\RR^m \to \RR$ defined by
 \begin{equation}
   g(c_1,\dots,c_m) = \ip{A_n\left(\sum_{i=1}^m c_i v_i\right)}{\phi}
 \end{equation}
-is continuous because of the linearity of the integral, and by \eqref{eq:Qiscontinuous} and \eqref{eq:Fislip}.
+is continuous because of the linearity of the integral, \eqref{eq:Qiscontinuous}, and \eqref{eq:Fislip}.
+\end{proof}
 
 \medskip
-\begin{lemma}  \label{lem:continuous}  Assume \eqref{eq:Qiscontinuous} for $\bQ_n$ and \eqref{eq:Fislip} for $F_n$.  The map $A_n : \mathcal{K}\cap M \to \mathcal{X}'$ is continuous on finite-dimensional subspaces
-\end{lemma}
+Corollary III.1.8 of \cite{KinderlehrerStampacchia} now gives the following well-posedness theorem.
 
 \medskip
-Corollary III.1.8 (for part (i)) and Theorem III.1.7 (for part (ii)) of \cite{KinderlehrerStampacchia} now gives the following two-part well-posedness theorem.
-
-\medskip
-\begin{theorem}  \label{thm:monowellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.
-
-(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$ then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
-
-(ii) Suppose \eqref{eq:Qnmonotone} holds with $C<1$ for $\bQ_n$.  For $R>0$ define
-    $$\mathcal{K}_R = \mathcal{K} \cap \left\{v\in \mathcal{X} \,\Big|\, \|v\|\le R\right\},$$
-a \emph{bounded}, closed, convex subset of $\mathcal{X}$.  The solution $u_R\in \mathcal{K}_R$ of
-\begin{equation}
-  \ip{A_n(u_R)}{v-u_R} \ge 0 \quad \text{for all $v \in \mathcal{K}_R$} \label{eq:theVIwithR}
-\end{equation}
-exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIwithR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+\begin{theorem}  \label{thm:monowellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.  If \eqref{eq:Qncoercive} holds for $\bQ_n$ then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply these tools to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ has the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
+\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply lemma \ref{lem:monotonecoercive} and theorem \ref{thm:monowellposed} to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ has the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
 \begin{equation}
   \bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
 \end{equation}
-with $1<p<\infty$.  Formula \eqref{eq:plapflux} includes the ordinary Laplacian-Fourier flux, and thus the linear heat equation, as the $p=2$ case.  For the proofs in this subsection we will assume $F_n=F_n(x)$ is independent of $u$, and we will need inequalities from Appendix \ref{app:pinequalities}.
+with $1<p<\infty$.  Formula \eqref{eq:plapflux} includes the ordinary Fourier flux as the $p=2$ case.  For the proofs in this subsection we will assume $F_n=F_n(x)$ is independent of $u$, and we will need inequalities from Appendix \ref{app:pinequalities}.
 
 If $p\ge 2$ then by \eqref{eq:pinequality} and \eqref{eq:poincare}
 \begin{align}
@@ -448,9 +449,9 @@ If $p\ge 2$ then by \eqref{eq:pinequality} and \eqref{eq:poincare}
   &\le - \frac{k}{2^{p-2}} \int_\Omega |\grad u - \grad v|^p \notag \\
   &\le - \frac{k}{2^{p-2}\,C(\Omega,p)} \|u-v\|^p \label{eq:plapQnmono}
 \end{align}
-and thus \eqref{eq:Qncoercive} with $r=p$.  Thus the corresponding nonlinear operator $A_n$ from \eqref{eq:defineAn} is coercive and strictly-monotone, and so problem \eqref{eq:theVI} is well-posed.
+and thus \eqref{eq:Qncoercive} with $r=p$ and the given formula for $c$.  Thus the corresponding nonlinear operator $A_n$ from \eqref{eq:defineAn} is coercive and strictly-monotone, and problem \eqref{eq:theVI} is well-posed.
 
-If $1<p<2$ then we have to work harder, and we cannot use condition \eqref{eq:Qncoercive} directly.  In fact, we return to the nonlinear operator $A_n$.  Using \eqref{eq:pinequality}, \eqref{eq:smallpbound}, and \eqref{eq:poincare} gives
+If $1<p<2$ then we have to work harder, and we cannot use condition \eqref{eq:Qncoercive} directly.  Returning to the nonlinear operator $A_n$ and using \eqref{eq:pinequality}, \eqref{eq:smallpbound}, and \eqref{eq:poincare} gives
 \begin{align*}
   &\ip{A_n(u) - A_n(v)}{u-v} \\
   &\qquad = \|u-v\|_{L^2(\Omega)}^2 + \Delta t\,k \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad v\right)\cdot (\grad u - \grad v) \\
@@ -458,9 +459,9 @@ If $1<p<2$ then we have to work harder, and we cannot use condition \eqref{eq:Qn
   &\qquad \ge \|u-v\|_{L^2(\Omega)}^2 + \Delta t\,k (p-1) \frac{\|\grad u - \grad v\|_{L^p(\Omega; \RR^d)}^2}{\big\||\grad u|+|\grad v|\big\|_{L^p(\Omega)}^{2-p}} \\
   &\qquad \ge \|u-v\|_{L^2(\Omega)}^2 + B\, \frac{\|u - v\|^2}{\big\||\grad u|+|\grad v|\big\|_{L^p(\Omega)}^{2-p}}
 \end{align*}
-where $B = \Delta t\,k (p-1) C(\Omega,p)^{-2/p} >0$.  On the one hand, this shows $\ip{A_n(u) - A_n(v)}{u-v} \ge \|u-v\|_{L^2(\Omega)}^2$, so that $A_n$ is strictly-monotone.  On the other hand, choosing $v$ so that $\|\grad v\|_{L^p(\Omega;\RR^d)} = 1$ for concreteness, we have
+where $B = \Delta t\,k (p-1) C(\Omega,p)^{-2/p} >0$.  This shows $\ip{A_n(u) - A_n(v)}{u-v} \ge \|u-v\|_{L^2(\Omega)}^2$, so that $A_n$ is strictly-monotone.  On the other hand, fixing any $v$ with $\|\grad v\|_{L^p(\Omega;\RR^d)} >0$, we have
 \begin{equation*}
-\frac{\ip{A_n(u) - A_n(v)}{u-v}}{\|u-v\|} \ge B\, \frac{\|u - v\|}{\big\||\grad u|+1\big\|_{L^p(\Omega)}^{2-p}} \to \infty
+\frac{\ip{A_n(u) - A_n(v)}{u-v}}{\|u-v\|} \ge B\, \frac{\|u - v\|}{\big\||\grad u|+|\grad v|\big\|_{L^p(\Omega)}^{2-p}} \to \infty
 \end{equation*}
 as $\|u\|\to\infty$ because $0<2-p<1$.  Therefore the limit \eqref{eq:coercivedef} applies, and so, again, $A_n$  is coercive and strictly-monotone.
 
@@ -499,14 +500,18 @@ where $c=\eps\, 2^{2-p}/C(\Omega,p)>0$ and $C = \frac{1}{2}\|\Div\bX\|_{L^\infty
 This proves the following theorem for the variational inequality problem in $W_0^{1,p}(\Omega)$:
 
 \medskip
-\begin{theorem}  \label{thm:plapadvectwellposed}  If $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$ and $\bX \in W^{1,\infty}(\Omega;\RR^d)$, and if $p\ge 2$, then for any $\Delta t \le 4 / \|\Div \bX\|_{L^\infty(\Omega)}$, \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+\begin{theorem}  \label{thm:plapadvectwellposed}  Suppose $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$, $\bX \in W^{1,\infty}(\Omega;\RR^d)$, and $p\ge 2$.  If either $\Div \bX=0$ or
+\begin{equation}
+  \Delta t \le \frac{4}{\|\Div \bX\|_{L^\infty(\Omega)}}, \label{eq:plapadvectdtcond}
+\end{equation}
+then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
 \subsection{Doubly-nonlinear fluxes} \label{subsec:powertransform}  Now consider the doubly-nonlinear \cite{Raviart1970} flux
 \begin{equation}
   \bQ_n(\grad u,u) = - k u^r |\grad u|^{p-2} \grad u \label{eq:doubleflux}
 \end{equation}
-where $k>0$, $r\ge 0$, and $1<p<\infty$.  Of course this includes, as the $r=0$ case, the $p$-Laplacian \eqref{eq:plapflux}.  However, at the opposite extreme it arises in the porous medium equation \cite{Vazquez2007}, where $p=2$ and $r=\gamma-1$ so that the flux is frequently written $- \tilde k \grad(u^\gamma)$.  However, both powers are nontrivial for the diffusive shallow water equations \cite{AlonsoSantillanaDawson}, where $1<r<2$ and $1<p\le 2$, and for the shallow ice approximation \cite{CDDSV,JouvetBueler2012}, where $r=n+2$ and $p=n+1$ for an experimentally-determined exponent $1 < n \lesssim 4$ \cite{GoldsbyKohlstedt2001}.  Thus
+where $k>0$, $r\ge 0$, and $1<p<\infty$.  Of course this includes, as the $r=0$ case, the $p$-Laplacian \eqref{eq:plapflux}.  However, at the opposite extreme it arises in the porous medium equation \cite{Vazquez2007}, where $p=2$ and $r=\gamma-1$ so that the flux is frequently written $- \tilde k \grad(u^\gamma)$.  However, both powers are nontrivial for the diffusive shallow water equations \cite{AlonsoSantillanaDawson}, where $1<r<2$ and $1<p\le 2$, and for the shallow ice approximation \cite{BLKCB,CDDSV,JouvetBueler2012}, where $r=n+2$ and $p=n+1$ for an experimentally-determined exponent $1 < n \lesssim 4$ \cite{GoldsbyKohlstedt2001}.  Thus
 
 Leaving the correct Sobolev space undetermined for a moment, we apply a power transformation
 \begin{equation}
@@ -557,45 +562,56 @@ FIXME: of course assumptions on $G$ are assumptions on $F_n$.  if $F_n=F_n(x)$ w
 FIXME: major deficiency is no bedrock
 
 
-\subsection{Non-local dependence through an integral kernel} \label{subsec:nonlocal}   This part of the paper (i.e.~section \ref{sec:wellposed}) demonstrates that a wide variety of flux forms yield a well-posed single time-step problems \eqref{eq:theVI}.  The examples so far are all cases where $\bQ_n$ is a vector field with its value at $x\in\Omega$ determined by the values $u(x)$ and $\grad u(x)$.  Because in fact the flux in realistic models is often computed by coupling to another equation, for instance an energy or momentum conservation equation additional to the mass-conservation equation \eqref{eq:massconserve}, we now look at fluxes that are \emph{non}-local functions of the thickness $u$ and its derivative(s).  For clarity we restrict to the linear case.
+\subsection{Non-local dependence through an integral kernel} \label{subsec:nonlocal}   The examples so far in section \ref{sec:wellposed} are cases where the value of the flux $\bQ_n$ at $x\in\Omega$ is computed using only the values $u(x)$ and $\grad u(x)$.  The flux in realistic models is, however, often computed by solving another differential equation, for instance an energy or momentum conservation equation which is coupled to the mass-conservation equation \eqref{eq:massconserve}.  Thus we now look at fluxes that are non-local functions of the thickness $u$ and its spatial derivatives.  For simplicity we restrict to the linear case.
 
-Let $\mathcal{X} = W_0^{1,2}(\Omega)$, a Hilbert space, and $\mathcal{K}=\{u\in\mathcal{X}|u\ge 0\}$ as before.  Suppose $G_1(x,y), \dots, G_d(x,y)$ and $K(x,y)$ are functions (integral kernels) in $L^2(\Omega\times \Omega)$, and define
+Let $\mathcal{X} = W_0^{1,2}(\Omega)$, a Hilbert space, and let $\mathcal{K}=\{u\in\mathcal{X}|u\ge 0\}$ as before.  Suppose $G_1(x,y), \dots, G_d(x,y)$ and $K(x,y)$ are scalar, real-valued functions in $L^2(\Omega\times \Omega)$; these will be our integral kernels.  Define
 \begin{equation}
-\bq[u](x,t) = \int_\Omega \bG(x,y) u(y,t)\,dy - \int_\Omega K(x,y) \grad u(y)\,dy, \label{eq:nonlocaldefnq}
+\bQ_n[u](x,t) = \int_\Omega \bG(x,y) u(y,t)\,dy - \int_\Omega K(x,y) \grad u(y)\,dy, \label{eq:nonlocaldefQn}
 \end{equation}
-where $\bG(x,y) = (G_1(x,y), \dots, G_d(x,y))$ is a vector kernel.  (Note we change notation slightly, replacing \eqref{eq:fluxdepends} with ``$\bq[u]$'' to emphasize the more general dependence.)  Suppose $K$ is positive definite in the sense that there is $C>0$ so that if $\phi \in L^2(\Omega)$ then
+where $\bG(x,y) = (G_1(x,y), \dots, G_d(x,y))$ is an $\RR^d$-valued function.  Note we use notation ``$\bQ_n[u]$'' to emphasize general, not just point-wise, dependence on $u$.
+
+With flux \eqref{eq:nonlocaldefQn}, equation \eqref{eq:semimassconserve} is no longer a PDE, but rather a (linear) time-independent integro-differential equation.  That is, \eqref{eq:semimassconserve} is not a PDE in \emph{two} senses, first that it includes an integral operator and second that it is subject to the constraint $u_n\ge 0$.  We consider its weak form \eqref{eq:theVI}.
+
+Let $A_n:\mathcal{K} \to \mathcal{X}'=\mathcal{X}$ be defined by \eqref{eq:defineAn}, but with $\bQ_n[u]$ from \eqref{eq:nonlocaldefQn} as the flux, so that
+\begin{align}
+    \ip{A_n(v)}{\phi} &= \int_\Omega \bigg[(v - \Delta t\,F_n + u_{n-1})\phi - \Delta t\,\left(\int_\Omega \bG(x,y) v(y)\,dy\right)\cdot \grad \phi \label{eq:nonlocaldefnAn} \\
+                      &\qquad\qquad + \Delta t\,\left(\int_\Omega K(x,y) \grad v(y)\,dy\right)\cdot \grad \phi\,\bigg]\,dx. \notag
+\end{align}
+We need to assume $K$ is positive and bounded below \cite{PorterStirling1990} in the sense that there is $\delta>0$ so that if $\phi \in L^2(\Omega)$ then
 \begin{equation}
-   \int_\Omega \int_\Omega K(x,y) \phi(x) \phi(y)\,dx\,dy \ge C \|\phi\|_{L^2(\Omega)}^2.  \label{eq:nonlocalKpos}
+   \int_\Omega \int_\Omega K(x,y) \phi(x) \phi(y)\,dx\,dy \ge \delta \|\phi\|_{L^2(\Omega)}^2.  \label{eq:nonlocalKpos}
 \end{equation}
-
-Again discretizing in time by backward-Euler, let $\bQ_n[u](x)=\bq[u_n](x,t_n)$.  The time-discretization procedure replaces
-	$$u_t + \Div \bq[u] = f \quad \to \quad \frac{u_n - u_{n-1}}{\Delta t} + \Div \bQ_n[u_n] = F_n,$$
-and the latter is a linear, time-independent integro-differential equation over $\Omega$.  We want to solve it subject to the constraint $u_n\ge 0$.
-
-Suppose $F_n=F_n(x)$ is independent of $u$ and $F_n\in L^2(\Omega)$.  Let $A_n:\mathcal{K} \to \mathcal{X}'=\mathcal{X}$ be defined by \eqref{eq:defineAn}, but with $\bQ_n[u]$ as the flux so that
-\begin{align*}
-    \ip{A_n(v)}{\phi} &= \int_\Omega \bigg[(v - \Delta t\,F_n + u_{n-1})\phi - \Delta t\,\left(\int_\Omega \bG(x,y) v(y)\,dy\right)\cdot \grad \phi \\
-                      &\qquad\qquad + \Delta t\,\left(\int_\Omega K(x,y) \grad v(y)\,dy\right)\cdot \grad \phi\,\bigg]\,dx.
-\end{align*}
-Under our assumptions we will be able to show $A_n$ is coercive, and we will be able to show it is strictly monotone if $\Delta t$ is bounded in terms of the norm of the kernel $\bG$.
+In particular this requires $K\ne 0$, but $K$ may have negative point values, and we require no symmetry.  Assumption \eqref{eq:nonlocalKpos} will allow us to show $A_n$ is coercive.  We can also show $A_n$ is strictly monotone if $\Delta t$ is not too large, with a bound in terms of a norm of the kernel $\bG$.
 
 We do two preliminary calculations.  First, if $\phi\in\mathcal{X}$ then
-\begin{equation*}
-  \int_\Omega \int_\Omega K(x,y) \grad \phi(x) \grad \phi(y)\,dx\,dy \ge C \|\grad\phi\|_{L^2(\Omega)\times \RR^d}^2
-\end{equation*}
-by $d$ applications of bound \eqref{eq:nonlocalKpos}.  Second, by Cauchy-Schwarz,
+\begin{equation}
+  \int_\Omega \int_\Omega K(x,y) \grad \phi(x) \cdot \grad \phi(y)\,dx\,dy \ge \delta \|\grad\phi\|_{L^2(\Omega;\RR^d)}^2,  \label{eq:nonlocalKposRd}
+\end{equation}
+by $d$ applications of \eqref{eq:nonlocalKpos}.  Second, by two applications of Cauchy-Schwarz we get
+\begin{equation}
+\left|\int_\Omega \int_\Omega \bG(x,y) \cdot \grad \phi(x)\,\phi(y) \,dx\,dy\right|
+  \le \|\bG\|_{L^2(\Omega\times\Omega;\RR^d)} \|\phi\|^2,   \label{eq:nonlocalGbound}
+\end{equation}
+where, by definition, $\|\bG\|_{L^2(\Omega\times\Omega;\RR^d)} = \left(\sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)}^2\right)^{1/2}$.  We get the following theorem:
+
+\begin{theorem}  \label{thm:nonlocalwellposed}  Suppose $F_n=F_n(x) \in L^2(\Omega)$ is independent of $u$, $G_i \in L^2(\Omega\times\Omega)$ for $i=1,\dots,d$, and $K \in L^2(\Omega\times\Omega)$ satisfies \eqref{eq:nonlocalKpos} with constant $\delta >0$.  If either $\bG=0$ or
+\begin{equation}
+  \Delta t < \frac{\delta}{C(\Omega,p)\, \|\bG\|_{L^2(\Omega\times\Omega;\RR^d)}},  \label{eq:nonlocaldtcond}
+\end{equation}
+where $C(\Omega,p)$ is the Poincar\'e constant in \eqref{eq:poincare}, then $A_n$ defined by \eqref{eq:nonlocaldefnAn} is coercive and strictly monotone, so variational inequality \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+\end{theorem}
+
+\begin{proof}  Let $\phi=u-v$ for $u,v\in\mathcal{K}$.  By \eqref{eq:nonlocalKposRd}, \eqref{eq:nonlocalGbound}, and \eqref{eq:poincare},
 \begin{align*}
-\left|\int_\Omega \int_\Omega \bG(x,y) \cdot \grad \phi(x)\,\phi(y) \,dx\,dy\right| &\le \sum_{i=1}^d \left|\int_\Omega \int_\Omega G_i(x,y) \cdot \frac{\partial \phi}{\partial x_i} (x)\,\phi(y) \,dx\,dy\right| \\
-  &\le \sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)} \left(\int_\Omega \int_\Omega \left|\frac{\partial \phi}{\partial x_i} (x)\,\phi(y)\right|^2 \,dx\,dy\right)^{1/2} \\
-  &= \sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)} \left\|\frac{\partial \phi}{\partial x_i}\right\|_{L^2(\Omega)} \left\|\phi\right\|_{L^2(\Omega)} \\
-  &\le \left(\sum_{i=1}^d \left\|G_i\right\|_{L^2(\Omega \times \Omega)}^2\right)^{1/2} \|\grad \phi\|_{L^2(\Omega)\times \RR^d} \left\|\phi\right\|_{L^2(\Omega)} \\
-  &\le FIXME
+\ip{A_n(u)-A_n(v)}{\phi} &\ge \|\phi\|_{L^2(\Omega)}^2 - \Delta t\,\int_\Omega \int_\Omega \bG(x,y) \cdot \grad \phi(x) \phi(y)\,dx\,dy \\
+    &\qquad + \Delta t\,\int_\Omega \int_\Omega K(x,y) \grad \phi(x) \cdot \grad \phi(y)\,dx\,dy \\
+    &\ge \|\phi\|_{L^2(\Omega)}^2 - \Delta t\,\|\bG\|_{L^2(\Omega\times\Omega;\RR^d)} \|\phi\|^2 + \delta \|\grad\phi\|_{L^2(\Omega;\RR^d)}^2 \\
+    &\ge \|\phi\|_{L^2(\Omega)}^2 + \left(\frac{\delta}{C(\Omega,p)} - \Delta t\,\|\bG\|_{L^2(\Omega\times\Omega;\RR^d)}\right) \|\phi\|^2.
 \end{align*}
-Then, if $u,v\in\mathcal{K}$ we have a coercivity bound, FIXME
-\begin{align*}
-    \ip{A_n(u)-A_n(v)}{u-v} &\ge \|u-v\|_{L^2(\Omega)}^2 - \Delta t\,\left(\int_\Omega \bG(x,y) v(y)\,dy\right)\cdot \grad \phi \\
-                      &\qquad\qquad + \Delta t\,\left(\int_\Omega K(x,y) \grad v(y)\,dy\right)\cdot \grad \phi\,\bigg]\,dx. FIXME
-\end{align*}
+The result follows from the definitions of coercivity and strict monotonicity, and condition \eqref{eq:nonlocaldtcond}.
+\end{proof}
+
+The observant reader will see a difference in the approaches in theorems \ref{thm:plapadvectwellposed} and \ref{thm:nonlocalwellposed}.  In the former the hyperbolic flux $\bQ_n(u) = \bX(x) u$ was assumed to be regular enough so that an integration-by-parts gave a criterion for coercivity in terms of a norm on the divergence of $\bX$.  In theorem \ref{thm:nonlocalwellposed} we assume only that $\bG$ is integrable, and thus the corresponding integration-by-parts, which would require integrable derivatives $\partial G_i/\partial x_j$, is not tried.  On the other hand, condition \eqref{eq:nonlocaldtcond} on $\Delta t$ is more severe than condition \eqref{eq:plapadvectdtcond}; for instance, \eqref{eq:nonlocaldtcond} involves both at kernel-positivity constant $\delta$ and the Poincar\'e constant.
 
 
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
