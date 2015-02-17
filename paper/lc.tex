@@ -15,13 +15,16 @@
 \newcommand\bG{\mathbf{G}}
 \newcommand\bn{\mathbf{n}}
 \newcommand\bq{\mathbf{q}}
+\newcommand\br{\mathbf{r}}
 \newcommand\bu{\mathbf{u}}
 \newcommand\bv{\mathbf{v}}
+\newcommand\bx{\mathbf{x}}
 \newcommand\by{\mathbf{y}}
 
 \newcommand\bQ{\mathbf{Q}}
 \newcommand\bV{\mathbf{V}}
 \newcommand\bX{\mathbf{X}}
+\newcommand\bY{\mathbf{Y}}
 
 \newcommand\CC{\mathbb{C}}
 \newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
@@ -238,7 +241,7 @@ We will state conditions on the discrete-time flux $\bQ_n$ first (subsection \re
 
 \subsection{Flux assumptions} \label{subsec:fluxassumptions}  Let $p\ge 1$ and recall that $L^p (\Omega)$ is the Banach space of functions with norm $\|v\|_{L^p} = \left(\int_\Omega |v|^p\,dx\right)^{1/p}$.  The Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v,\partial_1 v,\dots,\partial_d v \in L^p(\Omega)$ \cite{Evans}, with norm
 \begin{equation}
-  \|v\|_{1,p} = \left(\|v\|_{L^p} + \sum_i \|v\|_{L^p}\right)^{1/p}.  \label{eq:norm}
+  \|v\|_{1,p} = \left(\|v\|_{L^p}^p + \sum_i \|v\|_{L^p}^p\right)^{1/p}.  \label{eq:norm}
 \end{equation}
 Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans}, but otherwise $v$ may be discontinuous.  Denote by $W_0^{1,p}(\Omega)$ the closure of $C_c^\infty(\Omega)$ in $W^{1,p}(\Omega)$.
 
@@ -433,25 +436,38 @@ a \emph{bounded}, closed, convex subset of $\mathcal{X}$.  The solution $u_R\in 
 exists and is unique.  If there is $R>0$ such that the unique solution $u_R$ to \eqref{eq:theVIwithR} satisfies $\|u_R\| < R$---note the strict inequality---then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply these tools to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ points in the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
+\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply these tools to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ has the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
 \begin{equation}
   \bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
 \end{equation}
-with $p\ge 2$.  [FIXME: cases $1<p<2$ can also be handled, at least in part]  This includes the ordinary Laplacian (or Fourier) flux, and thus the linear heat equation, as the $p=2$ case.
+with $1<p<\infty$.  Formula \eqref{eq:plapflux} includes the ordinary Laplacian-Fourier flux, and thus the linear heat equation, as the $p=2$ case.  For the proofs in this subsection we will assume $F_n=F_n(x)$ is independent of $u$, and we will need inequalities from Appendix \ref{app:pinequalities}.
 
-For the proof we need a pointwise inequality which is related to the above definition of coercivity, namely inequality \eqref{eq:pinequality} from Lemma \ref{lem:pinequality} in the Appendix.  Assuming also that $\partial \Omega$ is $C^1$, on $W_0^{1,p}(\Omega)$ we have a Poincare-type inequality, namely that there is a constant $C = C(\Omega,p)>0$ so that
-\begin{equation}
-  \|\phi\|^p \le C(\Omega,p) \int_\Omega |\grad \phi|^p  \label{eq:poincareequivalence}
-\end{equation}
-for all $\phi\in W_0^{1,p}(\Omega)$ \cite[theorem 5.6.3]{Evans}.
-
-Thus if $p\ge 2$ then
+If $p\ge 2$ then by \eqref{eq:pinequality} and \eqref{eq:poincare}
 \begin{align}
 \int_\Omega \left(\bQ_n(\grad u) - \bQ_n(\grad v)\right)\cdot (\grad u - \grad v) &= -k  \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad v\right)\cdot (\grad u - \grad v) \notag \\
   &\le - \frac{k}{2^{p-2}} \int_\Omega |\grad u - \grad v|^p \notag \\
   &\le - \frac{k}{2^{p-2}\,C(\Omega,p)} \|u-v\|^p \label{eq:plapQnmono}
 \end{align}
-and thus \eqref{eq:Qncoercive} with $r=p$ and a formula for $\eps$ that depends on $p$ and $\Omega$ (in particular).  Thus problem \eqref{eq:theVI} is well-posed for any $\Delta t$ if the flux is of $p$-Laplacian form \eqref{eq:plapflux} for $p\ge 2$.
+and thus \eqref{eq:Qncoercive} with $r=p$.  Thus the corresponding nonlinear operator $A_n$ from \eqref{eq:defineAn} is coercive and strictly-monotone, and so problem \eqref{eq:theVI} is well-posed.
+
+If $1<p<2$ then we have to work harder, and we cannot use condition \eqref{eq:Qncoercive} directly.  In fact, we return to the nonlinear operator $A_n$.  Using \eqref{eq:pinequality}, \eqref{eq:smallpbound}, and \eqref{eq:poincare} gives
+\begin{align*}
+  &\ip{A_n(u) - A_n(v)}{u-v} \\
+  &\qquad = \|u-v\|_{L^2(\Omega)}^2 + \Delta t\,k \int_\Omega \left(|\grad u|^{p-2} \grad u - |\grad v|^{p-2} \grad v\right)\cdot (\grad u - \grad v) \\
+  &\qquad \ge \|u-v\|_{L^2(\Omega)}^2 + \Delta t\,k (p-1) \int_\Omega \frac{|\grad u - \grad v|^2}{\left(|\grad u|+|\grad v|\right)^{2-p}} \\
+  &\qquad \ge \|u-v\|_{L^2(\Omega)}^2 + \Delta t\,k (p-1) \frac{\|\grad u - \grad v\|_{L^p(\Omega; \RR^d)}^2}{\big\||\grad u|+|\grad v|\big\|_{L^p(\Omega)}^{2-p}} \\
+  &\qquad \ge \|u-v\|_{L^2(\Omega)}^2 + B\, \frac{\|u - v\|^2}{\big\||\grad u|+|\grad v|\big\|_{L^p(\Omega)}^{2-p}}
+\end{align*}
+where $B = \Delta t\,k (p-1) C(\Omega,p)^{-2/p} >0$.  On the one hand, this shows $\ip{A_n(u) - A_n(v)}{u-v} \ge \|u-v\|_{L^2(\Omega)}^2$, so that $A_n$ is strictly-monotone.  On the other hand, choosing $v$ so that $\|\grad v\|_{L^p(\Omega;\RR^d)} = 1$ for concreteness, we have
+\begin{equation*}
+\frac{\ip{A_n(u) - A_n(v)}{u-v}}{\|u-v\|} \ge B\, \frac{\|u - v\|}{\big\||\grad u|+1\big\|_{L^p(\Omega)}^{2-p}} \to \infty
+\end{equation*}
+as $\|u\|\to\infty$ because $0<2-p<1$.  Therefore the limit \eqref{eq:coercivedef} applies, and so, again, $A_n$  is coercive and strictly-monotone.
+
+We have proven the following theorem:
+
+\begin{theorem}  \label{thm:plapwellposed}  If $\Omega\subset \RR^d$ is bounded, $1<p<\infty$, $F_n=F_n(x)$ is independent of $u$, and $\bQ_n$ is given by \eqref{eq:plapflux} with $k>0$, then for any $\Delta t>0$, \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+\end{theorem}
 
 \subsection{Advective fluxes} \label{subsec:advect}  We are certainly interested in hyperbolic problems too.  The simplest such problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
 \begin{equation}
@@ -483,7 +499,7 @@ where $c=\eps\, 2^{2-p}/C(\Omega,p)>0$ and $C = \frac{1}{2}\|\Div\bX\|_{L^\infty
 \end{equation}
 This proves the following theorem for the variational inequality problem in $W_0^{1,p}(\Omega)$:
 
-\begin{theorem}  \label{thm:plabadvectwellposed}  If $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$ and $\bX \in W^{1,\infty}(\Omega;\RR^d)$ then \eqref{eq:theVI} is well-posed for any $\Delta t \le 4 / \|\Div \bX\|_{L^\infty}$.
+\begin{theorem}  \label{thm:plapadvectwellposed}  If $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$ and $\bX \in W^{1,\infty}(\Omega;\RR^d)$ then for any $\Delta t \le 4 / \|\Div \bX\|_{L^\infty}$, \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
 \subsection{Doubly-nonlinear fluxes} \label{subsec:powertransform}  Now consider the doubly-nonlinear \cite{Raviart1970} flux
@@ -522,11 +538,11 @@ Noting $u\ge 0$ if and only if $w\ge 0$ in transformation \eqref{eq:doubletransf
 The weak formulation of \eqref{eq:doublestrong} is \eqref{eq:theVI} with $A_n$ defined in \eqref{eq:doubleform}.  The following theorem is, essentially, the argument in subsection III.3 of \cite{KinderlehrerStampacchia}.
 
 \begin{theorem}
-Assume $p\ge 2$.  Assume that if $w\in\mathcal{K}$ then $G(w,x)\in \mathcal{X}'$, and that $G$ is nondecreasing in $w$.  Then $A_n$ in \eqref{eq:doubleform} is strictly monotone and coercive.  Thus \eqref{eq:theVI} is well-posed.
+Assume $p\ge 2$.  Assume that if $w\in\mathcal{K}$ then $G(w,x)\in \mathcal{X}'$, and that $G$ is nondecreasing in $w$.  Then $A_n$ in \eqref{eq:doubleform} is strictly monotone and coercive.  Thus \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
 \begin{proof}
-If $w,v\in\mathcal{X}$ then by \eqref{eq:pinequality} and Poincare inequality \eqref{eq:poincareequivalence},
+If $w,v\in\mathcal{X}$ then by \eqref{eq:pinequality} and Poincare inequality \eqref{eq:poincare},
 \begin{align*}
 \ip{A_n(w)-A_n(v)}{w-v} &= \int_\Omega \Delta t\, K \left(|\grad w|^{p-2} \grad w - |\grad v|^{p-2} \grad v\right) \cdot \grad (w-v) \\
   &\qquad\qquad + \left(G(w,x) - G(v,x)\right) (w-v) \\
@@ -580,9 +596,6 @@ Then, if $u,v\in\mathcal{K}$ we have a coercivity bound, FIXME
     \ip{A_n(u)-A_n(v)}{u-v} &\ge \|u-v\|_{L^2(\Omega)}^2 - \Delta t\,\left(\int_\Omega \bG(x,y) v(y)\,dy\right)\cdot \grad \phi \\
                       &\qquad\qquad + \Delta t\,\left(\int_\Omega K(x,y) \grad v(y)\,dy\right)\cdot \grad \phi\,\bigg]\,dx. FIXME
 \end{align*}
-
-
-
 
 
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
@@ -664,7 +677,7 @@ In stating this assertion, we note that the retreat loss $R_n$ should vanish in 
 
 \appendix
 
-\section{Inequalities for $p$-norms and monotonicity}   Though versions of the following inequalities appear in the literature, at least as early as \cite{GlowinskiMarroco1975}, the lemmas below apply in $\RR^d$---contrast \cite{BarrettLiu1993,GlowinskiMarroco1975} which are for $\RR^2$---and have complete proofs and explicit constants.  The proofs follow, and correct, those in \cite[Appendix A]{Peral1997}.
+\section{Inequalities for $p$-norms}   \label{app:pinequalities}  Versions of the inequality in the first Lemma \eqref{lem:pinequality} appear in the literature, at least as early as \cite{GlowinskiMarroco1975}, but here the result applies in $\RR^d$---contrast \cite{BarrettLiu1993,GlowinskiMarroco1975} for the $\RR^2$ case---and have complete proofs and explicit constants.  The proofs follow and correct those in \cite[Appendix A]{Peral1997}.
 
 \begin{lemma}  \label{lem:pinequality}  If $1<p<\infty$ and $x,y\in\RR^n$ then
 \begin{equation}
@@ -726,7 +739,33 @@ on $t\in[0,1)$, because $t^{p-1}\le t^{3-p}$ and thus $1 - t^{p-1} \ge 1 - t^{3-
 This proves \eqref{eq:pinequality} in the case $1<p\le 2$.
 \end{proof}
 
-\section{Second-order Runge-Kutta time-discretization}   In Section \ref{sec:strongform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
+We will also need the result of combining the $1<p\le 2$ case of Lemma \ref{lem:pinequality}, a point-wise result, with integration over a set $\Omega$.
+
+\begin{lemma} \label{lem:smallpbound}  Suppose $1<p\le 2$.  If $\Omega \subset \RR^d$ is measurable and if $\bu,\bv\in L^p(\Omega; \RR^m)$ for $m\ge 1$, then
+\begin{equation}
+    \int_\Omega \frac{|\bu-\bv|^p}{\left(|\bu|+|\bv|\right)^{2-p}} \ge \frac{\|\bu-\bv\|_{L^p(\Omega; \RR^m)}^2}{\big\||\bu|+|\bv|\big\|_{L^p(\Omega)}^{2-p}}. \label{eq:smallpbound}
+\end{equation}
+\end{lemma}
+
+\begin{proof}  By H\"older inequality with $r=2/p$ and $s=2/(2-p)$, so $r^{-1}+s^{-1}=1$,
+\begin{align*}
+\int_\Omega |\bu - \bv|^p &= \int_\Omega \frac{|\bu-\bv|^p}{\left(|\bu|+|\bv|\right)^{p(2-p)/2}} \left(|\bu|+|\bv|\right)^{p(2-p)/2} \\
+    &\le \left(\int_\Omega \frac{|\bu-\bv|^2}{\left(|\bu|+|\bv|\right)^{2-p}}\right)^{p/2} \left(\int_\Omega \left(|\bu|+|\bv|\right)^p\right)^{(2-p)/2},
+\end{align*}
+thus \eqref{eq:smallpbound}.
+\end{proof}
+
+Finally we recall the classical Poincar\'e inequality on the Sobolev space $W_0^{1,p}(\Omega)$, which is defined at the beginning of subsection \ref{subsec:fluxassumptions}.  The form of the Poincar\'e inequality in the following Lemma, with an explicit but not optimal constant, is from \cite[section 7.8]{GilbargTrudinger2001}.
+
+\begin{lemma} \label{lem:poincare}  If $\Omega\subset \RR^d$ is a bounded domain with volume $|\Omega|$, and if $1\le p<\infty$ then for all $u\in W_0^{1,p}(\Omega)$,
+\begin{equation}
+  \|u\|_{W^{1,p}(\Omega)}^p \le C(\Omega,p) \int_\Omega |\grad u|^p, \label{eq:poincare}
+\end{equation}
+where $C(\Omega,p)=1+(|\Omega|/\omega_d)^{p/d}$ and $\omega_d=(2 \pi^{d/2})/(d\,\Gamma(d/2))$ is the volume of the unit ball in $\RR^d$.
+\end{lemma}
+
+
+\section{Second-order Runge-Kutta time-discretization}   \label{app:rk2}  In Section \ref{sec:strongform} we describe the time semi-discretization of the continuum strong form \eqref{eq:massconserve}--\eqref{eq:constraint} using the $\theta$ method, thus including the Euler, backward Euler, and trapezoidal rules.  These one-stage time-discretizations generate particular forms for functions $\bQ_n(\bX,v,z)$ and $F_n(v,z)$ in equations \eqref{eq:semimassconserve}--\eqref{eq:semiconstraint}, and these functions define the single-time-step variational inequality problem \eqref{eq:theVI}.  In this Appendix we illustrate how these functions can be generated for certain Runge-Kutta (RK) schemes, although in some cases at the cost of having to solve multiple problems of type \eqref{eq:theVI} at each time step.  Higher-order RK schemes can be handled without any additional ideas, but we limit our presentation to two-stage schemes for simplicity.
 
 For the $m$-dimensional ODE system
 \begin{equation}
