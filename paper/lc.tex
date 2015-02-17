@@ -360,9 +360,9 @@ It follows as before that $u_{n-1} + \Delta t\, F_n \le 0$ a.e.~on $S$.  In the 
 From now on we will use set decomposition \eqref{eq:omegadecomposition} when referring to a solution $u_n$ of the weak form \eqref{eq:theVI}.
 
 
-\section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to demonstrate that a variety of different fluxes $\bQ_n$ allow a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  The reader who already believes in well-posed mass conservation equation models with free boundaries can proceed to section \ref{sec:spacediscretized} where fully-discrete numerical schemes are described, so that the \emph{a posterior} analysis of free boundary conservation errors in section \ref{sec:timeseries} can be understood.
+\section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to demonstrate that a variety of different fluxes $\bQ_n$ allow a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  The optimistic reader, one who already believes in well-posed mass conservation equation models with free boundaries, can proceed to section \ref{sec:spacediscretized} where fully-discretized, and thus implementable, numerical schemes are described.  Note, however, that the \emph{a posterior} analysis of free boundary conservation errors in section \ref{sec:timeseries} distinguishes time-semi-discretized (\emph{a la} this section) and fully-discretized (section \ref{sec:spacediscretized}) free boundary conservation errors.
 
-Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems.  We recall these tools, which correspond to monotonic variational inequalities \cite{KinderlehrerStampacchia}, in subsection \ref{subsec:mono}.  Then in the next four subsections we prove existence and uniqueness for these flux cases:
+Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems.  We recall some of these tools, for monotone variational inequalities \cite{KinderlehrerStampacchia}, in subsection \ref{subsec:mono}.  Then in the next four subsections we prove existence and uniqueness of problem \eqref{eq:theVI} for these flux cases:
 \begin{itemize}
 \item[\ref{subsec:plap}] $p$-Laplacian-type parabolic (diffusion) fluxes for $1<p<\infty$;
 \item[\ref{subsec:advect}] linear advection fluxes with differentiable velocity fields, with the addition of small parabolic leading-order terms;
@@ -371,7 +371,7 @@ Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-in
 \end{itemize}
 
 \smallskip
-Except for subsection \ref{subsec:explicit}, we only consider fully-implicit (i.e.~backward Euler) time-stepping schemes.  In \ref{subsec:explicit} we see how regularity issues stop us from having the well-posed, \emph{continuous}-space single time-step free boundary problems if time-stepping is explicit or semi-explicit.  The fully-discretized schemes in section \ref{sec:spacediscretized} will allow re-consideration of explicitness.
+Except for subsection \ref{subsec:explicit}, we only consider fully-implicit (i.e.~backward Euler) time-stepping schemes.  In \ref{subsec:explicit} we see how regularity issues stop us from having the well-posed, \emph{continuous-space} single time-step free boundary problems if time-stepping is explicit or semi-explicit.  The fully-discretized schemes in section \ref{sec:spacediscretized} allow explicitness, however.
 
 \subsection{Monotonicity and sufficient conditions on flux for well-posedness} \label{subsec:mono}  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
 \begin{equation}
@@ -431,7 +431,7 @@ is continuous because of the linearity of the integral, \eqref{eq:Qiscontinuous}
 \end{proof}
 
 \medskip
-Corollary III.1.8 of \cite{KinderlehrerStampacchia} now gives the following well-posedness theorem.
+Corollary III.1.8 of \cite{KinderlehrerStampacchia} now gives the following sufficient-conditions theorem.
 
 \medskip
 \begin{theorem}  \label{thm:monowellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.  If \eqref{eq:Qncoercive} holds for $\bQ_n$ then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
@@ -611,7 +611,7 @@ where $C(\Omega,p)$ is the Poincar\'e constant in \eqref{eq:poincare}, then $A_n
 The result follows from the definitions of coercivity and strict monotonicity, and condition \eqref{eq:nonlocaldtcond}.
 \end{proof}
 
-The observant reader will see a difference in the approaches in theorems \ref{thm:plapadvectwellposed} and \ref{thm:nonlocalwellposed}.  In the former the hyperbolic flux $\bQ_n(u) = \bX(x) u$ was assumed to be regular enough so that an integration-by-parts gave a criterion for coercivity in terms of a norm on the divergence of $\bX$.  In theorem \ref{thm:nonlocalwellposed} we assume only that $\bG$ is integrable, and thus the corresponding integration-by-parts, which would require integrable derivatives $\partial G_i/\partial x_j$, is not tried.  On the other hand, condition \eqref{eq:nonlocaldtcond} on $\Delta t$ is more severe than condition \eqref{eq:plapadvectdtcond}; for instance, \eqref{eq:nonlocaldtcond} involves both at kernel-positivity constant $\delta$ and the Poincar\'e constant.
+The observant reader will see a difference in the approaches in theorems \ref{thm:plapadvectwellposed} and \ref{thm:nonlocalwellposed}.  In the former the velocity $\bX$ in the hyperbolic flux $\bQ_n(u) = \bX(x) u$ was assumed to be differentiable.  Thereby an integration-by-parts gave a criterion for coercivity in terms of the norm of the divergence of $\bX$.  By constrast, in theorem \ref{thm:nonlocalwellposed} we assume only that $\bG$ is integrable, and thus the corresponding integration-by-parts, which would require integrable derivatives $\partial G_i/\partial x_j$, is not tried.  As a result, condition \eqref{eq:nonlocaldtcond} on $\Delta t$ is in some senses more severe than condition \eqref{eq:plapadvectdtcond}; for instance, \eqref{eq:nonlocaldtcond} involves both at kernel-positivity constant $\delta$ and the Poincar\'e constant.
 
 
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
