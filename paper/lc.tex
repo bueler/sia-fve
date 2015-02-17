@@ -398,14 +398,14 @@ The lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>
 \end{equation}
 for all $u,v \in \mathcal{K}$.  Conversely, if $A_n$ is monotone then \eqref{eq:Qnmonotone} holds with $C=1$.
 
-(ii)  $A_n$ is coercive if there is $c>0$ and $r>1$ so that
+(ii)  $A_n$ is coercive and strictly-monotone if there is $c>0$ and $r>1$ so that
 \begin{equation}
 \int_\Omega \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v) \le - c \|u-v\|^r \label{eq:Qncoercive}
 \end{equation}
 for all $u,v \in \mathcal{K}$.
 \end{lemma}
 
-Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$, independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$- c \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
+Note that the norm on the right side of \eqref{eq:Qncoercive} is for $W_0^{1,p}(\Omega)$.  Observe that \eqref{eq:Qncoercive} implies \eqref{eq:Qnmonotone} with $C=0$, so \eqref{eq:Qncoercive} implies strict monotonicity for $A_n$ independent of $\Delta t$.  Also, \eqref{eq:Qnmonotone} is necessary and sufficient for monotonicity of $A_n$, while clearly \eqref{eq:Qncoercive} is merely sufficient for coercivity.  For example, if right side of \eqref{eq:Qncoercive} were ``$- c \|u-v\| \log \|u-v\|$'' then $A_n$ would also be coercive.
 
 In considering lemma \ref{lem:monotonecoercive}, note that in cases where $\bQ_n(\grad u,u,x)$ is proportional to $\grad u$ we expect, for physical reasons, that the flux $\bQ_n$ points in the direction of the negative of $\grad u$.  By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then PDE \eqref{eq:massconserve} would be the ill-posed backward heat equation.
 
@@ -425,7 +425,7 @@ Corollary III.1.8 (for part (i)) and Theorem III.1.7 (for part (ii)) of \cite{Ki
 \medskip
 \begin{theorem}  \label{thm:monowellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.
 
-(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$, so that the operator $A_n$ is coercive and strictly monotone, then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+(i)  If \eqref{eq:Qncoercive} holds for $\bQ_n$ then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 
 (ii) Suppose \eqref{eq:Qnmonotone} holds with $C<1$ for $\bQ_n$.  For $R>0$ define
     $$\mathcal{K}_R = \mathcal{K} \cap \left\{v\in \mathcal{X} \,\Big|\, \|v\|\le R\right\},$$
@@ -466,10 +466,11 @@ as $\|u\|\to\infty$ because $0<2-p<1$.  Therefore the limit \eqref{eq:coercivede
 
 We have proven the following theorem:
 
+\medskip
 \begin{theorem}  \label{thm:plapwellposed}  If $\Omega\subset \RR^d$ is bounded, $1<p<\infty$, $F_n=F_n(x)$ is independent of $u$, and $\bQ_n$ is given by \eqref{eq:plapflux} with $k>0$, then for any $\Delta t>0$, \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-\subsection{Advective fluxes} \label{subsec:advect}  We are certainly interested in hyperbolic problems too.  The simplest such problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
+\subsection{Advective fluxes from differentiable velocity} \label{subsec:advect}  We are certainly interested in hyperbolic problems too.  The simplest such problems involve a flux which comes from considering a layer which is transported by a differentiable velocity field $\bX \in W^{1,\infty}(\Omega;\RR^d)$, so that
 \begin{equation}
   \bQ_n(u,x) = \bX(x) u. \label{eq:advectflux}
 \end{equation}
@@ -481,25 +482,24 @@ Consider conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive} applied to \
 \end{align}
 after integrating by parts, because $u=v=0$ on $\partial \Omega$.
 
-This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then clearly \eqref{eq:Qnmonotone} applies with $C=0$, and so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with $C = \frac{1}{2}\Delta t\,\|\Div\bX\|_{L^\infty}$, so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Note that any bound on this $C$ can be regarded as a CFL-type condition \cite{LeVeque}, though here the bound is not on the velocity magnitude but rather on a measure of the size of that part of the velocity field that is not ($\RR^d$-)volume-preserving.
+This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then clearly \eqref{eq:Qnmonotone} applies with $C=0$, and so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with $C = \frac{1}{2}\Delta t\,\|\Div\bX\|_{L^\infty(\Omega)}$, so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Note that any bound on this $C$ can be regarded as a CFL-type condition \cite{LeVeque}, though here the bound is not on the velocity magnitude but rather on a measure of the size of that part of the velocity field that is not ($\RR^d$-)volume-preserving.
 
-However, there is no good reason to suppose that the operator $A_n$ corresponding to \eqref{eq:advectflux}, as defined as an operator from the convex subset $\mathcal{K} \subset \mathcal{X} = W_0^{1,p}(\Omega)$, to the dual $\mathcal{X}'$, is coercive.  FIXME On the other hand, we can not do integration-by-parts in  \eqref{eq:defineAn} to put the problem into a subset of the Hilbert space $L^2(\Omega)$?
-
-If we add just a little bit of diffusion, here in the form of a $p$-Laplacian leading-order term with coefficient $\eps>0$,
+There is no reason to suppose that the operator $A_n$ corresponding to \eqref{eq:advectflux}, defined by \eqref{eq:defineAn} as an operator from the convex subset $\mathcal{K} \subset \mathcal{X} = W_0^{1,p}(\Omega)$, to the dual $\mathcal{X}'$, is coercive.  However, if we add just a little bit of diffusion, here in the form of a $p$-Laplacian leading-order term with $p\ge 2$ for simplicity and coefficient $\eps>0$,
 \begin{equation}
   \bQ_n(\grad u,u,x) = -\eps |\grad u|^p \grad u + \bX(x) u,   \label{eq:plapadvectflux}
 \end{equation}
 then the corresponding operator $A_n$ on $W_0^{1,p}(\Omega)$ is coercive.  In fact, combining calculations \eqref{eq:plapQnmono} and \eqref{eq:advectQnmono} gives
 \begin{equation}
-\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) \le - c \|u-v\|^p + C \|u-v\|_{L^2}^2
+\int_\Omega \left[\bQ_n(u,x) - \bQ_n(v,x)\right] \cdot \grad (u - v) \le - c \|u-v\|^p + C \|u-v\|_{L^2(\Omega)}^2
 \end{equation}
-where $c=\eps\, 2^{2-p}/C(\Omega,p)>0$ and $C = \frac{1}{2}\|\Div\bX\|_{L^\infty}$.  But then by \eqref{eq:AtoQcalculation} we have
+where $c=\eps\, 2^{2-p}/C(\Omega,p)>0$ and $C = \frac{1}{2}\|\Div\bX\|_{L^\infty(\Omega)}$.  But then by \eqref{eq:AtoQcalculation} we have
 \begin{equation}
-\ip{A_n(u) - A_n(v)}{u-v} \ge c \Delta t\, \|u-v\|^p + (1-\Delta t\,C) \|u-v\|_{L^2}^2.
+\ip{A_n(u) - A_n(v)}{u-v} \ge c \Delta t\, \|u-v\|^p + (1-\Delta t\,C) \|u-v\|_{L^2(\Omega)}^2.
 \end{equation}
 This proves the following theorem for the variational inequality problem in $W_0^{1,p}(\Omega)$:
 
-\begin{theorem}  \label{thm:plapadvectwellposed}  If $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$ and $\bX \in W^{1,\infty}(\Omega;\RR^d)$ then for any $\Delta t \le 4 / \|\Div \bX\|_{L^\infty}$, \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+\medskip
+\begin{theorem}  \label{thm:plapadvectwellposed}  If $\bQ_n$ is given by \eqref{eq:plapadvectflux} with $\eps>0$ and $\bX \in W^{1,\infty}(\Omega;\RR^d)$, and if $p\ge 2$, then for any $\Delta t \le 4 / \|\Div \bX\|_{L^\infty(\Omega)}$, \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
 \subsection{Doubly-nonlinear fluxes} \label{subsec:powertransform}  Now consider the doubly-nonlinear \cite{Raviart1970} flux
@@ -537,24 +537,24 @@ Noting $u\ge 0$ if and only if $w\ge 0$ in transformation \eqref{eq:doubletransf
 \end{equation}
 The weak formulation of \eqref{eq:doublestrong} is \eqref{eq:theVI} with $A_n$ defined in \eqref{eq:doubleform}.  The following theorem is, essentially, the argument in subsection III.3 of \cite{KinderlehrerStampacchia}.
 
+\medskip
 \begin{theorem}
-Assume $p\ge 2$.  Assume that if $w\in\mathcal{K}$ then $G(w,x)\in \mathcal{X}'$, and that $G$ is nondecreasing in $w$.  Then $A_n$ in \eqref{eq:doubleform} is strictly monotone and coercive.  Thus \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
+Let $1<p<\infty$ and $r\ge 0$.  Define $m$ by \eqref{eq:doubletransform}.  Suppose $G(w,x)$ defined by \eqref{eq:doubleGdefn} is in $\mathcal{X}'$ for all $w\in\mathcal{K}$, and that $G$ is nondecreasing in $w$.  Then $A_n$ in \eqref{eq:doubleform} is strictly monotone and coercive.  Thus \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
 \begin{proof}
-If $w,v\in\mathcal{X}$ then by \eqref{eq:pinequality} and Poincare inequality \eqref{eq:poincare},
+Suppose $p\ge 2$.  If $w,v\in\mathcal{X}$ then by \eqref{eq:pinequality} and Poincare inequality \eqref{eq:poincare},
 \begin{align*}
 \ip{A_n(w)-A_n(v)}{w-v} &= \int_\Omega \Delta t\, K \left(|\grad w|^{p-2} \grad w - |\grad v|^{p-2} \grad v\right) \cdot \grad (w-v) \\
   &\qquad\qquad + \left(G(w,x) - G(v,x)\right) (w-v) \\
   &\ge \frac{\Delta t\,K}{2^{p-2}} \int_\Omega |\grad (w-v)|^p + 0 \ge \frac{\Delta t\,K}{2^{p-2}\, C(\Omega,p)} \|w-v\|^p.
 \end{align*}
+The case $1<p<2$ follows by a trivial modification of the technique used in proving theorem \ref{thm:plapwellposed}.
 \end{proof}
-
-FIXME: how about $1<p<2$?
 
 FIXME: of course assumptions on $G$ are assumptions on $F_n$.  if $F_n=F_n(x)$ we are done. because of $\Delta t$ we can still solve with increasing $F_n(u)$ as long as time steps are short
 
-FIXME: deficiency is no bedrock
+FIXME: major deficiency is no bedrock
 
 
 \subsection{Non-local dependence through an integral kernel} \label{subsec:nonlocal}   This part of the paper (i.e.~section \ref{sec:wellposed}) demonstrates that a wide variety of flux forms yield a well-posed single time-step problems \eqref{eq:theVI}.  The examples so far are all cases where $\bQ_n$ is a vector field with its value at $x\in\Omega$ determined by the values $u(x)$ and $\grad u(x)$.  Because in fact the flux in realistic models is often computed by coupling to another equation, for instance an energy or momentum conservation equation additional to the mass-conservation equation \eqref{eq:massconserve}, we now look at fluxes that are \emph{non}-local functions of the thickness $u$ and its derivative(s).  For clarity we restrict to the linear case.
