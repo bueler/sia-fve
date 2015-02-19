@@ -616,7 +616,6 @@ The result follows from the definitions of coercivity and strict monotonicity, a
 
 The observant reader will see a difference in the approaches in theorems \ref{thm:plapadvectwellposed} and \ref{thm:nonlocalwellposed}.  In the former the velocity $\bX$ in the hyperbolic flux $\bQ_n(u) = \bX(x) u$ was assumed to be differentiable.  Thereby an integration-by-parts gave a criterion for coercivity in terms of the norm of the divergence of $\bX$.  By constrast, in theorem \ref{thm:nonlocalwellposed} we assume only that $\bG$ is integrable, and thus the corresponding integration-by-parts, which would require integrable derivatives $\partial G_i/\partial x_j$, is not tried.  As a result, condition \eqref{eq:nonlocaldtcond} on $\Delta t$ is in some senses more severe than condition \eqref{eq:plapadvectdtcond}; for instance, \eqref{eq:nonlocaldtcond} involves both at kernel-positivity constant $\delta$ and the Poincar\'e constant.
 
-
 \subsection{Explicit time-steps} \label{subsec:explicit}  Recall the $\theta=0$, fully-explicit, case of the time semi-discretization equation \eqref{eq:thetamethod}.  In weak form the problem is variational inequality \eqref{eq:theVI}, but with
     $$\bQ_n=0 \quad \text{ and } \quad F_n = - \Div \bq(\grad u_{n-1},u_{n-1},x) + f(u_{n-1},x).$$
 The weak problem seeks $u\in\mathcal{K} \subset \mathcal{X}$ so that
@@ -634,15 +633,48 @@ u_n = \max\{0,u_{n-1} + \Delta t\,F_n\} \in L^2(\Omega)  \label{eq:explicittrunc
 On the other hand, fully-explicit and \emph{fully-discretized} numerical schemes are in widespread use for solving first-order and even second-order PDE problems.  So we return to these explicit schemes after adding spatial discretization in the next section.
 
 
-\section{The fully-discretized single time-step problem}  \label{sec:spacediscretized} FIXME
+\section{The fully-discretized single time-step problem}  \label{sec:spacediscretized}   A major purpose of our work is to understand time-dependent free-boundary mass conservation models through time semi-discretized form, as a sequence of spatial free-boundary problems.  We can address well-posedness (section \ref{sec:wellposed}) and conservation errors at the free boundary (section \ref{sec:timeseries}; esp.~\ref{subsec:retreatloss}) in such a continuous-space framework.  But aspects of our theory are only completed by fully-discretizing the models.  In this section we make the weakest assumptions about the spatial discretization which is possible, namely that there is some finite volume \cite{LeVeque} interpretation of the fully-discrete scheme.  Within a fully-discrete framework we will be able to say a bit more about time-step restrictions for explicit and semi-explicit schemes (\ref{subsec:spaceexplicit}) so that we can tell a complete story about conservation errors at the free boundary (i.e.~subsection \ref{subsec:shellerror}).  First we set notation for a highly-generic finite volume scheme (\ref{subsec:spacenotation}).
+
+\subsection{Unstructured finite volume schemes} \label{subsec:spacenotation}  We restrict to $d=2$ or $d=3$, and we suppose $\Omega$ is a polygon (polyhedron).  An unstructured finite volume scheme here assumes only that $\Omega$ is tiled by cells which are themselves polygons (Figure \ref{fig:fvmesh-notation}).  These polygonal cells can be non-convex, and the number of edges (faces) may vary between cells.  For notation, each cell $\omega_j$ has area (volume) $a_j$, so $\bar\Omega = \bigcup_j \bar \omega_j$ and $|\Omega| = \sum_j a_j$.  The edge (face) between cell $j$ and cell $k$ is indexed by a pair $(j,k)$, and it has length (area) $\ell_{(j,k)}$.  The $j$th cell has a set of edges $\mathcal{E}_j$ which contains those pairs $(j,k)$ so that $\omega_j$ and $\omega_k$ meet in an edge (face).  The representative thickness $u_n^j$ in each cell is given the usual finite volume interpretation as an average:
+\begin{equation}
+u_n^j \approx \frac{1}{a_j} \int_{\omega_j} u_n(x)\,dx.  \label{eq:fvthickness}
+\end{equation}
 
 \begin{figure}[ht]
 \begin{center}
 \input{fvmesh-notation.tikz}
 \end{center}
-\caption{Notation for a completely-unstructured finite volume mesh in $\RR^2$:  Each cell has index $j$, representative thickness $u_n^j$, and area $\omega_j$.  The edge between cell $j$ and cell $k$ is indexed by a pair $(j,k)$, and it has length $\lambda_{(j,k)}$.  The scalar normal flux across this edge, outward from cell $j$, is $Q_n^{(j,k)}$.  Note $Q_n^{(k,j)}=-Q_n^{(j,k)}$.}
+\caption{Notation for a completely-unstructured finite volume mesh in $\RR^2$.}
 \label{fig:fvmesh-notation}
 \end{figure}
+
+The scalar normal flux across the edge $(j,k)$, outward from cell $j$, is denoted $Q_n^{(j,k)}$.  We assume that the fluxes $Q_n^{(j,k)}$ are approximated by some scheme, based on some subsets of the values $\{u_n^j\}$, so that two things are true:\begin{enumerate}
+\item Edges with zero thickness on both sides have zero flux:
+\begin{equation}
+  Q_n^{(j,k)} = 0  \qquad \text{ if } u_n^j = 0 \text{ and } u_n^k = 0.  \label{eq:fvQiszero}
+\end{equation}
+(Compare assumption \eqref{eq:Qiszero} in the continuous-space case.)
+\item There is local conservation between any two adjacent cells which are fluid-filled:
+\begin{equation}
+  Q_n^{(k,j)}=-Q_n^{(j,k)}  \qquad \text{ if } u_n^j u_n^k > 0.  \label{eq:fvlocalconservation}
+\end{equation}
+\end{enumerate}
+
+We also assume that $F_n^j$ is a representative source term for the $j$th cell, so that
+	$$F_n^j \approx \frac{1}{a_j} \int_{\omega_j} F_n(x)\,dx.$$
+It is computed in some way from the geometry of cell $j$ and from values $\{u_n^j\}$ as necessary; the details do not matter here.
+
+Now recall that, at least heuristically, the divergence is the limit of line (surface) integrals,
+	$$\Div \bX(x) = \lim_{|R|\to 0} \frac{1}{|R|} \int_{\partial R} \bQ_n\cdot \bn\,ds,$$
+where $R\subset \RR^d$ denotes a region with Lipshitz boundary, enclosing $x$, with outward unit normal vector $\bn$ and boundary length (area) element $ds$.  Thus, regarding the finite-volume discretization, we assume that the strong form single-time-step problem \eqref{eq:semimassconserve} is approximated by
+\begin{equation}
+\frac{u_n^j - u_{n-1}^j}{\Delta t} + \frac{1}{a_j} \sum_{k\in \mathcal{E}_j} Q_n^{(j,k)} \ell_{(j,k)} = F_n^j \label{eq:fvmassconserve}
+\end{equation}
+
+Many schemes can be given interpretations \eqref{eq:fvthickness} and \eqref{eq:fvmassconserve}.  The schemes includestructured-grid (i.e.~uniform rectangular cell) finite difference \cite{MortonMayers2005} and finite volume \cite{LeVeque} schemes and unstructured finite volume schemes which have been used for layer conservation problems in the context of ice sheet \cite{EgholmNielsen2010} and \cite{Ringleretal2013} ocean modeling.  By considering the dual cell, this finite volume interpretation can also be applied to certain unstructured or structured finite element schemes.  Furthermore, the discrete fluxes $Q_n^{(j,k)}$ can be computed from the cell-averaged (representative) thicknesses, plus other data, by a either a classical (e.g.~Gudonov) or flux-limited scheme \cite{LeVeque}.  Discontinuous Galerkin schemes can also be interpreted as \eqref{eq:fvmassconserve}.
+
+\subsection{Fully-discrete explicit and semi-explicit schemes} \label{subsec:spaceexplicit}  FIXME
+
 
 \section{\emph{A posteriori} analysis of mass conservation on the free boundary}  \label{sec:timeseries}
 
@@ -652,15 +684,15 @@ M_n = \int_\Omega u_n(x)\,dx, \label{eq:totalmassseries}
 \end{equation}
 the \emph{(total) mass} at time $t_n$, and define
 \begin{equation}
-C_n = \Delta t\, \int_\Omega F_n(u_n,x)\,dx, \label{eq:climateseries}
+C_n = \Delta t\, \int_{\Omega_n} F_n(u_n,x)\,dx, \label{eq:climateseries}
 \end{equation}
-the \emph{climate input} during the $n$th time step.
+the \emph{climate input} during the $n$th time step.  Note the important fact that the climate input $C_n$ is computed by integrating the climate over $\Omega_n$ not $\Omega$.
 
-Heuristically, numerical models assert exact discrete conservation when $M_n$ and $C_n$ have computable approximations and
-	$$M_n = M_{n-1} + C_n$$
-is true for $n=1,\dots,N$, at least to within rounding error.
-
-\subsection{The discrete-time ``retreat loss''}  \label{subsec:retreatloss}  Define
+\subsection{The discrete-time ``retreat loss''}  \label{subsec:retreatloss}  Heuristically, numerical models assert exact discrete conservation when $M_n$ and $C_n$ have computable approximations and
+\begin{equation}
+	M_n = M_{n-1} + C_n  \label{eq:classicalbalance}
+\end{equation}
+is true for $n=1,\dots,N$, at least to within rounding error.  However, \eqref{eq:classicalbalance} is not a property which follows from definitions \eqref{eq:totalmassseries} and \eqref{eq:climateseries}.  Instead, define
 \begin{equation}
 R_n = \int_{\Omega_n^r} u_{n-1}\,dx, \label{eq:retreatlossseries}
 \end{equation}
@@ -668,11 +700,11 @@ which we call the \emph{retreat loss} during the $n$th time step.
 
 The total mass and retreat loss are related.  In fact, by \eqref{eq:semimassconserve} we have
 \begin{align}
-M_n - M_{n-1} &= \int_{\Omega_n} (u_n - u_{n-1})\,dx - \int_{\Omega_n^r} (0 - u_{n-1})\,dx \label{eq:massstep} \\
+M_n - M_{n-1} &= \int_{\Omega_n} (u_n - u_{n-1})\,dx - \int_{\Omega_n^r} (0 - u_{n-1})\,dx \label{eq:newbalance} \\
    &= \Delta t \int_{\Omega_n} (- \Div \bQ_n + F_n) \,dx \, + R_n \notag \\
    &= C_n + R_n \notag
 \end{align}
-because $\bQ_n=0$ along $\partial \Omega$ by \eqref{eq:Qiscontinuous} and \eqref{eq:Qiszero}.
+because $\bQ_n=0$ along $\partial \Omega_n$ by \eqref{eq:Qiscontinuous} and \eqref{eq:Qiszero}.
 
 FIXME: discuss
 
@@ -684,15 +716,35 @@ While $\bar t(x)$ varies over $\Omega_n^r$, as $\Delta t \to 0$ then $\bar t(x) 
 
 For numerical models, however, the variation in $\bar t(x)$, over $\Omega_n^r$ during the time-step $t_{n-1} < t \le t_n$, is unknown.  Not accounting for the unknown variation of $\bar t(x)$ over the retreat set $\Omega_n^r$ is a barrier to the conservation of discrete (or merely time-discretized) modeled mass.
 
-\subsection{The discrete-space ``shell error''}  \label{subsec:shellerror}  FIXME: define it
+\subsection{The discrete-space ``shell error''}  \label{subsec:shellerror}  In the fully-discrete model, with slight abuse of notation, analogous to \eqref{eq:totalmassseries}, \eqref{eq:climateseries}, and \eqref{eq:retreatlossseries}, respectively, we define
+	$$M_n = \sum_j u_n^j a_j, \quad C_n = \Delta t\,\sum_{\{j:u_n^j>0\}} F_n^j a_j, \quad \text{ and } \quad R_n = \sum_{\{j:u_n^j=0\}} u_{n-1}^j a_j.$$
+Thus by \eqref{eq:fvmassconserve}, and analogous to the continuous-space version \eqref{eq:newbalance}, we compute
+\begin{align}
+M_n - M_{n-1} &= \sum_{u_n^j>0} (u_n^j - u_{n-1}^j) a_j - R_n \notag \\
+   &= - \Delta t\,\sum_{u_n^j>0}\, \sum_{(j,k)\in\mathcal{E}_j} Q_n^{(j,k)} \ell_{(j,k)} + \Delta t\,\sum_{u_n^j>0} F_n^j - R_n \notag \\
+   &= - \Delta t\,\sum_{u_n^j>0}\, \sum_{(j,k)\in\mathcal{E}_j} Q_n^{(j,k)} \ell_{(j,k)} + C_n - R_n.  \label{eq:fvnewbalance}
+\end{align}
+However, though in the continuous-space \eqref{eq:newbalance} we could eliminate the flux integral because $\bQ_n=0$ along $\partial \Omega_n$, the discrete flux sum in \eqref{eq:fvnewbalance} is not zero.
+
+We can use local conservation \eqref{eq:fvlocalconservation} to reduce the discrete flux sum in \eqref{eq:fvnewbalance}.  In fact, [FIXME: interpret as reversing order of summation, using notation for cells which have a given edge?]
+\begin{align}
+\sum_{u_n^j>0}\, \sum_{(j,k)\in\mathcal{E}_j} Q_n^{(j,k)} \ell_{(j,k)} &= \dots = S_n \label{eq:fvderiveshellerror}
+\end{align}
+Thus this \emph{shell error} $S_n$ is computed along the finite-volume approximation of the free boundary (shown bold), that is, those edges where one adjacent cell has $u_n>0$ and the other has $u_n=0$.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fvmesh-shellerror.tikz}
 \end{center}
-\caption{In a completely-unstructured mesh, each cell either has $u_n>0$ (labeled with ``$+$'') or $u_n=0$ (labeled ``$0$'').  The shell error is computed along the finite-volume approximation of the free boundary (shown bold), that is, those edges where one adjacent cell has $u_n>0$ and the other has $u_n=0$.}
+\caption{The \emph{shell error} $S_n$ is computed along those edges (strong line) where $u_n$ changes from positive (labeled with ``$+$'') to zero (labeled ``$0$'').  In the continuous-space case it would be zero.}
 \label{fig:fvmesh-shellerror}
 \end{figure}
+
+FIXME  thus
+\begin{equation}
+  M_n = M_{n-1} + C_n - R_n - \Delta t\,S_n \label{eq:fvfinalbalance}
+\end{equation}
+
 
 \subsection{Comments on model reporting}  \label{subsec:comments}  FIXME As an operational statement about discrete-time models, we can rephrase our major assertion from section \ref{sec:intro} as
 \begin{quote}

@@ -1,6 +1,10 @@
 % created by hand
 \begin{tikzpicture}[scale=0.35]
+  %uncomment to see grid on which it was generated:
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (16,16);
+
   \input{fvmesh-core.tikz}
+
   % the free boundary is bold
   \draw[line width=2.0pt] (6,3) -- (3,5) -- (4,9) -- (8,8) -- (8,14) --
                           (12,11) -- (16,9) -- (10,5) -- cycle;
