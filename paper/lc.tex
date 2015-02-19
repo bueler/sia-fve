@@ -7,6 +7,7 @@
 \usepackage{times}
 
 \usepackage{tikz}
+%\usetikzlibrary{arrows,decorations.markings,decorations.pathreplacing,fadings}
 
 %\theoremstyle{definition}
 \newtheorem{example}{Example}
@@ -635,7 +636,13 @@ On the other hand, fully-explicit and \emph{fully-discretized} numerical schemes
 
 \section{The fully-discretized single time-step problem}  \label{sec:spacediscretized} FIXME
 
-
+\begin{figure}[ht]
+\begin{center}
+\input{fvmesh-notation.tikz}
+\end{center}
+\caption{Notation for a completely-unstructured finite volume mesh in $\RR^2$:  Each cell has index $j$, representative thickness $u_n^j$, and area $\omega_j$.  The edge between cell $j$ and cell $k$ is indexed by a pair $(j,k)$, and it has length $\lambda_{(j,k)}$.  The scalar normal flux across this edge, outward from cell $j$, is $Q_n^{(j,k)}$.  Note $Q_n^{(k,j)}=-Q_n^{(j,k)}$.}
+\label{fig:fvmesh-notation}
+\end{figure}
 
 \section{\emph{A posteriori} analysis of mass conservation on the free boundary}  \label{sec:timeseries}
 

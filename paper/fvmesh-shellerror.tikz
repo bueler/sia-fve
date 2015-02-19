@@ -1,24 +1,9 @@
 % created by hand
-\begin{tikzpicture}[scale=0.4]
-  % the free boundary
-  \draw[line width=2.0pt] (6,3) -- (3,5) -- (4,9) -- (8,8) -- (8,14) -- (12,11) -- (16,9) -- (10,5) -- cycle;
-  % exterior cell boundaries
-  \draw[gray] (3,0) -- (6,3);
-  \draw[gray] (0,5) -- (3,5);
-  \draw[gray] (0,10) -- (4,9);
-  \draw[gray] (0,16) -- (4,13);
-  \draw[gray] (4,13) -- (4,9);
-  \draw[gray] (4,13) -- (8,14);
-  \draw[gray] (8,14) -- (8,16);
-  \draw[gray] (12,11) -- (16,14);
-  \draw[gray] (10,5) -- (14,3);
-  \draw[gray] (10,1) -- (14,3);
-  \draw[gray] (14,3) -- (16,3);
-  \draw[gray] (6,3) -- (10,1);
-  \draw[gray] (10,0) -- (10,1);
-  % interior cell boundaries
-  \draw[gray] (10,5) -- (8,8);
-  \draw[gray] (8,8) -- (12,11);
+\begin{tikzpicture}[scale=0.35]
+  \input{fvmesh-core.tikz}
+  % the free boundary is bold
+  \draw[line width=2.0pt] (6,3) -- (3,5) -- (4,9) -- (8,8) -- (8,14) --
+                          (12,11) -- (16,9) -- (10,5) -- cycle;
   % label cells with positive thickness
   \draw (6,6) node {$+$};
   \draw (11,8) node {$+$};
@@ -35,7 +20,4 @@
   \draw (13,0.5) node {$0$};
   \draw (6.5,0.5) node {$0$};
   \draw (10,3) node {$0$};
-
-  %\draw[gray,very thin] (-0.500258,0.000000) -- (-0.853500,0.353500);
-  %\filldraw (1.000000,0.000000) circle (1.000000pt);
 \end{tikzpicture}
