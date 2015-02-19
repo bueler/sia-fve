@@ -14,8 +14,6 @@ static const char help[] =
 "Exact solution for lambda=0 case.  Either analytical Jacobian or\n"
 "finite-difference evaluation of Jacobian.\n\n";
 
-//FIXME: relate to event detection in \infty dimensions
-
 //   ./layer -help |grep lay_
 
 //   ./convtest.sh
@@ -167,7 +165,7 @@ int main(int argc,char **argv) {
 
   /* time-stepping loop */
   {
-    PetscReal  t = 0.0, Mold, M, R, C, balance;
+    PetscReal  t = 0.0, Mold = 0.0, M, R, C, balance;
     PetscInt   n, its;
     SNESConvergedReason reason;
     ierr = VecCopy(user.uold,u);CHKERRQ(ierr);
@@ -186,7 +184,7 @@ int main(int argc,char **argv) {
       if (genmassfile) {
         ierr = GetMassAccounts(user.dt,user.midtime,u,user.uold,&M,&R,&C,&user); CHKERRQ(ierr);
         balance = (n > 0) ? M - Mold - C + R : 0.0;
-        if (fprintf(massfile,"%12.4f  %.12e  %.12e  %.12e  %.12e\n",t+user.dt,M,R,C,balance) < 0)
+        if (fprintf(massfile,"%10.4f  %.10e  %.10e  %.10e  %.10e\n",t+user.dt,M,R,C,balance) < 0)
           SETERRQ1(PETSC_COMM_WORLD,4,"fprintf() reports error writing to file %s\n",massfilename);
         Mold = M;
       }
@@ -509,7 +507,7 @@ PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfig
       "-lambda", "q = lambda q^0 + (1-lambda) q^1 where q^0 is SIA part and q^1 is advective part",
       NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
-      "-massfile", "if set, write mass time-series to this file",
+      "-massfile", "if set, write mass time-series [t_n M_n R_n C_n balance] to this file",
       NULL,massfilename,massfilename,512,genmassfile);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-noshow", "do _not_ show solution with X window viewers",
