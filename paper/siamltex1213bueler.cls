@@ -768,7 +768,8 @@ Vol.\ #3, No.\ #4, pp.\ #5
 
 \def\newarticle{\input{newart.tex}}
 
-\RequirePackage[dvips]{color}
+\RequirePackage{xcolor}
+%\RequirePackage[dvips]{color}
 %\definecolor{header1}{cmyk}{.9,.5,0,.35}
 %\definecolor{blue1}{cmyk}{.9,.7,0,0}
 %\definecolor{blue2}{cmyk}{.93,.95,.2,.07}
@@ -786,7 +787,8 @@ Vol.\ #3, No.\ #4, pp.\ #5
 \definecolor{blue2}{cmyk}{0,0,0,1}
 \definecolor{maroon}{cmyk}{0,0,0,1}
 \definecolor{gold1}{cmyk}{0,0,0,1}
-\definecolor{gray}{cmyk}{0,0,0,1}
+\definecolor{gray}{cmyk}{0,0,0,0.5}
+%\definecolor{gray}{cmyk}{0,0,0,1}
 \definecolor{green1}{cmyk}{0,0,0,1}
 \definecolor{proofcolor}{cmyk}{0,0,0,1}
 \definecolor{red1}{cmyk}{0,0,0,1}
