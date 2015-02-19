@@ -1,7 +1,7 @@
 all: lc.pdf
 
 figures = domains-fig.pdf
-tikzfigs = fvmesh.tikz
+tikzfigs = fvmesh-shellerror.tikz
 
 domains-fig.pdf: domainsfigure.py
 	python domainsfigure.py

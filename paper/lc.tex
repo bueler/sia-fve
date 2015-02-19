@@ -635,13 +635,7 @@ On the other hand, fully-explicit and \emph{fully-discretized} numerical schemes
 
 \section{The fully-discretized single time-step problem}  \label{sec:spacediscretized} FIXME
 
-\begin{figure}[ht]
-\begin{center}
-\input{fvmesh.tikz}
-\end{center}
-\caption{FIXME: this version has node labels so we can remove edges for real figure}
-\label{fig:octagon}
-\end{figure}
+
 
 \section{\emph{A posteriori} analysis of mass conservation on the free boundary}  \label{sec:timeseries}
 
@@ -684,6 +678,14 @@ While $\bar t(x)$ varies over $\Omega_n^r$, as $\Delta t \to 0$ then $\bar t(x) 
 For numerical models, however, the variation in $\bar t(x)$, over $\Omega_n^r$ during the time-step $t_{n-1} < t \le t_n$, is unknown.  Not accounting for the unknown variation of $\bar t(x)$ over the retreat set $\Omega_n^r$ is a barrier to the conservation of discrete (or merely time-discretized) modeled mass.
 
 \subsection{The discrete-space ``shell error''}  \label{subsec:shellerror}  FIXME: define it
+
+\begin{figure}[ht]
+\begin{center}
+\input{fvmesh-shellerror.tikz}
+\end{center}
+\caption{In a completely-unstructured mesh, each cell either has $u_n>0$ (labeled with ``$+$'') or $u_n=0$ (labeled ``$0$'').  The shell error is computed along the finite-volume approximation of the free boundary (shown bold), that is, those edges where one adjacent cell has $u_n>0$ and the other has $u_n=0$.}
+\label{fig:fvmesh-shellerror}
+\end{figure}
 
 \subsection{Comments on model reporting}  \label{subsec:comments}  FIXME As an operational statement about discrete-time models, we can rephrase our major assertion from section \ref{sec:intro} as
 \begin{quote}

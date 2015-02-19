@@ -1,5 +1,5 @@
 % created by hand
-\begin{tikzpicture}[scale=0.3]
+\begin{tikzpicture}[scale=0.4]
   % the free boundary
   \draw[line width=2.0pt] (6,3) -- (3,5) -- (4,9) -- (8,8) -- (8,14) -- (12,11) -- (16,9) -- (10,5) -- cycle;
   % exterior cell boundaries
