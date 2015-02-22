@@ -1,9 +1,13 @@
 \documentclass[11pt]{amsart}
 
+\renewcommand{\baselinestretch}{1.06}
+
 \usepackage{geometry}
 \geometry{letterpaper, margin=1in}
 
 \usepackage{verbatim}
+
+\usepackage{amssymb}
 
 % math macros
 \newcommand\bb{\mathbf{b}}
@@ -43,8 +47,11 @@
 \newcommand\RR{\mathbb{R}}
 \newcommand\vf{\varphi}
 
+\newcommand\alpharight{\alpha_{{}_{\blacktriangleright}}}
+\newcommand\alphaup{\alpha_{{\!}_{\blacktriangle}}}
 
-\title{Correspondence: The Mahaffy (1976) numerical scheme \\ for the shallow ice approximation \\ is a $Q^1$ finite element method}
+
+\title[Correspondence: The Mahaffy scheme is a $Q^1$ FEM]{Correspondence: The Mahaffy (1976) numerical scheme \\ for the shallow ice approximation \\ is a $Q^1$ finite element method}
 
 \author{Ed Bueler}
 
@@ -61,38 +68,66 @@
 
 \section{Introduction}
 
-The finite difference scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme uses particular choices for evaluating the ice surface slope and the thickness so as to compute the ice flux at staggered-grid points, using a stencil with minimal width.  The scheme is a widely-used choice for numerically solving the shallow ice approximation \cite{vanderVeen2013}, the basic model of non-sliding glacier flow, often as a part of the stress balance solver for practical hybrid ice sheet models \cite{BuelerBrown2009}.  We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a Petrov-Galerkin finite element method using a $Q^1$ (piecewise bilinear) trial function space and piecewise-constant test functions.  Based on this re-interpretation of the scheme we can suggest more accurate evaluation of the ice flux with the same stencil, and we can also construct the scheme for unstructured grids consisting of finite element meshes with dual control volumes, e.g.~Delaunay/Voronoi dual meshes.
+The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme is a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.  The scheme uses particular choices for evaluating the ice surface slope and thickness so as to compute the ice flux and diffusivity at staggered-grid points.  For these purposes it uses a stencil with lesser width than, and achieves higher accuracy than, the alternative schemes in those tests where the analytical solution is known and the ice rheology is realistic \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it can be used as part of the stress balance solution method in membrane-stress-resolving hybrid ice dynamics models \cite{BuelerBrown2009}.
 
-FIXME
+We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a conforming Petrov-Galerkin finite element method (FEM) \cite{Elmanetal2005}.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \cite{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can also be interpreted as a ``finite volume element'' (FVE) method \cite{EwingLinLin2002}.
 
-\section{The Mahaffy scheme for the shallow ice approximation}  We mostly follow notation from \cite{Bueleretal2005}, and we only consider the isothermal case of the shallow ice approximation.  FIXME: get to:  If $H(t,x,y)$ is the ice thickness, $b(x,y)$ the bed elevation, and $s = H+b$ is the ice surface elevation [SI units of m], then the vertically-integrated ice flux [$\text{m}^2/\text{s}$] is
-\begin{equation}
-\bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
-\end{equation}
-where $\Gamma = 2 A (\rho g)^n / (n+2)$.  The ice sheet thickness evolution itself is a straightforward conservation equation,
+Based on this re-interpretation of the scheme we propose, and test, a more accurate evaluation of the ice flux with the same stencil.  We then re-construct the scheme for unstructured grids consisting of suitable finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes (compare \cite{Ringleretal2013}).
+
+
+\section{The Mahaffy scheme for the shallow ice approximation}  The shallow ice approximation (SIA) \cite{Hutter1983} is the lubrication approximation \cite{Fowler1997} of the Stokes equations for slow-flowing ice which is in non-sliding contact with the bed and which has a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law (e.g.~\cite{GreveBlatter2009}) case of the shallow ice approximation.
+
+Let $H$ be the ice thickness, $b$ the bed elevation, and $s = H+b$ the ice surface elevation.  The ice sheet thickness evolution itself is a straightforward conservation equation,
 \begin{equation}
 \frac{\partial H}{\partial t} + \Div \bq = m  \label{eq:siaevolution}
 \end{equation}
-where $m(t,x,y)$ [$\text{m}/\text{s}$] is the surface mass balance, also called the accumulation/ablation function.
-
-The core of the Mahaffy scheme is a calculation of the vertically-integrated ice flux $\bq$ on the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}.  At the staggered-grid location $(x_{j+1/2},y_k)$, the $x$-component of the flux, that is, the flux normal to the right edge of the control volume, at the center of that edge, as in Figure FIXME, is computed by
+where $m$ [SI units $\text{m}/\text{s}$] is the surface mass balance, also called the accumulation/ablation function, and the divergence ``$\Div$'' is computed in horizontal $x,y$ directions only.  In the SIA the vertically-integrated flux [units $\text{m}^2/\text{s}$], or volume flux \cite{GreveBlatter2009}, is
 \begin{equation}
-q^x_{j+1/2,k} = - \Gamma \left(\tfrac{H_{j,k} + H_{j+1,k}}{2}\right)^{n+2} \left(\alpha_{j+1/2,k}\right)^{(n-1)/2} \tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}.  \label{eq:mahaffyWqx}
+\bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
 \end{equation}
-The quantity ``$\alpha$'' is an estimate of the square of the surface slope $|\grad s|^2$, a key quantity in \eqref{eq:siaflux}, at the staggered-grid location:
+where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant, in the isothermal case, and ``$\grad$'' is the gradient in $x,y$.  Because our interest is only in spatial discretization aspects, we will only consider the steady-state case of \eqref{eq:siaevolution}, namely
 \begin{equation}
-\alpha_{j+1/2,k} = \left(\tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2.  \label{eq:mahaffyWalphax}
+\Div \bq = m.  \label{eq:siasteady}
+\end{equation}
+The input data to \eqref{eq:siasteady} consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  The solution is a nonnegative thickness function $H(x,y)$, plus the corresponding surface elevation $s(x,y)$.
+
+The flux \eqref{eq:siaflux} has a couple of interpretations in the literature.  Equation \eqref{eq:siasteady} can be interpreted as a strongly-nonlinear diffusion:
+\begin{equation}
+- \Div \left(D \grad s\right) = m, \qquad \text{where} \quad D = D(H,|\grad s|) =  \Gamma H^{n+2} |\grad s|^{n-1}. \label{eq:siadiffusioneqn}
+\end{equation}
+In these terms, $\bq = - D \grad s$ is the flux.  On the other hand, one can compute a vertically-averaged velocity
+\begin{equation}
+\bar \bv = - \Gamma H^{n+1} |\grad s|^{n-1} \grad s, \label{eq:siavelocity}
+\end{equation}
+in which terms $\bq = \bar \bv H$.  In either case, if the mass balance is sufficiently-negative near the boundary of the domain then the thickness reaches zero inside the domain at a free boundary \cite{JouvetBueler2012}, a mode of solution usually called a ``whole ice sheet'' model.  This free boundary is a location of degenerate diffusivity $D=0$.
+
+The Mahaffy scheme is, specifically, a calculation of the vertically-integrated ice flux $\bq$ on the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}.  Consider the FD grid in Figure \ref{fig:fdfemgrids}a.  At the staggered-grid location $(x_{j+1/2},y_k)$, the $x$-component of the flux, that is, the flux normal to the right edge of the control volume, at the center of that edge, is computed by
+\begin{equation}
+q^x_{j+1/2,k} = - \Gamma \left(\tfrac{H_{j,k} + H_{j+1,k}}{2}\right)^{n+2} \alpharight^{n-1} \tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}.  \label{eq:mahaffyWqx}
+\end{equation}
+where $s_{j,k} = H_{j,k} + b_{j,k}$.  The quantity ``$\alpharight$'' is an estimate of the surface slope $|\grad s|$, a key quantity in \eqref{eq:siaflux}, at the staggered-grid location:
+\begin{equation}
+\alpharight = \left(\left(\tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2\right)^{1/2}.  \label{eq:mahaffyWalphax}
 \end{equation}
 The formula for the flux $q^y_{j,k+1/2}$ at the staggered-grid location $(x_j,y_{k+1/2})$, at the center of the top edge of the control volume, follow by swapping the roles of $j$ and $k$ in equations \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}:
 \begin{align}
-q^y_{j,k+1/2} &= - \Gamma \left(\tfrac{H_{j,k} + H_{j,k+1}}{2}\right)^{n+2} \left(\alpha_{j,k+1/2}\right)^{(n-1)/2} \tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}, \label{eq:mahaffyWqy} \\
-\alpha_{j,k+1/2} &= \left(\tfrac{s_{j+1,k} + s_{j+1,k+1} - s_{j-1,k} - s_{j-1,k+1}}{4 \Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}\right)^2.  \label{eq:mahaffyWalphay}
+q^y_{j,k+1/2} &= - \Gamma \left(\tfrac{H_{j,k} + H_{j,k+1}}{2}\right)^{n+2} \alphaup^{n-1} \tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}, \label{eq:mahaffyWqy} \\
+\alphaup &= \left(\left(\tfrac{s_{j+1,k} + s_{j+1,k+1} - s_{j-1,k} - s_{j-1,k+1}}{4 \Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}\right)^2\right)^{1/2}.  \label{eq:mahaffyWalphay}
 \end{align}
-Key aspects of the Mahaffy scheme is the approximations of $\partial s/\partial y$ at $(x_{j+1/2},y_k)$ and $\partial s/\partial x$ at $(x_j,y_{k+1/2})$.
+The least-obvious aspect of the Mahaffy scheme is in the approximations \eqref{eq:mahaffyWalphax}, \eqref{eq:mahaffyWalphay} of the slopes at the staggered grid points.
 
-The finite difference scheme itself for solving the SIA equation \eqref{eq:siaevolution} using a forward-Euler time-discretization uses a straightforward application of centered-difference formulas for the flux divergence \cite{MortonMayers2005}:
+\begin{figure}[ht]
+\begin{center}
+FIGURE (FIXME)
+%\includegraphics[width=2.0in,keepaspectratio=true]{domains-fig}
+\end{center}
+\caption{Left: A structured finite difference (FD) grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured finite volume element (FVE) grid with finite element quadrilaterals (solid), degrees of freedom at the nodes (dots), and control volumes on which the test functions are constant (dashed).}
+\label{fig:fdfemgrids}
+\end{figure}
+
+The finite difference scheme itself for solving the steady SIA equation \eqref{eq:siasteady} using a forward-Euler time-discretization uses a straightforward application of centered-difference formulas for the flux divergence \cite{MortonMayers2005}:
 \begin{equation}
-\frac{H_{j,k}^{n+1} - H_{j,k}^n}{\Delta t} + \frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}^n
+\frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}^n
 \end{equation}
 where $m_{j,k}^n$ is an estimate of the surface mass balance at location $(x_j,y_k)$ in the time interval $[t_n,t_{n+1}]$, and where the quantities $H_{j,k}$ and $s_{j,k}$ in the formulas \eqref{eq:mahaffyWqx}--\eqref{eq:mahaffyWalphay} are all evaluated at time $t_n$.
 
