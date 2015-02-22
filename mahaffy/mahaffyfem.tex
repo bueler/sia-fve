@@ -1,0 +1,99 @@
+\documentclass[11pt]{amsart}
+
+\usepackage{geometry}
+\geometry{letterpaper, margin=1in}
+
+\usepackage{verbatim}
+
+% math macros
+\newcommand\bb{\mathbf{b}}
+\newcommand\bbf{\mathbf{f}}
+\newcommand\bn{\mathbf{n}}
+\newcommand\bq{\mathbf{q}}
+\newcommand\bu{\mathbf{u}}
+\newcommand\bv{\mathbf{v}}
+\newcommand\by{\mathbf{y}}
+
+\newcommand\bQ{\mathbf{Q}}
+\newcommand\bV{\mathbf{V}}
+\newcommand\bX{\mathbf{X}}
+
+\newcommand\CC{\mathbb{C}}
+\newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
+\newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
+\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
+\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
+\newcommand{\ddxp}[1]{\ensuremath{\frac{\partial #1}{\partial x'}}}
+\newcommand{\ddz}[1]{\ensuremath{\frac{\partial #1}{\partial z}}}
+\newcommand{\ddxx}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x^2}}}
+\newcommand{\ddyy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial y^2}}}
+\newcommand{\ddxy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x \partial y}}}
+\newcommand{\ddzz}[1]{\ensuremath{\frac{\partial^2 #1}{\partial z^2}}}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand\eps{\epsilon}
+\newcommand{\grad}{\nabla}
+\newcommand{\ihat}{\mathbf{i}}
+\newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
+\newcommand{\jhat}{\mathbf{j}}
+\newcommand{\khat}{\mathbf{k}}
+\newcommand{\nhat}{\mathbf{n}}
+\newcommand\lam{\lambda}
+\newcommand\lap{\triangle}
+\newcommand\Matlab{\textsc{Matlab}\xspace}
+\newcommand\RR{\mathbb{R}}
+\newcommand\vf{\varphi}
+
+
+\title{Correspondence: The Mahaffy (1976) numerical scheme \\ for the shallow ice approximation \\ is a $Q^1$ finite element method}
+
+\author{Ed Bueler}
+
+
+\begin{document}
+
+%\begin{abstract}
+%\end{abstract}
+
+\maketitle
+
+\thispagestyle{empty}
+
+
+\section{Introduction}
+
+The finite difference scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme uses particular choices for evaluating the ice surface slope and the thickness so as to compute the ice flux at staggered-grid points, using a stencil with minimal width.  The scheme is a widely-used choice for numerically solving the shallow ice approximation \cite{vanderVeen2013}, the basic model of non-sliding glacier flow, including within practical hybrid ice sheet models \cite{BuelerBrown2009}.  We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a Petrov-Galerkin finite element method using a $Q^1$ (piecewise bilinear) trial function space and piecewise-constant test functions.  Based on this re-interpretation of the scheme we can suggest more accurate evaluation of the ice flux with the same stencil, and we can also construct the scheme for unstructured grids consisting of finite element meshes with dual control volumes, e.g.~Delaunay/Voronoi dual meshes.
+
+FIXME
+
+\section{The Mahaffy scheme for the shallow ice approximation}  We follow notation from \cite{Bueleretal2005}, and we only consider the isothermal case.  FIXME: get to
+\begin{equation}
+\bq = - \frac{2 A (\rho g)^n}{n+2} H^{n+2} |\grad s|^{n-1} \grad s
+\end{equation}
+
+The core of the Mahaffy scheme is a calculation of the vertically-integrated ice flux $\bq$ on the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}:
+\begin{align*}
+q^x_{i+1/2,j} = \Gamma \left(\frac{H_{i,j} + H_{i+1,j}}{2}\right)^{n+2} \left(FIXME\right)^{(n-1)/2} \frac{s_{i+1,j} - s_{i,j}}{\Delta x}
+\end{align*}
+
+\section{A Petrov-Galerkin finite element approach}
+
+
+
+%         References
+\bibliography{../paper/lc}
+\bibliographystyle{siam}
+
+
+\begin{comment}
+Here is what the MPAS Land-Ice User's Manual version 3.0 says:
+
+\begin{quote}
+\small
+Velocities and fluxes are calculated on the midpoint of Voronoi cell edges.  The normal component of surface slope is calculated on cell edges using surface elevation at adjacent cell centers.  The tangential component of surface slope is calculated on cell edges using surface elevation at adjacent vertices. The surface elevation at vertices is calculated from the values at adjacent cell centers using barycentric interpolation. Ice thickness on edges is calculated as the average of the adjacent cell center values (2nd-order approximation).
+\end{quote}
+
+Looking at this, and the code, I don't think they think of it as Petrov-Galerkin
+\end{comment}
+
+
+\end{document}
