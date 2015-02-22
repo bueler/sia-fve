@@ -61,19 +61,41 @@
 
 \section{Introduction}
 
-The finite difference scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme uses particular choices for evaluating the ice surface slope and the thickness so as to compute the ice flux at staggered-grid points, using a stencil with minimal width.  The scheme is a widely-used choice for numerically solving the shallow ice approximation \cite{vanderVeen2013}, the basic model of non-sliding glacier flow, including within practical hybrid ice sheet models \cite{BuelerBrown2009}.  We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a Petrov-Galerkin finite element method using a $Q^1$ (piecewise bilinear) trial function space and piecewise-constant test functions.  Based on this re-interpretation of the scheme we can suggest more accurate evaluation of the ice flux with the same stencil, and we can also construct the scheme for unstructured grids consisting of finite element meshes with dual control volumes, e.g.~Delaunay/Voronoi dual meshes.
+The finite difference scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme uses particular choices for evaluating the ice surface slope and the thickness so as to compute the ice flux at staggered-grid points, using a stencil with minimal width.  The scheme is a widely-used choice for numerically solving the shallow ice approximation \cite{vanderVeen2013}, the basic model of non-sliding glacier flow, often as a part of the stress balance solver for practical hybrid ice sheet models \cite{BuelerBrown2009}.  We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a Petrov-Galerkin finite element method using a $Q^1$ (piecewise bilinear) trial function space and piecewise-constant test functions.  Based on this re-interpretation of the scheme we can suggest more accurate evaluation of the ice flux with the same stencil, and we can also construct the scheme for unstructured grids consisting of finite element meshes with dual control volumes, e.g.~Delaunay/Voronoi dual meshes.
 
 FIXME
 
-\section{The Mahaffy scheme for the shallow ice approximation}  We follow notation from \cite{Bueleretal2005}, and we only consider the isothermal case.  FIXME: get to
+\section{The Mahaffy scheme for the shallow ice approximation}  We mostly follow notation from \cite{Bueleretal2005}, and we only consider the isothermal case of the shallow ice approximation.  FIXME: get to:  If $H(t,x,y)$ is the ice thickness, $b(x,y)$ the bed elevation, and $s = H+b$ is the ice surface elevation [SI units of m], then the vertically-integrated ice flux [$\text{m}^2/\text{s}$] is
 \begin{equation}
-\bq = - \frac{2 A (\rho g)^n}{n+2} H^{n+2} |\grad s|^{n-1} \grad s
+\bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
 \end{equation}
+where $\Gamma = 2 A (\rho g)^n / (n+2)$.  The ice sheet thickness evolution itself is a straightforward conservation equation,
+\begin{equation}
+\frac{\partial H}{\partial t} + \Div \bq = m  \label{eq:siaevolution}
+\end{equation}
+where $m(t,x,y)$ [$\text{m}/\text{s}$] is the surface mass balance, also called the accumulation/ablation function.
 
-The core of the Mahaffy scheme is a calculation of the vertically-integrated ice flux $\bq$ on the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}:
-\begin{align*}
-q^x_{i+1/2,j} = \Gamma \left(\frac{H_{i,j} + H_{i+1,j}}{2}\right)^{n+2} \left(FIXME\right)^{(n-1)/2} \frac{s_{i+1,j} - s_{i,j}}{\Delta x}
-\end{align*}
+The core of the Mahaffy scheme is a calculation of the vertically-integrated ice flux $\bq$ on the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}.  At the staggered-grid location $(x_{j+1/2},y_k)$, the $x$-component of the flux, that is, the flux normal to the right edge of the control volume, at the center of that edge, as in Figure FIXME, is computed by
+\begin{equation}
+q^x_{j+1/2,k} = - \Gamma \left(\tfrac{H_{j,k} + H_{j+1,k}}{2}\right)^{n+2} \left(\alpha_{j+1/2,k}\right)^{(n-1)/2} \tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}.  \label{eq:mahaffyWqx}
+\end{equation}
+The quantity ``$\alpha$'' is an estimate of the square of the surface slope $|\grad s|^2$, a key quantity in \eqref{eq:siaflux}, at the staggered-grid location:
+\begin{equation}
+\alpha_{j+1/2,k} = \left(\tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2.  \label{eq:mahaffyWalphax}
+\end{equation}
+The formula for the flux $q^y_{j,k+1/2}$ at the staggered-grid location $(x_j,y_{k+1/2})$, at the center of the top edge of the control volume, follow by swapping the roles of $j$ and $k$ in equations \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}:
+\begin{align}
+q^y_{j,k+1/2} &= - \Gamma \left(\tfrac{H_{j,k} + H_{j,k+1}}{2}\right)^{n+2} \left(\alpha_{j,k+1/2}\right)^{(n-1)/2} \tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}, \label{eq:mahaffyWqy} \\
+\alpha_{j,k+1/2} &= \left(\tfrac{s_{j+1,k} + s_{j+1,k+1} - s_{j-1,k} - s_{j-1,k+1}}{4 \Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}\right)^2.  \label{eq:mahaffyWalphay}
+\end{align}
+Key aspects of the Mahaffy scheme is the approximations of $\partial s/\partial y$ at $(x_{j+1/2},y_k)$ and $\partial s/\partial x$ at $(x_j,y_{k+1/2})$.
+
+The finite difference scheme itself for solving the SIA equation \eqref{eq:siaevolution} using a forward-Euler time-discretization uses a straightforward application of centered-difference formulas for the flux divergence \cite{MortonMayers2005}:
+\begin{equation}
+\frac{H_{j,k}^{n+1} - H_{j,k}^n}{\Delta t} + \frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}^n
+\end{equation}
+where $m_{j,k}^n$ is an estimate of the surface mass balance at location $(x_j,y_k)$ in the time interval $[t_n,t_{n+1}]$, and where the quantities $H_{j,k}$ and $s_{j,k}$ in the formulas \eqref{eq:mahaffyWqx}--\eqref{eq:mahaffyWalphay} are all evaluated at time $t_n$.
+
 
 \section{A Petrov-Galerkin finite element approach}
 
