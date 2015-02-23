@@ -51,7 +51,7 @@
 \newcommand\alphaup{\alpha_{{\!}_{\blacktriangle}}}
 
 
-\title[Correspondence: The Mahaffy scheme is a $Q^1$ FEM]{Correspondence: The Mahaffy (1976) numerical scheme \\ for the shallow ice approximation \\ is a $Q^1$ finite element method}
+\title[Correspondence: The Mahaffy scheme is a finite element method]{Correspondence: \\ The Mahaffy (1976) numerical scheme for the \\ shallow ice approximation is a finite element method}
 
 \author{Ed Bueler}
 
@@ -75,7 +75,7 @@ We show that in the structured grid case the Mahaffy scheme is a reasonable, tho
 Based on this re-interpretation of the scheme we propose, and test, a more accurate evaluation of the ice flux with the same stencil.  We then re-construct the scheme for unstructured grids consisting of suitable finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes (compare \cite{Ringleretal2013}).
 
 
-\section{The Mahaffy scheme for the shallow ice approximation}  The shallow ice approximation (SIA) \cite{Hutter1983} is the lubrication approximation \cite{Fowler1997} of the Stokes equations for slow-flowing ice which is in non-sliding contact with the bed and which has a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law (e.g.~\cite{GreveBlatter2009}) case of the shallow ice approximation.
+\section{The Mahaffy finite difference scheme}  The shallow ice approximation (SIA) \cite{Hutter1983} is the lubrication approximation \cite{Fowler1997} of the Stokes equations for slow-flowing ice which is in non-sliding contact with the bed and which has a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law (e.g.~\cite{GreveBlatter2009}) case of the shallow ice approximation.
 
 Let $H$ be the ice thickness, $b$ the bed elevation, and $s = H+b$ the ice surface elevation.  The ice sheet thickness evolution itself is a straightforward conservation equation,
 \begin{equation}
@@ -120,8 +120,8 @@ The least-obvious aspect of the Mahaffy scheme is in the approximations \eqref{e
 
 \begin{figure}[ht]
 \begin{center}
-FIGURE (FIXME)
-%\includegraphics[width=2.0in,keepaspectratio=true]{domains-fig}
+FIXME
+%\includegraphics[width=2.0in,keepaspectratio=true]{FIXME}
 \end{center}
 \caption{Left: A structured finite difference (FD) grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured finite volume element (FVE) grid with finite element rectangles (solid), degrees of freedom at the nodes (dots), and control volumes on which the test functions are constant (dashed).}
 \label{fig:fdfemgrids}
@@ -134,24 +134,32 @@ The finite difference scheme itself for solving the steady SIA equation \eqref{e
 where $m_{j,k}^n$ is an estimate of the surface mass balance at location $(x_j,y_k)$ in the time interval $[t_n,t_{n+1}]$, and where the quantities $H_{j,k}$ and $s_{j,k}$ in the formulas \eqref{eq:mahaffyWqx}--\eqref{eq:mahaffyWalphay} are all evaluated at time $t_n$.
 
 
-\section{A Petrov-Galerkin finite element approach}
+\section{A finite element interpretation}
 
-All of the above description of the Mahaffy FD method is undoubtedly familiar to many numerical ice sheet modelers, but we believe that deriving the same scheme from a FEM starting point is new.  Consider the same structured grid of rectangles with dimensions $\Delta x,\Delta y$, as shown in Figure \ref{fig:fdfemgrids}b, where the rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  In fact, the space of bilinear functions on the square $\square_{j,k}$ is the span of these four element basis functions
+All of the above description of the Mahaffy FD method is undoubtedly familiar to many numerical ice sheet modelers, but we believe that deriving the same scheme from a FEM starting point is new.  Consider the same structured grid of rectangles with dimensions $\Delta x,\Delta y$, as shown in Figure \ref{fig:fdfemgrids}b, where the rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  In fact, the space of bilinear functions on the rectangle $\square_{j,k}$ is the span of four element basis functions
 \begin{equation}
 \chi_l(x-x_j,y-y_k), \quad l=1,2,3,4,
 \end{equation}
-where
 \begin{align*}
 \chi_1(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \left(1-\tfrac{y}{\Delta y}\right), & \chi_2(x,y) &= \tfrac{x}{\Delta x} \left(1-\tfrac{y}{\Delta y}\right), \\
 \chi_3(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \tfrac{y}{\Delta y}, & \chi_4(x,y) &= \tfrac{x}{\Delta x} \tfrac{y}{\Delta y}. 
 \end{align*}
-Now, if $C(\Omega)$ are the continuous functions, let
+Let
 \begin{equation}
-S_h = \{u \in C(\Omega) \,\big|\, u \text{ on $\square_{j,k}$ is bilinear}\}
+S_h = \{u \in C(\Omega) \,\big|\, u \text{ is bilinear on $\square_{j,k}$}\}
 \end{equation}
-be the $Q^1$ finite element trial function space.
+be the $Q^1$ finite element trial function space, where $C(\Omega)$ are the continuous functions on the computational domain.
 
 
+
+\begin{figure}[ht]
+\begin{center}
+FIXME
+%\includegraphics[width=2.0in,keepaspectratio=true]{FIXME}
+\end{center}
+\caption{Left: A ``hat'' basis function in the trial space $S_h$.  Right: A piece-wise constant basis function in the test space $S_h^*$.}
+\label{fig:fembases}
+\end{figure}
 
 %         References
 \bibliography{../paper/lc}
