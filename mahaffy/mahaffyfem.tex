@@ -50,6 +50,10 @@
 \newcommand\alpharight{\alpha_{{}_{\blacktriangleright}}}
 \newcommand\alphaup{\alpha_{{\!}_{\blacktriangle}}}
 
+\newcommand{\dxtwo}{\tfrac{\Delta x}{2}}
+\newcommand{\dytwo}{\tfrac{\Delta y}{2}}
+
+
 
 \title[The Mahaffy scheme is a finite element method]{The Mahaffy (1976) numerical scheme for the \\ shallow ice approximation is a finite element method}
 
@@ -68,7 +72,7 @@
 
 \section{Introduction}
 
-The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme is a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.  The scheme uses particular choices for evaluating the ice surface slope and thickness so as to compute the ice flux and diffusivity at staggered-grid points.  For these purposes it uses a stencil with lesser width than, and achieves higher accuracy than, the alternative schemes in those tests where the analytical solution is known and the ice rheology is realistic \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it can be used as part of the stress balance solution method in membrane-stress-resolving hybrid ice dynamics models \cite{BuelerBrown2009}.
+The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme is a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.  The scheme uses particular choices for evaluating the ice surface slope and thickness so as to compute the ice flux and diffusivity at staggered-grid points.  For these purposes it uses a stencil with lesser width than, and achieves higher accuracy than, the alternative schemes in those tests where the analytical solution is known and the ice rheology is realistic \cite{HindmarshPayne1996}.  Its accuracy on steep bed terrain has been found to be flawed, but corrections have been proposed \cite{JaroschSchoofAnslow2013}.  As a scheme for non-sliding glacier flow, it is used as part of the stress balance solution method in a membrane-stress-resolving hybrid ice dynamics model \cite{BuelerBrown2009}.
 
 We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a conforming Petrov-Galerkin finite element (FE) method \cite{Elmanetal2005}.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \cite{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can also be interpreted as a ``finite volume element'' (FVE) method \cite{EwingLinLin2002}.
 
@@ -137,7 +141,7 @@ The above description of the Mahaffy FD method is familiar to numerical ice shee
 
 Consider the structured grid of rectangles with dimensions $\Delta x,\Delta y$, as shown in Figure \ref{fig:fdfemgrids}b, where the rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  A basis of bilinear functions on a single rectangle $\square_{j,k}$ is
 \begin{equation}
-\chi_l(x-x_j,y-y_k), \quad l=1,2,3,4,
+\chi_l(x-x_j,y-y_k), \quad l=1,2,3,4, \label{eq:elementbasis}
 \end{equation}
 \begin{align*}
 \chi_1(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \left(1-\tfrac{y}{\Delta y}\right), & \chi_2(x,y) &= \tfrac{x}{\Delta x} \left(1-\tfrac{y}{\Delta y}\right), \\
@@ -184,22 +188,19 @@ However, we can use the divergence theorem on the left, and we can use midpoint 
 \begin{equation}
   - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y \quad \text{ for all } j,k, \label{eq:siafve}
 \end{equation}
-where $\bn$ is the outward normal unit vector and $ds$ the length element on the closed curve (rectangle) $\partial V_{j,k}$.  Equation \eqref{eq:siafve} is a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains because $H^h$ is an everywhere-defined function from a space $S_h$ of continuous functions.
-
-\newcommand{\dxtwo}{\tfrac{\Delta x}{2}}
-\newcommand{\dytwo}{\tfrac{\Delta y}{2}}
-
-The FE method is completely specified once we compute the integral on the left of \eqref{eq:siafve}.  In this integral, the approximate flux $\bq^h$ is a well-defined function which is continuous on each element $\square_{j,k}$.  However, though it is bounded on the whole domain $\Omega$, it is discontinuous across element boundaries.  Thus we decompose into integrals of continuous functions,
+where $\bn$ is the outward normal unit vector and $ds$ the length element on the closed curve (rectangle) $\partial V_{j,k}$.  Equation \eqref{eq:siafve} is a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains here because $H^h$ is defined everywhere on $\Omega$, and from a function space $S_h$.  The FE method is completed by computing the integral in \eqref{eq:siafve}.  However, though $\bq^h$ is a well-defined, bounded function, and continuous on each element $\square_{j,k}$, it is discontinuous across element boundaries.  We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$.  For this purpose let $x_j^\pm = x_j \pm \dxtwo$, $y_k^\pm = y_k \pm \dytwo$, and denote components $\bq^h = \ip{q^x}{q^y}$.  Note $q^x$ and $q^y$ are scalar functions that depend on $(x,y)$ through $H^h$ and $b^h$:
 \begin{equation}
-  \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = \sum_{E} \int_{E\, \cap \, \partial V_{j,k}} \bq^h \cdot \bn\,ds \label{eq:fluxintE}
+  \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = \int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy + \int_{x_j^-}^{x_j^+} q^y(x,y_k^+)\,dx - \int_{y_k^-}^{y_k^+} q^x(x_j^-,y)\,dy - \int_{x_j^-}^{x_j^+} q^y(x,y_k^-)\,dx. \label{eq:fluxintdecomp}
 \end{equation}
-where the sum is over those four elements $E=\square_{r,s}$, with $r=j-1,j$ and $s=k-1,k$, for which the intersection $E\, \cap \, \partial V_{j,k}$ is nonempty.
 
-In the next equations we use notation $x_j^*=x_j+\dxtwo$, $y_k^*=y_k+\dytwo$, $\grad s^h = \ip{\partial_x s^h}{\partial_y s^h}$, and $\bq^h = \ip{q^x}{q^y}$.  Note $q^x$ and $q^y$ are scalar functions that depend on $(x,y)$ through $H^h$ and $b^h$.  When $E=\square_{j,k}$ the intersection $E\, \cap \, \partial V_{j,k}$ is the pair of line segments shown with thick dashed lines in Figure \ref{fig:fdfemgrids}b, and the corresponding term in \eqref{eq:fluxintE} is
-\begin{equation}
-\int_{\square_{j,k}\, \cap \, \partial V_{j,k}} \bq^h \cdot \bn\,ds = \int_{y_k}^{y_k^*} q^x(x_j^*,y) \,dy + \int_{x_j}^{x_j^*} q^y(x,y_k^*) \,dx.
-\end{equation}
-The other three terms in the sum in \eqref{eq:fluxintE} are similar.
+Considering the first of the integrals on the right in \eqref{eq:fluxintdecomp}, note that the integrand $f(y) = q^x(x_j^+,y)$ is piecewise-linear on its interval of definition $[y_k^-,y_k^+]$.  It has a single discontinuity at the midpoint $y_k$ because $\grad s^h$ is linear on each element but, unlike $s^h$ itself, it is not continuous across element boundaries.  The Mahaffy scheme computes the integral by the midpoint method, but with the gradient of $s^h$ averaged across its jump discontinuity there.  To turn this idea into symbols, note that on element $\square_{j,k}$,
+\begin{align}
+\frac{\partial s^h}{\partial x} &= \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\tfrac{y-y_k}{\Delta y}\right) + \tfrac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\tfrac{y-y_k}{\Delta y}\right), \label{eq:grads} \\
+\frac{\partial s^h}{\partial y} &= FIXME \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\tfrac{y-y_k}{\Delta y}\right) + \tfrac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\tfrac{y-y_k}{\Delta y}\right), \notag
+\end{align}
+while on element $\square_{j,k-1}$,
+FIXME
+The reader can check \eqref{eq:grads} and \eqref{eq:gradsbelow} by writing-out $s^h(x,y)$ on the two elements using the element basis \eqref{eq:elementbasis}.
 
 FIXME explain discontinuity of $\bq$ along $\partial V_{j,k}$, and Mahaffy as quadrature
 
