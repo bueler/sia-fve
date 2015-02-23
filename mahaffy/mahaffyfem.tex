@@ -85,11 +85,13 @@ where $m$ [SI units $\text{m}/\text{s}$] is the surface mass balance, also calle
 \begin{equation}
 \bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
 \end{equation}
-where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant, in the isothermal case, and ``$\grad$'' is the gradient in $x,y$.  Because our interest is only in spatial discretization aspects, we will only consider the steady-state case of \eqref{eq:siaevolution}, namely
+where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant, in the isothermal case, and ``$\grad$'' is the gradient in $x,y$.
+
+Because our interest is only in spatial discretization aspects, we will only consider the steady-state case of \eqref{eq:siaevolution}, namely
 \begin{equation}
-\Div \bq = m.  \label{eq:siasteady}
+\Div \bq = m,  \label{eq:siasteady}
 \end{equation}
-The input data to \eqref{eq:siasteady} consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  The solution is a nonnegative thickness function $H(x,y)$, plus the corresponding surface elevation $s(x,y)$.
+solved in some domain $\Omega$ in the plane.  The input data to \eqref{eq:siasteady} consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$ defined on $\Omega$.  The solution is a nonnegative thickness function $H(x,y)$, plus the corresponding surface elevation $s(x,y)$.
 
 The flux \eqref{eq:siaflux} has a couple of interpretations in the literature.  Equation \eqref{eq:siasteady} can be interpreted as a strongly-nonlinear diffusion:
 \begin{equation}
@@ -121,7 +123,7 @@ The least-obvious aspect of the Mahaffy scheme is in the approximations \eqref{e
 FIGURE (FIXME)
 %\includegraphics[width=2.0in,keepaspectratio=true]{domains-fig}
 \end{center}
-\caption{Left: A structured finite difference (FD) grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured finite volume element (FVE) grid with finite element quadrilaterals (solid), degrees of freedom at the nodes (dots), and control volumes on which the test functions are constant (dashed).}
+\caption{Left: A structured finite difference (FD) grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured finite volume element (FVE) grid with finite element rectangles (solid), degrees of freedom at the nodes (dots), and control volumes on which the test functions are constant (dashed).}
 \label{fig:fdfemgrids}
 \end{figure}
 
@@ -133,6 +135,21 @@ where $m_{j,k}^n$ is an estimate of the surface mass balance at location $(x_j,y
 
 
 \section{A Petrov-Galerkin finite element approach}
+
+All of the above description of the Mahaffy FD method is undoubtedly familiar to many numerical ice sheet modelers, but we believe that deriving the same scheme from a FEM starting point is new.  Consider the same structured grid of rectangles with dimensions $\Delta x,\Delta y$, as shown in Figure \ref{fig:fdfemgrids}b, where the rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  In fact, the space of bilinear functions on the square $\square_{j,k}$ is the span of these four element basis functions
+\begin{equation}
+\chi_l(x-x_j,y-y_k), \quad l=1,2,3,4,
+\end{equation}
+where
+\begin{align*}
+\chi_1(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \left(1-\tfrac{y}{\Delta y}\right), & \chi_2(x,y) &= \tfrac{x}{\Delta x} \left(1-\tfrac{y}{\Delta y}\right), \\
+\chi_3(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \tfrac{y}{\Delta y}, & \chi_4(x,y) &= \tfrac{x}{\Delta x} \tfrac{y}{\Delta y}. 
+\end{align*}
+Now, if $C(\Omega)$ are the continuous functions, let
+\begin{equation}
+S_h = \{u \in C(\Omega) \,\big|\, u \text{ on $\square_{j,k}$ is bilinear}\}
+\end{equation}
+be the $Q^1$ finite element trial function space.
 
 
 
