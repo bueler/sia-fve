@@ -70,7 +70,7 @@
 
 The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  The scheme is a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.  The scheme uses particular choices for evaluating the ice surface slope and thickness so as to compute the ice flux and diffusivity at staggered-grid points.  For these purposes it uses a stencil with lesser width than, and achieves higher accuracy than, the alternative schemes in those tests where the analytical solution is known and the ice rheology is realistic \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it can be used as part of the stress balance solution method in membrane-stress-resolving hybrid ice dynamics models \cite{BuelerBrown2009}.
 
-We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a conforming Petrov-Galerkin finite element method (FEM) \cite{Elmanetal2005}.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \cite{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can also be interpreted as a ``finite volume element'' (FVE) method \cite{EwingLinLin2002}.
+We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a conforming Petrov-Galerkin finite element (FE) method \cite{Elmanetal2005}.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \cite{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can also be interpreted as a ``finite volume element'' (FVE) method \cite{EwingLinLin2002}.
 
 Based on this re-interpretation of the scheme we propose, and test, a more accurate evaluation of the ice flux with the same stencil.  We then re-construct the scheme for unstructured grids consisting of suitable finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes (compare \cite{Ringleretal2013}).
 
@@ -126,14 +126,14 @@ Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are
 FIXME
 %\includegraphics[width=2.0in,keepaspectratio=true]{FIXME}
 \end{center}
-\caption{Left: A structured finite difference (FD) grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured finite volume element (FVE) grid with finite element rectangles (solid), degrees of freedom at the nodes (dots), and control volumes (dashed).}
+\caption{Left: A structured FD grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured FE grid with rectangular elements (solid), degrees of freedom at the nodes (dots), and dual rectangular control volumes (dashed).}
 \label{fig:fdfemgrids}
 \end{figure}
 
 
 \section{A finite element interpretation}
 
-The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from a FEM starting point, as we do now, is new.  This FEM interpretation is based on the same structured grid as in the FD method, but with the regular grid points $(x_j,y_k)$ re-interpreted as nodes in a continuous and piecewise-bilinear space of trial functions (Figure \ref{fig:fdfemgrids}).  The test functions also use the nodes, but as centered degrees of freedom for piecewise-constant functions which are discontinuous at the FD method's staggered grid points.
+The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from a FE perspective, as we do now, is new.  This FE interpretation is based on the same structured grid, but with the regular grid points $(x_j,y_k)$ re-interpreted as nodes (i.e.~degrees of freedom) for a continuous and piecewise-bilinear space of trial functions.  The nodes are also used as centered degrees of freedom for piecewise-constant test functions which are discontinuous at the same locations as the FD method's staggered grid points.  One may call the method ``Petrov-Galerkin'' because the trial and test functions come from different spaces \cite{Elmanetal2005}, but our choice of spaces also identifies it as a ``finite volume element'' (FVE) method \cite{EwingLinLin2002}, so that the exact discrete conservation of the method follows in the standard finite volume (FV) understanding \cite{LeVeque}.
 
 Consider the structured grid of rectangles with dimensions $\Delta x,\Delta y$, as shown in Figure \ref{fig:fdfemgrids}b, where the rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  A basis of bilinear functions on a single rectangle $\square_{j,k}$ is
 \begin{equation}
@@ -176,15 +176,30 @@ If \eqref{eq:siasteady} holds then multiplication by an integrable function $g(x
 \end{equation}
 Note we have not used the divergence theorem, i.e.~we have not integrated-by-parts, as one would in the most common ``Galerkin'' FEM methods.
 
-In our FEM method, we seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b(x,y)$.  Then $\bq^h$ denotes the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $s^h=H^h+b^h$.  As $S_h^*$ is the space of test functions, we integrate against such functions.  Thus our FEM method requires the variational equation \eqref{eq:siaweak} to hold for $H^h$ in $S_h$ and all $g$ in $S_h^*$.  It suffices to only require the variational equation for a basis of $S_h^*$, so we use only $g=\omega_{j,k}$.  Furthermore we note that $\omega_{j,k}$ is only non-zero over $V_{j,k}$, and equal to one there, so we require
+In our FE method, we seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b(x,y)$ and let $s^h=H^h+b^h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$.  We require \eqref{eq:siaweak} to hold for this $\bq^h$ and for all $g$ in $S_h^*$, but it suffices to only test for a basis of $S_h^*$, so $g=\omega_{j,k}$.  Because $\omega_{j,k}$ is only non-zero ($\omega_{j,k}=1$) over $V_{j,k}$, we require
 \begin{equation}
-  \int_{V_{j,k}} \Div \bq^h \,dx\,dy = \int_{V_{j,k}} m \,dx\,dy \quad \text{ for all } j,k.  \label{eq:siapgfirst}
+  \int_{V_{j,k}} \Div \bq^h \,dx\,dy = \int_{V_{j,k}} m \,dx\,dy \quad \text{ for all } j,k.  \label{eq:siafve-transition}
 \end{equation}
 However, we can use the divergence theorem on the left, and we can use midpoint quadrature \cite{Elmanetal2005} on the right.  Then
 \begin{equation}
-  - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y \quad \text{ for all } j,k, \label{eq:siapg}
+  - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y \quad \text{ for all } j,k, \label{eq:siafve}
 \end{equation}
-where $\bn$ is the outward normal unit vector, and $ds$ the length element, on the rectangular closed-curve $\partial V_{j,k}$.
+where $\bn$ is the outward normal unit vector and $ds$ the length element on the closed curve (rectangle) $\partial V_{j,k}$.  Equation \eqref{eq:siafve} is a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains because $H^h$ is an everywhere-defined function from a space $S_h$ of continuous functions.
+
+\newcommand{\dxtwo}{\tfrac{\Delta x}{2}}
+\newcommand{\dytwo}{\tfrac{\Delta y}{2}}
+
+The FE method is completely specified once we compute the integral on the left of \eqref{eq:siafve}.  In this integral, the approximate flux $\bq^h$ is a well-defined function which is continuous on each element $\square_{j,k}$.  However, though it is bounded on the whole domain $\Omega$, it is discontinuous across element boundaries.  Thus we decompose into integrals of continuous functions,
+\begin{equation}
+  \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = \sum_{E} \int_{E\, \cap \, \partial V_{j,k}} \bq^h \cdot \bn\,ds \label{eq:fluxintE}
+\end{equation}
+where the sum is over those four elements $E=\square_{r,s}$, with $r=j-1,j$ and $s=k-1,k$, for which the intersection $E\, \cap \, \partial V_{j,k}$ is nonempty.
+
+In the next equations we use notation $x_j^*=x_j+\dxtwo$, $y_k^*=y_k+\dytwo$, $\grad s^h = \ip{\partial_x s^h}{\partial_y s^h}$, and $\bq^h = \ip{q^x}{q^y}$.  Note $q^x$ and $q^y$ are scalar functions that depend on $(x,y)$ through $H^h$ and $b^h$.  When $E=\square_{j,k}$ the intersection $E\, \cap \, \partial V_{j,k}$ is the pair of line segments shown with thick dashed lines in Figure \ref{fig:fdfemgrids}b, and the corresponding term in \eqref{eq:fluxintE} is
+\begin{equation}
+\int_{\square_{j,k}\, \cap \, \partial V_{j,k}} \bq^h \cdot \bn\,ds = \int_{y_k}^{y_k^*} q^x(x_j^*,y) \,dy + \int_{x_j}^{x_j^*} q^y(x,y_k^*) \,dx.
+\end{equation}
+The other three terms in the sum in \eqref{eq:fluxintE} are similar.
 
 FIXME explain discontinuity of $\bq$ along $\partial V_{j,k}$, and Mahaffy as quadrature
 
