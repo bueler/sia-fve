@@ -9,7 +9,7 @@ static const char help[] =
 "Computed in flat bed case where analytical Jacobian is known.\n"
 "Compares Mahaffy and Mahaffy* schemes.  Uses SNESVI.\n\n";
 
-//   ./mahaffy -help |grep m_
+//   ./mahaffy -help |grep mah_
 
 #include <math.h>
 #include <petscdmda.h>
@@ -27,15 +27,16 @@ typedef struct {
             Gamma,  // coefficient for SIA flux term
             exactL, // radius of exact ice sheet
             exactH0;// center thickness of exact ice sheet
-  PetscBool star;   // use Mahaffy* instead of Mahaffy
+  PetscBool star,   // use Mahaffy* instead of Mahaffy
+            exactinit;// initialize with exact solution instead of zero
 } AppCtx;
 
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactThickness(Vec,const AppCtx*);
-extern PetscErrorCode SetToSMB(Vec,const AppCtx*);
+//extern PetscErrorCode SetToSMB(Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
-extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar*,PetscScalar*,AppCtx*);
+extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 //see layer.c for this:
 //  extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*);
 
@@ -59,6 +60,9 @@ int main(int argc,char **argv) {
 
   user.exactL = 750.0e3;    // m
   user.exactH0= 3600.0;     // m
+  
+  user.star   = PETSC_FALSE;
+  user.exactinit = PETSC_FALSE;
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
@@ -90,8 +94,11 @@ int main(int argc,char **argv) {
   ierr = VecSetOptionsPrefix(H,"H_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
 
-  //ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
-  ierr = VecSet(H,0.0); CHKERRQ(ierr);
+  if (user.exactinit == PETSC_TRUE) {
+      ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
+  } else {
+      ierr = VecSet(H,0.0); CHKERRQ(ierr);
+  }
 
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
@@ -131,7 +138,17 @@ int main(int argc,char **argv) {
 }
 
 
-//  for call-back: tell SNESVI (variational inequality) that we want  0.0 <= H < +infinity
+PetscReal radialcoord(const DMDACoor2d c) {
+  PetscReal r;
+  r = PetscSqrtReal(c.x * c.x + c.y * c.y);
+  if (r < 0.01)
+      r = 0.01;  // avoid r=0 singularity
+  return r;
+}
+
+
+//  for call-back: tell SNESVI (variational inequality) that we want
+//    0.0 <= H < +infinity
 PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
@@ -148,38 +165,44 @@ PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
                   H0 = user->exactH0,
                   n  = user->n,
                   mm = 1.0 + 1.0 / n,
-                  qq = n / (2.0 * n + 2.0);
+                  qq = n / (2.0 * n + 2.0),
+                  CC = H0 / PetscPowReal(1.0 - 1.0 / n,qq);
   DMDALocalInfo info;
-  PetscReal     *aH;
+  DM            coordDA;
+  Vec           coordinates;
+  DMDACoor2d    **coords;
+  PetscReal     **aH, r, s, tmp;
   PetscInt      j, k;
-  ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+
+  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+  ierr = DMGetCoordinateDM(user->da, &coordDA); CHKERRQ(ierr);
+  ierr = DMGetCoordinates(user->da, &coordinates); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, H, &aH);CHKERRQ(ierr);
-  for (j=info.xs; j<info.xs+info.xm; j++) {
-      for (k=info.ys; j<info.ys+info.ym; j++) {
-          r = FIXME;
+  for (k=info.ys; k<info.ys+info.ym; k++) {
+      for (j=info.xs; j<info.xs+info.xm; j++) {
+          r = radialcoord(coords[k][j]);
           if (r < L) {
-              PetscReal s, lamhat, Hs;
-              if (r < 0.01)
-                  r = 0.01;  // avoid r=0 singularity
               s = r / L;
-              lamhat = mm * s - (1.0/n) + pow(1-s,mm) - pow(s,mm);
-              Hs = (H0 / pow(1-1/n,qq)) * pow(lamhat,qq);
-              aH[j][k] = Hs;
+              tmp = mm * s - (1.0/n) + PetscPowReal(1.0-s,mm) - PetscPowReal(s,mm);
+              aH[k][j] = CC * PetscPowReal(tmp,qq);
           } else {
-              aH[j][k] = 0.0;
+              aH[k][j] = 0.0;
           }
       }
   }
   ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
 
+/*
 PetscReal SetToSMB(Vec m, const AppCtx *user) {
   FIXME
   return FIXME;
 }
-
+*/
 
 // flux formula for SIA
 PetscErrorCode q(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user,
@@ -193,99 +216,29 @@ PetscErrorCode q(const PetscReal H, const PetscReal sx, const PetscReal sy, cons
 
 
 /* for call-back: evaluate residual FF(x) on local process patch */
-PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar *u,PetscScalar *FF,
+PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
                                  AppCtx *user) {
-  PetscErrorCode  ierr;
-  const PetscReal dt = user->dt, dx = user->dx,
-                  lam = user->lambda, v0 = user->v0,
-                  nu = dt / dx;
-  PetscInt        j;
-  PetscReal       *uold;
-  Vec             uoldloc;
+  //PetscErrorCode  ierr;
+  //const PetscReal dx = user->dx;
+  PetscInt        j, k;
 
   PetscFunctionBeginUser;
-  ierr = DMCreateLocalVector(info->da,&uoldloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalBegin(info->da,user->uold,INSERT_VALUES,uoldloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalEnd(info->da,user->uold,INSERT_VALUES,uoldloc);CHKERRQ(ierr);
-
-  ierr = DMDAVecGetArray(info->da, uoldloc, &uold);CHKERRQ(ierr);
-  for (j=info->xs; j<info->xs+info->xm; j++) {
-      // non-flux part of residual
-      const PetscReal x = dx/2 + dx * (PetscReal)j;
-      FF[j] = u[j] - uold[j] - dt * fsource(user->midtime,x,user);
-      // add p-laplacian (SIA) flux part q^0
-      const PetscReal
-          dbright    = (bedelevation(x+dx,user) - bedelevation(x,user)) / dx,
-          dbleft     = (bedelevation(x,user) - bedelevation(x-dx,user)) / dx;
-      const PetscReal
-          uright     = (u[j] + u[j+1]) / 2.0,
-          uleft      = (u[j-1] + u[j]) / 2.0,
-          duright    = (u[j+1] - u[j]) / dx,
-          duleft     = (u[j] - u[j-1]) / dx;
-      const PetscReal
-          uoldright  = (uold[j] + uold[j+1]) / 2.0,
-          uoldleft   = (uold[j-1] + uold[j]) / 2.0,
-          duoldright = (uold[j+1] - uold[j]) / dx,
-          duoldleft  = (uold[j] - uold[j-1]) / dx;
-      FF[j] += lam * (nu / 2.0) *
-               (  S(uright,   duright   +dbright,user) - S(uleft,   duleft   +dbleft,user)
-                + S(uoldright,duoldright+dbright,user) - S(uoldleft,duoldleft+dbleft,user) );
-      // add advection part q^1
-      PetscReal adFF, c[4];
-      ierr = setadconstants(user->adscheme,c); CHKERRQ(ierr);
-      adFF = v0 * (nu / 2.0) * ( c[0] * u[j-2] + c[1] * u[j-1] + c[2] * u[j] + c[3] * u[j+1] );
-      if (user->adscheme == 2)
-          adFF += v0 * (nu / 2.0) * (1.0 / 2.0) * ( uold[j+1] - uold[j-1] );
-      FF[j] += (1.0 - lam) * adFF;
+  for (k=info->ys; k<info->ys+info->ym; k++) {
+      for (j=info->xs; j<info->xs+info->xm; j++) {
+          FF[k][j] = 0.0 * H[k][j];  //FIXME
+      }
   }
-  ierr = DMDAVecRestoreArray(info->da, uoldloc, &uold);CHKERRQ(ierr);
-
-  ierr = VecDestroy(&uoldloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
 
-/* for call-back: evaluate residual FF(x) on local process patch */
-PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfigs, char figsprefix[], PetscBool *genmassfile, char massfilename[]) {
+PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
 
-  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"lay_","options to layer","");CHKERRQ(ierr);
-  ierr = PetscOptionsInt(
-      "-adscheme", "choose FD scheme for advection: 0 centered BEuler, 1 third-order BEuler, 2 centered trapezoid",
-      NULL,user->adscheme,&user->adscheme,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-dt", "length of time step",
-      NULL,user->dt,&user->dt,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-timedependentsource", "use an f(t,x) formula which is actually time-dependent",
-      NULL,user->fusest,&user->fusest,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-gamma", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets gamma",
-      NULL,user->gamma,&user->gamma,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsString(
-      "-genfigs", "if set, generate one ascii file for each frame using this prefix",
-      NULL,figsprefix,figsprefix,512,genfigs); CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-glenn", "q_1 = - gamma u^{n+2} |(u+b)_x|^{n-1} (u+b)_x  is SIA flux; this sets n",
-      NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-jac", "use analytical jacobian; default is to do finite difference (-snes_fd) or matrix-free (-snes_mf)",
-      NULL,user->usejacobian,&user->usejacobian,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-lambda", "q = lambda q^0 + (1-lambda) q^1 where q^0 is SIA part and q^1 is advective part",
-      NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsString(
-      "-massfile", "if set, write mass time-series [t_n M_n R_n C_n balance] to this file",
-      NULL,massfilename,massfilename,512,genmassfile);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-noshow", "do _not_ show solution with X window viewers",
-      NULL,*noshow,noshow,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt(
-      "-steps", "number of time steps",
-      NULL,user->NN,&user->NN,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }

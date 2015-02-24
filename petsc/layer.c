@@ -474,7 +474,6 @@ PetscErrorCode FillVecs(Vec vx, Vec vf, Vec vb, const AppCtx *user) {
 }
 
 
-/* for call-back: evaluate residual FF(x) on local process patch */
 PetscErrorCode ProcessOptions(AppCtx *user, PetscBool *noshow, PetscBool *genfigs, char figsprefix[], PetscBool *genmassfile, char massfilename[]) {
   PetscErrorCode ierr;
 
