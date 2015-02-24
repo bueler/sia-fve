@@ -11,12 +11,17 @@ static const char help[] =
 
 //   ./mahaffy -help |grep mah_
 
+// high-res views:
+//   ./mahaffy -draw_pause 5 -mah_exactinit -da_grid_x 600 -da_grid_y 600
+//   ./mahaffy -draw_pause 5 -mah_exactinit -da_refine 5
+
 #include <math.h>
 #include <petscdmda.h>
 #include <petscsnes.h>
 
 typedef struct {
   DM        da;
+  Vec       m;      // the (steady) surface mass balance
   PetscReal dx,     // fixed grid spacing
             L,      // domain is [-L,L] x [-L,L]
             n,      // Glen exponent for SIA flux term
@@ -34,7 +39,7 @@ typedef struct {
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactThickness(Vec,const AppCtx*);
-//extern PetscErrorCode SetToSMB(Vec,const AppCtx*);
+extern PetscErrorCode SetToSMB(Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 //see layer.c for this:
@@ -91,14 +96,16 @@ int main(int argc,char **argv) {
              0.0,1.0); CHKERRQ(ierr);
 
   ierr = DMCreateGlobalVector(user.da,&H);CHKERRQ(ierr);
-  ierr = VecSetOptionsPrefix(H,"H_"); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
-
   if (user.exactinit == PETSC_TRUE) {
       ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
   } else {
       ierr = VecSet(H,0.0); CHKERRQ(ierr);
   }
+
+  ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
+  ierr = SetToSMB(user.m,&user);CHKERRQ(ierr);
 
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
@@ -119,6 +126,9 @@ int main(int argc,char **argv) {
   if (reason < 0) {
       SETERRQ(PETSC_COMM_WORLD,2,"SNESVI solve diverged; stopping ...\n");
   }
+
+  ierr = VecView(H, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+  ierr = VecView(user.m, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
 
   PetscScalar errnorm;
   Vec         Hexact;
@@ -160,7 +170,7 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 
 PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
   PetscErrorCode ierr;
-  PetscFunctionBeginUser;
+
   const PetscReal L  = user->exactL,
                   H0 = user->exactH0,
                   n  = user->n,
@@ -174,6 +184,7 @@ PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
   PetscReal     **aH, r, s, tmp;
   PetscInt      j, k;
 
+  PetscFunctionBeginUser;
   ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
   ierr = DMGetCoordinateDM(user->da, &coordDA); CHKERRQ(ierr);
   ierr = DMGetCoordinates(user->da, &coordinates); CHKERRQ(ierr);
@@ -197,12 +208,43 @@ PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
 }
 
 
-/*
-PetscReal SetToSMB(Vec m, const AppCtx *user) {
-  FIXME
-  return FIXME;
+PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
+  PetscErrorCode ierr;
+
+  const PetscReal L  = user->exactL,
+                  H0 = user->exactH0,
+                  n  = user->n,
+                  pp = 1.0 / n,
+                  CC = user->Gamma * PetscPowReal(H0,2.0*n+2.0)
+                          / PetscPowReal(2.0 * L * (1.0-1.0/n),n);
+  DMDALocalInfo info;
+  DM            coordDA;
+  Vec           coordinates;
+  DMDACoor2d    **coords;
+  PetscReal     **am, r, s, tmp1, tmp2;
+  PetscInt      j, k;
+
+  PetscFunctionBeginUser;
+  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+  ierr = DMGetCoordinateDM(user->da, &coordDA); CHKERRQ(ierr);
+  ierr = DMGetCoordinates(user->da, &coordinates); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, m, &am);CHKERRQ(ierr);
+  for (k=info.ys; k<info.ys+info.ym; k++) {
+      for (j=info.xs; j<info.xs+info.xm; j++) {
+          r = radialcoord(coords[k][j]);
+          if (r > L - 0.01)  r = L - 0.01;
+          s = r / L;
+          tmp1 = PetscPowReal(s,pp) + PetscPowReal(1.0-s,pp) - 1.0;
+          tmp2 = 2.0 * PetscPowReal(s,pp) + PetscPowReal(1.0-s,pp-1.0) * (1.0 - 2.0*s) - 1.0;
+          am[k][j] = (CC / r) * PetscPowReal(tmp1,n-1.0) * tmp2;
+      }
+  }
+  ierr = DMDAVecRestoreArray(user->da, m, &am);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
 }
-*/
+
 
 // flux formula for SIA
 PetscErrorCode q(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user,
@@ -218,16 +260,19 @@ PetscErrorCode q(const PetscReal H, const PetscReal sx, const PetscReal sy, cons
 /* for call-back: evaluate residual FF(x) on local process patch */
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
                                  AppCtx *user) {
-  //PetscErrorCode  ierr;
+  PetscErrorCode  ierr;
   //const PetscReal dx = user->dx;
   PetscInt        j, k;
+  PetscReal       **am;
 
   PetscFunctionBeginUser;
+  ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
-          FF[k][j] = 0.0 * H[k][j];  //FIXME
+          FF[k][j] = 0.0 * H[k][j] * am[k][j];  //FIXME
       }
   }
+  ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
