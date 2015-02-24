@@ -21,7 +21,8 @@ static const char help[] =
 
 typedef struct {
   DM        da;
-  Vec       m;      // the (steady) surface mass balance
+  Vec       b,      // the bed elevation
+            m;      // the (steady) surface mass balance
   PetscReal dx,     // fixed grid spacing
             L,      // domain is [-L,L] x [-L,L]
             n,      // Glen exponent for SIA flux term
@@ -33,7 +34,8 @@ typedef struct {
             exactL, // radius of exact ice sheet
             exactH0;// center thickness of exact ice sheet
   PetscBool star,   // use Mahaffy* instead of Mahaffy
-            exactinit;// initialize with exact solution instead of zero
+            exactinit,// initialize with exact solution instead of zero
+            draw;   // use X to draw solution H, smb m, and error H-Hexact
 } AppCtx;
 
 
@@ -68,6 +70,7 @@ int main(int argc,char **argv) {
   
   user.star   = PETSC_FALSE;
   user.exactinit = PETSC_FALSE;
+  user.draw   = PETSC_FALSE;
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
@@ -103,6 +106,10 @@ int main(int argc,char **argv) {
       ierr = VecSet(H,0.0); CHKERRQ(ierr);
   }
 
+  ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.b),"bed elevation b"); CHKERRQ(ierr);
+  ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
+
   ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
   ierr = SetToSMB(user.m,&user);CHKERRQ(ierr);
@@ -127,8 +134,10 @@ int main(int argc,char **argv) {
       SETERRQ(PETSC_COMM_WORLD,2,"SNESVI solve diverged; stopping ...\n");
   }
 
-  ierr = VecView(H, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
-  ierr = VecView(user.m, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+  if (user.draw == PETSC_TRUE) {
+      ierr = VecView(H, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+      ierr = VecView(user.m, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+  }
 
   PetscScalar errnorm;
   Vec         Hexact;
@@ -139,6 +148,12 @@ int main(int argc,char **argv) {
   ierr = PetscPrintf(PETSC_COMM_WORLD,"error |u-uexact|_inf = %g\n",errnorm); CHKERRQ(ierr);
   ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
 
+  if (user.draw == PETSC_TRUE) {
+      ierr = VecView(H, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+  }
+
+  ierr = VecDestroy(&user.m);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
   ierr = DMDestroy(&user.da);CHKERRQ(ierr);
@@ -246,14 +261,19 @@ PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
 }
 
 
-// flux formula for SIA
-PetscErrorCode q(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user,
-                 PetscReal *qx, PetscReal *qy) {
-  PetscReal n = user->n, D;
-  D = user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
-  *qx = - D * sx;
-  *qy = - D * sy;
-  PetscFunctionReturn(0);
+// formulas for SIA
+
+PetscReal D(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
+  PetscReal n = user->n;
+  return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
+}
+
+PetscReal qx(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
+  return - D(H,sx,sy,user) * sx;
+}
+
+PetscReal qy(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
+  return - D(H,sx,sy,user) * sy;
 }
 
 
@@ -261,18 +281,56 @@ PetscErrorCode q(const PetscReal H, const PetscReal sx, const PetscReal sy, cons
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
-  //const PetscReal dx = user->dx;
+  const PetscReal dx = user->dx, dy = dx;
   PetscInt        j, k;
-  PetscReal       **am;
+  PetscReal       **am, **ab,
+                  snw, sn, sne,
+                  sw,  s,  se,
+                  ssw, ss, sse,
+                  He,  Hn,  Hw,  Hs,
+                  sxe, sxn, sxw, sxs,
+                  sye, syn, syw, sys;
+  Vec             bloc;
 
   PetscFunctionBeginUser;
+  ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+
+  ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
-          FF[k][j] = 0.0 * H[k][j] * am[k][j];  //FIXME
+          snw = H[k+1][j-1] + ab[k+1][j-1];
+          sn  = H[k+1][j]   + ab[k+1][j];
+          sne = H[k+1][j+1] + ab[k+1][j+1];
+          sw  = H[k][j-1]   + ab[k][j-1];
+          s   = H[k][j]     + ab[k][j];
+          se  = H[k][j+1]   + ab[k][j+1];
+          ssw = H[k-1][j-1] + ab[k-1][j-1];
+          ss  = H[k-1][j]   + ab[k-1][j];
+          sse = H[k-1][j+1] + ab[k-1][j+1];
+          He = 0.5 * (H[k][j]   + H[k][j+1]);
+          Hn = 0.5 * (H[k][j]   + H[k+1][j]);
+          Hw = 0.5 * (H[k][j-1] + H[k][j]);
+          Hs = 0.5 * (H[k-1][j] + H[k][j]);
+          sxe = (se - s) / dx;
+          sxn = (se + sne - sw - snw) / (4.0 * dx);
+          sxw = (s - sw) / dx;
+          sxs = (sse + se - ssw - sw) / (4.0 * dx);
+          sye = (sn + sne - ss - sse) / (4.0 * dy);
+          syn = (sn - s) / dy;
+          syw = (snw + sn - ssw - ss) / (4.0 * dy);
+          sys = (s - ss) / dy;
+          FF[k][j] =  qx(He,sxe,sye,user) * dy + qy(Hn,sxn,syn,user) * dx
+                    - qx(Hw,sxw,syw,user) * dy - qy(Hs,sxs,sys,user) * dx
+                    - am[k][j] * dx * dy;
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+
+  ierr = VecDestroy(&bloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -284,6 +342,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-draw", "use X to draw H, m, H-Hexact",
+      NULL,user->draw,&user->draw,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
