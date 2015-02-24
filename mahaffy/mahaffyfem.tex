@@ -195,16 +195,37 @@ where $\bn$ is the outward normal unit vector and $ds$ the length element on the
   \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = \int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy + \int_{x_j^-}^{x_j^+} q^y(x,y_k^+)\,dx - \int_{y_k^-}^{y_k^+} q^x(x_j^-,y)\,dy - \int_{x_j^-}^{x_j^+} q^y(x,y_k^-)\,dx. \label{eq:fluxintdecomp}
 \end{equation}
 
-Considering the first of the integrals on the right in \eqref{eq:fluxintdecomp}, note that the integrand $f(y) = q^x(x_j^+,y)$ is piecewise-linear on its interval of definition $[y_k^-,y_k^+]$.  It has a single discontinuity at the midpoint $y_k$ because $\grad s^h$ is linear on each element but, unlike $s^h$ itself, it is not continuous across element boundaries.  The Mahaffy scheme computes the integral by the midpoint method, but with the gradient of $s^h$ averaged across its jump discontinuity there.  To turn this idea into symbols, note that on element $\square_{j,k}$,
-\begin{align}
-\frac{\partial s^h}{\partial x} &= \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\tfrac{y-y_k}{\Delta y}\right) + \tfrac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\tfrac{y-y_k}{\Delta y}\right), \label{eq:grads} \\
-\frac{\partial s^h}{\partial y} &= \tfrac{s_{j,k+1}-s_{j,k}}{\Delta y} \left(1-\tfrac{x-x_j}{\Delta x}\right) + \tfrac{s_{j+1,k+1}-s_{j+1,k}}{\Delta y} \left(\tfrac{x-x_j}{\Delta x}\right), \notag
-\end{align}
-while on element $\square_{j,k-1}$,
-FIXME
-The reader can check \eqref{eq:grads} and \eqref{eq:gradsbelow} by writing-out $s^h(x,y)$ on the two elements using the element basis \eqref{eq:elementbasis}.
+Considering the first of the integrals on the right in \eqref{eq:fluxintdecomp}, we can see that the integrand $f(y) = q^x(x_j^+,y)$ is piecewise-continuous, but not continuous, on the interval of integration $y_k^- \le y \le y_k^+$.  It has a jump discontinuity at the midpoint $y=y_k$ because $\grad s^h = \ip{s^h_x}{s^h_y}$ is linear on each element but, unlike $s^h$ itself, it is not continuous across element boundaries.  The Mahaffy scheme computes the integral by the midpoint method, but using the gradient of $s^h$ \emph{averaged across its jump discontinuity} there, as though that average were a value.
 
-FIXME explain discontinuity of $\bq$ along $\partial V_{j,k}$, and Mahaffy as quadrature
+To turn this idea into formulas, note that the thickness has a continuous value between the elements $\square_{j,k}$ and $\square_{j,k-1}$.  In particular,
+\begin{equation}
+H^h(x_j^+,y_k) = \tfrac{H_{j,k}+H_{j+1,k}}{2}, \label{eq:femHstag}
+\end{equation}
+as the reader can check by writing-out $H^h(x,y)$ on each element, using the element basis \eqref{eq:elementbasis}, and then evaluating these two interpolation formulas at the point $(x_j^+,y_k)$.  Next, the components of the surface gradient on the element $\square_{j,k}$ have the formulas
+\begin{align}
+s^h_x(x,y) &= \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\tfrac{y-y_k}{\Delta y}\right) + \tfrac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\tfrac{y-y_k}{\Delta y}\right), \label{eq:grads} \\
+s^h_y(x,y) &= \tfrac{s_{j,k+1}-s_{j,k}}{\Delta y} \left(1-\tfrac{x-x_j}{\Delta x}\right) + \tfrac{s_{j+1,k+1}-s_{j+1,k}}{\Delta y} \left(\tfrac{x-x_j}{\Delta x}\right). \notag
+\end{align}
+These derivatives can be calculated on $\square_{j,k-1}$ by shifting the index $k\to k-1$.  Then we see that the value of the $x$-derivative at $(x_j^+,y_k)$ is consistent across the jump,
+\begin{equation}
+s^h_x(x_j^+,y_k) = \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x}, \label{eq:femsxstag}
+\end{equation}
+but the $y$-derivative has different limits from above (i.e.~on $\square_{j,k}$) and from below (i.e.~on $\square_{j,k-1}$) at the midpoint:
+\begin{align}
+\lim_{y\searrow y_k} s^h_y(x_j^+,y) = \tfrac{s_{j,k+1}-s_{j,k} + s_{j+1,k+1}-s_{j+1,k}}{2\Delta y}, \\
+\lim_{y\nearrow y_k} s^h_y(x_j^+,y) = \tfrac{s_{j,k}-s_{j,k-1} + s_{j+1,k}-s_{j+1,k-1}}{2\Delta y}. \notag
+\end{align}
+The average of these values is not actually a value of the derivative of the interpolant, but it would be a good estimate of $s^h_y$ at $(x_j^+,y_k)$ if $s^h_y(x,y)$ were smooth:
+\begin{equation}
+\widehat{s^h_y}(x_j^+,y_k) = \tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4\Delta y}, \label{eq:femsystagcrime}
+\end{equation}
+where the hat indicates that it is \emph{not} actually a result of evaluating the function $s^h_y(x,y)$.  Formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in \eqref{eq:mahaffyWalphax}.  The Mahaffy scheme thus approximates the first integral on the right in \eqref{eq:fluxintdecomp} by a quadrature ``crime'', using point values of the trial function and its gradient, except for averaging across the discontinuity for the $y$-derivative to reconstruct the quantity that is not defined for the trial function itself:
+\begin{equation}
+\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy \approx - \Gamma H^h(x_j^+,y_k)^{n+2} \left(s^h_x(x_j^+,y_k)^2 + \widehat{s^h_y}(x_j^+,y_k)^2\right)^{(n-1)/2} s^h_x(x_j^+,y_k)\,\Delta y.
+\end{equation}
+Combining this with equations \eqref{eq:femHstag}, \eqref{eq:femsxstag}, and \eqref{eq:femsystagcrime} gives exactly formulas \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}.
+
+FIXME finish up comparison to Mahaffy FD formulas
 
 \section{Refinements}
 
