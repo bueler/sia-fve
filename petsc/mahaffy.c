@@ -66,15 +66,15 @@ int main(int argc,char **argv) {
   user.g      = 9.81;       // m/s^2
   user.rho    = 910.0;      // kg/m^3
   user.secpera= 31556926.0;
-  user.A      = 1.0E-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
+  user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
 
   user.exactL = 750.0e3;    // m
   user.exactH0= 3600.0;     // m
   
-  user.star   = PETSC_FALSE;
+  user.star      = PETSC_FALSE;
   user.exactinit = PETSC_FALSE;
-  user.draw   = PETSC_FALSE;
+  user.draw      = PETSC_FALSE;
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
@@ -170,15 +170,6 @@ int main(int argc,char **argv) {
 }
 
 
-PetscReal radialcoord(const DMDACoor2d c) {
-  PetscReal r;
-  r = PetscSqrtReal(c.x * c.x + c.y * c.y);
-  if (r < 0.01)
-      r = 0.01;  // avoid r=0 singularity
-  return r;
-}
-
-
 //  for call-back: tell SNESVI (variational inequality) that we want
 //    0.0 <= H < +infinity
 PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
@@ -187,6 +178,15 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   ierr = VecSet(Xl,0.0); CHKERRQ(ierr);
   ierr = VecSet(Xu,PETSC_INFINITY); CHKERRQ(ierr);
   PetscFunctionReturn(0);
+}
+
+
+PetscReal radialcoord(const DMDACoor2d c) {
+  PetscReal r;
+  r = PetscSqrtReal(c.x * c.x + c.y * c.y);
+  if (r < 0.01)
+      r = 0.01;  // avoid r=0 singularity
+  return r;
 }
 
 
@@ -268,19 +268,50 @@ PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
 }
 
 
-// formulas for SIA
-
-PetscReal D(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
-  PetscReal n = user->n;
-  return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
+// single formula for SIA
+PetscReal getD(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
+    PetscReal n = user->n;
+    return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
-PetscReal qx(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
-  return - D(H,sx,sy,user) * sx;
-}
+typedef struct {
+    PetscReal x,y;
+} Flux;
 
-PetscReal qy(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
-  return - D(H,sx,sy,user) * sy;
+typedef struct {
+    PetscReal x,y;
+} Grad;
+
+
+/* evaluate the flux using Q1 approximations to H(x,y) and b(x,y) on element */
+PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
+                        PetscReal locx, PetscReal locy, // = (x,y) coords in element
+                        PetscReal **H, PetscReal **b,   // H[k][j] and b[k][j] are node values
+                        const AppCtx *user, Flux *q, Grad *grads) {
+  const PetscReal dx = user->dx, dy = dx,
+                  x[4] = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
+                  y[4] = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy};
+  PetscReal HH, sx, sy, DD;
+  if (q == NULL) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr q in fluxatpt() ...\n");
+  }
+  if (H == NULL) {
+      SETERRQ(PETSC_COMM_WORLD,2,"ERROR: illegal NULL ptr H in fluxatpt() ...\n");
+  }
+  if (b == NULL) {
+      SETERRQ(PETSC_COMM_WORLD,3,"ERROR: illegal NULL ptr b in fluxatpt() ...\n");
+  }
+  HH = x[0]*y[0]*H[k][j] + x[1]*y[1]*H[k][j+1] + x[2]*y[2]*H[k+1][j] + x[3]*y[3]*H[k+1][j+1];
+  sx = FIXME;
+  sy = FIXME;
+  DD = getD(HH,sx,sy,user);
+  q->x = - DD * sx;
+  q->y = - DD * sy;
+  if (grads != NULL) {
+      grads->x = sx;
+      grads->y = sy;
+  }
+  PetscFunctionReturn(0);
 }
 
 
@@ -290,13 +321,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
   PetscInt        j, k;
-  PetscReal       **am, **ab,
-                  snw, sn, sne,
-                  sw,  s,  se,
-                  ssw, ss, sse,
-                  He,  Hn,  Hw,  Hs,
-                  sxe, sxn, sxw, sxs,
-                  sye, syn, syw, sys;
+  PetscReal       **am, **ab;
+  Flux            qeu, qed, qnl, qnr, qwu, qwd, qsl, qsr;
   Vec             bloc;
 
   PetscFunctionBeginUser;
@@ -308,29 +334,16 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
-          snw = H[k+1][j-1] + ab[k+1][j-1];
-          sn  = H[k+1][j]   + ab[k+1][j];
-          sne = H[k+1][j+1] + ab[k+1][j+1];
-          sw  = H[k][j-1]   + ab[k][j-1];
-          s   = H[k][j]     + ab[k][j];
-          se  = H[k][j+1]   + ab[k][j+1];
-          ssw = H[k-1][j-1] + ab[k-1][j-1];
-          ss  = H[k-1][j]   + ab[k-1][j];
-          sse = H[k-1][j+1] + ab[k-1][j+1];
-          He = 0.5 * (H[k][j]   + H[k][j+1]);
-          Hn = 0.5 * (H[k][j]   + H[k+1][j]);
-          Hw = 0.5 * (H[k][j-1] + H[k][j]);
-          Hs = 0.5 * (H[k-1][j] + H[k][j]);
-          sxe = (se - s) / dx;
-          sxn = (se + sne - sw - snw) / (4.0 * dx);
-          sxw = (s - sw) / dx;
-          sxs = (sse + se - ssw - sw) / (4.0 * dx);
-          sye = (sn + sne - ss - sse) / (4.0 * dy);
-          syn = (sn - s) / dy;
-          syw = (snw + sn - ssw - ss) / (4.0 * dy);
-          sys = (s - ss) / dy;
-          FF[k][j] =  qx(He,sxe,sye,user) * dy + qy(Hn,sxn,syn,user) * dx
-                    - qx(Hw,sxw,syw,user) * dy - qy(Hs,sxs,sys,user) * dx
+          ierr = fluxatpt(j,   k,       dx/2.0,     dy/4.0, H,ab,user,&qeu,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j,   k-1,     dx/2.0, 3.0*dy/4.0, H,ab,user,&qed,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j-1, k,   3.0*dx/4.0,     dy/2.0, H,ab,user,&qnl,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j,   k,       dx/4.0,     dy/2.0, H,ab,user,&qnr,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j-1, k,       dx/2.0,     dy/4.0, H,ab,user,&qwu,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j-1, k-1,     dx/2.0, 3.0*dy/4.0, H,ab,user,&qwd,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j-1, k-1, 3.0*dx/4.0,     dy/2.0, H,ab,user,&qsl,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j,   k-1,     dx/4.0,     dy/2.0, H,ab,user,&qsr,NULL); CHKERRQ(ierr);
+          FF[k][j] =  (qeu.x + qed.x) * dy/2.0 + (qnl.y + qnr.y) * dx/2.0
+                    - (qwu.x + qwd.x) * dy/2.0 - (qsl.y + qsr.y) * dx/2.0
                     - am[k][j] * dx * dy;
       }
   }
