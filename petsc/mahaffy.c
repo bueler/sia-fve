@@ -9,15 +9,13 @@ static const char help[] =
 "Computed in flat bed case where analytical Jacobian is known.\n"
 "Compares Mahaffy and Mahaffy* schemes.  Uses SNESVI.\n\n";
 
-//   ./mahaffy -mah_exactinit -help |grep mah_
+//   ./mahaffy -help |grep mah_
 
-// views:
-//   ./mahaffy -mah_draw -draw_pause 1 -mah_exactinit -da_grid_x 45 -da_grid_y 45
-//   ./mahaffy -mah_draw -draw_pause 1 -mah_exactinit
-
-// diverge:
-//   ./mahaffy -mah_draw -draw_pause 1
-//   ./mahaffy -mah_draw -draw_pause 1 -mah_exactinit -da_grid_x 36 -da_grid_y 36
+//   ./mahaffy
+//   ./mahaffy -mah_exactinit  // only changes first-stage iterations
+//   ./mahaffy -da_refine 3
+//   ./mahaffy -da_refine 4
+//   mpiexec -n 4 ./mahaffy -da_refine 5
 
 #include <math.h>
 #include <petscdmda.h>
@@ -49,47 +47,10 @@ extern PetscErrorCode SetToExactThickness(Vec,const AppCtx*);
 extern PetscErrorCode SetToSMB(Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
-//see layer.c for this:
-//  extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*);
-
-
-PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason *reason) {
-  PetscErrorCode ierr;
-  PetscFunctionBeginUser;
-  ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
-  ierr = SNESGetIterationNumber(snes,its);CHKERRQ(ierr);
-  ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
-  PetscErrorCode ierr;
-  PetscScalar enorminf,enorm1;
-  Vec         Hexact;
-  ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
-  ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
-  ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // Hexact < Hexact + (-1.0) H
-  ierr = VecNorm(Hexact,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
-  ierr = VecNorm(Hexact,NORM_1,&enorm1); CHKERRQ(ierr);
-  enorm1 /= info->mx * info->my;
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "    errors:  max |H-Hexact| = %8.2f,  av |H-Hexact| = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
-  ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-//  write a vector into a given filename
-PetscErrorCode ViewToVTKASCII(Vec u, const char name[]) {
-    PetscErrorCode ierr;
-    PetscViewer viewer;
-    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,name,&viewer); CHKERRQ(ierr);
-    ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
-    ierr = VecView(u,viewer); CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
+// extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*); //see layer.c
+extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
+extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
+extern PetscErrorCode ViewToVTKASCII(Vec,const char[]);
 
 
 int main(int argc,char **argv) {
@@ -427,4 +388,46 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
+
+
+// try a SNES solve; H returns modified
+PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason *reason) {
+  PetscErrorCode ierr;
+  PetscFunctionBeginUser;
+  ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
+  ierr = SNESGetIterationNumber(snes,its);CHKERRQ(ierr);
+  ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+// prints the |.|_inf = (max error) and |.|_1/(dim) = (av error) norms
+PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscScalar enorminf,enorm1;
+  Vec         Hexact;
+  ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
+  ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
+  ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // Hexact < Hexact + (-1.0) H
+  ierr = VecNorm(Hexact,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
+  ierr = VecNorm(Hexact,NORM_1,&enorm1); CHKERRQ(ierr);
+  enorm1 /= info->mx * info->my;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "    errors:  max |H-Hexact| = %8.2f,  av |H-Hexact| = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
+  ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+//  write a vector into a given filename
+PetscErrorCode ViewToVTKASCII(Vec u, const char name[]) {
+    PetscErrorCode ierr;
+    PetscViewer viewer;
+    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,name,&viewer); CHKERRQ(ierr);
+    ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
+    ierr = VecView(u,viewer); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
 
