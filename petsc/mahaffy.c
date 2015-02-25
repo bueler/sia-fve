@@ -9,11 +9,15 @@ static const char help[] =
 "Computed in flat bed case where analytical Jacobian is known.\n"
 "Compares Mahaffy and Mahaffy* schemes.  Uses SNESVI.\n\n";
 
-//   ./mahaffy -help |grep mah_
+//   ./mahaffy -mah_exactinit -help |grep mah_
 
-// high-res views:
-//   ./mahaffy -draw_pause 5 -mah_exactinit -da_grid_x 600 -da_grid_y 600
-//   ./mahaffy -draw_pause 5 -mah_exactinit -da_refine 5
+// views:
+//   ./mahaffy -mah_draw -draw_pause 1 -mah_exactinit -da_grid_x 45 -da_grid_y 45
+//   ./mahaffy -mah_draw -draw_pause 1 -mah_exactinit
+
+// diverge:
+//   ./mahaffy -mah_draw -draw_pause 1
+//   ./mahaffy -mah_draw -draw_pause 1 -mah_exactinit -da_grid_x 36 -da_grid_y 36
 
 #include <math.h>
 #include <petscdmda.h>
@@ -77,20 +81,20 @@ int main(int argc,char **argv) {
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
-                      -18,-18,PETSC_DECIDE,PETSC_DECIDE,  // initial 18x18 grid has dx=100km
-                      1, 1,                               // dof=1,  stencilwidth=1
+                      -9,-9,PETSC_DECIDE,PETSC_DECIDE,  // default 9x9 grid has dx=200km
+                      1, 1,                             // dof=1,  stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
   ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
-  user.dx = 2 * user.L / (PetscReal)(info.mx);
-  if (info.mx == info.my)  {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "solving on %d x %d grid spacing dx=%g ...\n",
-                         info.mx,info.my,user.dx); CHKERRQ(ierr);
-  } else {
+  if (info.mx != info.my)  {
       SETERRQ(PETSC_COMM_WORLD,1,"mx != my ERROR: grid must have equal spacing in x,y ...\n");
   }
+
+  user.dx = 2 * user.L / (PetscReal)(info.mx);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "solving on %d x %d grid spacing dx=%g ...\n",
+                     info.mx,info.my,user.dx); CHKERRQ(ierr);
 
   // cell-centered grid
   ierr = DMDASetUniformCoordinates(user.da,
@@ -139,13 +143,16 @@ int main(int argc,char **argv) {
       ierr = VecView(user.m, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
   }
 
-  PetscScalar errnorm;
+  PetscScalar enorminf,enorm1;
   Vec         Hexact;
   ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
   ierr = SetToExactThickness(Hexact,&user); CHKERRQ(ierr);
   ierr = VecAXPY(H,-1.0,Hexact); CHKERRQ(ierr);    // H < - H + (-1.0) Hexact
-  ierr = VecNorm(H,NORM_INFINITY,&errnorm); CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"error |u-uexact|_inf = %g\n",errnorm); CHKERRQ(ierr);
+  ierr = VecNorm(H,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
+  ierr = VecNorm(H,NORM_1,&enorm1); CHKERRQ(ierr);
+  enorm1 /= info.mx * info.my;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "errors:  max |u-uexact| = %g,  av |u-uexact| = %g\n",enorminf,enorm1); CHKERRQ(ierr);
   ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
 
   if (user.draw == PETSC_TRUE) {
