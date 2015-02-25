@@ -3,11 +3,12 @@ static const char help[] =
 "    div (q^x,q^y) = m,\n"
 "    (q^x,q^y) = - Gamma H^{n+2} |grad s|^{n-1} grad s,\n"
 "where  H(x,y)  is the ice thickness,  b(x,y)  is the bed elevation,\n"
-"and  s(x,y) = H(x,y) + b(x,y).\n"
-"Here  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
+"and  s(x,y) = H(x,y) + b(x,y)  is surface elevation.\n"
+"Note  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
 "Domain is  -L < x < L,  -L < y < L,  with periodic boundary conditions.\n"
-"Computed in flat bed case where analytical Jacobian is known.\n"
-"Compares Mahaffy and Mahaffy* schemes.  Uses SNESVI.\n\n";
+"Computed in flat bed case where analytical solution is known.\n"
+"Compares Mahaffy and Mahaffy* schemes.\n"
+"Uses SNESVI.\n\n";
 
 //   ./mahaffy -help |grep mah_
 
@@ -15,14 +16,14 @@ static const char help[] =
 //   ./mahaffy -mah_exactinit  // only changes first-stage iterations
 //   ./mahaffy -da_refine 3
 //   ./mahaffy -da_refine 4
-//   mpiexec -n 4 ./mahaffy -da_refine 5
+//   mpiexec -n 4 ./mahaffy -da_refine 5 -mah_exactinit
 
 #include <math.h>
 #include <petscdmda.h>
 #include <petscsnes.h>
 
 typedef struct {
-  DM        da;
+  DM        da, quadda;
   Vec       b,      // the bed elevation
             m;      // the (steady) surface mass balance
   PetscReal dx,     // fixed grid spacing
@@ -78,6 +79,7 @@ int main(int argc,char **argv) {
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
+  // this DMDA is used for scalar fields on nodes
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
@@ -90,6 +92,15 @@ int main(int argc,char **argv) {
   if (info.mx != info.my)  {
       SETERRQ(PETSC_COMM_WORLD,1,"mx != my ERROR: grid must have equal spacing in x,y ...\n");
   }
+
+  // this DMDA is used for evaluating flux components at quad points on elements
+  ierr = DMDACreate2d(PETSC_COMM_WORLD,
+                      DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
+                      DMDA_STENCIL_BOX,
+                      info.mx,info.my,PETSC_DECIDE,PETSC_DECIDE,
+                      4, 1,                               // dof=4,  stencilwidth=1
+                      NULL,NULL,&user.quadda);
+  ierr = DMSetApplicationContext(user.quadda, &user);CHKERRQ(ierr);
 
   user.dx = 2 * user.L / (PetscReal)(info.mx);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
@@ -177,6 +188,7 @@ int main(int argc,char **argv) {
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
+  ierr = DMDestroy(&user.quadda);CHKERRQ(ierr);
   ierr = DMDestroy(&user.da);CHKERRQ(ierr);
 
   PetscFinalize();
@@ -282,7 +294,7 @@ PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
 }
 
 
-// single formula for SIA
+// the single nontrivial formula for SIA
 PetscReal getD(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
     PetscReal n = user->n;
     return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
@@ -297,7 +309,8 @@ typedef struct {
 } Grad;
 
 
-/* evaluate the flux using Q1 approximations to H(x,y) and b(x,y) on element */
+/* the single nontrival operation with Q1 interpolants on an element:
+   evaluate the flux at any point (x,y) on element, using corner values of H and b */
 PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
                         PetscReal locx, PetscReal locy, // = (x,y) coords in element
                         PetscReal **H, PetscReal **b,   // H[k][j] and b[k][j] are node values
@@ -307,29 +320,44 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
                   gx[4] = {- 1.0 / dx,      1.0 / dx,        - 1.0 / dx,      1.0 / dx},
                   y[4]  = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy},
                   gy[4] = {- 1.0 / dy,      - 1.0 / dy,      1.0 / dy,        1.0 / dy};
-  PetscReal HH, sx, sy, DD;
+  PetscReal HH, s[4], dsdx, dsdy, DD;
   if ((q == NULL) || (H == NULL) || (b == NULL)) {
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in fluxatpt() ...\n");
   }
-  HH = x[0]*y[0]*H[k][j] + x[1]*y[1]*H[k][j+1] + x[2]*y[2]*H[k+1][j] + x[3]*y[3]*H[k+1][j+1];
-  sx = gx[0]*y[0]*(H[k][j] + b[k][j])
-                         + gx[1]*y[1]*(H[k][j+1] + b[k][j+1])
-                                               + gx[2]*y[2]*(H[k+1][j] + b[k+1][j])
-                                                                     + gx[3]*y[3]*(H[k+1][j+1] + b[k+1][j+1]);
-  sy = x[0]*gy[0]*(H[k][j] + b[k][j])
-                         + x[1]*gy[1]*(H[k][j+1] + b[k][j+1])
-                                               + x[2]*gy[2]*(H[k+1][j] + b[k+1][j])
-                                                                     + x[3]*gy[3]*(H[k+1][j+1] + b[k+1][j+1]);
-  DD = getD(HH,sx,sy,user) + user->epsdiffusivity;
-  //PetscPrintf(PETSC_COMM_WORLD,"D[k][j]=D[%d][%d]=%.12e\n",k,j,DD);
-  q->x = - DD * sx;
-  q->y = - DD * sy;
+  s[0] = H[k][j]     + b[k][j];
+  s[1] = H[k][j+1]   + b[k][j+1];
+  s[2] = H[k+1][j]   + b[k+1][j];
+  s[3] = H[k+1][j+1] + b[k+1][j+1];
+  HH   =  x[0] * y[0] * H[k][j] +  x[1] * y[1] * H[k][j+1] +  x[2] * y[2] * H[k+1][j] +  x[3] * y[3] * H[k+1][j+1];
+  dsdx = gx[0] * y[0] * s[0]    + gx[1] * y[1] * s[1]      + gx[2] * y[2] * s[2]      + gx[3] * y[3] * s[3];
+  dsdy =  x[0] *gy[0] * s[0]    +  x[1] *gy[1] * s[1]      +  x[2] *gy[2] * s[2]      +  x[3] *gy[3] * s[3];
+  DD = getD(HH,dsdx,dsdy,user) + user->epsdiffusivity;
+  q->x = - DD * dsdx;
+  q->y = - DD * dsdy;
   if (grads != NULL) {
-      grads->x = sx;
-      grads->y = sy;
+      grads->x = dsdx;
+      grads->y = dsdy;
   }
   PetscFunctionReturn(0);
 }
+
+
+/* on element shown, indexed by (j,k) node at lower-left corner @,
+ FluxQuad holds x-components at * and y-components at %
+   ---------------
+  |       |       |
+  |       *xn     |
+  |  yw   |  ye   |
+  |---%--- ---%---|
+  |       |       |
+  |       *xs     |
+  |       |       |
+  @---------------
+(j,k)
+*/
+typedef struct {
+    PetscReal xn, xs, ye, yw;
+} FluxQuad;
 
 
 /* for call-back: evaluate residual FF(x) on local process patch */
@@ -339,35 +367,48 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   const PetscReal dx = user->dx, dy = dx;
   PetscInt        j, k;
   PetscReal       **am, **ab;
-  Flux            qeu, qed, qnl, qnr, qwu, qwd, qsl, qsr;
-  Vec             bloc;
+  FluxQuad        **aq;
+  Flux            qn, qs, qe, qw;
+  Vec             bloc, qloc;
 
   PetscFunctionBeginUser;
   ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
 
+  ierr = DMCreateLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
+
   ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  // loop over locally-owned elements, including ghosts, to get fluxes
+  // note start at (xs-1,ys-1)
+  for (k=info->ys-1; k<info->ys+info->ym; k++) {
+      for (j=info->xs-1; j<info->xs+info->xm; j++) {
+          ierr = fluxatpt(j,k,     dx/2.0, 3.0*dy/4.0, H,ab,user,&qn,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j,k,     dx/2.0,     dy/4.0, H,ab,user,&qs,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j,k, 3.0*dx/4.0,     dy/2.0, H,ab,user,&qe,NULL); CHKERRQ(ierr);
+          ierr = fluxatpt(j,k,     dx/4.0,     dy/2.0, H,ab,user,&qw,NULL); CHKERRQ(ierr);
+          aq[k][j] = (FluxQuad){qn.x,qs.x,qe.y,qw.y};
+      }
+  }
+  // loop over nodes to get residual
+  // this is the integral over boundary of control volume
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
-          ierr = fluxatpt(j,   k,       dx/2.0,     dy/4.0, H,ab,user,&qeu,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j,   k-1,     dx/2.0, 3.0*dy/4.0, H,ab,user,&qed,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j-1, k,   3.0*dx/4.0,     dy/2.0, H,ab,user,&qnl,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j,   k,       dx/4.0,     dy/2.0, H,ab,user,&qnr,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j-1, k,       dx/2.0,     dy/4.0, H,ab,user,&qwu,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j-1, k-1,     dx/2.0, 3.0*dy/4.0, H,ab,user,&qwd,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j-1, k-1, 3.0*dx/4.0,     dy/2.0, H,ab,user,&qsl,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j,   k-1,     dx/4.0,     dy/2.0, H,ab,user,&qsr,NULL); CHKERRQ(ierr);
-          FF[k][j] =  (qeu.x + qed.x) * dy/2.0 + (qnl.y + qnr.y) * dx/2.0
-                    - (qwu.x + qwd.x) * dy/2.0 - (qsl.y + qsr.y) * dx/2.0
+          FF[k][j] =  (aq[k][j].xs     + aq[k-1][j].xn  ) * dy/2.0
+                    + (aq[k][j-1].ye   + aq[k][j].yw    ) * dx/2.0
+                    - (aq[k][j-1].xs   + aq[k-1][j-1].xn) * dy/2.0
+                    - (aq[k-1][j-1].ye + aq[k-1][j].yw  ) * dx/2.0
                     - am[k][j] * dx * dy;
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->quadda, qloc, &aq);CHKERRQ(ierr);
 
   ierr = VecDestroy(&bloc); CHKERRQ(ierr);
+  ierr = VecDestroy(&qloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
