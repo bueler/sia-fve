@@ -108,13 +108,10 @@ int main(int argc,char **argv) {
   user.secpera= 31556926.0;
   user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
-
   user.exactL = 750.0e3;    // m
   user.exactH0= 3600.0;     // m
-  
   user.epsdiffusivity = 0.0;
   user.star      = PETSC_FALSE;
-
   user.exactinit = PETSC_FALSE;
   user.dump      = PETSC_FALSE;
 
@@ -123,8 +120,8 @@ int main(int argc,char **argv) {
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
-                      -12,-12,PETSC_DECIDE,PETSC_DECIDE,  // default 9x9 grid has dx=150km
-                      1, 1,                             // dof=1,  stencilwidth=1
+                      -12,-12,PETSC_DECIDE,PETSC_DECIDE,  // default 12x12 grid has dx=150km
+                      1, 1,                               // dof=1,  stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
@@ -135,7 +132,7 @@ int main(int argc,char **argv) {
 
   user.dx = 2 * user.L / (PetscReal)(info.mx);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "solving on %d x %d grid spacing dx=%g ...\n",
+                     "solving on %d x %d grid with spacing dx = %g ...\n",
                      info.mx,info.my,user.dx); CHKERRQ(ierr);
 
   // cell-centered grid
@@ -172,8 +169,8 @@ int main(int argc,char **argv) {
 
   PetscInt            its, m;
   PetscReal           eps_sched[12] = {1.0,    0.5,    0.2,     0.1,     0.05,
-                                         0.02,   0.01,   0.005,   0.002,   0.001,
-                                         0.0005, 0.0002};
+                                       0.02,   0.01,   0.005,   0.002,   0.001,
+                                       0.0005, 0.0002};
   SNESConvergedReason reason;
   const PetscReal     Neps = 12;
   for (m = 0; m<Neps; m++) {
