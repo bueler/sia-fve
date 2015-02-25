@@ -35,11 +35,12 @@ typedef struct {
             secpera,// number of seconds in a year
             A,      // ice softness
             Gamma,  // coefficient for SIA flux term
+            epsdiffusivity,// small constant to add to diffusivity
             exactL, // radius of exact ice sheet
             exactH0;// center thickness of exact ice sheet
   PetscBool star,   // use Mahaffy* instead of Mahaffy
             exactinit,// initialize with exact solution instead of zero
-            draw;   // use X to draw solution H, smb m, and error H-Hexact
+            dump;   // dump fields into ASCII VTK files
 } AppCtx;
 
 
@@ -52,10 +53,49 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar
 //  extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*);
 
 
+PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason *reason) {
+  PetscErrorCode ierr;
+  PetscFunctionBeginUser;
+  ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
+  ierr = SNESGetIterationNumber(snes,its);CHKERRQ(ierr);
+  ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscScalar enorminf,enorm1;
+  Vec         Hexact;
+  ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
+  ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
+  ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // Hexact < Hexact + (-1.0) H
+  ierr = VecNorm(Hexact,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
+  ierr = VecNorm(Hexact,NORM_1,&enorm1); CHKERRQ(ierr);
+  enorm1 /= info->mx * info->my;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "    errors:  max |H-Hexact| = %8.2f,  av |H-Hexact| = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
+  ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+//  write a vector into a given filename
+PetscErrorCode ViewToVTKASCII(Vec u, const char name[]) {
+    PetscErrorCode ierr;
+    PetscViewer viewer;
+    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,name,&viewer); CHKERRQ(ierr);
+    ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
+    ierr = VecView(u,viewer); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
   SNES                snes;
-  Vec                 H;
+  Vec                 H, Htry;
   AppCtx              user;
   DMDALocalInfo       info;
 
@@ -72,16 +112,18 @@ int main(int argc,char **argv) {
   user.exactL = 750.0e3;    // m
   user.exactH0= 3600.0;     // m
   
+  user.epsdiffusivity = 0.0;
   user.star      = PETSC_FALSE;
+
   user.exactinit = PETSC_FALSE;
-  user.draw      = PETSC_FALSE;
+  user.dump      = PETSC_FALSE;
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
-                      -9,-9,PETSC_DECIDE,PETSC_DECIDE,  // default 9x9 grid has dx=200km
+                      -12,-12,PETSC_DECIDE,PETSC_DECIDE,  // default 9x9 grid has dx=150km
                       1, 1,                             // dof=1,  stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
@@ -110,6 +152,8 @@ int main(int argc,char **argv) {
       ierr = VecSet(H,0.0); CHKERRQ(ierr);
   }
 
+  ierr = VecDuplicate(H,&Htry); CHKERRQ(ierr);
+
   ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.b),"bed elevation b"); CHKERRQ(ierr);
   ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
@@ -120,47 +164,59 @@ int main(int argc,char **argv) {
 
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
-  ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
-  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
   ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
               (DMDASNESFunction)FormFunctionLocal,&user); CHKERRQ(ierr);
+  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
+  ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
 
-  PetscInt            its;
+  PetscInt            its, m;
+  PetscReal           eps_sched[12] = {1.0,    0.5,    0.2,     0.1,     0.05,
+                                         0.02,   0.01,   0.005,   0.002,   0.001,
+                                         0.0005, 0.0002};
   SNESConvergedReason reason;
-  // ierr = VecScale(H,0.99); CHKERRQ(ierr); // move so that line search goes some distance
-  ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
-  ierr = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
-  ierr = SNESGetConvergedReason(snes,&reason);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"%3d Newton iterations (%s)\n",
-                     its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
-  if (reason < 0) {
-      SETERRQ(PETSC_COMM_WORLD,2,"SNESVI solve diverged; stopping ...\n");
+  const PetscReal     Neps = 12;
+  for (m = 0; m<Neps; m++) {
+      user.epsdiffusivity = eps_sched[m];
+      ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+      ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+      if (reason < 0) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "  DIVERGED with eps=%.2e and %5d Newton iters (%s) ... try again w eps *= 2\n",
+                     its,user.epsdiffusivity,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+          user.epsdiffusivity = 2.0 * eps_sched[m];
+          ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+          ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+          if (reason < 0) {
+              ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "    DIVERGED AGAIN with eps=%.2e and %3d Newton iters (%s)\n",
+                     its,user.epsdiffusivity,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+              break;
+          }
+      }
+      if (reason >= 0) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "  converged  with eps=%.2e and %5d Newton iters (%s)\n",
+                     its,user.epsdiffusivity,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+          ierr = VecCopy(Htry,H); CHKERRQ(ierr);
+          ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
+      }
   }
 
-  if (user.draw == PETSC_TRUE) {
-      ierr = VecView(H, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
-      ierr = VecView(user.m, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
-  }
-
-  PetscScalar enorminf,enorm1;
-  Vec         Hexact;
-  ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
-  ierr = SetToExactThickness(Hexact,&user); CHKERRQ(ierr);
-  ierr = VecAXPY(H,-1.0,Hexact); CHKERRQ(ierr);    // H < - H + (-1.0) Hexact
-  ierr = VecNorm(H,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
-  ierr = VecNorm(H,NORM_1,&enorm1); CHKERRQ(ierr);
-  enorm1 /= info.mx * info.my;
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "errors:  max |u-uexact| = %g,  av |u-uexact| = %g\n",enorminf,enorm1); CHKERRQ(ierr);
-  ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
-
-  if (user.draw == PETSC_TRUE) {
-      ierr = VecView(H, PETSC_VIEWER_DRAW_WORLD); CHKERRQ(ierr);
+  if (user.dump == PETSC_TRUE) {
+      Vec         Hexact;
+      ierr = ViewToVTKASCII(H,"H.txt"); CHKERRQ(ierr);
+      ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
+      ierr = SetToExactThickness(Hexact,&user); CHKERRQ(ierr);
+      ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // Hexact < Hexact + (-1.0) H
+      ierr = ViewToVTKASCII(Hexact,"Herror.txt"); CHKERRQ(ierr);
+      ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
+      ierr = ViewToVTKASCII(user.m,"m.txt"); CHKERRQ(ierr);
   }
 
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
+  ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
   ierr = DMDestroy(&user.da);CHKERRQ(ierr);
@@ -306,7 +362,8 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
                          + x[1]*gy[1]*(H[k][j+1] + b[k][j+1])
                                                + x[2]*gy[2]*(H[k+1][j] + b[k+1][j])
                                                                      + x[3]*gy[3]*(H[k+1][j+1] + b[k+1][j+1]);
-  DD = getD(HH,sx,sy,user);
+  DD = getD(HH,sx,sy,user) + user->epsdiffusivity;
+  //PetscPrintf(PETSC_COMM_WORLD,"D[k][j]=D[%d][%d]=%.12e\n",k,j,DD);
   q->x = - DD * sx;
   q->y = - DD * sy;
   if (grads != NULL) {
@@ -362,14 +419,15 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsBool(
+      "-dump", "dump final thickness H, error Hexact-H, and SMB m into file",
+      NULL,user->dump,&user->dump,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-eps", "small constant to add to diffusivity; note D ~~ 1 as order of magnitude",
+      NULL,user->epsdiffusivity,&user->epsdiffusivity,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-draw", "use X to draw H, m, H-Hexact",
-      NULL,user->draw,&user->draw,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
-
 
