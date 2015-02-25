@@ -416,9 +416,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-dump", "dump final thickness H, error Hexact-H, and SMB m into file",
       NULL,user->dump,&user->dump,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-eps", "small constant to add to diffusivity; note D ~~ 1 as order of magnitude",
-      NULL,user->epsdiffusivity,&user->epsdiffusivity,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
