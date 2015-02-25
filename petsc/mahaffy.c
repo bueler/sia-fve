@@ -13,10 +13,14 @@ static const char help[] =
 //   ./mahaffy -help |grep mah_
 
 //   ./mahaffy
-//   ./mahaffy -mah_exactinit  // only changes first-stage iterations
+
 //   ./mahaffy -da_refine 3
-//   ./mahaffy -da_refine 4
-//   mpiexec -n 4 ./mahaffy -da_refine 5 -mah_exactinit
+//   ./mahaffy -mah_dump
+//   ./mahaffy -mah_Neps 4
+//   ./mahaffy -mah_exactinit  // only changes # of first-stage iterations
+
+//hard:
+//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_exactinit -mah_dump
 
 #include <math.h>
 #include <petscdmda.h>
@@ -76,7 +80,7 @@ int main(int argc,char **argv) {
   user.exactH0= 3600.0;     // m
   user.epsdiffusivity = 0.0;
   user.Neps   = 12;
-  user.star      = PETSC_FALSE;
+  user.star      = PETSC_TRUE;
   user.exactinit = PETSC_FALSE;
   user.dump      = PETSC_FALSE;
 
@@ -296,44 +300,70 @@ PetscReal getD(const PetscReal H, const PetscReal sx, const PetscReal sy, const 
     return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
-typedef struct {
-    PetscReal x,y;
-} Flux;
 
 typedef struct {
     PetscReal x,y;
 } Grad;
 
 
-/* the single nontrival operation with Q1 interpolants on an element:
-   evaluate the flux at any point (x,y) on element, using corner values of H and b */
-PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
-                        PetscReal locx, PetscReal locy, // = (x,y) coords in element
-                        PetscReal **H, PetscReal **b,   // H[k][j] and b[k][j] are node values
-                        const AppCtx *user, Flux *q, Grad *grads) {
+/* first of two nontrival operation with Q1 interpolants on an element */
+/* evaluate the gradient of the surface elevation at any point (x,y) on element, using corner values of H and b */
+PetscErrorCode gradsatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
+                         PetscReal locx, PetscReal locy, // = (x,y) coords in element
+                         PetscReal **H, PetscReal **b,   // H[k][j] and b[k][j] are node values
+                         const AppCtx *user, Grad *grads) {
+
   const PetscReal dx = user->dx, dy = dx,
                   x[4]  = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
                   gx[4] = {- 1.0 / dx,      1.0 / dx,        - 1.0 / dx,      1.0 / dx},
                   y[4]  = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy},
                   gy[4] = {- 1.0 / dy,      - 1.0 / dy,      1.0 / dy,        1.0 / dy};
-  PetscReal HH, s[4], dsdx, dsdy, DD;
-  if ((q == NULL) || (H == NULL) || (b == NULL)) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in fluxatpt() ...\n");
+  PetscReal s[4];
+
+  if ((grads == NULL) || (H == NULL) || (b == NULL)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in gradsatpt() ...\n");
   }
   s[0] = H[k][j]     + b[k][j];
   s[1] = H[k][j+1]   + b[k][j+1];
   s[2] = H[k+1][j]   + b[k+1][j];
   s[3] = H[k+1][j+1] + b[k+1][j+1];
-  HH   =  x[0] * y[0] * H[k][j] +  x[1] * y[1] * H[k][j+1] +  x[2] * y[2] * H[k+1][j] +  x[3] * y[3] * H[k+1][j+1];
-  dsdx = gx[0] * y[0] * s[0]    + gx[1] * y[1] * s[1]      + gx[2] * y[2] * s[2]      + gx[3] * y[3] * s[3];
-  dsdy =  x[0] *gy[0] * s[0]    +  x[1] *gy[1] * s[1]      +  x[2] *gy[2] * s[2]      +  x[3] *gy[3] * s[3];
-  DD = getD(HH,dsdx,dsdy,user) + user->epsdiffusivity;
-  q->x = - DD * dsdx;
-  q->y = - DD * dsdy;
-  if (grads != NULL) {
-      grads->x = dsdx;
-      grads->y = dsdy;
+  grads->x = gx[0] * y[0] * s[0] + gx[1] * y[1] * s[1] + gx[2] * y[2] * s[2] + gx[3] * y[3] * s[3];
+  grads->y =  x[0] *gy[0] * s[0] +  x[1] *gy[1] * s[1] +  x[2] *gy[2] * s[2] +  x[3] *gy[3] * s[3];
+  PetscFunctionReturn(0);
+}
+
+
+Grad gradav(Grad g1, Grad g2) {
+  Grad gav;
+  gav.x = (g1.x + g2.x) / 2.0;
+  gav.y = (g1.y + g2.y) / 2.0;
+  return gav;
+}
+
+
+typedef struct {
+    PetscReal x,y;
+} Flux;
+
+
+/* second of two nontrival operation with Q1 interpolants on an element */
+/* evaluate the flux at any point (x,y) on element, using corner values of H and b */
+PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
+                        PetscReal locx, PetscReal locy, // = (x,y) coords in element
+                        Grad gs,                        // compute with gradsatpt() first
+                        PetscReal **H,                  // H[k][j] are node values
+                        const AppCtx *user, Flux *q) {
+  const PetscReal dx = user->dx, dy = dx,
+                  x[4]  = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
+                  y[4]  = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy};
+  PetscReal HH, DD;
+  if ((q == NULL) || (H == NULL)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in fluxatpt() ...\n");
   }
+  HH = x[0] * y[0] * H[k][j] + x[1] * y[1] * H[k][j+1] + x[2] * y[2] * H[k+1][j] + x[3] * y[3] * H[k+1][j+1];
+  DD = getD(HH,gs.x,gs.y,user) + user->epsdiffusivity;
+  q->x = - DD * gs.x;
+  q->y = - DD * gs.y;
   PetscFunctionReturn(0);
 }
 
@@ -364,6 +394,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   PetscInt        j, k;
   PetscReal       **am, **ab;
   FluxQuad        **aq;
+  Grad            gsn, gss, gse, gsw;
   Flux            qn, qs, qe, qw;
   Vec             bloc, qloc;
 
@@ -379,17 +410,36 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   ierr = DMDAVecGetArray(user->quadda, qloc, &aq);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes
   // note start at (xs-1,ys-1)
-  for (k=info->ys-1; k<info->ys+info->ym; k++) {
-      for (j=info->xs-1; j<info->xs+info->xm; j++) {
-          ierr = fluxatpt(j,k,     dx/2.0, 3.0*dy/4.0, H,ab,user,&qn,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j,k,     dx/2.0,     dy/4.0, H,ab,user,&qs,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j,k, 3.0*dx/4.0,     dy/2.0, H,ab,user,&qe,NULL); CHKERRQ(ierr);
-          ierr = fluxatpt(j,k,     dx/4.0,     dy/2.0, H,ab,user,&qw,NULL); CHKERRQ(ierr);
+  for (k = info->ys-1; k < info->ys + info->ym; k++) {
+      for (j = info->xs-1; j < info->xs + info->xm; j++) {
+          if (user->star) {  // Mahaffy* method
+              ierr = gradsatpt(j,k,     dx/2.0, 3.0*dy/4.0,      H,ab, user,&gsn); CHKERRQ(ierr);
+              ierr =  fluxatpt(j,k,     dx/2.0, 3.0*dy/4.0, gsn, H,    user,&qn ); CHKERRQ(ierr);
+              ierr = gradsatpt(j,k,     dx/2.0,     dy/4.0,      H,ab, user,&gss); CHKERRQ(ierr);
+              ierr =  fluxatpt(j,k,     dx/2.0,     dy/4.0, gss, H,    user,&qs ); CHKERRQ(ierr);
+              ierr = gradsatpt(j,k, 3.0*dx/4.0,     dy/2.0,      H,ab, user,&gse); CHKERRQ(ierr);
+              ierr =  fluxatpt(j,k, 3.0*dx/4.0,     dy/2.0, gse, H,    user,&qe ); CHKERRQ(ierr);
+              ierr = gradsatpt(j,k,     dx/4.0,     dy/2.0,      H,ab, user,&gsw); CHKERRQ(ierr);
+              ierr =  fluxatpt(j,k,     dx/4.0,     dy/2.0, gsw, H,    user,&qw ); CHKERRQ(ierr);
+          } else {           // Mahaffy method
+              Grad  gsn_nbr, gss_nbr, gse_nbr, gsw_nbr;
+              ierr =   gradsatpt(j,k,   dx/2.0, dy,   H,ab, user,&gsn); CHKERRQ(ierr);
+              if (k < info->ys + info->ym - 1) {
+                ierr = gradsatpt(j,k+1, dx/2.0, 0.0,  H,ab, user,&gsn_nbr); CHKERRQ(ierr);
+                gsn  = gradav(gsn,gsn_nbr);
+              }
+              ierr =   fluxatpt(j,k,   dx/2.0, dy, gsn, H, user,&qn ); CHKERRQ(ierr);
+// FIXME  do 3 other cases
+              SETERRQ(PETSC_COMM_WORLD,1,"ERROR: ordinary Mahaffy not implemented ...\n");
+          }
           aq[k][j] = (FluxQuad){qn.x,qs.x,qe.y,qw.y};
       }
   }
   // loop over nodes to get residual
-  // this is the integral over boundary of control volume
+  // This is the integral over boundary of control volume using two quadrature
+  // points on each side of control volume.  For Mahaffy* it is two instances of
+  // midpoint rule on each side.  For Mahaffy it is just one, but with averaged
+  // gradient calculation at the midpoint of the side.
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
           FF[k][j] =  (aq[k][j].xs     + aq[k-1][j].xn  ) * dy/2.0
