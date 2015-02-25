@@ -289,21 +289,23 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
                         PetscReal **H, PetscReal **b,   // H[k][j] and b[k][j] are node values
                         const AppCtx *user, Flux *q, Grad *grads) {
   const PetscReal dx = user->dx, dy = dx,
-                  x[4] = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
-                  y[4] = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy};
+                  x[4]  = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
+                  gx[4] = {- 1.0 / dx,      1.0 / dx,        - 1.0 / dx,      1.0 / dx},
+                  y[4]  = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy},
+                  gy[4] = {- 1.0 / dy,      - 1.0 / dy,      1.0 / dy,        1.0 / dy};
   PetscReal HH, sx, sy, DD;
-  if (q == NULL) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr q in fluxatpt() ...\n");
-  }
-  if (H == NULL) {
-      SETERRQ(PETSC_COMM_WORLD,2,"ERROR: illegal NULL ptr H in fluxatpt() ...\n");
-  }
-  if (b == NULL) {
-      SETERRQ(PETSC_COMM_WORLD,3,"ERROR: illegal NULL ptr b in fluxatpt() ...\n");
+  if ((q == NULL) || (H == NULL) || (b == NULL)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in fluxatpt() ...\n");
   }
   HH = x[0]*y[0]*H[k][j] + x[1]*y[1]*H[k][j+1] + x[2]*y[2]*H[k+1][j] + x[3]*y[3]*H[k+1][j+1];
-  sx = FIXME;
-  sy = FIXME;
+  sx = gx[0]*y[0]*(H[k][j] + b[k][j])
+                         + gx[1]*y[1]*(H[k][j+1] + b[k][j+1])
+                                               + gx[2]*y[2]*(H[k+1][j] + b[k+1][j])
+                                                                     + gx[3]*y[3]*(H[k+1][j+1] + b[k+1][j+1]);
+  sy = x[0]*gy[0]*(H[k][j] + b[k][j])
+                         + x[1]*gy[1]*(H[k][j+1] + b[k][j+1])
+                                               + x[2]*gy[2]*(H[k+1][j] + b[k+1][j])
+                                                                     + x[3]*gy[3]*(H[k+1][j+1] + b[k+1][j+1]);
   DD = getD(HH,sx,sy,user);
   q->x = - DD * sx;
   q->y = - DD * sy;
