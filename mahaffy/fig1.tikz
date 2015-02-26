@@ -1,0 +1,16 @@
+\begin{tikzpicture}[scale=1.0]
+  %uncomment to see grid on which it was generated:
+  \draw[dotted,step=1.0,black,very thin] (0,0) grid (4,6);
+
+  % the free boundary is just like the other edges
+  \draw[gray, dashed] (-0.75,0) -- (6.75,0);
+  \draw[gray, dashed] (-0.75,2) -- (6.75,2);
+  \draw[gray, dashed] (-0.75,4) -- (6.75,4);
+  \draw[gray, dashed] (0,-0.5) -- (0,4.5);
+
+  % label some cell d.o.f.
+  \draw (6,6) node {FIXME $u_n^j$};
+
+  \filldraw (0,0) circle (0.500000pt);
+
+\end{tikzpicture}
