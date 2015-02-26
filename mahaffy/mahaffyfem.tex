@@ -198,21 +198,17 @@ We seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bi
 \begin{equation}
   - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
 \end{equation}
-for all $j,k$, which gives a finite algebraic system once we choose a quadrature rule on the left.  Equation \eqref{eq:siafve} is a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains because $\bq^h$ is defined almost everywhere on $\Omega$, as $H^h$ and $s^h$ are from $S_h$.
+for all $j,k$.  This equation gives a finite algebraic system once we choose a quadrature rule on the left.  Equation \eqref{eq:siafve} is a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains because $\bq^h$ is defined almost everywhere on $\Omega$, as $H^h$ and $s^h$ are from $S_h$.
 
-The FE method is completed by computing the integral in \eqref{eq:siafve}.  Though $\bq^h$ is a well-defined, bounded function, and continuous on each element $\square_{j,k}$, it is discontinuous across element boundaries.  We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$.  For this purpose let $x_j^\pm = x_j \pm \dxtwo$, $y_k^\pm = y_k \pm \dytwo$, and denote components $\bq^h = \ip{q^x}{q^y}$, so that
+We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$.  Let $x_j^\pm = x_j \pm \dxtwo$, $y_k^\pm = y_k \pm \dytwo$, and denote components $\bq^h = \ip{q^x}{q^y}$, so that
 \begin{equation}
   \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = \int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy + \int_{x_j^-}^{x_j^+} q^y(x,y_k^+)\,dx - \int_{y_k^-}^{y_k^+} q^x(x_j^-,y)\,dy - \int_{x_j^-}^{x_j^+} q^y(x,y_k^-)\,dx. \label{eq:fluxintdecomp}
 \end{equation}
-Note $q^x$ and $q^y$ are scalar functions that depend on $(x,y)$ through $H^h$ and $b^h$.
+Note $\bq^h$ is a well-defined, bounded function, and continuous on each element $\square_{j,k}$, but it is discontinuous across element boundaries.  For example, in the first integral on the right in \eqref{eq:fluxintdecomp} the integrand $f(y) = q^x(x_j^+,y)$ is piecewise-continuous on the interval of integration $y_k^- \le y \le y_k^+$, but it has a jump discontinuity at the midpoint $y=y_k$ because, though $\grad s^h = \ip{s^h_x}{s^h_y}$ is linear on each element, $s^h_y$ is discontinuous at $y=y_k$.
 
-Considering the first of the integrals on the right in \eqref{eq:fluxintdecomp}, the integrand $f(y) = q^x(x_j^+,y)$ is piecewise-continuous on the interval of integration $y_k^- \le y \le y_k^+$.  It has a jump discontinuity at the midpoint $y=y_k$ because, though $\grad s^h = \ip{s^h_x}{s^h_y}$ is linear on each element, $s^h_y$ is discontinuous at $y=y_k$.  The Mahaffy scheme computes the integral by the midpoint method, but using $s^h_y$ \emph{averaged across its jump discontinuity} there, as though that average were a value.
+The Mahaffy scheme computes each integral in \eqref{eq:fluxintdecomp} by the midpoint method, but using the value of the discontinuous component of the surface gradient \emph{computed by averaging across its jump discontinuity}.  Thus Mahaffy does not use a true quadrature, because the integrand $\bq^h\cdot \bn$ does not have a value at the quadrature (mid-) point, but a value is re-constructed.
 
-To turn this idea into formulas, first note that the thickness $H^h$ and the $x$-derivative $s^h_x$ have continuous values between the elements $\square_{j,k}$ and $\square_{j,k-1}$.  In particular, writing-out $H^h(x,y)$ on either element, using the element basis \eqref{eq:elementbasis}, gives
-\begin{equation}
-H^h(x_j^+,y_k) = \tfrac{H_{j,k}+H_{j+1,k}}{2}, \label{eq:femHstag}
-\end{equation}
-Next, the components of the surface gradient on the element $\square_{j,k}$ have the formulas
+To turn this idea into formulas, observe that the thickness $H^h$ and the $x$-derivative $s^h_x$ have continuous values between the elements $\square_{j,k}$ and $\square_{j,k-1}$.  Indeed, the components of the surface gradient on the element $\square_{j,k}$ have the formulas
 	\begin{comment}
 	COMMENT OUT: here is the surface elevation on $\square_{j,k}$
 	\begin{align*}
@@ -226,27 +222,31 @@ Next, the components of the surface gradient on the element $\square_{j,k}$ have
 s^h_x(x,y) &= \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\tfrac{y-y_k}{\Delta y}\right) + \tfrac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\tfrac{y-y_k}{\Delta y}\right), \label{eq:grads} \\
 s^h_y(x,y) &= \tfrac{s_{j,k+1}-s_{j,k}}{\Delta y} \left(1-\tfrac{x-x_j}{\Delta x}\right) + \tfrac{s_{j+1,k+1}-s_{j+1,k}}{\Delta y} \left(\tfrac{x-x_j}{\Delta x}\right), \notag
 \end{align}
-and the same functions on $\square_{j,k-1}$ can be calculated by shifting the index $k\to k-1$.  Thus the $x$-derivative at $y=y_k$ is continuous, so
+and the same functions on $\square_{j,k-1}$ can be calculated by shifting the index $k\to k-1$.  Thus $s^h_x(x,y)$ is continuous on the interval of integration in the first integral in \eqref{eq:fluxintdecomp}, and at the midpoint it has value
 \begin{equation}
 s^h_x(x_j^+,y_k) = \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x}. \label{eq:femsxstag}
 \end{equation}
+Similarly, writing-out $H^h(x,y)$ on each element, using the element basis \eqref{eq:elementbasis}, and evaluating at the midpoint in the first integral in \eqref{eq:fluxintdecomp} gives
+\begin{equation}
+H^h(x_j^+,y_k) = \tfrac{H_{j,k}+H_{j+1,k}}{2}, \label{eq:femHstag}
+\end{equation}
 
-However, the $y$-derivative has different values above (i.e.~on $\square_{j,k}$) and below (on $\square_{j,k-1}$) the element boundary at $y = y_k$.  At $x=x_j^+$ we have:
+However, the $y$-derivative has different values above (i.e.~on $\square_{j,k}$) and below (on $\square_{j,k-1}$) the element boundary at $y = y_k$; the limits are:
 \begin{align}
-s^h_y(x_j^+,y_k+\eps) = \tfrac{s_{j,k+1}-s_{j,k} + s_{j+1,k+1}-s_{j+1,k}}{2\Delta y}, \\
-s^h_y(x_j^+,y_k-\eps) = \tfrac{s_{j,k}-s_{j,k-1} + s_{j+1,k}-s_{j+1,k-1}}{2\Delta y}. \notag
+s^h_y(x_j^+,y_k+0) = \tfrac{s_{j,k+1}-s_{j,k} + s_{j+1,k+1}-s_{j+1,k}}{2\Delta y}, \\
+s^h_y(x_j^+,y_k-0) = \tfrac{s_{j,k}-s_{j,k-1} + s_{j+1,k}-s_{j+1,k-1}}{2\Delta y}. \notag
 \end{align}
-The average of these values is not a value of $s_y^h$, but it would be a good estimate if $s^h$ were smooth:
+The average of these values is thus not a value of $s_y^h$, but a good re-construction thereof:
 \begin{equation}
 \widehat{s^h_y}(x_j^+,y_k) = \tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4\Delta y}. \label{eq:femsystagcrime}
 \end{equation}
-The hat in \eqref{eq:femsystagcrime} indicates that it is \emph{not} a result of evaluating $s^h_y(x,y)$.  Formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in \eqref{eq:mahaffyWalphax}.  The Mahaffy scheme uses it in the midpoint rule:
+The hat in \eqref{eq:femsystagcrime} indicates that it is \emph{not} a result of evaluating $s^h_y(x,y)$, but formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in FD formula \eqref{eq:mahaffyWalphax}.
+
+In our FVE interpretation, we see that the Mahaffy scheme uses \eqref{eq:femsxstag}, \eqref{eq:femHstag}, and \eqref{eq:femsystagcrime} in the midpoint rule:
 \begin{equation}
 \int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy \approx - \Gamma H^h(x_j^+,y_k)^{n+2} \left(s^h_x(x_j^+,y_k)^2 + \widehat{s^h_y}(x_j^+,y_k)^2\right)^{(n-1)/2} s^h_x(x_j^+,y_k)\,\Delta y. \label{eq:femmahaffyfirstint}
 \end{equation}
-This scheme thus approximates the first integral on the right in \eqref{eq:fluxintdecomp} by a quadrature ``crime'' (compare \cite{Strang1972}), averaging across the discontinuity to reconstruct $q^x(x_j^+,y_k)$.
-
-Combining \eqref{eq:femmahaffyfirstint} with equations \eqref{eq:femHstag}, \eqref{eq:femsxstag}, and \eqref{eq:femsystagcrime} gives the same approximation of the staggered-grid value of the flux as in formulas \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}.  The other integrals on the right in \eqref{eq:fluxintdecomp} have a similar FE analysis, which leads to the same Mahaffy FD formulas.  Dividing the resulting approximation of equation \eqref{eq:siafve} by the control volume area $\Delta x\,\Delta y$ gives FD equation \eqref{eq:siasteadyfd}.
+Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a smart quadrature ``crime'' (compare \cite{Strang1972}), averaging across discontinuities to reconstruct slopes.  Approximation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the staggered-grid fluxes as \eqref{eq:mahaffyWqx}, \eqref{eq:mahaffyWalphax}, \eqref{eq:mahaffyWqy}, and \eqref{eq:mahaffyWalphay}.  In particular, dividing the resulting approximation of equation \eqref{eq:siafve} by the control volume area $\Delta x\,\Delta y$ gives FD equation \eqref{eq:siasteadyfd}.
 
 \section{An improved scheme on structured and unstructured grids}
 
