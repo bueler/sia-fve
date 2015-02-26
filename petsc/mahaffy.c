@@ -26,8 +26,12 @@ static const char help[] =
 //   ./mahaffy -da_refine 4
 // (fix by adding -mah_snesreboot)
 
+// compare methods
+//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_star
+//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10           // earlier divergence failure w. ordinary Mahaffy
+
 //hard:
-//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_exactinit -mah_dump
+//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_exactinit -mah_dump -mah_star
 
 #include <math.h>
 #include <petscdmda.h>
@@ -91,7 +95,7 @@ int main(int argc,char **argv) {
   user.eps    = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
-  user.star      = PETSC_TRUE;
+  user.star      = PETSC_FALSE;
   user.exactinit = PETSC_FALSE;
   user.dump      = PETSC_FALSE;
   user.snesreboot= PETSC_FALSE;
@@ -437,14 +441,34 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               ierr =  fluxatpt(j,k,     dx/4.0,     dy/2.0, gsw, H,    user,&qw ); CHKERRQ(ierr);
           } else {           // Mahaffy method
               Grad  gsn_nbr, gss_nbr, gse_nbr, gsw_nbr;
+              // center-top point in element
               ierr =   gradsatpt(j,k,   dx/2.0, dy,   H,ab, user,&gsn); CHKERRQ(ierr);
               if (k < info->ys + info->ym - 1) {
                 ierr = gradsatpt(j,k+1, dx/2.0, 0.0,  H,ab, user,&gsn_nbr); CHKERRQ(ierr);
                 gsn  = gradav(gsn,gsn_nbr);
               }
-              ierr =   fluxatpt(j,k,   dx/2.0, dy, gsn, H, user,&qn ); CHKERRQ(ierr);
-// FIXME  do 3 other cases
-              SETERRQ(PETSC_COMM_WORLD,1,"ERROR: ordinary Mahaffy not implemented ...\n");
+              ierr =    fluxatpt(j,k,   dx/2.0, dy, gsn, H, user,&qn ); CHKERRQ(ierr);
+              // center-bottom point in element
+              ierr =   gradsatpt(j,k,   dx/2.0, 0.0,  H,ab, user,&gss); CHKERRQ(ierr);
+              if (k > info->ys - 1) {
+                ierr = gradsatpt(j,k-1, dx/2.0, dy,   H,ab, user,&gss_nbr); CHKERRQ(ierr);
+                gss  = gradav(gss,gss_nbr);
+              }
+              ierr =    fluxatpt(j,k,   dx/2.0, 0.0,gss, H, user,&qs ); CHKERRQ(ierr);
+              // center-right point in element
+              ierr =   gradsatpt(j,k,   dx,  dy/2.0,  H,ab, user,&gse); CHKERRQ(ierr);
+              if (j < info->xs + info->xm - 1) {
+                ierr = gradsatpt(j+1,k, 0.0, dy/2.0,  H,ab, user,&gse_nbr); CHKERRQ(ierr);
+                gse  = gradav(gse,gse_nbr);
+              }
+              ierr =    fluxatpt(j,k,   dx,  dy/2.0,gse, H, user,&qe ); CHKERRQ(ierr);
+              // center-left point in element
+              ierr =   gradsatpt(j,k,   0.0, dy/2.0,  H,ab, user,&gsw); CHKERRQ(ierr);
+              if (j > info->xs - 1) {
+                ierr = gradsatpt(j-1,k, dx,  dy/2.0,  H,ab, user,&gsw_nbr); CHKERRQ(ierr);
+                gsw  = gradav(gsw,gsw_nbr);
+              }
+              ierr =    fluxatpt(j,k,   0.0, dy/2.0,gsw, H, user,&qw ); CHKERRQ(ierr);
           }
           aq[k][j] = (FluxQuad){qn.x,qs.x,qe.y,qw.y};
       }
@@ -492,6 +516,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-snesreboot", "when SNES divergence failure, destroy and restart SNES",
       NULL,user->snesreboot,&user->snesreboot,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-star", "use Mahaffy* method",
+      NULL,user->star,&user->star,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
