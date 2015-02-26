@@ -19,6 +19,13 @@ static const char help[] =
 //   ./mahaffy -mah_Neps 4
 //   ./mahaffy -mah_exactinit  // only changes # of first-stage iterations
 
+// widen screen to see SNESVI monitor output:
+//   ./mahaffy -da_refine 2 -snes_vi_monitor
+
+// error from:
+//   ./mahaffy -da_refine 4
+// (fix by adding -mah_snesreboot)
+
 //hard:
 //   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_exactinit -mah_dump
 
@@ -38,12 +45,14 @@ typedef struct {
             secpera,// number of seconds in a year
             A,      // ice softness
             Gamma,  // coefficient for SIA flux term
-            epsdiffusivity,// small constant to add to diffusivity
+            eps,    // dimensionless regularization
+            D0,     // representative value of diffusivity (in regularization)
             exactL, // radius of exact ice sheet
             exactH0;// center thickness of exact ice sheet
   PetscInt  Neps;
   PetscBool star,   // use Mahaffy* instead of Mahaffy
             exactinit,// initialize with exact solution instead of zero
+            snesreboot,// destroy and restart SNES when divergence failure
             dump;   // dump fields into ASCII VTK files
 } AppCtx;
 
@@ -58,6 +67,7 @@ extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[]);
 extern PetscErrorCode DumpToFiles(Vec,Vec,AppCtx*);
+extern PetscErrorCode SNESboot(SNES *s, AppCtx* user);
 
 
 int main(int argc,char **argv) {
@@ -78,11 +88,13 @@ int main(int argc,char **argv) {
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
   user.exactL = 750.0e3;    // m
   user.exactH0= 3600.0;     // m
-  user.epsdiffusivity = 0.0;
-  user.Neps   = 12;
+  user.eps    = 0.0;
+  user.D0     = 1.0;        // m^2 / s
+  user.Neps   = 13;
   user.star      = PETSC_TRUE;
   user.exactinit = PETSC_FALSE;
   user.dump      = PETSC_FALSE;
+  user.snesreboot= PETSC_FALSE;
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
@@ -138,42 +150,39 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
   ierr = SetToSMB(user.m,&user);CHKERRQ(ierr);
 
-  ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
-  ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
-  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
-              (DMDASNESFunction)FormFunctionLocal,&user); CHKERRQ(ierr);
-  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
-  ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
-  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
+  ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
 
   PetscInt            its, m;
-  PetscReal           eps_sched[12] = {1.0,    0.5,    0.2,     0.1,     0.05,
+  PetscReal           eps_sched[13] = {1.0,    0.5,    0.2,     0.1,     0.05,
                                        0.02,   0.01,   0.005,   0.002,   0.001,
-                                       0.0005, 0.0002};
+                                       0.0005, 0.0002, 0.0000};
   SNESConvergedReason reason;
   for (m = 0; m<user.Neps; m++) {
-      user.epsdiffusivity = eps_sched[m];
+      user.eps = eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       if (reason < 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
                      "%3d. DIVERGED   with eps=%.2e and %5d Newton iters (%s) ... try again w eps *= 2\n",
-                     m+1,its,user.epsdiffusivity,SNESConvergedReasons[reason]);CHKERRQ(ierr);
-          user.epsdiffusivity = 2.0 * eps_sched[m];
+                     m+1,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+          if (user.snesreboot == PETSC_TRUE) {
+              ierr = SNESDestroy(&snes); CHKERRQ(ierr);
+              ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
+          }
+          user.eps = 2.0 * eps_sched[m];
           ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-          //ierr = SNESSetUp(snes);CHKERRQ(ierr);  // DEBUG
           ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
           if (reason < 0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                      "     DIVERGED AGAIN  eps=%.2e and %5d Newton iters (%s)\n",
-                     its,user.epsdiffusivity,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                     its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
               break;
           }
       }
       if (reason >= 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
                      "%3d. converged  with eps=%.2e and %5d Newton iters (%s)\n",
-                     m+1,its,user.epsdiffusivity,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                     m+1,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
           ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
       }
@@ -296,7 +305,8 @@ PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
 
 // the single nontrivial formula for SIA
 PetscReal getD(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
-    PetscReal n = user->n;
+    const PetscReal eps = user->eps,
+                    n   = (1.0 - eps) * user->n + eps * 1.0;
     return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
@@ -353,7 +363,7 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
                         Grad gs,                        // compute with gradsatpt() first
                         PetscReal **H,                  // H[k][j] are node values
                         const AppCtx *user, Flux *q) {
-  const PetscReal dx = user->dx, dy = dx,
+  const PetscReal eps = user->eps,  dx = user->dx,  dy = dx,
                   x[4]  = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
                   y[4]  = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy};
   PetscReal HH, DD;
@@ -361,7 +371,7 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in fluxatpt() ...\n");
   }
   HH = x[0] * y[0] * H[k][j] + x[1] * y[1] * H[k][j+1] + x[2] * y[2] * H[k+1][j] + x[3] * y[3] * H[k+1][j+1];
-  DD = getD(HH,gs.x,gs.y,user) + user->epsdiffusivity;
+  DD = (1.0 - eps) * getD(HH,gs.x,gs.y,user) + eps * user->D0;
   q->x = - DD * gs.x;
   q->y = - DD * gs.y;
   PetscFunctionReturn(0);
@@ -464,14 +474,20 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-dump", "dump final thickness H, error Hexact-H, and SMB m into file",
+      "-dump", "dump final thickness H, Herror=H-Hexact, and SMB m into file",
       NULL,user->dump,&user->dump,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
+      NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-exactinit", "initialize with exact solution",
       NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
-      "-Neps", "count of eps levels",
+      "-Neps", "levels in schedule of eps regularization (i.e. continuation)",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-snesreboot", "when SNES divergence failure, destroy and restart SNES",
+      NULL,user->snesreboot,&user->snesreboot,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -549,5 +565,18 @@ PetscErrorCode DumpToFiles(Vec H, Vec m, AppCtx *user) {
     ierr = ViewToVTKASCII(m,"m.txt"); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
+  PetscErrorCode ierr;
+  ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
+  ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
+  ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
+              (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
+  ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
+  ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
+  ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
 }
 
