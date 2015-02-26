@@ -10,6 +10,15 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows}
 
+% hyperref should be the last package we load
+\usepackage[pdftex,
+            colorlinks=true,
+            plainpages=false,
+            linkcolor=blue,   % only if colorlinks=true
+            citecolor=red,    % only if colorlinks=true
+            urlcolor=magenta  % only if colorlinks=true
+]{hyperref}
+
 % math macros
 \newcommand\bb{\mathbf{b}}
 \newcommand\bbf{\mathbf{f}}
@@ -137,24 +146,24 @@ Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{{\large \textbf{a.}}~A structured grid as a FD grid with regular (dots) and staggered (triangles) locations.  {\large \textbf{b.}}~The same grid as a FE grid with rectangular elements (solid), nodes (dots), and dual rectangular control volumes (dashed).}
+\caption{{\large \textbf{a.}}~A structured grid as an FD grid with regular (dots) and staggered (triangles) locations.  {\large \textbf{b.}}~The same grid as an FE grid with rectangular elements (solid), nodes (dots), and dual rectangular control volumes (dashed).}
 \label{fig:fdfemgrids}
 \end{figure}
 
 
 \section{A finite volume element interpretation} \label{sec:fveinterpretation}
 
-The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from an FE or finite volume (FV) perspective, as we do now, is new.  Our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for piecewise-constant test functions which are discontinuous at the FD method's staggered grid points.  The method is both of Petrov-Galerkin FE type, because the trial and test functions come from different spaces \cite{Elmanetal2005}, and a ``finite volume element'' (FVE) method \cite{EwingLinLin2002} in which exact discrete conservation follows in the standard FV understanding \cite{LeVeque}.
+The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from an FE or finite volume (FV) perspective \cite{LeVeque}, as we do now, is new.  Our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for piecewise-constant test functions which are discontinuous at the FD method's staggered grid points.  The method is both of Petrov-Galerkin FE type, because the trial and test functions come from different spaces \cite{Elmanetal2005}, and a ``finite volume element'' (FVE) method \cite{EwingLinLin2002} in which exact discrete conservation follows in the standard FV understanding.
 
 To re-derive the scheme we suppose \eqref{eq:siasteady} holds and we take a subregion $V$ of $\Omega$.  By the divergence theorem,
 \begin{equation}
   - \int_{\partial V} \bq \cdot \bn\,ds = \int_V m\, dx\,dy, \label{eq:siaasconservation}
 \end{equation}
-where $\partial V$ denotes the boundary of $V$.  This is simply the integral form of \eqref{eq:siasteady}.
+where $\partial V$ denotes the boundary of $V$, $\bn$ is the outward normal unit vector, and $ds$ the length element on the closed curve $\partial V$.  This is simply the integral form of \eqref{eq:siasteady}.
 
 An FVE method supposes that the approximation of the solution, here denoted $H^h$, where the ``$h$'' superscript is traditional for indicating FE approximations \cite{Elmanetal2005}, lies in a finite-dimensional space of continuous functions which are defined everywhere.  In fact, these functions must be sufficiently well-behaved so that the approximate flux $\bq^h$ is defined (almost) everywhere, and can be integrated along curves.  Then integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of volumes $V$, which together tile $\Omega$, and this generates a finite system of nonlinear (algebraic) equations which can be solved by Newton's method, for example (see Section \ref{sec:examples}).  This derivation of the algebraic system uses \eqref{eq:siaasconservation} as an FV method would for solving the differential equation \eqref{eq:siasteady}.  However, we could also let $g(x,y)$ be the characteristic function of $V$ (i.e.~with value one on $V$ and zero otherwise), and then multiply \eqref{eq:siasteadyfd} by $g$ and integrate and derive \eqref{eq:siaasconservation} that way, mimicking the construction of an FE method.
 
-So consider the structured grid of rectangles with dimensions $\Delta x,\Delta y$ shown in Figure \ref{fig:fdfemgrids}b.  The rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  A basis of bilinear functions on $\square_{j,k}$ is
+So consider the structured grid of $\Delta x$ by $\Delta y$ rectangles, the ``elements,'' shown in Figure \ref{fig:fdfemgrids}b.  Denote the element with lower-left corner at $(x_j,y_k)$ by $\square_{j,k}$.  These rectangles are true $Q^1$ finite elements when associated with bilinear functions, and a basis for such functions on $\square_{j,k}$ is
 \begin{equation}
 \chi_l(x-x_j,y-y_k), \label{eq:elementbasis}
 \end{equation}
@@ -167,15 +176,15 @@ If $C(\Omega)$ denotes the continuous functions on the domain, then let
 \begin{equation}
 S_h = \{u \in C(\Omega) \,\big|\, u \text{ is bilinear on each $\square_{j,k}$}\},
 \end{equation}
-the $Q^1$ finite element space \cite{Elmanetal2005}.  Functions in $S_h$ have a gradient which is defined almost everywhere, but the gradient is discontinuous along the element edges (i.e.~along solid lines in Figure \ref{fig:fdfemgrids}b).
+the $Q^1$ finite element space \cite{Elmanetal2005}.  Functions in $S_h$ have a gradient which is defined almost everywhere, but the gradient is discontinuous along the element edges (solid lines in Figure \ref{fig:fdfemgrids}b).
 
-Let $V_{j,k}$ be the rectangular control volume shown by dashed lines in Figure \ref{fig:fdfemgrids}b, with center at $(x_j,y_j)$.  If $L^\infty(\Omega)$ denotes bounded and integrable functions on $\Omega$, then let
+Let $V_{j,k}$ be the rectangular control volume shown by dashed lines in Figure \ref{fig:fdfemgrids}b, with center at $(x_j,y_j)$, also with dimensions $\Delta x$ by $\Delta y$.  If $L^\infty(\Omega)$ denotes bounded and integrable functions on $\Omega$ \cite{Evans}, let
 \begin{equation}
 S_h^* = \{u \in L^\infty(\Omega) \,\big|\, u \text{ is constant on each $V_{j,k}$}\}.
 \end{equation}
 Functions in $S_h^*$ are discontinuous along the control volume edges (dashed lines in Figure \ref{fig:fdfemgrids}b).
 
-If the nodes $(x_j,y_k)$ have index $j$ in $1,\dots,N_x$ and index $k$ in $1,\dots,N_y$, so there are $N_xN_y$ distinct nodes, then $\dim S_h = \dim S_h^* = N_x N_y$.  Bases of $S_h$ and $S_h^*$ are easy to give, by choosing functions which take value one at a single node and are zero at all other nodes.  By definition, $\psi_{j,k}$ is the unique function in $S_h$ so that $\psi_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$, and $\omega_{j,k}$ is the unique function in $S_h^*$  so that $\omega_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$.  See Figure \ref{fig:fembases}.
+Those functions which take value one at a single node and are zero at all other nodes form bases of $S_h$ and $S_h^*$, respectively.  Thus, by definition, $\psi_{j,k}(x,y)$ is the unique function in $S_h$ so that $\psi_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$, and $\omega_{j,k}(x,y)$ is the unique function in $S_h^*$  so that $\omega_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$.  See Figure \ref{fig:fembases}.  If index $j$ is in $1,\dots,N_x$ and $k$ is in $1,\dots,N_y$ then there are $N_xN_y$ distinct nodes so $\dim S_h = \dim S_h^* = N_x N_y$.  
 
 \begin{figure}[ht]
 \begin{center}
@@ -185,11 +194,11 @@ If the nodes $(x_j,y_k)$ have index $j$ in $1,\dots,N_x$ and index $k$ in $1,\do
 \label{fig:fembases}
 \end{figure}
 
-In our FE method, we seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b(x,y)$ and let $s^h=H^h+b^h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$.  Our idea is to require \eqref{eq:siaweak} to hold for this $\bq^h$ and for all $g$ in $S_h^*$.  However, it will suffice to only test for a basis of $S_h^*$, so $g=\omega_{j,k}$.  Also, because $\omega_{j,k}$ is equal to one on $V_{j,k}$ and is zero otherwise, we can use the divergence theorem just on $V_{j,k}$.  Finally, we can use midpoint quadrature on the right-hand integral.  Thus we seek $H^h$ in $S_h$ satisfying
+We seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b$, thus also in $S_h$, and let $s^h=H^h+b^h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$, so that $\bq^h$ is well-defined on the interior of each element.  We require \eqref{eq:siaasconservation} to hold for this $\bq^h$ and all volumes $V_{j,k}$.  (Equivalently, we multiply \eqref{eq:siasteady} by any $\omega_{j,k}$ from the basis for $S_h^*$, and integrate, and require these equations to hold.)  However, we use midpoint quadrature on the right-hand integral in \eqref{eq:siaasconservation}.  Thus we seek $H^h$ in $S_h$ satisfying
 \begin{equation}
   - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
 \end{equation}
-for all $j,k$, where $\bn$ is the outward normal unit vector and $ds$ the length element on the closed curve (rectangle) $\partial V_{j,k}$.  Equation \eqref{eq:siafve} is actually a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains here because $\bq^h$ is defined almost everywhere on $\Omega$, as $H^h$ and $s^h$ are from a continuous function space $S_h$.
+for all $j,k$, which gives a finite algebraic system once we choose a quadrature rule on the left.  Equation \eqref{eq:siafve} is a typical FV interpretation of equation \eqref{eq:siasteady}, but the FE character remains because $\bq^h$ is defined almost everywhere on $\Omega$, as $H^h$ and $s^h$ are from $S_h$.
 
 The FE method is completed by computing the integral in \eqref{eq:siafve}.  Though $\bq^h$ is a well-defined, bounded function, and continuous on each element $\square_{j,k}$, it is discontinuous across element boundaries.  We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$.  For this purpose let $x_j^\pm = x_j \pm \dxtwo$, $y_k^\pm = y_k \pm \dytwo$, and denote components $\bq^h = \ip{q^x}{q^y}$, so that
 \begin{equation}
@@ -247,7 +256,7 @@ FIXME midpoint rule along each \emph{half}-side of  $\partial V_{j,k}$ gives \Ms
 \begin{center}
 \input{fig3.tikz}
 \end{center}
-\caption{The \Mstar method evaluates the $Q^1$-defined function $\bq^h(x,y)$ in \eqref{eq:siafve} at the eight locations along $\partial V_{j,k}$ which are shown with small circles, but this requires only four evaluations of $\bq^h$ per element.}
+\caption{The \Mstar method evaluates the flux approximation $\bq^h(x,y)$ in equation \eqref{eq:siafve} at the eight locations along $\partial V_{j,k}$ which are shown with small circles, but this requires only four evaluations of $\bq^h$ per element.}
 \label{fig:mahaffystar}
 \end{figure}
 
