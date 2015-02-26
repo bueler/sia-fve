@@ -1,0 +1,36 @@
+\begin{tikzpicture}[scale=0.5]
+
+  % strong grid around elements
+  \draw[thick] (0,0) -- (8,0);
+  \draw[thick] (2,2) -- (10,2);
+  \draw[thick] (4,4) -- (12,4);
+  \draw[thick] (0,0) -- (4,4);
+  \draw[thick] (4,0) -- (8,4);
+  \draw[thick] (8,0) -- (12,4);
+
+  % dashed grid around control volume in base plane
+  \draw[thick] (0,0) -- (8,0);
+
+  % label element and control volume
+  \def\lift{4};
+  \draw[dashed] (3,1) -- (7,1) -- (9,3) -- (5,3) -- cycle;
+  \draw[dashed] (3,1+\lift) -- (7,1+\lift) -- (9,3+\lift) -- (5,3+\lift) -- cycle;
+  \draw[dotted] (3,1) -- (3,1+\lift);
+  \draw[dotted] (7,1) -- (7,1+\lift);
+  \draw[dotted] (9,3) -- (9,3+\lift);
+  \draw[dotted] (5,3) -- (5,3+\lift);
+
+  % annotate
+  \draw (10,\lift+4.0) node {$\omega_{j,k}(x,y)=1$ on $V_{j,k}$};
+  \draw[-latex] (7.2,\lift+3.4) -- (6.1,\lift+2.5);
+  \draw (10,-1.0) node {$\omega_{j,k}(x,y)=0$ elsewhere};
+  \draw[-latex] (10,-0.3) -- (8.5,1.3);
+
+  % label center point
+  \draw (4,-0.6) node {$x_j$};
+  \draw (1.2,2) node {$y_k$};
+
+  % label as "b"
+  \draw (0,8) node {{\large b.}};
+
+\end{tikzpicture}

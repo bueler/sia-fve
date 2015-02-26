@@ -1,7 +1,7 @@
 all: mahaffyfem.pdf
 
 figures =
-tikzfigs =
+tikzfigs = fig1a.tikz fig1b.tikz fig2a.tikz fig2b.tikz fig3.tikz
 
 mahaffyfem.pdf: mahaffyfem.aux mahaffyfem.tex $(figures) $(tikzfigs)
 	pdflatex mahaffyfem
