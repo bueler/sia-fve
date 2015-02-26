@@ -73,7 +73,8 @@
 \thispagestyle{empty}
 
 
-\section{Introduction}
+\section{Introduction} \label{sec:intro}
+
 
 The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  This scheme is still a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.   The scheme computes the ice flux at staggered-grid points using particular choices when evaluating the ice surface slope and thickness.  In a test where an analytical solution is known and the ice rheology is realistic, these choices imply higher accuracy than an alternative widely-used scheme, while using a smaller stencil (``computational molecule''), thereby reducing memory usage in implicit implementations \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it is used as part of the stress balance solution method in a membrane-stress-resolving hybrid ice dynamics model \cite{BuelerBrown2009}.
 
@@ -84,7 +85,9 @@ Based on this re-interpretation of the scheme we propose, and test, a ``\Mstar''
 MAYBE NOT: The accuracy of the Mahaffy scheme on steep bed terrain has been found to be flawed, but corrections have been proposed \cite{JaroschSchoofAnslow2013}.  We show that these corrections are unnecessary in the \Mstar scheme.
 
 
-\section{The Mahaffy finite difference scheme}  The shallow ice approximation (SIA) \cite{Hutter1983} is the lubrication approximation \cite{Fowler1997} of the Stokes equations for slow-flowing ice which is in non-sliding contact with the bed and which has a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law (e.g.~\cite{GreveBlatter2009}) case of the shallow ice approximation.
+\section{The Mahaffy finite difference scheme}   \label{sec:mahaffyfd}
+
+The shallow ice approximation (SIA) \cite{Hutter1983} is the lubrication approximation \cite{Fowler1997} of the Stokes equations for slow-flowing ice which is in non-sliding contact with the bed and which has a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law (e.g.~\cite{GreveBlatter2009}) case of the shallow ice approximation.
 
 Let $H$ be the ice thickness, $b$ the bed elevation, and $s = H+b$ the ice surface elevation.  The ice sheet thickness evolution itself is a straightforward conservation equation,
 \begin{equation}
@@ -139,11 +142,19 @@ Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are
 \end{figure}
 
 
-\section{A finite element interpretation}
+\section{A finite volume element interpretation} \label{sec:fveinterpretation}
 
-The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from a FE perspective, as we do now, is new.  This re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (i.e.~degrees of freedom) for a continuous and piecewise-bilinear space of trial functions.  The nodes are also used as centered degrees of freedom for piecewise-constant test functions which are discontinuous at the same locations as the FD method's staggered grid points.  The method is of ``Petrov-Galerkin'' type because the trial and test functions come from different spaces \cite{Elmanetal2005}, but our choice make it a ``finite volume element'' (FVE) method \cite{EwingLinLin2002} also.  Exact discrete conservation follows in the standard finite volume (FV) understanding \cite{LeVeque}.
+The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from an FE or finite volume (FV) perspective, as we do now, is new.  Our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for piecewise-constant test functions which are discontinuous at the FD method's staggered grid points.  The method is both of Petrov-Galerkin FE type, because the trial and test functions come from different spaces \cite{Elmanetal2005}, and a ``finite volume element'' (FVE) method \cite{EwingLinLin2002} in which exact discrete conservation follows in the standard FV understanding \cite{LeVeque}.
 
-Consider the structured grid of rectangles with dimensions $\Delta x,\Delta y$ shown in Figure \ref{fig:fdfemgrids}b.  The rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  A basis of bilinear functions on $\square_{j,k}$ is
+To re-derive the scheme we suppose \eqref{eq:siasteady} holds and we take a subregion $V$ of $\Omega$.  By the divergence theorem,
+\begin{equation}
+  - \int_{\partial V} \bq \cdot \bn\,ds = \int_V m\, dx\,dy, \label{eq:siaasconservation}
+\end{equation}
+where $\partial V$ denotes the boundary of $V$.  This is simply the integral form of \eqref{eq:siasteady}.
+
+An FVE method supposes that the approximation of the solution, here denoted $H^h$, where the ``$h$'' superscript is traditional for indicating FE approximations \cite{Elmanetal2005}, lies in a finite-dimensional space of continuous functions which are defined everywhere.  In fact, these functions must be sufficiently well-behaved so that the approximate flux $\bq^h$ is defined (almost) everywhere, and can be integrated along curves.  Then integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of volumes $V$, which together tile $\Omega$, and this generates a finite system of nonlinear (algebraic) equations which can be solved by Newton's method, for example (see Section \ref{sec:examples}).  This derivation of the algebraic system uses \eqref{eq:siaasconservation} as an FV method would for solving the differential equation \eqref{eq:siasteady}.  However, we could also let $g(x,y)$ be the characteristic function of $V$ (i.e.~with value one on $V$ and zero otherwise), and then multiply \eqref{eq:siasteadyfd} by $g$ and integrate and derive \eqref{eq:siaasconservation} that way, mimicking the construction of an FE method.
+
+So consider the structured grid of rectangles with dimensions $\Delta x,\Delta y$ shown in Figure \ref{fig:fdfemgrids}b.  The rectangle $\square_{j,k}$ has lower-left corner at $(x_j,y_k)$.  These rectangles are $Q^1$ finite elements when associated with bilinear functions.  A basis of bilinear functions on $\square_{j,k}$ is
 \begin{equation}
 \chi_l(x-x_j,y-y_k), \label{eq:elementbasis}
 \end{equation}
@@ -174,11 +185,7 @@ If the nodes $(x_j,y_k)$ have index $j$ in $1,\dots,N_x$ and index $k$ in $1,\do
 \label{fig:fembases}
 \end{figure}
 
-If \eqref{eq:siasteady} holds then multiplication by an integrable function $g(x,y)$, and integration, implies that
-\begin{equation}
-  \int_\Omega (\Div \bq)\, g\,dx\,dy = \int_\Omega m g\,dx\,dy.  \label{eq:siaweak}
-\end{equation}
-(Note we have not used the divergence theorem, i.e.~integration-by-parts, as in a ``Galerkin'' FEM method \cite{Elmanetal2005}.)  In our FE method, we seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b(x,y)$ and let $s^h=H^h+b^h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$.  Our idea is to require \eqref{eq:siaweak} to hold for this $\bq^h$ and for all $g$ in $S_h^*$.  However, it will suffice to only test for a basis of $S_h^*$, so $g=\omega_{j,k}$.  Also, because $\omega_{j,k}$ is equal to one on $V_{j,k}$ and is zero otherwise, we can use the divergence theorem just on $V_{j,k}$.  Finally, we can use midpoint quadrature on the right-hand integral.  Thus we seek $H^h$ in $S_h$ satisfying
+In our FE method, we seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b(x,y)$ and let $s^h=H^h+b^h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$.  Our idea is to require \eqref{eq:siaweak} to hold for this $\bq^h$ and for all $g$ in $S_h^*$.  However, it will suffice to only test for a basis of $S_h^*$, so $g=\omega_{j,k}$.  Also, because $\omega_{j,k}$ is equal to one on $V_{j,k}$ and is zero otherwise, we can use the divergence theorem just on $V_{j,k}$.  Finally, we can use midpoint quadrature on the right-hand integral.  Thus we seek $H^h$ in $S_h$ satisfying
 \begin{equation}
   - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
 \end{equation}
@@ -243,6 +250,13 @@ FIXME midpoint rule along each \emph{half}-side of  $\partial V_{j,k}$ gives \Ms
 \caption{The \Mstar method evaluates the $Q^1$-defined function $\bq^h(x,y)$ in \eqref{eq:siafve} at the eight locations along $\partial V_{j,k}$ which are shown with small circles, but this requires only four evaluations of $\bq^h$ per element.}
 \label{fig:mahaffystar}
 \end{figure}
+
+
+
+\section{Computed examples} \label{sec:examples}
+
+
+\section{Conclusion} \label{sec:conclusion}
 
 
 %         References
