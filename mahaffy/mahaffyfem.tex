@@ -48,7 +48,7 @@
 \newcommand\RR{\mathbb{R}}
 \newcommand\vf{\varphi}
 
-\newcommand{\Mstar}{$\text{Mahaffy}^\star$\xspace}
+\newcommand{\Mstar}{$\text{Mahaffy}^{\bigstar}$\xspace}
 
 \newcommand\alpharight{\alpha_{{}_{\blacktriangleright}}}
 \newcommand\alphaup{\alpha_{{\!}_{\blacktriangle}}}
@@ -58,7 +58,7 @@
 
 
 
-\title[The Mahaffy scheme is a finite element method]{The Mahaffy (1976) numerical scheme for the \\ shallow ice approximation is a finite element method}
+\title[The Mahaffy scheme is an FVE method]{The Mahaffy (1976) numerical scheme \\ for the shallow ice approximation \\ is a finite volume element method}
 
 \author{Ed Bueler}
 
@@ -75,11 +75,11 @@
 
 \section{Introduction}
 
-The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  This scheme is a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.   The scheme computes the ice flux at staggered-grid points using particular choices when evaluating the ice surface slope and thickness.  In a test where an analytical solution is known and the ice rheology is realistic, these choices imply higher accuracy than an alternative widely-used scheme, while using a smaller stencil (``computational molecule''), thereby reducing memory usage in implicit implementations \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it is used as part of the stress balance solution method in a membrane-stress-resolving hybrid ice dynamics model \cite{BuelerBrown2009}.
+The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  This scheme is still a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.   The scheme computes the ice flux at staggered-grid points using particular choices when evaluating the ice surface slope and thickness.  In a test where an analytical solution is known and the ice rheology is realistic, these choices imply higher accuracy than an alternative widely-used scheme, while using a smaller stencil (``computational molecule''), thereby reducing memory usage in implicit implementations \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it is used as part of the stress balance solution method in a membrane-stress-resolving hybrid ice dynamics model \cite{BuelerBrown2009}.
 
 We show that in the structured grid case the Mahaffy scheme is a reasonable, though not standard, quadrature choice for a conforming Petrov-Galerkin finite element (FE) method \cite{Elmanetal2005}.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \cite{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can also be interpreted as a ``finite volume element'' (FVE) method \cite{EwingLinLin2002}.
 
-PROPOSE: Based on this re-interpretation of the scheme we propose, and test, a ``\Mstar'' scheme which uses a more accurate quadrature choice when evaluating the relevant flux integral, but based on the same stencil.  PROPOSE: Furthermore, we can construct this \Mstar scheme on unstructured grids consisting of suitable finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes (compare \cite{Ringleretal2013}).
+Based on this re-interpretation of the scheme we propose, and test, a ``\Mstar'' scheme which uses a more accurate quadrature choice when evaluating the relevant flux integral, but which is based on the same stencil.  Furthermore, we construct this \Mstar scheme on unstructured grids consisting of suitable finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes (compare \cite{Ringleretal2013}).
 
 MAYBE NOT: The accuracy of the Mahaffy scheme on steep bed terrain has been found to be flawed, but corrections have been proposed \cite{JaroschSchoofAnslow2013}.  We show that these corrections are unnecessary in the \Mstar scheme.
 
@@ -134,7 +134,7 @@ Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{Left: A structured FD grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured FE grid with rectangular elements (solid), degrees of freedom at the nodes (dots), and dual rectangular control volumes (dashed).}
+\caption{{\large \textbf{a.}}~A structured grid as a FD grid with regular (dots) and staggered (triangles) locations.  {\large \textbf{b.}}~The same grid as a FE grid with rectangular elements (solid), nodes (dots), and dual rectangular control volumes (dashed).}
 \label{fig:fdfemgrids}
 \end{figure}
 
@@ -170,7 +170,7 @@ If the nodes $(x_j,y_k)$ have index $j$ in $1,\dots,N_x$ and index $k$ in $1,\do
 \begin{center}
 \input{fig2a.tikz} \quad \input{fig2b.tikz}
 \end{center}
-\caption{Left: A ``hat'' basis function $\psi_{j,k}(x,y)$ in the trial space $S_h$.  Right: A piece-wise constant basis function $\omega_{j,k}(x,y)$ in the test space $S_h^*$.}
+\caption{{\large \textbf{a.}}~A continuous ``hat'' basis function $\psi_{j,k}(x,y)$ in the $Q^1$ trial space $S_h$.  {\large \textbf{b.}}~A discontinuous, piecewise-constant basis function $\omega_{j,k}(x,y)$ in the test space $S_h^*$.}
 \label{fig:fembases}
 \end{figure}
 
@@ -232,9 +232,9 @@ This scheme thus approximates the first integral on the right in \eqref{eq:fluxi
 
 Combining \eqref{eq:femmahaffyfirstint} with equations \eqref{eq:femHstag}, \eqref{eq:femsxstag}, and \eqref{eq:femsystagcrime} gives the same approximation of the staggered-grid value of the flux as in formulas \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}.  The other integrals on the right in \eqref{eq:fluxintdecomp} have a similar FE analysis, which leads to the same Mahaffy FD formulas.  Dividing the resulting approximation of equation \eqref{eq:siafve} by the control volume area $\Delta x\,\Delta y$ gives FD equation \eqref{eq:siasteadyfd}.
 
-\section{Refinements}
+\section{An improved scheme on structured and unstructured grids}
 
-FIXME trapezoid rule along each half-segment of  $\partial V_{j,k}$ gives \Mstar method
+FIXME midpoint rule along each \emph{half}-side of  $\partial V_{j,k}$ gives \Mstar method
 
 \begin{figure}[ht]
 \begin{center}

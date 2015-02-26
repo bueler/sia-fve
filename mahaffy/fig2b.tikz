@@ -31,6 +31,7 @@
   \draw (1.2,2) node {$y_k$};
 
   % label as "b"
-  \draw (0,8) node {{\large b.}};
+  \tikzstyle{fontbf} = [font=\bf]
+  \draw (0,8) node[fontbf] {{\large b.}};
 
 \end{tikzpicture}

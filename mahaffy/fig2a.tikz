@@ -97,6 +97,7 @@
   \draw (1.2,2) node {$y_k$};
 
   % label as "a"
-  \draw (0,8) node {{\large a.}};
+  \tikzstyle{fontbf} = [font=\bf]
+  \draw (0,8) node[fontbf] {{\large a.}};
 
 \end{tikzpicture}

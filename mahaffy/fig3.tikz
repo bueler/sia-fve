@@ -1,4 +1,4 @@
-\begin{tikzpicture}[scale=0.75]
+\begin{tikzpicture}[scale=0.8]
   %uncomment to see grid on which it was generated:
   %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
 
