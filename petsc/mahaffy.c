@@ -163,20 +163,24 @@ int main(int argc,char **argv) {
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       if (reason < 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. DIVERGED   with eps=%.2e and %5d Newton iters (%s) ... try again w eps *= 2\n",
+                     "%3d. DIVERGED   with eps=%.2e and %5d Newton iters (%s)\n",
                      m+1,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
-          if (user.snesreboot == PETSC_TRUE) {
-              ierr = SNESDestroy(&snes); CHKERRQ(ierr);
-              ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
-          }
-          user.eps = 2.0 * eps_sched[m];
-          ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-          ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
-          if (reason < 0) {
+          if (user.eps > 0.0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "     DIVERGED AGAIN  eps=%.2e and %5d Newton iters (%s)\n",
-                     its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
-              break;
+                         "         ... try again w eps *= 2\n");CHKERRQ(ierr);
+              if (user.snesreboot == PETSC_TRUE) {
+                  ierr = SNESDestroy(&snes); CHKERRQ(ierr);
+                  ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
+              }
+              user.eps = 2.0 * eps_sched[m];
+              ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+              ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+              if (reason < 0) {
+                  ierr = PetscPrintf(PETSC_COMM_WORLD,
+                         "     DIVERGED AGAIN  eps=%.2e and %5d Newton iters (%s)\n",
+                         its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                  break;
+              }
           }
       }
       if (reason >= 0) {
