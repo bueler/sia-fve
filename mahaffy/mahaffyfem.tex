@@ -126,16 +126,16 @@ solved in some domain $\Omega$ in the plane.  The input data to \eqref{eq:siaste
 
 The Mahaffy scheme calculates the vertically-integrated ice flux $\bq$ at the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}.  Consider the FD grid in Figure \ref{fig:fdfemgrids}a.  At the staggered location $(x_{j+1/2},y_k)$, the scheme computes the $x$-component of the flux by
 \begin{equation}
-q^x_{j+1/2,k} = - \Gamma \left(\tfrac{H_{j,k} + H_{j+1,k}}{2}\right)^{n+2} \alpharight^{\,n-1} \tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyWqx}
+q^x_{j+1/2,k} = - \Gamma \left(\frac{H_{j,k} + H_{j+1,k}}{2}\right)^{n+2} \alpharight^{\,n-1} \frac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyWqx}
 \end{equation}
-where $s_{j,k} = H_{j,k} + b_{j,k}$.  The quantity ``$\alpharight$\!'' is an estimate of the surface slope $|\grad s|$, a key quantity in \eqref{eq:siaflux}, at the staggered-grid location:
+where $s_{j,k} = H_{j,k} + b_{j,k}$.  The quantity ``$\alpharight$\!'' is an estimate of the surface slope $|\grad s|$, a key quantity in \eqref{eq:siaflux}, at the right-hand staggered-grid location shown with ``$\blacktriangleright$'' in Figure \ref{fig:fdfemgrids}a:
 \begin{equation}
-\alpharight^{\,2} = \left(\tfrac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2.  \label{eq:mahaffyWalphax}
+\alpharight^{\,2} = \left(\frac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2 + \left(\frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2.  \label{eq:mahaffyWalphax}
 \end{equation}
 The formula for the flux $q^y_{j,k+1/2}$ at the staggered-grid location $(x_j,y_{k+1/2})$, at the center of the top edge of the control volume, follow by swapping the roles of $j$ and $k$ in equations \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}:
 \begin{align}
-q^y_{j,k+1/2} &= - \Gamma \left(\tfrac{H_{j,k} + H_{j,k+1}}{2}\right)^{n+2} \alphaup^{\,n-1} \tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}, \label{eq:mahaffyWqy} \\
-\alphaup^{\,2} &= \left(\tfrac{s_{j+1,k} + s_{j+1,k+1} - s_{j-1,k} - s_{j-1,k+1}}{4 \Delta x}\right)^2 + \left(\tfrac{s_{j,k+1} - s_{j,k}}{\Delta y}\right)^2.  \label{eq:mahaffyWalphay}
+q^y_{j,k+1/2} &= - \Gamma \left(\frac{H_{j,k} + H_{j,k+1}}{2}\right)^{n+2} \alphaup^{\,n-1} \frac{s_{j,k+1} - s_{j,k}}{\Delta y}, \label{eq:mahaffyWqy} \\
+\alphaup^{\,2} &= \left(\frac{s_{j+1,k} + s_{j+1,k+1} - s_{j-1,k} - s_{j-1,k+1}}{4 \Delta x}\right)^2 + \left(\frac{s_{j,k+1} - s_{j,k}}{\Delta y}\right)^2.  \label{eq:mahaffyWalphay}
 \end{align}
 Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are perhaps the least-obvious aspect of the Mahaffy scheme.  Solving SIA equation \eqref{eq:siasteady} then uses straightforward centered-difference formulas \cite{MortonMayers2005} for the flux divergence:
 \begin{equation}
@@ -169,8 +169,8 @@ So consider the structured grid of $\Delta x$ by $\Delta y$ rectangles, the ``el
 \end{equation}
 for $l=1,2,3,4$, where
 \begin{align*}
-\chi_1(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \left(1-\tfrac{y}{\Delta y}\right), & \chi_2(x,y) &= \tfrac{x}{\Delta x} \left(1-\tfrac{y}{\Delta y}\right), \\
-\chi_3(x,y) &= \left(1-\tfrac{x}{\Delta x}\right) \tfrac{y}{\Delta y}, & \chi_4(x,y) &= \tfrac{x}{\Delta x} \tfrac{y}{\Delta y}. 
+\chi_1(x,y) &= \left(1-\frac{x}{\Delta x}\right) \left(1-\frac{y}{\Delta y}\right), & \chi_2(x,y) &= \frac{x}{\Delta x} \left(1-\frac{y}{\Delta y}\right), \\
+\chi_3(x,y) &= \left(1-\frac{x}{\Delta x}\right) \frac{y}{\Delta y}, & \chi_4(x,y) &= \frac{x}{\Delta x} \frac{y}{\Delta y}. 
 \end{align*}
 If $C(\Omega)$ denotes the continuous functions on the domain, then let
 \begin{equation}
@@ -219,26 +219,26 @@ To turn this idea into formulas, observe that the thickness $H^h$ and the $x$-de
 	\end{align*}
 	\end{comment}
 \begin{align}
-s^h_x(x,y) &= \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\tfrac{y-y_k}{\Delta y}\right) + \tfrac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\tfrac{y-y_k}{\Delta y}\right), \label{eq:grads} \\
-s^h_y(x,y) &= \tfrac{s_{j,k+1}-s_{j,k}}{\Delta y} \left(1-\tfrac{x-x_j}{\Delta x}\right) + \tfrac{s_{j+1,k+1}-s_{j+1,k}}{\Delta y} \left(\tfrac{x-x_j}{\Delta x}\right), \notag
+s^h_x(x,y) &= \frac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\frac{y-y_k}{\Delta y}\right) + \frac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\frac{y-y_k}{\Delta y}\right), \label{eq:grads} \\
+s^h_y(x,y) &= \frac{s_{j,k+1}-s_{j,k}}{\Delta y} \left(1-\frac{x-x_j}{\Delta x}\right) + \frac{s_{j+1,k+1}-s_{j+1,k}}{\Delta y} \left(\frac{x-x_j}{\Delta x}\right), \notag
 \end{align}
 and the same functions on $\square_{j,k-1}$ can be calculated by shifting the index $k\to k-1$.  Thus $s^h_x(x,y)$ is continuous on the interval of integration in the first integral in \eqref{eq:fluxintdecomp}, and at the midpoint it has value
 \begin{equation}
-s^h_x(x_j^+,y_k) = \tfrac{s_{j+1,k}-s_{j,k}}{\Delta x}. \label{eq:femsxstag}
+s^h_x(x_j^+,y_k) = \frac{s_{j+1,k}-s_{j,k}}{\Delta x}. \label{eq:femsxstag}
 \end{equation}
 Similarly, writing-out $H^h(x,y)$ on each element, using the element basis \eqref{eq:elementbasis}, and evaluating at the midpoint in the first integral in \eqref{eq:fluxintdecomp} gives
 \begin{equation}
-H^h(x_j^+,y_k) = \tfrac{H_{j,k}+H_{j+1,k}}{2}, \label{eq:femHstag}
+H^h(x_j^+,y_k) = \frac{H_{j,k}+H_{j+1,k}}{2}, \label{eq:femHstag}
 \end{equation}
 
 However, the $y$-derivative has different values above (i.e.~on $\square_{j,k}$) and below (on $\square_{j,k-1}$) the element boundary at $y = y_k$; the limits are:
 \begin{align}
-s^h_y(x_j^+,y_k+0) = \tfrac{s_{j,k+1}-s_{j,k} + s_{j+1,k+1}-s_{j+1,k}}{2\Delta y}, \\
-s^h_y(x_j^+,y_k-0) = \tfrac{s_{j,k}-s_{j,k-1} + s_{j+1,k}-s_{j+1,k-1}}{2\Delta y}. \notag
+s^h_y(x_j^+,y_k+0) = \frac{s_{j,k+1}-s_{j,k} + s_{j+1,k+1}-s_{j+1,k}}{2\Delta y}, \\
+s^h_y(x_j^+,y_k-0) = \frac{s_{j,k}-s_{j,k-1} + s_{j+1,k}-s_{j+1,k-1}}{2\Delta y}. \notag
 \end{align}
 The average of these values is thus not a value of $s_y^h$, but a good re-construction thereof:
 \begin{equation}
-\widehat{s^h_y}(x_j^+,y_k) = \tfrac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4\Delta y}. \label{eq:femsystagcrime}
+\widehat{s^h_y}(x_j^+,y_k) = \frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4\Delta y}. \label{eq:femsystagcrime}
 \end{equation}
 The hat in \eqref{eq:femsystagcrime} indicates that it is \emph{not} a result of evaluating $s^h_y(x,y)$, but formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in FD formula \eqref{eq:mahaffyWalphax}.
 
