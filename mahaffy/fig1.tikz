@@ -1,16 +1,43 @@
-\begin{tikzpicture}[scale=1.0]
+\begin{tikzpicture}[scale=0.7]
   %uncomment to see grid on which it was generated:
-  \draw[dotted,step=1.0,black,very thin] (0,0) grid (4,6);
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
 
-  % the free boundary is just like the other edges
+  % faint grid
   \draw[gray, dashed] (-0.75,0) -- (6.75,0);
   \draw[gray, dashed] (-0.75,2) -- (6.75,2);
   \draw[gray, dashed] (-0.75,4) -- (6.75,4);
   \draw[gray, dashed] (0,-0.5) -- (0,4.5);
+  \draw[gray, dashed] (3,-0.5) -- (3,4.5);
+  \draw[gray, dashed] (6,-0.5) -- (6,4.5);
 
-  % label some cell d.o.f.
-  \draw (6,6) node {FIXME $u_n^j$};
+  % regular FD points
+  \filldraw (0,0) circle (2.0pt);
+  \filldraw (3,0) circle (2.0pt);
+  \filldraw (6,0) circle (2.0pt);
+  \filldraw (0,2) circle (2.0pt);
+  \filldraw (3,2) circle (2.0pt);
+  \filldraw (6,2) circle (2.0pt);
+  \filldraw (0,4) circle (2.0pt);
+  \filldraw (3,4) circle (2.0pt);
+  \filldraw (6,4) circle (2.0pt);
 
-  \filldraw (0,0) circle (0.500000pt);
+  % staggered FD points
+  \def\dx{0.15};
+  \filldraw (1.5-\dx,2+\dx) -- (1.5+\dx,2) -- (1.5-\dx,2-\dx) -- cycle;
+  \filldraw (4.5-\dx,2-\dx) -- (4.5,2+\dx) -- (4.5+\dx,2-\dx) -- cycle;
+  \filldraw (3-\dx,1-\dx) -- (3,1+\dx) -- (3+\dx,1-\dx) -- cycle;
+  \filldraw (3-\dx,3-\dx) -- (3,3+\dx) -- (3+\dx,3-\dx) -- cycle;
 
+  % dimensions \Delta x, \Delta y
+  \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
+  \draw (4.5,5.0) node {$\Delta x$};
+  \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
+  \draw (7.0,3) node {$\Delta y$};
+
+  % label center point and dims
+  \draw (3,-1.0) node {$x_j$};
+  \draw (-1.25,2) node {$y_k$};
+
+  % label as "a"
+  \draw (-1.5,5.5) node {{\Large a.}};
 \end{tikzpicture}

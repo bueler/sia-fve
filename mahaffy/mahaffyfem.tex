@@ -7,6 +7,9 @@
 
 \usepackage{verbatim,xspace,amssymb}
 
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+
 % math macros
 \newcommand\bb{\mathbf{b}}
 \newcommand\bbf{\mathbf{f}}
@@ -129,8 +132,7 @@ Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are
 
 \begin{figure}[ht]
 \begin{center}
-FIXME
-%\includegraphics[width=2.0in,keepaspectratio=true]{FIXME}
+\input{fig1.tikz} \quad \input{fig1.tikz}
 \end{center}
 \caption{Left: A structured FD grid with regular (dots) and staggered (triangles) grid locations.  Right: A structured FE grid with rectangular elements (solid), degrees of freedom at the nodes (dots), and dual rectangular control volumes (dashed).}
 \label{fig:fdfemgrids}
