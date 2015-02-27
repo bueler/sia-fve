@@ -7,30 +7,32 @@ static const char help[] =
 "Note  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
 "Domain is  -L < x < L,  -L < y < L,  with periodic boundary conditions.\n"
 "Computed in flat bed case where analytical solution is known.\n"
-"Compares Mahaffy and Mahaffy* schemes.\n"
-"Uses SNESVI.\n\n";
+"Computed by Q1 FVE method with FD evaluation of Jacobian (i.e. no analytical yet).\n"
+"Compares Mahaffy* (default) and true Mahaffy schemes.\n"
+"Uses SNESVI = -snes_type vinewtonrsls.\n\n";
 
 //   ./mahaffy -help |grep mah_
 
 //   ./mahaffy
 
-//   ./mahaffy -da_refine 3
-//   ./mahaffy -mah_Neps 4
-//   ./mahaffy -mah_exactinit  // only changes # of first-stage iterations
+//   ./mahaffy -mah_true       // use true Mahaffy
+//   ./mahaffy -mah_Neps 4     // don't go all the way on continuation
 
 // widen screen to see SNESVI monitor output:
-//   ./mahaffy -da_refine 2 -snes_vi_monitor
+//   ./mahaffy -da_refine 1 -snes_vi_monitor
 
 // error from:
-//   ./mahaffy -da_refine 4
-// (fix by adding -mah_snesreboot)
+//   ./mahaffy -da_refine 2  // divergence, but no crash
+//   ./mahaffy -da_refine 3  // crash at SNESSolve_VINEWTONRSLS() line 505
+                             //     in /home/ed/petsc-maint/src/snes/impls/vi/rs/virs.c
+//   ./mahaffy -da_refine 1 -pc_type mg  // error at line 506 of virs.c
 
 // compare methods
-//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_star
-//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10           // earlier divergence failure w. ordinary Mahaffy
+//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10
+//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_true   // again, line 505 of virs.c
 
-//hard:
-//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_star -pc_type asm -sub_pc_type lu -snes_max_it 200
+// high-res success (also -da_refine 7 works):
+//   mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
 
 // generate .png figs:
 //   mkdir foo/
@@ -59,8 +61,7 @@ typedef struct {
             exactL, // radius of exact ice sheet
             exactH0;// center thickness of exact ice sheet
   PetscInt  Neps;
-  PetscBool star,   // use Mahaffy* instead of Mahaffy
-            exactinit,// initialize with exact solution instead of zero
+  PetscBool mtrue,  // use true Mahaffy method instead of Mahaffy* (default)
             dump;   // dump fields into ASCII VTK files
 } AppCtx;
 
@@ -100,8 +101,7 @@ int main(int argc,char **argv) {
   user.eps    = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
-  user.star      = PETSC_FALSE;
-  user.exactinit = PETSC_FALSE;
+  user.mtrue     = PETSC_FALSE;
   user.dump      = PETSC_FALSE;
 
   ierr = ProcessOptions(figsprefix,&user); CHKERRQ(ierr);
@@ -151,16 +151,14 @@ int main(int argc,char **argv) {
 
   ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
-  ierr = SetToSMB(user.m,PETSC_FALSE,&user);CHKERRQ(ierr);
+  ierr = SetToSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
 
-  if (user.exactinit == PETSC_TRUE) {
-      ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
-  } else {
-      //ierr = VecSet(H,0.0); CHKERRQ(ierr);
-      // initialize by chop & scale SMB
-      ierr = SetToSMB(H,PETSC_TRUE,&user);CHKERRQ(ierr);
-      ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
-  }
+  // initialize by chop & scale SMB
+  ierr = SetToSMB(H,PETSC_TRUE,&user); CHKERRQ(ierr);
+  ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
+  // alternatives:
+  //ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
+  //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
 
@@ -174,25 +172,25 @@ int main(int argc,char **argv) {
       user.eps = eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
-      SNESGetKSP(snes,&ksp);
-      KSPGetIterationNumber(ksp,&kspits);
+      ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
+      ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
       if (reason < 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. DIVERGED   with eps=%.2e ... %5d KSP iters and %5d Newton iters (%s)\n",
+                     "%3d. DIVERGED   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
                      m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           if (user.eps > 0.0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                          "         ... try again w eps *= 2\n");CHKERRQ(ierr);
-              ierr = SNESDestroy(&snes); CHKERRQ(ierr);
-              ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
+              //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
+              //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
               user.eps = 2.0 * eps_sched[m];
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
-              SNESGetKSP(snes,&ksp);
-              KSPGetIterationNumber(ksp,&kspits);
+              ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
+              ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
               if (reason < 0) {
                   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "     DIVERGED AGAIN  eps=%.2e ... %5d KSP iters and %5d Newton iters (%s)\n",
+                         "     DIVERGED AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
                          user.eps,kspits,its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
                   break;
               }
@@ -200,7 +198,7 @@ int main(int argc,char **argv) {
       }
       if (reason >= 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. converged  with eps=%.2e ... %5d KSP iters and %5d Newton iters (%s)\n",
+                     "%3d. converged  with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
                      m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
           ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
@@ -442,7 +440,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   // note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
-          if (user->star) {  // Mahaffy* method
+          if (user->mtrue == PETSC_FALSE) {  // default Mahaffy* method
               ierr = gradsatpt(j,k,     dx/2.0, 3.0*dy/4.0,      H,ab, user,&gsn); CHKERRQ(ierr);
               ierr =  fluxatpt(j,k,     dx/2.0, 3.0*dy/4.0, gsn, H,    user,&qn ); CHKERRQ(ierr);
               ierr = gradsatpt(j,k,     dx/2.0,     dy/4.0,      H,ab, user,&gss); CHKERRQ(ierr);
@@ -451,7 +449,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               ierr =  fluxatpt(j,k, 3.0*dx/4.0,     dy/2.0, gse, H,    user,&qe ); CHKERRQ(ierr);
               ierr = gradsatpt(j,k,     dx/4.0,     dy/2.0,      H,ab, user,&gsw); CHKERRQ(ierr);
               ierr =  fluxatpt(j,k,     dx/4.0,     dy/2.0, gsw, H,    user,&qw ); CHKERRQ(ierr);
-          } else {           // Mahaffy method
+          } else {           // true Mahaffy method
               Grad  gsn_nbr, gss_nbr, gse_nbr, gsw_nbr;
               // center-top point in element
               ierr =   gradsatpt(j,k,   dx/2.0, dy,   H,ab, user,&gsn); CHKERRQ(ierr);
@@ -519,15 +517,12 @@ PetscErrorCode ProcessOptions(char figsprefix[], AppCtx *user) {
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-exactinit", "initialize with exact solution",
-      NULL,user->exactinit,&user->exactinit,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization (i.e. continuation)",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-star", "use Mahaffy* method",
-      NULL,user->star,&user->star,NULL);CHKERRQ(ierr);
+      "-true", "use true Mahaffy method, not Mahaffy* (default)",
+      NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -557,7 +552,7 @@ PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
   ierr = VecNorm(Hexact,NORM_1,&enorm1); CHKERRQ(ierr);
   enorm1 /= info->mx * info->my;
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "     errors:  max |H-Hexact| = %8.2f,  av |H-Hexact| = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
+             "     errors:  max = %8.2f,  av = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
   ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
