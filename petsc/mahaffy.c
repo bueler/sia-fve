@@ -15,7 +15,6 @@ static const char help[] =
 //   ./mahaffy
 
 //   ./mahaffy -da_refine 3
-//   ./mahaffy -mah_dump
 //   ./mahaffy -mah_Neps 4
 //   ./mahaffy -mah_exactinit  // only changes # of first-stage iterations
 
@@ -31,7 +30,13 @@ static const char help[] =
 //   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10           // earlier divergence failure w. ordinary Mahaffy
 
 //hard:
-//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_exactinit -mah_dump -mah_star
+//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_star  -pc_type asm -sub_pc_type lu -snes_max_it 200
+
+// generate .png figs:
+//   mkdir foo/
+//   ./mahaffy -mah_dump foo/
+//   cd foo/
+//   python ../figsmahaffy.py
 
 #include <math.h>
 #include <petscdmda.h>
@@ -63,14 +68,14 @@ typedef struct {
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactThickness(Vec,const AppCtx*);
-extern PetscErrorCode SetToSMB(Vec,const AppCtx*);
-extern PetscErrorCode ProcessOptions(AppCtx*);
+extern PetscErrorCode SetToSMB(Vec,PetscBool,const AppCtx*);
+extern PetscErrorCode ProcessOptions(char[],AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 // extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*); //see layer.c
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
-extern PetscErrorCode ViewToVTKASCII(Vec,const char[]);
-extern PetscErrorCode DumpToFiles(Vec,Vec,AppCtx*);
+extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[]);
+extern PetscErrorCode DumpToFiles(const char[],Vec,Vec,AppCtx*);
 extern PetscErrorCode SNESboot(SNES *s, AppCtx* user);
 
 
@@ -80,6 +85,7 @@ int main(int argc,char **argv) {
   Vec                 H, Htry;
   AppCtx              user;
   DMDALocalInfo       info;
+  char                figsprefix[512] = "";
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -100,7 +106,7 @@ int main(int argc,char **argv) {
   user.dump      = PETSC_FALSE;
   user.snesreboot= PETSC_FALSE;
 
-  ierr = ProcessOptions(&user); CHKERRQ(ierr);
+  ierr = ProcessOptions(figsprefix,&user); CHKERRQ(ierr);
 
   // this DMDA is used for scalar fields on nodes
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
@@ -138,11 +144,6 @@ int main(int argc,char **argv) {
 
   ierr = DMCreateGlobalVector(user.da,&H);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
-  if (user.exactinit == PETSC_TRUE) {
-      ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
-  } else {
-      ierr = VecSet(H,0.0); CHKERRQ(ierr);
-  }
 
   ierr = VecDuplicate(H,&Htry); CHKERRQ(ierr);
 
@@ -152,12 +153,22 @@ int main(int argc,char **argv) {
 
   ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
-  ierr = SetToSMB(user.m,&user);CHKERRQ(ierr);
+  ierr = SetToSMB(user.m,PETSC_FALSE,&user);CHKERRQ(ierr);
+
+  if (user.exactinit == PETSC_TRUE) {
+      ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
+  } else {
+      //ierr = VecSet(H,0.0); CHKERRQ(ierr);
+      // initialize by chop & scale SMB
+      ierr = SetToSMB(H,PETSC_TRUE,&user);CHKERRQ(ierr);
+      ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
+  }
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
 
-  PetscInt            its, m;
-  PetscReal           eps_sched[13] = {1.0,    0.5,    0.2,     0.1,     0.05,
+  KSP        ksp;
+  PetscInt   its, kspits, m;
+  PetscReal  eps_sched[13] = {1.0,    0.5,    0.2,     0.1,     0.05,
                                        0.02,   0.01,   0.005,   0.002,   0.001,
                                        0.0005, 0.0002, 0.0000};
   SNESConvergedReason reason;
@@ -165,10 +176,12 @@ int main(int argc,char **argv) {
       user.eps = eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+      SNESGetKSP(snes,&ksp);
+      KSPGetIterationNumber(ksp,&kspits);
       if (reason < 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. DIVERGED   with eps=%.2e and %5d Newton iters (%s)\n",
-                     m+1,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                     "%3d. DIVERGED   with eps=%.2e ... %5d KSP iters and %5d Newton iters (%s)\n",
+                     m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           if (user.eps > 0.0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                          "         ... try again w eps *= 2\n");CHKERRQ(ierr);
@@ -179,25 +192,27 @@ int main(int argc,char **argv) {
               user.eps = 2.0 * eps_sched[m];
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+              SNESGetKSP(snes,&ksp);
+              KSPGetIterationNumber(ksp,&kspits);
               if (reason < 0) {
                   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "     DIVERGED AGAIN  eps=%.2e and %5d Newton iters (%s)\n",
-                         its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                         "     DIVERGED AGAIN  eps=%.2e ... %5d KSP iters and %5d Newton iters (%s)\n",
+                         user.eps,kspits,its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
                   break;
               }
           }
       }
       if (reason >= 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. converged  with eps=%.2e and %5d Newton iters (%s)\n",
-                     m+1,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                     "%3d. converged  with eps=%.2e ... %5d KSP iters and %5d Newton iters (%s)\n",
+                     m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
           ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
       }
   }
 
   if (user.dump == PETSC_TRUE) {
-      ierr = DumpToFiles(H,user.m,&user); CHKERRQ(ierr);
+      ierr = DumpToFiles(figsprefix,H,user.m,&user); CHKERRQ(ierr);
   }
 
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
@@ -273,7 +288,7 @@ PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
 }
 
 
-PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
+PetscErrorCode SetToSMB(Vec m, PetscBool chopneg, const AppCtx *user) {
   PetscErrorCode ierr;
 
   const PetscReal L  = user->exactL,
@@ -303,6 +318,7 @@ PetscErrorCode SetToSMB(Vec m, const AppCtx *user) {
           tmp1 = PetscPowReal(s,pp) + PetscPowReal(1.0-s,pp) - 1.0;
           tmp2 = 2.0 * PetscPowReal(s,pp) + PetscPowReal(1.0-s,pp-1.0) * (1.0 - 2.0*s) - 1.0;
           am[k][j] = (CC / r) * PetscPowReal(tmp1,n-1.0) * tmp2;
+          if (chopneg == PETSC_TRUE)  am[k][j] = PetscMax(am[k][j],0.0);
       }
   }
   ierr = DMDAVecRestoreArray(user->da, m, &am);CHKERRQ(ierr);
@@ -497,13 +513,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
 }
 
 
-PetscErrorCode ProcessOptions(AppCtx *user) {
+PetscErrorCode ProcessOptions(char figsprefix[], AppCtx *user) {
   PetscErrorCode ierr;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-dump", "dump final thickness H, Herror=H-Hexact, and SMB m into file",
-      NULL,user->dump,&user->dump,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsString(
+      "-dump", "dump fields (H,Herror,m) into ascii files with this prefix",
+      NULL,figsprefix,figsprefix,512,&user->dump); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
@@ -555,10 +571,17 @@ PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
 
 
 //  write a vector into a given filename
-PetscErrorCode ViewToVTKASCII(Vec u, const char name[]) {
+PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[]) {
     PetscErrorCode ierr;
-    PetscViewer viewer;
-    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,name,&viewer); CHKERRQ(ierr);
+    PetscViewer    viewer;
+    int            strerr;
+    char           filename[1024];
+
+    strerr = sprintf(filename,"%s%s",prefix,name);
+    if (strerr < 0) {
+        SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
+    }
+    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer); CHKERRQ(ierr);
     ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
     ierr = VecView(u,viewer); CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
@@ -567,7 +590,7 @@ PetscErrorCode ViewToVTKASCII(Vec u, const char name[]) {
 
 
 //  write various vectors to various files
-PetscErrorCode DumpToFiles(Vec H, Vec m, AppCtx *user) {
+PetscErrorCode DumpToFiles(const char prefix[], Vec H, Vec m, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
     Vec            Hexact, x;
@@ -581,19 +604,19 @@ PetscErrorCode DumpToFiles(Vec H, Vec m, AppCtx *user) {
         ax[j] = -user->L + user->dx/2.0 + j * user->dx;
     }
     ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
-    ierr = ViewToVTKASCII(x,"x.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(x,prefix,"x.txt"); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
 
-    ierr = ViewToVTKASCII(H,"H.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(H,prefix,"H.txt"); CHKERRQ(ierr);
 
     ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
     ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
     ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // do:  Hexact < Hexact + (-1.0) H
     ierr = VecScale(Hexact,-1.0); CHKERRQ(ierr);     // now: Hexact = H - Hexact
-    ierr = ViewToVTKASCII(Hexact,"Herror.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(Hexact,prefix,"Herror.txt"); CHKERRQ(ierr);
     ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
 
-    ierr = ViewToVTKASCII(m,"m.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(m,prefix,"m.txt"); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
