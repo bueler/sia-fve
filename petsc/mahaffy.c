@@ -30,7 +30,7 @@ static const char help[] =
 //   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10           // earlier divergence failure w. ordinary Mahaffy
 
 //hard:
-//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_star  -pc_type asm -sub_pc_type lu -snes_max_it 200
+//   mpiexec -n 6 ./mahaffy -da_refine 6 -mah_star -pc_type asm -sub_pc_type lu -snes_max_it 200
 
 // generate .png figs:
 //   mkdir foo/
@@ -61,7 +61,6 @@ typedef struct {
   PetscInt  Neps;
   PetscBool star,   // use Mahaffy* instead of Mahaffy
             exactinit,// initialize with exact solution instead of zero
-            snesreboot,// destroy and restart SNES when divergence failure
             dump;   // dump fields into ASCII VTK files
 } AppCtx;
 
@@ -104,7 +103,6 @@ int main(int argc,char **argv) {
   user.star      = PETSC_FALSE;
   user.exactinit = PETSC_FALSE;
   user.dump      = PETSC_FALSE;
-  user.snesreboot= PETSC_FALSE;
 
   ierr = ProcessOptions(figsprefix,&user); CHKERRQ(ierr);
 
@@ -185,10 +183,8 @@ int main(int argc,char **argv) {
           if (user.eps > 0.0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                          "         ... try again w eps *= 2\n");CHKERRQ(ierr);
-              if (user.snesreboot == PETSC_TRUE) {
-                  ierr = SNESDestroy(&snes); CHKERRQ(ierr);
-                  ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
-              }
+              ierr = SNESDestroy(&snes); CHKERRQ(ierr);
+              ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
               user.eps = 2.0 * eps_sched[m];
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
@@ -529,9 +525,6 @@ PetscErrorCode ProcessOptions(char figsprefix[], AppCtx *user) {
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization (i.e. continuation)",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-snesreboot", "when SNES divergence failure, destroy and restart SNES",
-      NULL,user->snesreboot,&user->snesreboot,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-star", "use Mahaffy* method",
       NULL,user->star,&user->star,NULL);CHKERRQ(ierr);
