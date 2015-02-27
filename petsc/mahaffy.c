@@ -449,7 +449,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               ierr =  fluxatpt(j,k, 3.0*dx/4.0,     dy/2.0, gse, H,    user,&qe ); CHKERRQ(ierr);
               ierr = gradsatpt(j,k,     dx/4.0,     dy/2.0,      H,ab, user,&gsw); CHKERRQ(ierr);
               ierr =  fluxatpt(j,k,     dx/4.0,     dy/2.0, gsw, H,    user,&qw ); CHKERRQ(ierr);
-          } else {           // true Mahaffy method
+          } else {  // true Mahaffy method
+                    // this implementation is at least a factor of two inefficient
               Grad  gsn_nbr, gss_nbr, gse_nbr, gsw_nbr;
               // center-top point in element
               ierr =   gradsatpt(j,k,   dx/2.0, dy,   H,ab, user,&gsn); CHKERRQ(ierr);
