@@ -78,6 +78,8 @@ extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[]);
 extern PetscErrorCode DumpToFiles(const char[],Vec,Vec,AppCtx*);
 extern PetscErrorCode SNESboot(SNES *s, AppCtx* user);
 
+extern PetscErrorCode ReadThicknessFromNetCDF();
+
 
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
@@ -159,6 +161,9 @@ int main(int argc,char **argv) {
   // alternatives:
   //ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
+
+// test read
+//ierr = ReadThicknessFromNetCDF(); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
 
@@ -621,5 +626,31 @@ PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
   ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
   PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode ReadThicknessFromNetCDF() {
+   PetscErrorCode ierr;
+   PetscViewer viewer;
+   Vec Hnc;
+   // read from netcdf?  this method does not work when run
+   ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"thk.nc",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+   ierr = PetscViewerSetType(viewer,PETSCVIEWERNETCDF); CHKERRQ(ierr);
+
+//apparently not implemented:
+//   ierr = PetscViewerNetcdfOpen(PETSC_COMM_WORLD,"thk.nc",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+
+   //PETSC_EXTERN PetscErrorCode PetscViewerNetcdfOpen(MPI_Comm,const char[],PetscFileMode,PetscViewer*);
+   //PETSC_EXTERN PetscErrorCode PetscViewerNetcdfGetID(PetscViewer, int *);
+
+   ierr = VecCreate(PETSC_COMM_WORLD,&Hnc); CHKERRQ(ierr);
+   ierr = VecLoad(Hnc,viewer); CHKERRQ(ierr);
+   ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+   // now view graphically
+   ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"ice thickness",
+                              PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&viewer); CHKERRQ(ierr);
+   ierr = VecView(Hnc,viewer); CHKERRQ(ierr);
+   ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+   PetscFunctionReturn(0);
 }
 
