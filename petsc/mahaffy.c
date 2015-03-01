@@ -67,6 +67,7 @@ typedef struct {
             Neps;   // number of levels in regularization/continuation
   PetscBool mtrue,  // use true Mahaffy method instead of Mahaffy* (default)
             read,   // read grid and data from PETSc binary file
+            showdata,// show b and m with X viewer
             dump;   // dump fields into ASCII VTK files
   char      figsprefix[512],
             readname[512];
@@ -84,9 +85,8 @@ extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[]);
 extern PetscErrorCode DumpToFiles(Vec,AppCtx*);
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
-
-extern PetscErrorCode ReadAxesFromBinary(PetscViewer,AppCtx*);
 extern PetscErrorCode ReadFromBinary(AppCtx*);
+extern PetscErrorCode ReshapeReadVecs(AppCtx*);
 
 
 int main(int argc,char **argv) {
@@ -118,6 +118,7 @@ int main(int argc,char **argv) {
   user.Neps   = 13;
   user.mtrue  = PETSC_FALSE;
 
+  user.showdata= PETSC_FALSE;
   user.dump   = PETSC_FALSE;
   user.read   = PETSC_FALSE;
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
@@ -146,9 +147,8 @@ int main(int argc,char **argv) {
                                             -user.Ly+user.dx/2, user.Ly+user.dx/2,
                                    0.0,1.0); CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "solving on [-Lx,Lx]x[-Ly,Ly] with Lx=%.3f km, Ly=%.3f, %d x %d grid,\n"
-                     "    spacing dx = %.3f km ...\n",
-                     user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
+      "solving on [-Lx,Lx]x[-Ly,Ly] with Lx=%.3f km and Ly=%.3f,  %d x %d grid,  spacing dx = %.6f km ...\n",
+      user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
 
   // this DMDA is used for evaluating flux components at quad points on elements
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
@@ -171,11 +171,24 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
 
   if (user.read == PETSC_TRUE) {
-      // FIXME
-      SETERRQ(PETSC_COMM_WORLD,99,"UNIMPLEMENTED ERROR: need to reshape user.topgread into b and user.topgread into b\n");
+      ierr = ReshapeReadVecs(&user); CHKERRQ(ierr);
   } else {
       ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
       ierr = SetToSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+  }
+
+  if (user.showdata == PETSC_TRUE) {
+      PetscViewer graphical;
+      ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
+                                 PETSC_DECIDE,PETSC_DECIDE,
+                                 info.mx,info.my,&graphical); CHKERRQ(ierr);
+      ierr = VecView(user.b,graphical); CHKERRQ(ierr);
+      ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+      ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
+                                 PETSC_DECIDE,PETSC_DECIDE,
+                                 info.mx,info.my,&graphical); CHKERRQ(ierr);
+      ierr = VecView(user.m,graphical); CHKERRQ(ierr);
+      ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
   }
 
   // initialize by chop & scale SMB
@@ -556,6 +569,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
   ierr = PetscOptionsBool(
+      "-showdata", "use PETSc X viewers to show bed topography and climatic mass balance data",
+      NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default Mahaffy*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
@@ -619,13 +635,13 @@ PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[]) {
 PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
-    Vec            Hexact, x, y;
+    Vec            x, y;
     PetscInt       j, k;
     PetscReal      *ax, *ay;
 
     ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
     ierr = VecCreateSeq(PETSC_COMM_SELF,info.mx,&x);CHKERRQ(ierr);
-    ierr = VecCreateSeq(PETSC_COMM_SELF,info.mx,&y);CHKERRQ(ierr);
+    ierr = VecCreateSeq(PETSC_COMM_SELF,info.my,&y);CHKERRQ(ierr);
     ierr = VecGetArray(x, &ax);CHKERRQ(ierr);
     for (j=0; j<info.mx; j++) {
         ax[j] = -user->Lx + user->dx/2.0 + j * user->dx;
@@ -646,6 +662,7 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     ierr = ViewToVTKASCII(user->m,user->figsprefix,"m.txt"); CHKERRQ(ierr);
 
     if (user->read == PETSC_FALSE) {
+        Vec  Hexact;
         ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
         ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
         ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // do:  Hexact < Hexact + (-1.0) H
@@ -679,15 +696,13 @@ PetscErrorCode ReadFromBinary(AppCtx *user) {
     PetscViewer viewer;
     Vec x, y;
     PetscReal *ax, *ay, fulllengthx, fulllengthy;
-#if 1
-    PetscViewer graphical;
-#endif
 
     ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"grn.dat",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
 
     ierr = VecCreate(PETSC_COMM_WORLD,&x); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)x,"x-axis from file"); CHKERRQ(ierr);
     ierr = VecLoad(x,viewer); CHKERRQ(ierr);
+    // FIXME: check we own by: VecGetOwnershipRange(Vec x,PetscInt *low,PetscInt *high)
     ierr = VecGetSize(x,&user->Nx); CHKERRQ(ierr);
     if (user->Nx < 4) {  // 4 is somewhat arbitrary
         SETERRQ(PETSC_COMM_WORLD,1,"read Vec x has size too small\n");
@@ -721,14 +736,33 @@ PetscErrorCode ReadFromBinary(AppCtx *user) {
     ierr = VecLoad(user->cmbread,viewer); CHKERRQ(ierr);
 
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
 
-#if 1
-    ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"",
-                               PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&graphical); CHKERRQ(ierr);
-    ierr = VecView(user->topgread,graphical); CHKERRQ(ierr);
-    ierr = VecView(user->cmbread,graphical); CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-#endif
-   PetscFunctionReturn(0);
+
+PetscErrorCode ReshapeReadVecs(AppCtx *user) {
+    PetscErrorCode ierr;
+    PetscInt       j, k, s;
+    PetscReal      *atopg, *acmb, **ab, **am;
+    DMDALocalInfo  info;
+
+    PetscFunctionBeginUser;
+    ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+    ierr = VecGetArray(user->topgread, &atopg);CHKERRQ(ierr);
+    ierr = VecGetArray(user->cmbread, &acmb);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, user->b, &ab);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
+    for (k=info.ys; k<info.ys+info.ym; k++) {
+        for (j=info.xs; j<info.xs+info.xm; j++) {
+            s = k * info.mx + j;  //  0 <= s <= info.my*info.mx - 1
+            ab[k][j] = atopg[s];
+            am[k][j] = acmb[s];
+        }
+    }
+    ierr = VecRestoreArray(user->topgread, &atopg);CHKERRQ(ierr);
+    ierr = VecRestoreArray(user->cmbread, &acmb);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(user->da, user->b, &ab);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
