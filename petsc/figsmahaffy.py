@@ -72,25 +72,23 @@ for vec in ['x', 'y', 'H', 'b', 'm', 'Herror']:
 if (NH != Nx*Ny):
     print 'ERROR: number of values in H.txt does not match axes in x.txt, y.txt'
     sys.exit(96)
-H = np.reshape(H,(Nx,Ny))
+H = np.reshape(H,(Ny,Nx))
 
 if (NH != Nb):
     print 'ERROR: different sizes of fields H and b in files'
     sys.exit(97)
-b = np.reshape(b,(Nx,Ny))
+b = np.reshape(b,(Ny,Nx))
 
 if (NH != Nm):
     print 'ERROR: different sizes of fields H and m in files'
     sys.exit(97)
-m = np.reshape(m,(Nx,Ny))
+m = np.reshape(m,(Ny,Nx))
 
 if NHerror > 0:
     if (NH != NHerror):
         print 'ERROR: different sizes of fields H and Herror'
         sys.exit(99)
-    Herror = np.reshape(Herror,(Nx,Ny))
-
-fsize = (12,9)
+    Herror = np.reshape(Herror,(Ny,Nx))
 
 figdebug = False
 def figsave(name):
@@ -104,32 +102,46 @@ def figsave(name):
 x = x/1000.0
 y = y/1000.0
 
-plt.figure(figsize=fsize)
-plt.pcolor(x,y,H)
-plt.axis('tight')
+fsize = (12,9)
+
+plt.figure()
+#plt.figure(figsize=fsize)
+plt.pcolormesh(x,y,H)
+plt.axis('equal')
 plt.colorbar()
 plt.title('thickness solution H  (m)')
 figsave('H.png')
 
-plt.figure(figsize=fsize)
-plt.pcolor(x,y,b)
-plt.axis('tight')
+plt.figure()
+plt.pcolormesh(x,y,b)
+plt.axis('equal')
 if (b.max() > b.min()):
     plt.colorbar()
-plt.title('bed topography b  (m)')
+plt.title('bed elevation b  (m)')
 figsave('b.png')
 
-plt.figure(figsize=fsize)
-plt.pcolor(x,y,m * 31556926.0)
-plt.axis('tight')
+if (b.max() > b.min()):
+    plt.figure()
+    usurf = np.maximum(0.0, H + b)
+    plt.pcolormesh(x,y,usurf)
+    plt.axis('equal')
+    plt.colorbar()
+    plt.title('surface elevation usurf  (m)')
+    figsave('usurf.png')
+else:
+    print 'not generating usurf.png because bed is flat'
+
+plt.figure()
+plt.pcolormesh(x,y,m * 31556926.0)
+plt.axis('equal')
 plt.colorbar()
 plt.title('surface mass balance m  (m/a)')
 figsave('m.png')
 
 if NHerror > 0:
-    plt.figure(figsize=fsize)
-    plt.pcolor(x,y,Herror)
-    plt.axis('tight')
+    plt.figure()
+    plt.pcolormesh(x,y,Herror)
+    plt.axis('equal')
     plt.colorbar()
     plt.title('thickness error H - H_exact  (m)')
     figsave('Herror.png')
