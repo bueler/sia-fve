@@ -4,4 +4,7 @@ mahaffy
 *.png
 *.txt
 *.nc
+*.pyc
+PetscBinaryIO.py
+petsc_conf.py
 
