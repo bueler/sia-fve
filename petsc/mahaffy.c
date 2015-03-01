@@ -127,6 +127,9 @@ int main(int argc,char **argv) {
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
   if (user.read == PETSC_TRUE) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+          "reading grid, bed topography, and climatic mass balance from %s ...\n",
+          user.readname); CHKERRQ(ierr);
       // sets user.Nx, user.Ny, user.Lx, user.Ly, user.dx and reads serial Vecs topgread,cmbread
       ierr = ReadFromBinary(&user); CHKERRQ(ierr);
   }
@@ -218,10 +221,10 @@ int main(int argc,char **argv) {
                      m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           if (user.eps > 0.0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "         ... try again w eps *= 2\n");CHKERRQ(ierr);
+                         "         ... try again w eps *= 1.5\n");CHKERRQ(ierr);
               //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
               //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
-              user.eps = 2.0 * eps_sched[m];
+              user.eps = 1.5 * eps_sched[m];
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
