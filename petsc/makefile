@@ -16,8 +16,8 @@ doclayer.pdf: doclayer.tex
 
 .PHONY: distclean texclean
 
-distclean:
-	@rm -f *~ layer mahaffy
+dirclean:
+	@rm -f *~ layer mahaffy *.pyc
 
 texclean:
 	@rm -f *~ *.aux *.log *.synctex.gz

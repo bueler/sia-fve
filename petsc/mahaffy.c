@@ -47,9 +47,11 @@ static const char help[] =
 typedef struct {
   DM        da, quadda;
   Vec       b,      // the bed elevation
-            m;      // the (steady) surface mass balance
-  PetscReal dx,     // fixed grid spacing
-            L,      // domain is [-L,L] x [-L,L]
+            m,      // the (steady) surface mass balance
+            topgread,cmbread;  // only valid if user.read is TRUE and ReadFromBinary() has happened
+  PetscReal dx,     // fixed grid spacing; dx = dy
+            Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
+            Ly,
             n,      // Glen exponent for SIA flux term
             g,      // acceleration of gravity
             rho,    // ice density
@@ -60,22 +62,27 @@ typedef struct {
             D0,     // representative value of diffusivity (in regularization)
             exactL, // radius of exact ice sheet
             exactH0;// center thickness of exact ice sheet
-  PetscInt  Neps;
+  PetscInt  Nx,     // grid has Nx x Ny nodes
+            Ny,
+            Neps;   // number of levels in regularization/continuation
   PetscBool mtrue,  // use true Mahaffy method instead of Mahaffy* (default)
+            read,   // read grid and data from PETSc binary file
             dump;   // dump fields into ASCII VTK files
+  char      figsprefix[512],
+            readname[512];
 } AppCtx;
 
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode SetToExactThickness(Vec,const AppCtx*);
 extern PetscErrorCode SetToSMB(Vec,PetscBool,const AppCtx*);
-extern PetscErrorCode ProcessOptions(char[],AppCtx*);
+extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 // extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*); //see layer.c
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[]);
-extern PetscErrorCode DumpToFiles(const char[],Vec,Vec,AppCtx*);
+extern PetscErrorCode DumpToFiles(Vec,AppCtx*);
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 
 extern PetscErrorCode ReadAxesFromBinary(PetscViewer,AppCtx*);
@@ -88,40 +95,60 @@ int main(int argc,char **argv) {
   Vec                 H, Htry;
   AppCtx              user;
   DMDALocalInfo       info;
-  char                figsprefix[512] = "";
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
-  user.L      = 900.0e3;    // m
+  user.Nx     = -12;        // so DMDACreate2d() defaults to 12x12
+  user.Ny     = -12;
+  user.Lx     = 900.0e3;    // m
+  user.Ly     = 900.0e3;    // m
+
   user.n      = 3.0;
   user.g      = 9.81;       // m/s^2
   user.rho    = 910.0;      // kg/m^3
   user.secpera= 31556926.0;
   user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
+
   user.exactL = 750.0e3;    // m
   user.exactH0= 3600.0;     // m
+
   user.eps    = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
-  user.mtrue     = PETSC_FALSE;
-  user.dump      = PETSC_FALSE;
+  user.mtrue  = PETSC_FALSE;
 
-  ierr = ProcessOptions(figsprefix,&user); CHKERRQ(ierr);
+  user.dump   = PETSC_FALSE;
+  user.read   = PETSC_FALSE;
+  strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
+  strcpy(user.readname,"FILENAME");
 
-  // this DMDA is used for scalar fields on nodes
+  ierr = ProcessOptions(&user); CHKERRQ(ierr);
+
+  if (user.read == PETSC_TRUE) {
+      // sets user.Nx, user.Ny, user.Lx, user.Ly, user.dx and reads serial Vecs topgread,cmbread
+      ierr = ReadFromBinary(&user); CHKERRQ(ierr);
+  }
+
+  // this DMDA is used for scalar fields on nodes; cell-centered grid
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
-                      -12,-12,PETSC_DECIDE,PETSC_DECIDE,  // default 12x12 grid has dx=150km
+                      user.Nx,user.Ny,PETSC_DECIDE,PETSC_DECIDE,  // default grid if Nx<0, Ny<0
                       1, 1,                               // dof=1,  stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
-
   ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
-  if (info.mx != info.my)  {
-      SETERRQ(PETSC_COMM_WORLD,1,"mx != my ERROR: grid must have equal spacing in x,y ...\n");
+  if (user.read == PETSC_FALSE) {
+      user.dx = 2.0 * user.Lx / (PetscReal)(info.mx);
   }
+  ierr = DMDASetUniformCoordinates(user.da, -user.Lx+user.dx/2, user.Lx+user.dx/2,
+                                            -user.Ly+user.dx/2, user.Ly+user.dx/2,
+                                   0.0,1.0); CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "solving on [-Lx,Lx]x[-Ly,Ly] with Lx=%.3f km, Ly=%.3f, %d x %d grid,\n"
+                     "    spacing dx = %.3f km ...\n",
+                     user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
 
   // this DMDA is used for evaluating flux components at quad points on elements
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
@@ -131,17 +158,6 @@ int main(int argc,char **argv) {
                       4, 1,                               // dof=4,  stencilwidth=1
                       NULL,NULL,&user.quadda);
   ierr = DMSetApplicationContext(user.quadda, &user);CHKERRQ(ierr);
-
-  user.dx = 2.0 * user.L / (PetscReal)(info.mx);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "solving on [-L,L]x[-L,L] with L=%.3f km, %d x %d grid, spacing dx = %.3f km ...\n",
-                     user.L/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
-
-  // cell-centered grid
-  ierr = DMDASetUniformCoordinates(user.da,
-             -user.L+user.dx/2,user.L+user.dx/2,
-             -user.L+user.dx/2,user.L+user.dx/2,
-             0.0,1.0); CHKERRQ(ierr);
 
   ierr = DMCreateGlobalVector(user.da,&H);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
@@ -162,9 +178,6 @@ int main(int argc,char **argv) {
   // alternatives:
   //ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
-
-// test read
-ierr = ReadFromBinary(&user); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
 
@@ -207,14 +220,20 @@ ierr = ReadFromBinary(&user); CHKERRQ(ierr);
                      "%3d. converged  with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
                      m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-          ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
+          if (user.read == PETSC_FALSE) {
+              ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
+          }
       }
   }
 
   if (user.dump == PETSC_TRUE) {
-      ierr = DumpToFiles(figsprefix,H,user.m,&user); CHKERRQ(ierr);
+      ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
   }
 
+  if (user.read == PETSC_TRUE) {
+      ierr = VecDestroy(&user.topgread);CHKERRQ(ierr);
+      ierr = VecDestroy(&user.cmbread);CHKERRQ(ierr);
+  }
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
@@ -514,21 +533,24 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
 }
 
 
-PetscErrorCode ProcessOptions(char figsprefix[], AppCtx *user) {
+PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-dump", "dump fields (H,Herror,m) into ascii files with this prefix",
-      NULL,figsprefix,figsprefix,512,&user->dump); CHKERRQ(ierr);
+      NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
-      "-Neps", "levels in schedule of eps regularization (i.e. continuation)",
+      "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsString(
+      "-read", "read grid and data from special-format PETSc binary file; see README.md",
+      NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-true", "use true Mahaffy method, not Mahaffy* (default)",
+      "-true", "use true Mahaffy method, not default Mahaffy*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -552,6 +574,9 @@ PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
   PetscErrorCode ierr;
   PetscScalar enorminf,enorm1;
   Vec         Hexact;
+  if ((user->Ly != user->Lx) || (user->Lx != 900.0e3)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"exact thickness only defined for square 900km grid ...\n");
+  }
   ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
   ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
   ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // Hexact < Hexact + (-1.0) H
@@ -585,33 +610,46 @@ PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[]) {
 
 
 //  write various vectors to various files
-PetscErrorCode DumpToFiles(const char prefix[], Vec H, Vec m, AppCtx *user) {
+PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
-    Vec            Hexact, x;
-    PetscInt       j;
-    PetscReal      *ax;
+    Vec            Hexact, x, y;
+    PetscInt       j, k;
+    PetscReal      *ax, *ay;
 
     ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
     ierr = VecCreateSeq(PETSC_COMM_SELF,info.mx,&x);CHKERRQ(ierr);
+    ierr = VecCreateSeq(PETSC_COMM_SELF,info.mx,&y);CHKERRQ(ierr);
     ierr = VecGetArray(x, &ax);CHKERRQ(ierr);
     for (j=0; j<info.mx; j++) {
-        ax[j] = -user->L + user->dx/2.0 + j * user->dx;
+        ax[j] = -user->Lx + user->dx/2.0 + j * user->dx;
     }
     ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
-    ierr = ViewToVTKASCII(x,prefix,"x.txt"); CHKERRQ(ierr);
+    ierr = VecGetArray(y, &ay);CHKERRQ(ierr);
+    for (k=0; k<info.my; k++) {
+        ay[k] = -user->Ly + user->dx/2.0 + k * user->dx;
+    }
+    ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(x,user->figsprefix,"x.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(y,user->figsprefix,"y.txt"); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
+    ierr = VecDestroy(&y); CHKERRQ(ierr);
 
-    ierr = ViewToVTKASCII(H,prefix,"H.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(H,user->figsprefix,"H.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(user->b,user->figsprefix,"b.txt"); CHKERRQ(ierr);
+    ierr = ViewToVTKASCII(user->m,user->figsprefix,"m.txt"); CHKERRQ(ierr);
 
-    ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
-    ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
-    ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // do:  Hexact < Hexact + (-1.0) H
-    ierr = VecScale(Hexact,-1.0); CHKERRQ(ierr);     // now: Hexact = H - Hexact
-    ierr = ViewToVTKASCII(Hexact,prefix,"Herror.txt"); CHKERRQ(ierr);
-    ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
-
-    ierr = ViewToVTKASCII(m,prefix,"m.txt"); CHKERRQ(ierr);
+    if (user->read == PETSC_FALSE) {
+        ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
+        ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
+        ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // do:  Hexact < Hexact + (-1.0) H
+        ierr = VecScale(Hexact,-1.0); CHKERRQ(ierr);     // now: Hexact = H - Hexact
+        ierr = ViewToVTKASCII(Hexact,user->figsprefix,"Herror.txt"); CHKERRQ(ierr);
+        ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
+    } else {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "NOTE: not writing Herror.txt file because grid and data were read from file\n"); CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -630,63 +668,61 @@ PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
 }
 
 
-PetscErrorCode ReadAxesFromBinary(PetscViewer viewer, AppCtx *user) {
-   PetscErrorCode ierr;
-   PetscViewer    graphical;
-   Vec x, y;
-
-   ierr = VecCreate(PETSC_COMM_WORLD,&x); CHKERRQ(ierr);
-   ierr = PetscObjectSetName((PetscObject)x,"x-axis-from-file"); CHKERRQ(ierr);
-   ierr = VecLoad(x,viewer); CHKERRQ(ierr);
-
-   ierr = VecCreate(PETSC_COMM_WORLD,&y); CHKERRQ(ierr);
-   ierr = PetscObjectSetName((PetscObject)y,"y-axis-from-file"); CHKERRQ(ierr);
-   ierr = VecLoad(y,viewer); CHKERRQ(ierr);
-
-   // now view graphically
-   ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,NULL,
-                              PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&graphical); CHKERRQ(ierr);
-   ierr = VecView(x,graphical); CHKERRQ(ierr);
-   ierr = VecView(y,graphical); CHKERRQ(ierr);
-   ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-
-   ierr = VecDestroy(&x); CHKERRQ(ierr);
-   ierr = VecDestroy(&y); CHKERRQ(ierr);
-   PetscFunctionReturn(0);
-}
-
-
 PetscErrorCode ReadFromBinary(AppCtx *user) {
-   PetscErrorCode ierr;
-   PetscViewer viewer, graphical;
-   Vec topg, cmb;
-   //PetscInt vsize;
+    PetscErrorCode ierr;
+    PetscViewer viewer;
+    Vec x, y;
+    PetscReal *ax, *ay, fulllengthx, fulllengthy;
+#if 1
+    PetscViewer graphical;
+#endif
 
-   ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"grn.dat",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"grn.dat",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
 
-   ierr = ReadAxesFromBinary(viewer,user); CHKERRQ(ierr);
+    ierr = VecCreate(PETSC_COMM_WORLD,&x); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)x,"x-axis from file"); CHKERRQ(ierr);
+    ierr = VecLoad(x,viewer); CHKERRQ(ierr);
+    ierr = VecGetSize(x,&user->Nx); CHKERRQ(ierr);
+    if (user->Nx < 4) {  // 4 is somewhat arbitrary
+        SETERRQ(PETSC_COMM_WORLD,1,"read Vec x has size too small\n");
+    }
+    ierr = VecGetArray(x, &ax);CHKERRQ(ierr);
+    user->dx = ax[1] - ax[0];
+    fulllengthx = ax[user->Nx-1] - ax[0] + user->dx;
+    user->Lx = fulllengthx / 2.0;
+    ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
+    ierr = VecDestroy(&x); CHKERRQ(ierr);
 
-   ierr = VecCreate(PETSC_COMM_WORLD,&topg); CHKERRQ(ierr);
-   ierr = PetscObjectSetName((PetscObject)topg,"bed topography"); CHKERRQ(ierr);
-   ierr = VecLoad(topg,viewer); CHKERRQ(ierr);
-   //ierr = VecGetSize(topg,&vsize); CHKERRQ(ierr);
-   //ierr = PetscPrintf(PETSC_COMM_WORLD,"     size of read topg is %d\n",vsize); CHKERRQ(ierr);
+    ierr = VecCreate(PETSC_COMM_WORLD,&y); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)y,"y-axis from file"); CHKERRQ(ierr);
+    ierr = VecLoad(y,viewer); CHKERRQ(ierr);
+    ierr = VecGetSize(y,&user->Ny); CHKERRQ(ierr);
+    if (user->Ny < 4) {  // 4 is somewhat arbitrary
+        SETERRQ(PETSC_COMM_WORLD,2,"read Vec y has size too small\n");
+    }
+    ierr = VecGetArray(y, &ay);CHKERRQ(ierr);
+    fulllengthy = ay[user->Ny-1] - ay[0] + user->dx;
+    user->Ly = fulllengthy / 2.0;
+    ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
+    ierr = VecDestroy(&y); CHKERRQ(ierr);
 
-   ierr = VecCreate(PETSC_COMM_WORLD,&cmb); CHKERRQ(ierr);
-   ierr = PetscObjectSetName((PetscObject)cmb,"climatic mass balance"); CHKERRQ(ierr);
-   ierr = VecLoad(cmb,viewer); CHKERRQ(ierr);
+    ierr = VecCreate(PETSC_COMM_WORLD,&user->topgread); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)user->topgread,"bed topography from file"); CHKERRQ(ierr);
+    ierr = VecLoad(user->topgread,viewer); CHKERRQ(ierr);
 
-   ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    ierr = VecCreate(PETSC_COMM_WORLD,&user->cmbread); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)user->cmbread,"climatic mass balance from file"); CHKERRQ(ierr);
+    ierr = VecLoad(user->cmbread,viewer); CHKERRQ(ierr);
 
-   // now view graphically
-   ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"",
-                              PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&graphical); CHKERRQ(ierr);
-   ierr = VecView(topg,graphical); CHKERRQ(ierr);
-   ierr = VecView(cmb,graphical); CHKERRQ(ierr);
-   ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
 
-   ierr = VecDestroy(&topg); CHKERRQ(ierr);
-   ierr = VecDestroy(&cmb); CHKERRQ(ierr);
+#if 1
+    ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"",
+                               PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&graphical); CHKERRQ(ierr);
+    ierr = VecView(user->topgread,graphical); CHKERRQ(ierr);
+    ierr = VecView(user->cmbread,graphical); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+#endif
    PetscFunctionReturn(0);
 }
 

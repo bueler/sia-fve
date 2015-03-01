@@ -17,13 +17,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='Generate .png figures from ASCII VTK files written by mahaffy.c.')
-# positional
-#parser.add_argument('prefix', metavar='PREFIX',
-#                    help='root of file names f-0-0.txt and u-$N-$T.txt',
-#                    default='')
 args = parser.parse_args()
 
-def readvecvtk(vfile,vfilename):
+def readvecvtk(vfilename):
+    try:
+        vfile = open(vfilename, 'r')
+    except IOError:
+        print 'cannot open file %s ... skipping ...' % vfilename
+        return 0, -1
     headersread = 0
     count = 0
     for line in vfile:
@@ -47,38 +48,47 @@ def readvecvtk(vfile,vfilename):
             vline = line.split()
             v[count] = float(vline[0])
             count += 1
+    vfile.close()
     return v, NN
 
-for vec in ['x', 'H', 'm', 'Herror']:
+for vec in ['x', 'y', 'H', 'b', 'm', 'Herror']:
     fname = vec + '.txt'
-    try:
-        ffile = open(fname, 'r')
-    except IOError:
-        print 'cannot open file ', fname
-        sys.exit(1)
     if vec == 'x':
-      x, N = readvecvtk(ffile,fname)
+      x, Nx = readvecvtk(fname)
+    elif vec == 'y':
+      y, Ny = readvecvtk(fname)
     elif vec == 'H':
-      H, NH = readvecvtk(ffile,fname)
+      H, NH = readvecvtk(fname)
+    elif vec == 'b':
+      b, Nb = readvecvtk(fname)
     elif vec == 'm':
-      m, Nm = readvecvtk(ffile,fname)
+      m, Nm = readvecvtk(fname)
     elif vec == 'Herror':
-      Herror, NHerror = readvecvtk(ffile,fname)
+      Herror, NHerror = readvecvtk(fname)
     else:
       print 'how get here?'
-      sys.exit(99)
-    ffile.close()
+      sys.exit(95)
 
-if (NH != Nm) | (NH != NHerror):
-    print 'ERROR: different numbers of values in files'
-    sys.exit(98)
-if (NH != N*N):
-    print 'ERROR: number of values in files is not a perfect square'
-    sys.exit(98)
+if (NH != Nx*Ny):
+    print 'ERROR: number of values in H.txt does not match axes in x.txt, y.txt'
+    sys.exit(96)
+H = np.reshape(H,(Nx,Ny))
 
-H = np.reshape(H,(N,N))
-m = np.reshape(m,(N,N))
-Herror = np.reshape(Herror,(N,N))
+if (NH != Nb):
+    print 'ERROR: different sizes of fields H and b in files'
+    sys.exit(97)
+b = np.reshape(b,(Nx,Ny))
+
+if (NH != Nm):
+    print 'ERROR: different sizes of fields H and m in files'
+    sys.exit(97)
+m = np.reshape(m,(Nx,Ny))
+
+if NHerror > 0:
+    if (NH != NHerror):
+        print 'ERROR: different sizes of fields H and Herror'
+        sys.exit(99)
+    Herror = np.reshape(Herror,(Nx,Ny))
 
 fsize = (12,9)
 
@@ -92,25 +102,35 @@ def figsave(name):
         print '  figure file %s generated ...' % name
 
 x = x/1000.0
+y = y/1000.0
 
 plt.figure(figsize=fsize)
-plt.pcolor(x,x,H)
+plt.pcolor(x,y,H)
 plt.axis('tight')
 plt.colorbar()
 plt.title('thickness solution H  (m)')
 figsave('H.png')
 
 plt.figure(figsize=fsize)
-plt.pcolor(x,x,m * 31556926.0)
+plt.pcolor(x,y,b)
+plt.axis('tight')
+if (b.max() > b.min()):
+    plt.colorbar()
+plt.title('bed topography b  (m)')
+figsave('b.png')
+
+plt.figure(figsize=fsize)
+plt.pcolor(x,y,m * 31556926.0)
 plt.axis('tight')
 plt.colorbar()
 plt.title('surface mass balance m  (m/a)')
 figsave('m.png')
 
-plt.figure(figsize=fsize)
-plt.pcolor(x,x,Herror)
-plt.axis('tight')
-plt.colorbar()
-plt.title('thickness error H - H_exact  (m)')
-figsave('Herror.png')
+if NHerror > 0:
+    plt.figure(figsize=fsize)
+    plt.pcolor(x,y,Herror)
+    plt.axis('tight')
+    plt.colorbar()
+    plt.title('thickness error H - H_exact  (m)')
+    figsave('Herror.png')
 
