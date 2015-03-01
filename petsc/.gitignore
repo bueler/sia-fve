@@ -1,10 +1,10 @@
 layer
 doclayer.pdf
 mahaffy
-*.png
-*.txt
-*.nc
-*.pyc
 PetscBinaryIO.py
 petsc_conf.py
-
+*.png
+*.txt
+*.dat
+*.nc
+*.pyc

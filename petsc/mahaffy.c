@@ -76,9 +76,10 @@ extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
 extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[]);
 extern PetscErrorCode DumpToFiles(const char[],Vec,Vec,AppCtx*);
-extern PetscErrorCode SNESboot(SNES *s, AppCtx* user);
+extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 
-extern PetscErrorCode ReadThicknessFromNetCDF();
+extern PetscErrorCode ReadAxesFromBinary(PetscViewer,AppCtx*);
+extern PetscErrorCode ReadFromBinary(AppCtx*);
 
 
 int main(int argc,char **argv) {
@@ -163,7 +164,7 @@ int main(int argc,char **argv) {
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
 // test read
-//ierr = ReadThicknessFromNetCDF(); CHKERRQ(ierr);
+ierr = ReadFromBinary(&user); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
 
@@ -629,28 +630,63 @@ PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
 }
 
 
-PetscErrorCode ReadThicknessFromNetCDF() {
+PetscErrorCode ReadAxesFromBinary(PetscViewer viewer, AppCtx *user) {
    PetscErrorCode ierr;
-   PetscViewer viewer;
-   Vec Hnc;
-   // read from netcdf?  this method does not work when run
-   ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"thk.nc",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
-   ierr = PetscViewerSetType(viewer,PETSCVIEWERNETCDF); CHKERRQ(ierr);
+   PetscViewer    graphical;
+   Vec x, y;
 
-//apparently not implemented:
-//   ierr = PetscViewerNetcdfOpen(PETSC_COMM_WORLD,"thk.nc",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+   ierr = VecCreate(PETSC_COMM_WORLD,&x); CHKERRQ(ierr);
+   ierr = PetscObjectSetName((PetscObject)x,"x-axis-from-file"); CHKERRQ(ierr);
+   ierr = VecLoad(x,viewer); CHKERRQ(ierr);
 
-   //PETSC_EXTERN PetscErrorCode PetscViewerNetcdfOpen(MPI_Comm,const char[],PetscFileMode,PetscViewer*);
-   //PETSC_EXTERN PetscErrorCode PetscViewerNetcdfGetID(PetscViewer, int *);
+   ierr = VecCreate(PETSC_COMM_WORLD,&y); CHKERRQ(ierr);
+   ierr = PetscObjectSetName((PetscObject)y,"y-axis-from-file"); CHKERRQ(ierr);
+   ierr = VecLoad(y,viewer); CHKERRQ(ierr);
 
-   ierr = VecCreate(PETSC_COMM_WORLD,&Hnc); CHKERRQ(ierr);
-   ierr = VecLoad(Hnc,viewer); CHKERRQ(ierr);
-   ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
    // now view graphically
-   ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"ice thickness",
-                              PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&viewer); CHKERRQ(ierr);
-   ierr = VecView(Hnc,viewer); CHKERRQ(ierr);
+   ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,NULL,
+                              PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&graphical); CHKERRQ(ierr);
+   ierr = VecView(x,graphical); CHKERRQ(ierr);
+   ierr = VecView(y,graphical); CHKERRQ(ierr);
+   ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+
+   ierr = VecDestroy(&x); CHKERRQ(ierr);
+   ierr = VecDestroy(&y); CHKERRQ(ierr);
+   PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode ReadFromBinary(AppCtx *user) {
+   PetscErrorCode ierr;
+   PetscViewer viewer, graphical;
+   Vec topg, cmb;
+   //PetscInt vsize;
+
+   ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"grn.dat",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+
+   ierr = ReadAxesFromBinary(viewer,user); CHKERRQ(ierr);
+
+   ierr = VecCreate(PETSC_COMM_WORLD,&topg); CHKERRQ(ierr);
+   ierr = PetscObjectSetName((PetscObject)topg,"bed topography"); CHKERRQ(ierr);
+   ierr = VecLoad(topg,viewer); CHKERRQ(ierr);
+   //ierr = VecGetSize(topg,&vsize); CHKERRQ(ierr);
+   //ierr = PetscPrintf(PETSC_COMM_WORLD,"     size of read topg is %d\n",vsize); CHKERRQ(ierr);
+
+   ierr = VecCreate(PETSC_COMM_WORLD,&cmb); CHKERRQ(ierr);
+   ierr = PetscObjectSetName((PetscObject)cmb,"climatic mass balance"); CHKERRQ(ierr);
+   ierr = VecLoad(cmb,viewer); CHKERRQ(ierr);
+
    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+
+   // now view graphically
+   ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"",
+                              PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,&graphical); CHKERRQ(ierr);
+   ierr = VecView(topg,graphical); CHKERRQ(ierr);
+   ierr = VecView(cmb,graphical); CHKERRQ(ierr);
+   ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+
+   ierr = VecDestroy(&topg); CHKERRQ(ierr);
+   ierr = VecDestroy(&cmb); CHKERRQ(ierr);
    PetscFunctionReturn(0);
 }
 

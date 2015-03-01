@@ -30,10 +30,6 @@ except:
     print "need link to petsc/bin/pythonscripts/petsc_conf.py?"
     sys.exit(2)
 
-vec = np.array([1., 2., 3.]).view(PetscBinaryIO.Vec)
-io = pbio.PetscBinaryIO()
-io.writeBinaryFile('file.dat', [vec,])
-
 parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')
 # positional
 parser.add_argument('inname', metavar='INNAME',
@@ -42,10 +38,7 @@ parser.add_argument('inname', metavar='INNAME',
 parser.add_argument('outname', metavar='OUTNAME',
                     help='name of output PETSc binary file (e.g. grn.dat)',
                     default='')
-#parser.add_argument('--uscale', action='store', metavar='N', help='scale thickness by this',default=12.0)
-#parser.add_argument('--taxis', action='store', metavar='N', type=int, help='if set, add time axis along bottom, marked at time-step, with N total timesteps',default=0)
 args = parser.parse_args()
-
 
 try:
     nc = NC(args.inname, 'r')
@@ -53,18 +46,25 @@ except:
     print "ERROR: can't read from file %s ..." % args.inname
     sys.exit(11)
 
-x = nc.variables['x'][:]
-y = nc.variables['y'][:]
-width  = x.max() - x.min()
-height = y.max() - y.min()
-    
+x = nc.variables['x1'][:]
+print "length x = %d" % (np.shape(x)[0])
+y = nc.variables['y1'][:]
+print "length y = %d" % (np.shape(y)[0])
 
 # load data
-topg = np.squeeze(nc.variables['topg'][:])
+topg = np.squeeze(nc.variables['topg'][:]).flatten()
+print "length topg (flattened)                  = %d" % (np.shape(topg)[0])
+cmb = np.squeeze(nc.variables['climatic_mass_balance'][:]).flatten()
+print "length climatic_mass_balance (flattened) = %d" % (np.shape(topg)[0])
 
-topgvec = numpy.array([1., 2., 3.]).view(pbio.Vec)
+xvec = x.view(pbio.Vec)
+yvec = y.view(pbio.Vec)
+topgvec = topg.view(pbio.Vec)
+cmbvec = cmb.view(pbio.Vec)
 
+# open petsc binary file
 io = pbio.PetscBinaryIO()
-io.writeBinaryFile(args.outname, [topgvec,])
 
+# write fields in a particular order; names won't actually matter
+io.writeBinaryFile(args.outname, [xvec,yvec,topgvec,cmbvec,])
 
