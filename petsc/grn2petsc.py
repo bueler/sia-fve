@@ -52,11 +52,27 @@ y = nc.variables['y1'][:]
 print "length y = %d" % (np.shape(y)[0])
 
 # load data
+thk = np.squeeze(nc.variables['thk'][:]).flatten()
 topg = np.squeeze(nc.variables['topg'][:]).flatten()
-print "length topg (flattened)                  = %d" % (np.shape(topg)[0])
-cmb = np.squeeze(nc.variables['climatic_mass_balance'][:]).flatten()
-print "length climatic_mass_balance (flattened) = %d" % (np.shape(topg)[0])
+print "length topg (flattened) = %d" % (np.shape(topg)[0])
+print "%f <= topg <= %f  (m)" % (topg.min(), topg.max())
+cmb = np.squeeze(nc.variables['cmb'][:]).flatten()
+print "length ccmb (flattened) = %d" % (np.shape(topg)[0])
+print "%e <= cmb <= %e  (m s-1)" % (cmb.min(), cmb.max())
 
+# modify b and cmb in ocean
+for j in range(len(cmb)):
+     if (topg[j] < -250.0):
+         topg[j] = -250.0
+     if (thk[j] <= 0.0):
+         if (topg[j] < -200.0):
+             cmb[j] = -30.0 / 31556926.0
+         elif (topg[j] < -100.0):
+             cmb[j] = -10.0 / 31556926.0
+         elif (topg[j] < -50.0):
+             cmb[j] = -5.0 / 31556926.0
+
+# convert to PETSc-type vecs
 xvec = x.view(pbio.Vec)
 yvec = y.view(pbio.Vec)
 topgvec = topg.view(pbio.Vec)
