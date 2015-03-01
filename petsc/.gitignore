@@ -3,4 +3,7 @@ doclayer.pdf
 mahaffy
 *.png
 *.txt
+*.pyc
+PetscBinaryIO.py
+petsc_conf.py
 
