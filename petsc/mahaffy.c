@@ -166,11 +166,17 @@ int main(int argc,char **argv) {
 
   ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.b),"bed elevation b"); CHKERRQ(ierr);
-  ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
 
   ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
-  ierr = SetToSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+
+  if (user.read == PETSC_TRUE) {
+      // FIXME
+      SETERRQ(PETSC_COMM_WORLD,99,"UNIMPLEMENTED ERROR: need to reshape user.topgread into b and user.topgread into b\n");
+  } else {
+      ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
+      ierr = SetToSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+  }
 
   // initialize by chop & scale SMB
   ierr = SetToSMB(H,PETSC_TRUE,&user); CHKERRQ(ierr);
