@@ -54,13 +54,15 @@ print "length y = %d" % (np.shape(y)[0])
 # load data
 thk = np.squeeze(nc.variables['thk'][:]).flatten()
 topg = np.squeeze(nc.variables['topg'][:]).flatten()
-print "length topg (flattened) = %d" % (np.shape(topg)[0])
-print "%f <= topg <= %f  (m)" % (topg.min(), topg.max())
 cmb = np.squeeze(nc.variables['cmb'][:]).flatten()
+print "length topg (flattened) = %d" % (np.shape(topg)[0])
 print "length ccmb (flattened) = %d" % (np.shape(topg)[0])
-print "%e <= cmb <= %e  (m s-1)" % (cmb.min(), cmb.max())
+
 
 # modify b and cmb in ocean
+print "before ocean fixes:"
+print "    %f <= topg <= %f  (m)" % (topg.min(), topg.max())
+print "    %e <= cmb <= %e  (m s-1)" % (cmb.min(), cmb.max())
 for j in range(len(cmb)):
      if (thk[j] <= 0.0):
          if (topg[j] < -250.0):
@@ -71,6 +73,10 @@ for j in range(len(cmb)):
              cmb[j] = -10.0 / 31556926.0
          elif (topg[j] < -50.0):
              cmb[j] = -5.0 / 31556926.0
+print "after ocean fixes:"
+print "    %f <= topg <= %f  (m)" % (topg.min(), topg.max())
+print "    %e <= cmb <= %e  (m s-1)" % (cmb.min(), cmb.max())
+
 
 # convert to PETSc-type vecs
 xvec = x.view(pbio.Vec)
