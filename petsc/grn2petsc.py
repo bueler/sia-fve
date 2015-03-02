@@ -62,9 +62,9 @@ print "%e <= cmb <= %e  (m s-1)" % (cmb.min(), cmb.max())
 
 # modify b and cmb in ocean
 for j in range(len(cmb)):
-     if (topg[j] < -250.0):
-         topg[j] = -250.0
      if (thk[j] <= 0.0):
+         if (topg[j] < -250.0):
+             topg[j] = -250.0
          if (topg[j] < -200.0):
              cmb[j] = -30.0 / 31556926.0
          elif (topg[j] < -100.0):
