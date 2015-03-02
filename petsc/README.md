@@ -63,9 +63,14 @@ density 910 kg m-3.
 
 Stage 2 of setup is to convert to PETSc binary using PETSc scripts:
 
+    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py
+    $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
+    $ python grn2petsc.py grn.nc grn.dat
+
+For maint branch of petsc, instead:
     $ ln -s ~/petsc-maint/bin/pythonscripts/PetscBinaryIO.py
     $ ln -s ~/petsc-maint/bin/pythonscripts/petsc_conf.py
-    $ python grn2petsc.py grn.nc grn.dat
+
 
 Stage 3 is to run it and view results:
 
