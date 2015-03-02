@@ -381,7 +381,7 @@ typedef struct {
 } Grad;
 
 
-/* first of two nontrival operation with Q1 interpolants on an element */
+/* first of two nontrival operations with Q1 interpolants on an element */
 /* evaluate the gradient of the surface elevation at any point (x,y) on element, using corner values of H and b */
 PetscErrorCode gradsatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
                          PetscReal locx, PetscReal locy, // = (x,y) coords in element
@@ -421,7 +421,7 @@ typedef struct {
 } Flux;
 
 
-/* second of two nontrival operation with Q1 interpolants on an element */
+/* second of two nontrival operations with Q1 interpolants on an element */
 /* evaluate the flux at any point (x,y) on element, using corner values of H and b */
 PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
                         PetscReal locx, PetscReal locy, // = (x,y) coords in element
