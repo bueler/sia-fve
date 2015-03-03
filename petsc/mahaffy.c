@@ -96,7 +96,7 @@ extern PetscErrorCode SetToVerifSMB(Vec,PetscBool,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode ShowFields(DMDALocalInfo *info, AppCtx *user);
 extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
-extern PetscErrorCode ViewToBinary(Vec,const char[],const char[]);
+extern PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
 extern PetscErrorCode DumpToFiles(Vec,AppCtx*);
 extern PetscErrorCode CreateReadVecs(SerialReadVecs*,AppCtx*);
 extern PetscErrorCode ReshapeAndDestroyReadVecs(SerialReadVecs*,AppCtx*);
@@ -650,7 +650,7 @@ PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
 
 
 //  write a vector into a petsc binary file with name built from prefix and name
-PetscErrorCode ViewToBinary(Vec u, const char prefix[], const char name[]) {
+PetscErrorCode ViewToBinary(PetscBool fromrankzero, Vec v, const char prefix[], const char name[]) {
     PetscErrorCode ierr;
     PetscViewer    viewer;
     char           filename[1024];
@@ -659,9 +659,19 @@ PetscErrorCode ViewToBinary(Vec u, const char prefix[], const char name[]) {
     if (strerr < 0) {
         SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
     }
-    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
-    ierr = VecView(u,viewer); CHKERRQ(ierr);
-    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    if (fromrankzero == PETSC_TRUE) {
+        int  rank;
+        ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
+        if (rank == 0) {
+            ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
+            ierr = VecView(v,viewer); CHKERRQ(ierr);
+            ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+        }
+    } else {
+        ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
+        ierr = VecView(v,viewer); CHKERRQ(ierr);
+        ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    }
     PetscFunctionReturn(0);
 }
 
@@ -687,18 +697,18 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
         ay[k] = -user->Ly + user->dx/2.0 + k * user->dx;
     }
     ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
-    ierr = ViewToBinary(x,user->figsprefix,"x.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(y,user->figsprefix,"y.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_TRUE,x,user->figsprefix,"x.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_TRUE,y,user->figsprefix,"y.dat"); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
 
-    ierr = ViewToBinary(H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
 
     ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
     ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);    // dH := (-1.0) Hexact + H = H - Hexact
-    ierr = ViewToBinary(dH,user->figsprefix,"Herror.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,dH,user->figsprefix,"Herror.dat"); CHKERRQ(ierr);
     ierr = VecDestroy(&dH); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
