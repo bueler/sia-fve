@@ -184,12 +184,12 @@ int main(int argc,char **argv) {
       PetscViewer graphical;
       ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
                                  PETSC_DECIDE,PETSC_DECIDE,
-                                 info.mx,info.my,&graphical); CHKERRQ(ierr);
+                                 PetscMin(300,info.mx),PetscMin(561,info.my),&graphical); CHKERRQ(ierr);
       ierr = VecView(user.b,graphical); CHKERRQ(ierr);
       ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
       ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
                                  PETSC_DECIDE,PETSC_DECIDE,
-                                 info.mx,info.my,&graphical); CHKERRQ(ierr);
+                                 PetscMin(300,info.mx),PetscMin(561,info.my),&graphical); CHKERRQ(ierr);
       ierr = VecView(user.m,graphical); CHKERRQ(ierr);
       ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
   }
