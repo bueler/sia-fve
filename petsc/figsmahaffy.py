@@ -109,7 +109,7 @@ plt.figure()
 plt.pcolormesh(x,y,H)
 plt.axis('equal')
 plt.colorbar()
-plt.title('thickness solution H  (m)')
+plt.title('thickness solution H (m) with %.2f <= H <= %.2f' % (H.min(),H.max()))
 figsave('H.png')
 
 plt.figure()
@@ -117,25 +117,26 @@ plt.pcolormesh(x,y,b)
 plt.axis('equal')
 if (b.max() > b.min()):
     plt.colorbar()
-plt.title('bed elevation b  (m)')
+plt.title('bed elevation b (m) with %.2f <= b <= %.2f' % (b.min(),b.max()))
 figsave('b.png')
 
 if (b.max() > b.min()):
     plt.figure()
-    usurf = np.maximum(0.0, H + b)
-    plt.pcolormesh(x,y,usurf)
+    s = np.maximum(0.0, H + b)
+    plt.pcolormesh(x,y,s)
     plt.axis('equal')
     plt.colorbar()
-    plt.title('surface elevation usurf  (m)')
-    figsave('usurf.png')
+    plt.title('surface elevation s (m) with %.2f <= s <= %.2f' % (s.min(),s.max()))
+    figsave('s.png')
 else:
-    print 'not generating usurf.png because bed is flat'
+    print 'not generating s.png because bed is flat'
 
 plt.figure()
-plt.pcolormesh(x,y,m * 31556926.0)
+m = m * 31556926.0
+plt.pcolormesh(x,y,m)
 plt.axis('equal')
 plt.colorbar()
-plt.title('surface mass balance m  (m/a)')
+plt.title('surface mass balance m (m/a) with %.2f <= m <= %.2f' % (m.min(),m.max()))
 figsave('m.png')
 
 if NHerror > 0:
@@ -143,6 +144,6 @@ if NHerror > 0:
     plt.pcolormesh(x,y,Herror)
     plt.axis('equal')
     plt.colorbar()
-    plt.title('thickness error H - H_exact  (m)')
+    plt.title('thickness error Herror = H - Hexact (m) with %.2f <= Herror <= %.2f' % (Herror.min(),Herror.max()))
     figsave('Herror.png')
 
