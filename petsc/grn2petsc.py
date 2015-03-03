@@ -21,14 +21,14 @@ try:
     import PetscBinaryIO as pbio
 except:
     print "'import PetscBinaryIO' failed"
-    print "need link to petsc/bin/pythonscripts/PetscBinaryIO.py?"
+    print "need link to petsc/bin/petsc-pythonscripts/PetscBinaryIO.py?"
     sys.exit(2)
 
 try:
     import petsc_conf
 except:
     print "'import petsc_conf.py' failed"
-    print "need link to petsc/bin/pythonscripts/petsc_conf.py?"
+    print "need link to petsc/bin/petsc-pythonscripts/petsc_conf.py?"
     sys.exit(2)
 
 parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')

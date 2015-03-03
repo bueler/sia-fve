@@ -2,7 +2,7 @@
 #
 # (C) 2015 Ed Bueler
 #
-# Generate .png figures from ASCII VTK files written by mahaffy.c.
+# Generate .png figures from PETSc binary files written by mahaffy.c.
 #
 # Example of usage:
 #   $ make mahaffy
@@ -16,61 +16,52 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-parser = argparse.ArgumentParser(description='Generate .png figures from ASCII VTK files written by mahaffy.c.')
+try:
+    import PetscBinaryIO as pbio
+except:
+    print "'import PetscBinaryIO' failed"
+    print "need link to petsc/bin/petsc-pythonscripts/PetscBinaryIO.py?"
+    sys.exit(2)
+
+try:
+    import petsc_conf
+except:
+    print "'import petsc_conf.py' failed"
+    print "need link to petsc/bin/petsc-pythonscripts/petsc_conf.py?"
+    sys.exit(2)
+
+parser = argparse.ArgumentParser(description='Generate .png figures from PETSc binary files written by mahaffy.c.')
 args = parser.parse_args()
 
-def readvecvtk(vfilename):
+def readvec(vfilename):
     try:
-        vfile = open(vfilename, 'r')
+        FIXME
     except IOError:
         print 'cannot open file %s ... skipping ...' % vfilename
         return 0, -1
-    headersread = 0
-    count = 0
-    for line in vfile:
-        if line: # only act if line content remains
-            # read headers
-            if headersread == 0:
-                vheader = line
-                tmpstr = vheader.split()[0]
-                NN = (int)(vheader.split()[1])
-                print '  reading N = %d values from %s ...' % (NN,vfilename)
-                v = np.zeros(NN)
-                headersread += 1
-                continue
-            elif (headersread == 1) or (headersread == 2):
-                vheader = line
-                headersread += 1
-                continue
-            elif (headersread >= 3) and (count >= NN):
-                break # nothing more to read
-            # read content
-            vline = line.split()
-            v[count] = float(vline[0])
-            count += 1
-    vfile.close()
+
     return v, NN
 
 for vec in ['x', 'y', 'H', 'b', 'm', 'Herror']:
     fname = vec + '.txt'
     if vec == 'x':
-      x, Nx = readvecvtk(fname)
+      x, Nx = readvec(fname)
     elif vec == 'y':
-      y, Ny = readvecvtk(fname)
+      y, Ny = readvec(fname)
     elif vec == 'H':
-      H, NH = readvecvtk(fname)
+      H, NH = readvec(fname)
     elif vec == 'b':
-      b, Nb = readvecvtk(fname)
+      b, Nb = readvec(fname)
     elif vec == 'm':
-      m, Nm = readvecvtk(fname)
+      m, Nm = readvec(fname)
     elif vec == 'Herror':
-      Herror, NHerror = readvecvtk(fname)
+      Herror, NHerror = readvec(fname)
     else:
-      print 'how get here?'
+      print 'how did I get here?'
       sys.exit(95)
 
 if (NH != Nx*Ny):
-    print 'ERROR: number of values in H.txt does not match axes in x.txt, y.txt'
+    print 'ERROR: number of values in H.dat does not match axes in x.dat, y.dat'
     sys.exit(96)
 H = np.reshape(H,(Ny,Nx))
 
@@ -120,16 +111,13 @@ if (b.max() > b.min()):
 plt.title('bed elevation b (m) with %.2f <= b <= %.2f' % (b.min(),b.max()))
 figsave('b.png')
 
-if (b.max() > b.min()):
-    plt.figure()
-    s = np.maximum(0.0, H + b)
-    plt.pcolormesh(x,y,s)
-    plt.axis('equal')
-    plt.colorbar()
-    plt.title('surface elevation s (m) with %.2f <= s <= %.2f' % (s.min(),s.max()))
-    figsave('s.png')
-else:
-    print 'not generating s.png because bed is flat'
+plt.figure()
+s = np.maximum(0.0, H + b)
+plt.pcolormesh(x,y,s)
+plt.axis('equal')
+plt.colorbar()
+plt.title('surface elevation s (m) with %.2f <= s <= %.2f' % (s.min(),s.max()))
+figsave('s.png')
 
 plt.figure()
 m = m * 31556926.0
