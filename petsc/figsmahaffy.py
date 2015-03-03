@@ -33,53 +33,35 @@ except:
 parser = argparse.ArgumentParser(description='Generate .png figures from PETSc binary files written by mahaffy.c.')
 args = parser.parse_args()
 
-def readvec(vfilename):
+# read a vec from a petsc binary file
+io = pbio.PetscBinaryIO()
+def readvec(fname,shape=(0,0)):
     try:
-        FIXME
-    except IOError:
-        print 'cannot open file %s ... skipping ...' % vfilename
-        return 0, -1
-
-    return v, NN
-
-for vec in ['x', 'y', 'H', 'b', 'm', 'Herror']:
-    fname = vec + '.txt'
-    if vec == 'x':
-      x, Nx = readvec(fname)
-    elif vec == 'y':
-      y, Ny = readvec(fname)
-    elif vec == 'H':
-      H, NH = readvec(fname)
-    elif vec == 'b':
-      b, Nb = readvec(fname)
-    elif vec == 'm':
-      m, Nm = readvec(fname)
-    elif vec == 'Herror':
-      Herror, NHerror = readvec(fname)
+        fh = open(fname)
+    except:
+        print "unable to open '%s' ... ending ..." % fname
+        sys.exit(3)
+    objecttype = io.readObjectType(fh)
+    if objecttype == 'Vec':
+        v = io.readVec(fh)
+        fh.close()
+        if sum(shape) > 0:
+            v = np.reshape(v,shape)
+        print "  read vec from '%s' with shape %s" % (fname, str(np.shape(v)))
+        return v
     else:
-      print 'how did I get here?'
-      sys.exit(95)
+        print "unexpected objectype '%s' ... ending ..." % objecttype
+        sys.exit(4)
+        return
 
-if (NH != Nx*Ny):
-    print 'ERROR: number of values in H.dat does not match axes in x.dat, y.dat'
-    sys.exit(96)
-H = np.reshape(H,(Ny,Nx))
-
-if (NH != Nb):
-    print 'ERROR: different sizes of fields H and b in files'
-    sys.exit(97)
-b = np.reshape(b,(Ny,Nx))
-
-if (NH != Nm):
-    print 'ERROR: different sizes of fields H and m in files'
-    sys.exit(97)
-m = np.reshape(m,(Ny,Nx))
-
-if NHerror > 0:
-    if (NH != NHerror):
-        print 'ERROR: different sizes of fields H and Herror'
-        sys.exit(99)
-    Herror = np.reshape(Herror,(Ny,Nx))
+# write fields **in particular order**; see method DumpToFiles() in mahaffy.c for order
+print "reading vars x,y,b,m,H,Herror from *.dat ..."
+x = readvec('x.dat')
+y = readvec('y.dat')
+b = readvec('b.dat',shape=(len(y),len(x)))
+m = readvec('m.dat',shape=(len(y),len(x)))
+H = readvec('H.dat',shape=(len(y),len(x)))
+Herror = readvec('Herror.dat',shape=(len(y),len(x)))
 
 figdebug = False
 def figsave(name):
@@ -93,45 +75,46 @@ def figsave(name):
 x = x/1000.0
 y = y/1000.0
 
-fsize = (12,9)
+if len(x) == len(y):
+    fsize = (12,9)
+else:
+    fsize = (int(19.0 * float(len(x)) / float(len(y))),14)
 
-plt.figure()
-#plt.figure(figsize=fsize)
+plt.figure(figsize=fsize)
 plt.pcolormesh(x,y,H)
-plt.axis('equal')
+plt.axis('tight')
 plt.colorbar()
-plt.title('thickness solution H (m) with %.2f <= H <= %.2f' % (H.min(),H.max()))
+plt.title('thickness solution H (m) with min=%.2f, max=%.2f' % (H.min(),H.max()))
 figsave('H.png')
 
-plt.figure()
+plt.figure(figsize=fsize)
 plt.pcolormesh(x,y,b)
-plt.axis('equal')
+plt.axis('tight')
 if (b.max() > b.min()):
     plt.colorbar()
-plt.title('bed elevation b (m) with %.2f <= b <= %.2f' % (b.min(),b.max()))
+plt.title('bed elevation b (m) with min=%.2f, max=%.2f' % (b.min(),b.max()))
 figsave('b.png')
 
-plt.figure()
+plt.figure(figsize=fsize)
 s = np.maximum(0.0, H + b)
 plt.pcolormesh(x,y,s)
-plt.axis('equal')
+plt.axis('tight')
 plt.colorbar()
-plt.title('surface elevation s (m) with %.2f <= s <= %.2f' % (s.min(),s.max()))
+plt.title('surface elevation s (m) with min=%.2f, max=%.2f' % (s.min(),s.max()))
 figsave('s.png')
 
-plt.figure()
+plt.figure(figsize=fsize)
 m = m * 31556926.0
 plt.pcolormesh(x,y,m)
-plt.axis('equal')
+plt.axis('tight')
 plt.colorbar()
-plt.title('surface mass balance m (m/a) with %.2f <= m <= %.2f' % (m.min(),m.max()))
+plt.title('surface mass balance m (m/a) with min=%.2f, max=%.2f' % (m.min(),m.max()))
 figsave('m.png')
 
-if NHerror > 0:
-    plt.figure()
-    plt.pcolormesh(x,y,Herror)
-    plt.axis('equal')
-    plt.colorbar()
-    plt.title('thickness error Herror = H - Hexact (m) with %.2f <= Herror <= %.2f' % (Herror.min(),Herror.max()))
-    figsave('Herror.png')
+plt.figure(figsize=fsize)
+plt.pcolormesh(x,y,Herror)
+plt.axis('tight')
+plt.colorbar()
+plt.title('thickness error H-Hexact (m) with min=%.2f, max=%.2f' % (Herror.min(),Herror.max()))
+figsave('Herror.png')
 
