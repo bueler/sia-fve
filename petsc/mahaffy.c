@@ -700,7 +700,7 @@ PetscErrorCode ReadFromBinary(AppCtx *user) {
     Vec x, y;
     PetscReal *ax, *ay, fulllengthx, fulllengthy;
 
-    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"grn.dat",FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,user->readname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
 
     ierr = VecCreate(PETSC_COMM_WORLD,&x); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)x,"x-axis from file"); CHKERRQ(ierr);
