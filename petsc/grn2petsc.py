@@ -8,7 +8,8 @@
 import argparse
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
+from interpad import lininterp, quadinterp
 
 try:
     from netCDF4 import Dataset as NC
@@ -59,50 +60,6 @@ y = nc.variables['y1'][:]
 thk = np.squeeze(nc.variables['thk'][:])
 topg = np.squeeze(nc.variables['topg'][:])
 cmb = np.squeeze(nc.variables['cmb'][:])
-
-# linear interpolation plus padding in 1D: c = coarse and f = fine
-def lininterp(c,r):
-    f = np.zeros(r * len(c))
-    for j in range(len(c)-1):
-        for s in range(r):
-            lam = float(s)/float(r)
-            f[r*j + s] = (1.0 - lam) * c[j] + lam * c[j+1]
-    j = len(c)-1
-    for s in range(r):
-        f[r*j + s] = c[j]
-    return f
-
-# bilinear interpolation plus padding in 2D: c = coarse and f = fine
-def quadinterp(c,r):
-    f = np.zeros((r*np.shape(c)[0],r*np.shape(c)[1]))
-    for j in range(np.shape(c)[0]-1):
-        for k in range(np.shape(c)[1]-1):
-            for s in range(r):
-                ls = float(s)/float(r)
-                for t in range(r):
-                    lt = float(t)/float(r)
-                    f[r*j+s,r*k+t] =   (1.0-ls) * (1.0-lt) * c[j,k] \
-                                     + ls       * (1.0-lt) * c[j+1,k] \
-                                     + (1.0-ls) * lt       * c[j,k+1] \
-                                     + ls       * lt       * c[j+1,k+1]
-    j = np.shape(c)[0]-1
-    for k in range(np.shape(c)[1]-1):
-        for s in range(r):
-            for t in range(r):
-                lt = float(t)/float(r)
-                f[r*j+s,r*k+t] = (1.0-lt) * c[j,k] + lt * c[j,k+1]
-    k = np.shape(c)[1]-1
-    for j in range(np.shape(c)[1]-1):
-        for s in range(r):
-            ls = float(s)/float(r)
-            for t in range(r):
-                f[r*j+s,r*k+t] = (1.0-ls) * c[j,k] + ls * c[j+1,k]
-    j = np.shape(c)[0]-1
-    k = np.shape(c)[1]-1
-    for s in range(r):
-        for t in range(r):
-            f[r*j+s,r*k+t] = c[j,k]
-    return f
 
 if (refine != 1):
     print "refining grid to %.2f km ..." % (5.0/float(refine))
