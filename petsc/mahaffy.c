@@ -5,40 +5,44 @@ static const char help[] =
 "where  H(x,y)  is the ice thickness,  b(x,y)  is the bed elevation,\n"
 "and  s(x,y) = H(x,y) + b(x,y)  is surface elevation.\n"
 "Note  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
-"Domain is  -L < x < L,  -L < y < L,  with periodic boundary conditions.\n"
-"Computed in flat bed case where analytical solution is known.\n"
+"Domain is  -Lx < x < Lx,  -Ly < y < Ly,  with periodic boundary conditions.\n\n"
 "Computed by Q1 FVE method with FD evaluation of Jacobian (i.e. no analytical yet).\n"
 "Compares Mahaffy* (default) and true Mahaffy schemes.\n"
-"Uses SNESVI = -snes_type vinewtonrsls.\n\n";
+"Uses SNESVI (-snes_type vinewtonrsls) with constraint  H(x,y) >= 0.\n\n"
+"Two cases: (1) flat bed case where analytical solution is known,\n"
+"           (2) -mah_read foo.dat reads b and m from PETSc binary file.\n\n"
+"For case (1) usage read usage comment at start of mahaffy.c.\n"
+"For case (2) usage see README.md.\n\n";
 
-//   ./mahaffy -help |grep mah_
+/* Usage:
+   ./mahaffy -help |grep mah_  # get help
 
-//   ./mahaffy
+   ./mahaffy
 
-//   ./mahaffy -mah_true       // use true Mahaffy
-//   ./mahaffy -mah_Neps 4     // don't go all the way on continuation
+   ./mahaffy -mah_true         # use true Mahaffy
+   ./mahaffy -mah_Neps 4       # don't go all the way on continuation
 
-// widen screen to see SNESVI monitor output:
-//   ./mahaffy -da_refine 1 -snes_vi_monitor
+   ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
 
-// error from:
-//   ./mahaffy -da_refine 2  // divergence, but no crash
-//   ./mahaffy -da_refine 3  // crash at SNESSolve_VINEWTONRSLS() line 505
-                             //     in /home/ed/petsc-maint/src/snes/impls/vi/rs/virs.c
-//   ./mahaffy -da_refine 1 -pc_type mg  // error at line 506 of virs.c
+Divergence and error cases:
+   ./mahaffy -da_refine 2      # divergence, but no crash
+   ./mahaffy -da_refine 3      # crash at SNESSolve_VINEWTONRSLS() line 505
+                               #     in /home/ed/petsc-maint/src/snes/impls/vi/rs/virs.c
+   ./mahaffy -da_refine 1 -pc_type mg  # error at line 506 of virs.c
 
-// compare methods
-//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10
-//   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_true   // again, line 505 of virs.c
+Compare methods:
+   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10
+   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_true   # again, line 505 of virs.c
 
-// high-res success (also -da_refine 7 works):
-//   mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
+High-res success (also -da_refine 7 works):
+   mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
 
-// generate .png figs:
-//   mkdir foo/
-//   ./mahaffy -mah_dump foo/
-//   cd foo/
-//   python ../figsmahaffy.py
+Generate .png figs FIXME:
+   mkdir foo/
+   ./mahaffy -mah_dump foo/
+   cd foo/
+   python ../figsmahaffy.py
+*/
 
 #include <math.h>
 #include <petscdmda.h>
@@ -48,7 +52,7 @@ typedef struct {
   DM        da, quadda;
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
-            topgread,cmbread;  // only valid if user.read is TRUE and ReadFromBinary() has happened
+            Hexact; // the exact thickness (either in verification or data sense)
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,
@@ -74,19 +78,28 @@ typedef struct {
 } AppCtx;
 
 
+typedef struct {
+  Vec  topgread, cmbread, thkobsread;  // only valid if user.read is TRUE
+} SerialReadVecs;
+
+
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
-extern PetscErrorCode SetToExactThickness(Vec,const AppCtx*);
-extern PetscErrorCode SetToSMB(Vec,PetscBool,const AppCtx*);
-extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 // extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*); //see layer.c
-extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
-extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
-extern PetscErrorCode ViewToVTKASCII(Vec,const char[],const char[]);
-extern PetscErrorCode DumpToFiles(Vec,AppCtx*);
+
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
-extern PetscErrorCode ReadFromBinary(AppCtx*);
-extern PetscErrorCode ReshapeReadVecs(AppCtx*);
+extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
+
+extern PetscErrorCode SetToVerifExactThickness(Vec,const AppCtx*);
+extern PetscErrorCode SetToVerifSMB(Vec,PetscBool,const AppCtx*);
+
+extern PetscErrorCode ProcessOptions(AppCtx*);
+extern PetscErrorCode ShowFields(DMDALocalInfo *info, AppCtx *user);
+extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
+extern PetscErrorCode ViewToBinary(Vec,const char[],const char[]);
+extern PetscErrorCode DumpToFiles(Vec,AppCtx*);
+extern PetscErrorCode CreateReadVecs(SerialReadVecs*,AppCtx*);
+extern PetscErrorCode ReshapeAndDestroyReadVecs(SerialReadVecs*,AppCtx*);
 
 
 int main(int argc,char **argv) {
@@ -94,6 +107,7 @@ int main(int argc,char **argv) {
   SNES                snes;
   Vec                 H, Htry;
   AppCtx              user;
+  SerialReadVecs      readvecs;
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -128,10 +142,10 @@ int main(int argc,char **argv) {
 
   if (user.read == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "reading grid, bed topography, and climatic mass balance from %s ...\n",
+          "reading grid, bed topography, climatic mass balance, and observed thickness from %s ...\n",
           user.readname); CHKERRQ(ierr);
-      // sets user.Nx, user.Ny, user.Lx, user.Ly, user.dx and reads serial Vecs topgread,cmbread
-      ierr = ReadFromBinary(&user); CHKERRQ(ierr);
+      // sets user.[Nx,Ny,Lx,Ly,dx] and reads serial Vecs user.[topgread,cmbread,thkobsread]
+      ierr = CreateReadVecs(&readvecs,&user); CHKERRQ(ierr);
   }
 
   // this DMDA is used for scalar fields on nodes; cell-centered grid
@@ -169,36 +183,29 @@ int main(int argc,char **argv) {
 
   ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.b),"bed elevation b"); CHKERRQ(ierr);
-
   ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
+  ierr = VecDuplicate(H,&user.Hexact); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)H,"exact/observed thickness H"); CHKERRQ(ierr);
 
+  // fill user.[b,m,Hexact]
   if (user.read == PETSC_TRUE) {
-      ierr = ReshapeReadVecs(&user); CHKERRQ(ierr);
+      ierr = ReshapeAndDestroyReadVecs(&readvecs,&user); CHKERRQ(ierr);
   } else {
       ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
-      ierr = SetToSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+      ierr = SetToVerifSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+      ierr = SetToVerifExactThickness(user.Hexact,&user); CHKERRQ(ierr);
   }
 
   if (user.showdata == PETSC_TRUE) {
-      PetscViewer graphical;
-      ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
-                                 PETSC_DECIDE,PETSC_DECIDE,
-                                 PetscMin(300,info.mx),PetscMin(561,info.my),&graphical); CHKERRQ(ierr);
-      ierr = VecView(user.b,graphical); CHKERRQ(ierr);
-      ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-      ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
-                                 PETSC_DECIDE,PETSC_DECIDE,
-                                 PetscMin(300,info.mx),PetscMin(561,info.my),&graphical); CHKERRQ(ierr);
-      ierr = VecView(user.m,graphical); CHKERRQ(ierr);
-      ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+      ierr = ShowFields(&info,&user); CHKERRQ(ierr);
   }
 
   // initialize by chop & scale SMB
-  ierr = SetToSMB(H,PETSC_TRUE,&user); CHKERRQ(ierr);
+  ierr = VecCopy(user.m,H); CHKERRQ(ierr);
   ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
   // alternatives:
-  //ierr = SetToExactThickness(H,&user);CHKERRQ(ierr);
+  //ierr = SetToVerifExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
@@ -242,9 +249,7 @@ int main(int argc,char **argv) {
                      "%3d. converged  with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
                      m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-          if (user.read == PETSC_FALSE) {
-              ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
-          }
+          ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
       }
   }
 
@@ -252,12 +257,9 @@ int main(int argc,char **argv) {
       ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
   }
 
-  if (user.read == PETSC_TRUE) {
-      ierr = VecDestroy(&user.topgread);CHKERRQ(ierr);
-      ierr = VecDestroy(&user.cmbread);CHKERRQ(ierr);
-  }
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
@@ -289,7 +291,7 @@ PetscReal radialcoord(const DMDACoor2d c) {
 }
 
 
-PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
+PetscErrorCode SetToVerifExactThickness(Vec H, const AppCtx *user) {
   PetscErrorCode ierr;
 
   const PetscReal L  = user->exactL,
@@ -329,7 +331,7 @@ PetscErrorCode SetToExactThickness(Vec H, const AppCtx *user) {
 }
 
 
-PetscErrorCode SetToSMB(Vec m, PetscBool chopneg, const AppCtx *user) {
+PetscErrorCode SetToVerifSMB(Vec m, PetscBool chopneg, const AppCtx *user) {
   PetscErrorCode ierr;
 
   const PetscReal L  = user->exactL,
@@ -560,7 +562,7 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsString(
-      "-dump", "dump fields (H,Herror,m) into ascii files with this prefix",
+      "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
@@ -572,7 +574,7 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-showdata", "use PETSc X viewers to show bed topography and climatic mass balance data",
+      "-showdata", "use PETSc X viewers to show bed elevation, climatic mass balance, and observed thickness data",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default Mahaffy*",
@@ -582,14 +584,50 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
 }
 
 
-// try a SNES solve; H returns modified
+// start a SNESVI
+PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
+  PetscErrorCode ierr;
+  ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
+  ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
+  ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
+              (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
+  ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
+  ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
+  ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+// try a SNES solve; H is modified
 PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason *reason) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-  //ierr = VecScale(H,1.001); CHKERRQ(ierr);
   ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
   ierr = SNESGetIterationNumber(snes,its);CHKERRQ(ierr);
   ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+// use X viewers to show b,m,Hexact
+PetscErrorCode ShowFields(DMDALocalInfo *info, AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscViewer  graphical;
+  PetscInt     xdim = PetscMax(200,PetscMin(300,info->mx)),
+               ydim = PetscMax(200,PetscMin(561,info->my));
+  PetscFunctionBeginUser;
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(user->b,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(user->m,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"exact or observed thickness (m)",
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(user->Hexact,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -598,47 +636,41 @@ PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason 
 PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
   PetscErrorCode ierr;
   PetscScalar enorminf,enorm1;
-  Vec         Hexact;
-  if ((user->Ly != user->Lx) || (user->Lx != 900.0e3)) {
-      SETERRQ(PETSC_COMM_WORLD,1,"exact thickness only defined for square 900km grid ...\n");
-  }
-  ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
-  ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
-  ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // Hexact < Hexact + (-1.0) H
-  ierr = VecNorm(Hexact,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
-  ierr = VecNorm(Hexact,NORM_1,&enorm1); CHKERRQ(ierr);
+  Vec dH;
+  ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
+  ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);    // dH := (-1.0) Hexact + H = H - Hexact
+  ierr = VecNorm(dH,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
+  ierr = VecNorm(dH,NORM_1,&enorm1); CHKERRQ(ierr);
+  ierr = VecDestroy(&dH); CHKERRQ(ierr);
   enorm1 /= info->mx * info->my;
   ierr = PetscPrintf(PETSC_COMM_WORLD,
              "     errors:  max = %8.2f,  av = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
-  ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
 
-//  write a vector into a given filename
-PetscErrorCode ViewToVTKASCII(Vec u, const char prefix[], const char name[]) {
+//  write a vector into a petsc binary file with name built from prefix and name
+PetscErrorCode ViewToBinary(Vec u, const char prefix[], const char name[]) {
     PetscErrorCode ierr;
     PetscViewer    viewer;
-    int            strerr;
     char           filename[1024];
-
+    int            strerr;
     strerr = sprintf(filename,"%s%s",prefix,name);
     if (strerr < 0) {
         SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
     }
-    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer); CHKERRQ(ierr);
-    ierr = PetscViewerSetFormat(viewer,PETSC_VIEWER_ASCII_VTK); CHKERRQ(ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
     ierr = VecView(u,viewer); CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 
-//  write various vectors to various files
+//  write various vectors to petsc binary files, one file per vec
 PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
-    Vec            x, y;
+    Vec            x, y, dH;
     PetscInt       j, k;
     PetscReal      *ax, *ay;
 
@@ -655,57 +687,36 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
         ay[k] = -user->Ly + user->dx/2.0 + k * user->dx;
     }
     ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
-    ierr = ViewToVTKASCII(x,user->figsprefix,"x.txt"); CHKERRQ(ierr);
-    ierr = ViewToVTKASCII(y,user->figsprefix,"y.txt"); CHKERRQ(ierr);
+    ierr = ViewToBinary(x,user->figsprefix,"x.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(y,user->figsprefix,"y.dat"); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
 
-    ierr = ViewToVTKASCII(H,user->figsprefix,"H.txt"); CHKERRQ(ierr);
-    ierr = ViewToVTKASCII(user->b,user->figsprefix,"b.txt"); CHKERRQ(ierr);
-    ierr = ViewToVTKASCII(user->m,user->figsprefix,"m.txt"); CHKERRQ(ierr);
+    ierr = ViewToBinary(H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
 
-    if (user->read == PETSC_FALSE) {
-        Vec  Hexact;
-        ierr = VecDuplicate(H,&Hexact); CHKERRQ(ierr);
-        ierr = SetToExactThickness(Hexact,user); CHKERRQ(ierr);
-        ierr = VecAXPY(Hexact,-1.0,H); CHKERRQ(ierr);    // do:  Hexact < Hexact + (-1.0) H
-        ierr = VecScale(Hexact,-1.0); CHKERRQ(ierr);     // now: Hexact = H - Hexact
-        ierr = ViewToVTKASCII(Hexact,user->figsprefix,"Herror.txt"); CHKERRQ(ierr);
-        ierr = VecDestroy(&Hexact);CHKERRQ(ierr);
-    } else {
-        ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "NOTE: not writing Herror.txt file because grid and data were read from file\n"); CHKERRQ(ierr);
-    }
-
+    ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
+    ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);    // dH := (-1.0) Hexact + H = H - Hexact
+    ierr = ViewToBinary(dH,user->figsprefix,"Herror.dat"); CHKERRQ(ierr);
+    ierr = VecDestroy(&dH); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 
-PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
-  PetscErrorCode ierr;
-  ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
-  ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
-  ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
-              (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
-  ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
-  ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
-  ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-PetscErrorCode ReadFromBinary(AppCtx *user) {
+PetscErrorCode CreateReadVecs(SerialReadVecs *readvecs,AppCtx *user) {
     PetscErrorCode ierr;
     PetscViewer viewer;
     Vec x, y;
     PetscReal *ax, *ay, fulllengthx, fulllengthy;
+    PetscInt  NN;
 
-    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,user->readname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,user->readname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
 
-    ierr = VecCreate(PETSC_COMM_WORLD,&x); CHKERRQ(ierr);
+    ierr = VecCreate(PETSC_COMM_SELF,&x); CHKERRQ(ierr);
+    ierr = VecSetType(x, VECSEQ); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)x,"x-axis from file"); CHKERRQ(ierr);
     ierr = VecLoad(x,viewer); CHKERRQ(ierr);
-    // FIXME: check we own by: VecGetOwnershipRange(Vec x,PetscInt *low,PetscInt *high)
     ierr = VecGetSize(x,&user->Nx); CHKERRQ(ierr);
     if (user->Nx < 4) {  // 4 is somewhat arbitrary
         SETERRQ(PETSC_COMM_WORLD,1,"read Vec x has size too small\n");
@@ -717,7 +728,8 @@ PetscErrorCode ReadFromBinary(AppCtx *user) {
     ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
 
-    ierr = VecCreate(PETSC_COMM_WORLD,&y); CHKERRQ(ierr);
+    ierr = VecCreate(PETSC_COMM_SELF,&y); CHKERRQ(ierr);
+    ierr = VecSetType(y, VECSEQ); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)y,"y-axis from file"); CHKERRQ(ierr);
     ierr = VecLoad(y,viewer); CHKERRQ(ierr);
     ierr = VecGetSize(y,&user->Ny); CHKERRQ(ierr);
@@ -730,42 +742,57 @@ PetscErrorCode ReadFromBinary(AppCtx *user) {
     ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
 
-    ierr = VecCreate(PETSC_COMM_WORLD,&user->topgread); CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)user->topgread,"bed topography from file"); CHKERRQ(ierr);
-    ierr = VecLoad(user->topgread,viewer); CHKERRQ(ierr);
+    NN = user->Nx * user->Ny;
 
-    ierr = VecCreate(PETSC_COMM_WORLD,&user->cmbread); CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)user->cmbread,"climatic mass balance from file"); CHKERRQ(ierr);
-    ierr = VecLoad(user->cmbread,viewer); CHKERRQ(ierr);
+    ierr = VecCreateSeq(PETSC_COMM_SELF,NN,&readvecs->topgread); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)readvecs->topgread,"bed topography from file (serial)"); CHKERRQ(ierr);
+    ierr = VecLoad(readvecs->topgread,viewer); CHKERRQ(ierr);
+
+    ierr = VecCreateSeq(PETSC_COMM_SELF,NN,&readvecs->cmbread); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)readvecs->cmbread,"climatic mass balance from file (serial)"); CHKERRQ(ierr);
+    ierr = VecLoad(readvecs->cmbread,viewer); CHKERRQ(ierr);
+
+    ierr = VecCreateSeq(PETSC_COMM_SELF,NN,&readvecs->thkobsread); CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)readvecs->thkobsread,"observed thickness from file (serial)"); CHKERRQ(ierr);
+    ierr = VecLoad(readvecs->thkobsread,viewer); CHKERRQ(ierr);
 
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 
-PetscErrorCode ReshapeReadVecs(AppCtx *user) {
+PetscErrorCode ReshapeAndDestroyReadVecs(SerialReadVecs *readvecs, AppCtx *user) {
     PetscErrorCode ierr;
     PetscInt       j, k, s;
-    PetscReal      *atopg, *acmb, **ab, **am;
+    PetscReal      *atopg, *acmb, *athkobs, **ab, **am, **aHexact;
     DMDALocalInfo  info;
 
     PetscFunctionBeginUser;
     ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
-    ierr = VecGetArray(user->topgread, &atopg);CHKERRQ(ierr);
-    ierr = VecGetArray(user->cmbread, &acmb);CHKERRQ(ierr);
+    ierr = VecGetArray(readvecs->topgread, &atopg);CHKERRQ(ierr);
+    ierr = VecGetArray(readvecs->cmbread, &acmb);CHKERRQ(ierr);
+    ierr = VecGetArray(readvecs->thkobsread, &athkobs);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(user->da, user->b, &ab);CHKERRQ(ierr);
     ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, user->Hexact, &aHexact);CHKERRQ(ierr);
     for (k=info.ys; k<info.ys+info.ym; k++) {
         for (j=info.xs; j<info.xs+info.xm; j++) {
             s = k * info.mx + j;  //  0 <= s <= info.my*info.mx - 1
             ab[k][j] = atopg[s];
             am[k][j] = acmb[s];
+            aHexact[k][j] = athkobs[s];
         }
     }
-    ierr = VecRestoreArray(user->topgread, &atopg);CHKERRQ(ierr);
-    ierr = VecRestoreArray(user->cmbread, &acmb);CHKERRQ(ierr);
+    ierr = VecRestoreArray(readvecs->topgread, &atopg);CHKERRQ(ierr);
+    ierr = VecRestoreArray(readvecs->cmbread, &acmb);CHKERRQ(ierr);
+    ierr = VecRestoreArray(readvecs->thkobsread, &athkobs);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(user->da, user->b, &ab);CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(user->da, user->Hexact, &aHexact);CHKERRQ(ierr);
+
+    ierr = VecDestroy(&readvecs->topgread); CHKERRQ(ierr);
+    ierr = VecDestroy(&readvecs->cmbread); CHKERRQ(ierr);
+    ierr = VecDestroy(&readvecs->thkobsread); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

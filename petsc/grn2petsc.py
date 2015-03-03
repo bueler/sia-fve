@@ -34,7 +34,7 @@ except:
 parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')
 # positional
 parser.add_argument('inname', metavar='INNAME',
-                    help='name of NetCDF input file with topg variable (e.g. pism_Greenland_5km_v1.1.nc)',
+                    help='name of NetCDF input file with x1,y1,topg,cmb,thk variables (e.g. pism_Greenland_5km_v1.1.nc)',
                     default='')
 parser.add_argument('outname', metavar='OUTNAME',
                     help='name of output PETSc binary file (e.g. grn.dat)',
@@ -57,26 +57,27 @@ x = nc.variables['x1'][:]
 y = nc.variables['y1'][:]
 
 # load data
-thk = np.squeeze(nc.variables['thk'][:])
 topg = np.squeeze(nc.variables['topg'][:])
 cmb = np.squeeze(nc.variables['cmb'][:])
+thk = np.squeeze(nc.variables['thk'][:])
 
 if (refine != 1):
     print "refining grid to %.2f km ..." % (5.0/float(refine))
     x = lininterp(x,refine)
     y = lininterp(y,refine)
-    thk = quadinterp(thk,refine)
     topg = quadinterp(topg,refine)
     cmb = quadinterp(cmb,refine)
+    thk = quadinterp(thk,refine)
 
 # flatten
-thk  = thk.flatten()
 topg = topg.flatten()
 cmb  = cmb.flatten()
+thk  = thk.flatten()
 
 print "variable lengths:  x = %d,  y = %d" % (np.shape(x)[0],np.shape(y)[0])
 print "                   topg (flattened) = %d" % (np.shape(topg)[0])
 print "                   cmb (flattened) = %d" % (np.shape(cmb)[0])
+print "                   thk (flattened) = %d" % (np.shape(thk)[0])
 
 def showranges(t,c):
     print "      %10.4f <= topg <= %10.4f  (m)" % (t.min(), t.max())
@@ -98,15 +99,20 @@ for j in range(len(cmb)):
 print "after ocean fixes:"
 showranges(topg,cmb)
 
+print "observed thickness:"
+print "      %10.4f <= thk  <= %10.4f  (m)" % (thk.min(), thk.max())
+
 # convert to PETSc-type vecs
 xvec = x.view(pbio.Vec)
 yvec = y.view(pbio.Vec)
 topgvec = topg.view(pbio.Vec)
 cmbvec = cmb.view(pbio.Vec)
+thkvec = thk.view(pbio.Vec)
 
 # open petsc binary file
 io = pbio.PetscBinaryIO()
 
 # write fields **in particular order**; names do not matter
-io.writeBinaryFile(args.outname, [xvec,yvec,topgvec,cmbvec,])
+print "writing vars x,y,topg,cmb,thk into %s ..." % args.outname
+io.writeBinaryFile(args.outname, [xvec,yvec,topgvec,cmbvec,thkvec,])
 

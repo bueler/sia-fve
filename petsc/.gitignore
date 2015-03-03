@@ -6,5 +6,6 @@ petsc_conf.py
 *.png
 *.txt
 *.dat
+*.dat.info
 *.nc
 *.pyc

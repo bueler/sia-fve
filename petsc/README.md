@@ -65,7 +65,7 @@ Stage 2 of setup is to convert to PETSc binary using PETSc scripts:
 
     $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
-    $ python grn2petsc.py grn.nc grn.dat
+    $ python grn2petsc.py grn.nc grn5km.dat
 
 For maint branch of petsc, instead:
     $ ln -s ~/petsc-maint/bin/pythonscripts/PetscBinaryIO.py
@@ -76,7 +76,7 @@ Stage 3 is to run it and view results:
 
     $ make mahaffy
     $ mkdir test/
-    $ ./mahaffy -mah_read grn.dat -mah_Neps 8 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
+    $ ./mahaffy -mah_read grn5km.dat -mah_Neps 8 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
     $ cd test/
     $ ../figsmahaffy.py
     $ eog *.png
