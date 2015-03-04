@@ -1,3 +1,5 @@
+/* (C) 2015 Ed Bueler */
+
 static const char help[] =
 "Solves steady ice sheet problem in 2d:\n"
 "    div (q^x,q^y) = m,\n"
@@ -48,35 +50,8 @@ Generate .png figs FIXME:
 #include <petscdmda.h>
 #include <petscsnes.h>
 
-typedef struct {
-  DM        da, quadda;
-  Vec       b,      // the bed elevation
-            m,      // the (steady) surface mass balance
-            Hexact; // the exact thickness (either in verification or data sense)
-  PetscReal dx,     // fixed grid spacing; dx = dy
-            Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
-            Ly,
-            n,      // Glen exponent for SIA flux term
-            g,      // acceleration of gravity
-            rho,    // ice density
-            secpera,// number of seconds in a year
-            A,      // ice softness
-            Gamma,  // coefficient for SIA flux term
-            eps,    // dimensionless regularization
-            D0,     // representative value of diffusivity (in regularization)
-            exactL, // radius of exact ice sheet
-            exactH0;// center thickness of exact ice sheet
-  PetscInt  Nx,     // grid has Nx x Ny nodes
-            Ny,
-            Neps;   // number of levels in regularization/continuation
-  PetscBool mtrue,  // use true Mahaffy method instead of Mahaffy* (default)
-            read,   // read grid and data from PETSc binary file
-            showdata,// show b and m with X viewer
-            dump;   // dump fields into ASCII VTK files
-  char      figsprefix[512],
-            readname[512];
-} AppCtx;
-
+#include "mahaffyctx.h"
+#include "exactsia.h"
 
 typedef struct {
   Vec  topgread, cmbread, thkobsread;  // only valid if user.read is TRUE
@@ -89,9 +64,6 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar
 
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
-
-extern PetscErrorCode SetToVerifExactThickness(Vec,const AppCtx*);
-extern PetscErrorCode SetToVerifSMB(Vec,PetscBool,const AppCtx*);
 
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode ShowFields(DMDALocalInfo *info, AppCtx *user);
@@ -124,17 +96,17 @@ int main(int argc,char **argv) {
   user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
 
-  user.exactL = 750.0e3;    // m
-  user.exactH0= 3600.0;     // m
-
   user.eps    = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
   user.mtrue  = PETSC_FALSE;
 
+  user.dome   = PETSC_TRUE;  // defaults to this case
+  user.read   = PETSC_FALSE;
+  user.jsa    = PETSC_FALSE;
+
   user.showdata= PETSC_FALSE;
   user.dump   = PETSC_FALSE;
-  user.read   = PETSC_FALSE;
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
 
@@ -188,13 +160,22 @@ int main(int argc,char **argv) {
   ierr = VecDuplicate(H,&user.Hexact); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"exact/observed thickness H"); CHKERRQ(ierr);
 
-  // fill user.[b,m,Hexact]
+  // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
       ierr = ReshapeAndDestroyReadVecs(&readvecs,&user); CHKERRQ(ierr);
-  } else {
+  } else if (user.dome == PETSC_TRUE) {
       ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
-      ierr = SetToVerifSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
-      ierr = SetToVerifExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+      ierr = SetToDomeSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+      ierr = SetToDomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+  } else if (user.jsa == PETSC_TRUE) {
+      SETERRQ(PETSC_COMM_WORLD,2,"ERROR: JSA exact solution not implemented ...\n");
+/*FIXME
+      ierr = SetToJSABed(user.b,&user); CHKERRQ(ierr);
+      ierr = SetToJSASMB(user.m,&user); CHKERRQ(ierr);
+      ierr = SetToJSAExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+*/
+  } else {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[read,dome,jsa] must be PETSC_TRUE ...\n");
   }
 
   if (user.showdata == PETSC_TRUE) {
@@ -278,94 +259,6 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscFunctionBeginUser;
   ierr = VecSet(Xl,0.0); CHKERRQ(ierr);
   ierr = VecSet(Xu,PETSC_INFINITY); CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-PetscReal radialcoord(const DMDACoor2d c) {
-  PetscReal r;
-  r = PetscSqrtReal(c.x * c.x + c.y * c.y);
-  if (r < 0.01)
-      r = 0.01;  // avoid r=0 singularity
-  return r;
-}
-
-
-PetscErrorCode SetToVerifExactThickness(Vec H, const AppCtx *user) {
-  PetscErrorCode ierr;
-
-  const PetscReal L  = user->exactL,
-                  H0 = user->exactH0,
-                  n  = user->n,
-                  mm = 1.0 + 1.0 / n,
-                  qq = n / (2.0 * n + 2.0),
-                  CC = H0 / PetscPowReal(1.0 - 1.0 / n,qq);
-  DMDALocalInfo info;
-  DM            coordDA;
-  Vec           coordinates;
-  DMDACoor2d    **coords;
-  PetscReal     **aH, r, s, tmp;
-  PetscInt      j, k;
-
-  PetscFunctionBeginUser;
-  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
-  ierr = DMGetCoordinateDM(user->da, &coordDA); CHKERRQ(ierr);
-  ierr = DMGetCoordinates(user->da, &coordinates); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, H, &aH);CHKERRQ(ierr);
-  for (k=info.ys; k<info.ys+info.ym; k++) {
-      for (j=info.xs; j<info.xs+info.xm; j++) {
-          r = radialcoord(coords[k][j]);
-          if (r < L) {
-              s = r / L;
-              tmp = mm * s - (1.0/n) + PetscPowReal(1.0-s,mm) - PetscPowReal(s,mm);
-              aH[k][j] = CC * PetscPowReal(tmp,qq);
-          } else {
-              aH[k][j] = 0.0;
-          }
-      }
-  }
-  ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-PetscErrorCode SetToVerifSMB(Vec m, PetscBool chopneg, const AppCtx *user) {
-  PetscErrorCode ierr;
-
-  const PetscReal L  = user->exactL,
-                  H0 = user->exactH0,
-                  n  = user->n,
-                  pp = 1.0 / n,
-                  CC = user->Gamma * PetscPowReal(H0,2.0*n+2.0)
-                          / PetscPowReal(2.0 * L * (1.0-1.0/n),n);
-  DMDALocalInfo info;
-  DM            coordDA;
-  Vec           coordinates;
-  DMDACoor2d    **coords;
-  PetscReal     **am, r, s, tmp1, tmp2;
-  PetscInt      j, k;
-
-  PetscFunctionBeginUser;
-  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
-  ierr = DMGetCoordinateDM(user->da, &coordDA); CHKERRQ(ierr);
-  ierr = DMGetCoordinates(user->da, &coordinates); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, m, &am);CHKERRQ(ierr);
-  for (k=info.ys; k<info.ys+info.ym; k++) {
-      for (j=info.xs; j<info.xs+info.xm; j++) {
-          r = radialcoord(coords[k][j]);
-          if (r > L - 0.01)  r = L - 0.01;
-          s = r / L;
-          tmp1 = PetscPowReal(s,pp) + PetscPowReal(1.0-s,pp) - 1.0;
-          tmp2 = 2.0 * PetscPowReal(s,pp) + PetscPowReal(1.0-s,pp-1.0) * (1.0 - 2.0*s) - 1.0;
-          am[k][j] = (CC / r) * PetscPowReal(tmp1,n-1.0) * tmp2;
-          if (chopneg == PETSC_TRUE)  am[k][j] = PetscMax(am[k][j],0.0);
-      }
-  }
-  ierr = DMDAVecRestoreArray(user->da, m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -567,6 +460,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-jsa", "use bedrock-step exact solution by Jarosh, Schoof, Anslow (2013)",
+      NULL,user->jsa,&user->jsa,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
@@ -580,6 +476,13 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-true", "use true Mahaffy method, not default Mahaffy*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
+  // enforce consistency of cases
+  if ((user->jsa == PETSC_TRUE) && (user->read == PETSC_TRUE)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: option conflict: both user.jsa and user.read are true\n");
+  }
+  if ((user->jsa == PETSC_TRUE) || (user->read == PETSC_TRUE)) {
+      user->dome = PETSC_FALSE;
+  }
   PetscFunctionReturn(0);
 }
 

@@ -11,9 +11,9 @@ layer: layer.o  chkopts
 	-${CLINKER} -o layer layer.o  ${PETSC_SNES_LIB}
 	${RM} layer.o
 
-mahaffy: mahaffy.o  chkopts
-	-${CLINKER} -o mahaffy mahaffy.o  ${PETSC_SNES_LIB}
-	${RM} mahaffy.o
+mahaffy: mahaffy.o exactsia.o chkopts
+	-${CLINKER} -o mahaffy mahaffy.o exactsia.o  ${PETSC_SNES_LIB}
+	${RM} mahaffy.o exactsia.o
 
 doclayer.pdf: doclayer.tex
 	pdflatex doclayer.tex
