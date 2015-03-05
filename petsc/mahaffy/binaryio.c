@@ -167,3 +167,30 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
+
+PetscErrorCode ShowFields(AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscViewer    graphical;
+  PetscInt       xdim, ydim;
+  DMDALocalInfo  info;
+
+  PetscFunctionBeginUser;
+  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+  xdim = PetscMax(200,PetscMin(300,info.mx));
+  ydim = PetscMax(200,PetscMin(561,info.my));
+
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(user->b,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(user->m,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"exact or observed thickness (m)",
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(user->Hexact,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+

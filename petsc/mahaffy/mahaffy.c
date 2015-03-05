@@ -67,7 +67,6 @@ extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 
 extern PetscErrorCode ProcessOptions(AppCtx*);
-extern PetscErrorCode ShowFields(DMDALocalInfo *info, AppCtx *user);
 extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
 
 
@@ -179,14 +178,14 @@ int main(int argc,char **argv) {
   }
 
   if (user.showdata == PETSC_TRUE) {
-      ierr = ShowFields(&info,&user); CHKERRQ(ierr);
+      ierr = ShowFields(&user); CHKERRQ(ierr);
   }
 
   // initialize by chop & scale SMB
   ierr = VecCopy(user.m,H); CHKERRQ(ierr);
   ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
   // alternatives:
-  //ierr = SetToVerifExactThickness(H,&user);CHKERRQ(ierr);
+  //ierr = SetTo[VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
@@ -481,14 +480,20 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if ((user->dome == PETSC_TRUE) && (user->read == PETSC_TRUE)) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: option conflict: both user.dome and user.read are true\n");
+  if (user->read == PETSC_TRUE) {
+      if (domechosen == PETSC_TRUE) {
+        SETERRQ(PETSC_COMM_WORLD,1,"ERROR option conflict: both -mah_dome and -mah_read not allowed\n");
+      } else
+        user->dome = PETSC_FALSE;    // here user has chosen -mah_read and not -mah_dome
   }
   if (user->bedstep == PETSC_TRUE) {
       if (domechosen == PETSC_TRUE) {
-        SETERRQ(PETSC_COMM_WORLD,1,"ERROR: option conflict: both -mah_dome and -mah_bedstep are true\n");
+        SETERRQ(PETSC_COMM_WORLD,2,"ERROR option conflict: both -mah_dome and -mah_bedstep not allowed\n");
       } else
         user->dome = PETSC_FALSE;    // here user has chosen -mah_bedstep and not -mah_dome
+  }
+  if ((user->read == PETSC_TRUE) && (user->bedstep == PETSC_TRUE)) {
+      SETERRQ(PETSC_COMM_WORLD,3,"ERROR option conflict: both -mah_bedstep and -mah_read not allowed\n");
   }
   PetscFunctionReturn(0);
 }
@@ -515,29 +520,6 @@ PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason 
   ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
   ierr = SNESGetIterationNumber(snes,its);CHKERRQ(ierr);
   ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-// use X viewers to show b,m,Hexact
-PetscErrorCode ShowFields(DMDALocalInfo *info, AppCtx *user) {
-  PetscErrorCode ierr;
-  PetscViewer  graphical;
-  PetscInt     xdim = PetscMax(200,PetscMin(300,info->mx)),
-               ydim = PetscMax(200,PetscMin(561,info->my));
-  PetscFunctionBeginUser;
-  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
-                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
-  ierr = VecView(user->b,graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
-                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
-  ierr = VecView(user->m,graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"exact or observed thickness (m)",
-                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
-  ierr = VecView(user->Hexact,graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
