@@ -1,50 +1,28 @@
-layer-conserve/petsc/
+petsc/mahaffy/
 ==============
 
-layer.c
--------
+The code `mahaffy.c` tests Mahaffy and Mahaffy* finite volume element methods,
+which solve the shallow ice approximation (SIA) on a structured Q1 grid.  This
+code is documented by manuscript `../mahaffy/mahaffyfem.tex`, but also this SIA
+calculation is an instance of the general situation documented in
+`../paper/lc.tex`.
 
-The code `layer.c` describes a one-dimensional moving layer with a non-negative-
-constrained thickness, and thus a moving boundary.  PETSc SNESVI is used to
-solve the free boundary problem at each time step.  For more information build
-`doclayer.pdf` by
-
-    $ make doclayer.pdf
-
-Building `layer.c` requires PETSc 3.5.2 or maint.  Do
-
-    $ make layer
-
-To thoroughly test with exact solution,
-
-    $ ./convtest.sh
-
-
-mahaffy.c
----------
-
-Tests Mahaffy and Mahaffy* finite volume element methods, which solve the
-shallow ice approximation (SIA) on a structured Q1 grid.  Documented by manuscript
-`../mahaffy/mahaffyfem.tex`.  This SIA calculation is an instance of the
-general situation documented in `../paper/lc.tex`, and again PETSc SNESVI is used to
-solve the free boundary problem.
+In any case, `mahaffy.c` uses PETSc DMDA and SNESVI to solve the steady SIA free
+boundary problem.
 
 Build the executable, and run on minimal verification case, by
 
     $ make mahaffy
     $ ./mahaffy
 
-See comments at start of `mahaffy.c` for runs.
+See comments at start of `mahaffy.c` for verification runs.
 
-
-grn2petsc.py
-------------
-
-Read SeaRISE data from NetCDF format and convert to PETSc binary format, for
-use as input to `mahaffy.c`.  Requires the _netcdf4-python_ module; see
+In addition, `mahaffy.c` can read real data.  In particular, `grn2petsc.py`
+reads SeaRISE data from NetCDF format and converts it to PETSc binary format,
+for use as input to `mahaffy.c`.  It requires the _netcdf4-python_ module; see
 https://github.com/Unidata/netcdf4-python.
 
-Stage 1 of setup is to get the data as slightly-cleaned NetCDF.  This stage
+Stage 1 of the setup is to get the data as slightly-cleaned NetCDF.  This stage
 requires both PISM and NCO.  Note dimensions must be multiples of 3 in
 `mahaffy.c` because we want a FD-evaluated Jacobian on a periodic grids with
 a stencil width of 1.  Thus we trim the x dimension from 301 values to 300,
@@ -55,7 +33,7 @@ density 910 kg m-3.
 
     $ cd ~/pism/examples/std-greenland/
     $ ./preprocess.sh
-    $ cd ~/layer-conserve/petsc/  # back to this dir
+    $ cd ~/layer-conserve/petsc/mahaffy/    # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
     $ ncks -v x1,y1,thk,topg,climatic_mass_balance pism_Greenland_5km_v1.1.nc -d x1,0,299 grn.nc
     $ ncap2 -O -s "cmb=3.48228182586954e-11*climatic_mass_balance" grn.nc grn.nc
