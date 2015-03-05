@@ -83,11 +83,9 @@ PetscErrorCode ReadDataVecs(AppCtx *user) {
 
     // read and discard x and y
     ierr = VecCreate(PETSC_COMM_SELF,&x); CHKERRQ(ierr);
-    //ierr = VecSetType(x, VECSEQ); CHKERRQ(ierr);
     ierr = VecLoad(x,viewer); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
     ierr = VecCreate(PETSC_COMM_SELF,&y); CHKERRQ(ierr);
-    //ierr = VecSetType(y, VECSEQ); CHKERRQ(ierr);
     ierr = VecLoad(y,viewer); CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
 
