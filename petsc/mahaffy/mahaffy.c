@@ -82,8 +82,6 @@ int main(int argc,char **argv) {
   // default settings of parameters
   user.Nx     = -12;        // so DMDACreate2d() defaults to 12x12
   user.Ny     = -12;
-  user.Lx     = 900.0e3;    // m
-  user.Ly     = 900.0e3;    // m
 
   user.n      = 3.0;
   user.g      = 9.81;       // m/s^2
@@ -112,6 +110,14 @@ int main(int argc,char **argv) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
           "reading dimensions and grid spacing from %s ...\n",user.readname); CHKERRQ(ierr);
       ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
+  } else {
+      if (user.dome == PETSC_TRUE) {
+          user.Lx     = 900.0e3;    // m
+          user.Ly     = 900.0e3;    // m
+      } else {
+          user.Lx     = 30.0e3;    // m
+          user.Ly     = 30.0e3;    // m
+      }
   }
 
   // this DMDA is used for scalar fields on nodes; cell-centered grid
@@ -130,7 +136,7 @@ int main(int argc,char **argv) {
                                             -user.Ly+user.dx/2, user.Ly+user.dx/2,
                                    0.0,1.0); CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-      "solving on [-Lx,Lx]x[-Ly,Ly] with Lx=%.3f km and Ly=%.3f,  %d x %d grid,  spacing dx = %.6f km ...\n",
+      "solving on [-Lx,Lx]x[-Ly,Ly] with Lx=%.3f km and Ly=%.3f km,  %d x %d grid,  spacing dx = %.6f km ...\n",
       user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
 
   // this DMDA is used for evaluating flux components at quad points on elements
@@ -157,18 +163,18 @@ int main(int argc,char **argv) {
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "reading bed topography b, climatic mass balance m, and observed thickness Hexact from %s ...\n",
-          user.readname); CHKERRQ(ierr);
+          "reading b, m, Hexact from %s ...\n", user.readname); CHKERRQ(ierr);
       ierr = ReadDataVecs(&user); CHKERRQ(ierr);
   } else {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "generating bed topography b, climatic mass balance m, and exact thickness Hexact from formulas ...\n");
-          CHKERRQ(ierr);
       if (user.dome == PETSC_TRUE) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "generating b, m, Hexact from dome formulas in Bueler (2003) ...\n"); CHKERRQ(ierr);
           ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
-          ierr = SetToDomeCMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+          ierr = SetToDomeCMB(user.m,&user); CHKERRQ(ierr);
           ierr = SetToDomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
       } else if (user.bedstep == PETSC_TRUE) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n"); CHKERRQ(ierr);
           ierr = SetToBedStepBed(user.b,&user); CHKERRQ(ierr);
           ierr = SetToBedStepCMB(user.m,&user); CHKERRQ(ierr);
           ierr = SetToBedStepExactThickness(user.Hexact,&user); CHKERRQ(ierr);
@@ -183,6 +189,7 @@ int main(int argc,char **argv) {
 
   // initialize by chop & scale SMB
   ierr = VecCopy(user.m,H); CHKERRQ(ierr);
+  ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
   // alternatives:
   //ierr = SetTo[VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
