@@ -43,14 +43,14 @@ Stage 2 of setup is to convert to PETSc binary using PETSc scripts:
 
     $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
-    $ python grn2petsc.py grn.nc grn5km.dat
+    $ python grn2petsc.py grn.nc grn5km.dat                  # defaults to 5km
 
 For maint branch of petsc, instead:
     $ ln -s ~/petsc-maint/bin/pythonscripts/PetscBinaryIO.py
     $ ln -s ~/petsc-maint/bin/pythonscripts/petsc_conf.py
 
 
-Stage 3 is to run it and view results:
+Stage 3 is to run it and view results:  FIXME: does not make it to level 8; why?
 
     $ make mahaffy
     $ mkdir test/
@@ -59,8 +59,10 @@ Stage 3 is to run it and view results:
     $ ../figsmahaffy.py
     $ eog *.png
 
-FIXME: above run does not make it to level 8
+A higher-res (2.5 km), parallel version looks like; the `-pc_type` and
+`-sub_pc_type` choices are _not_ necessary, as the defaults also work:
 
-FIXME: seems not to run in parallel:
-    $ mpiexec -n 6 ./mahaffy -mah_read grn.dat -mah_Neps 8 -snes_max_it 200 -snes_monitor -pc_type asm -sub_pc_type lu
+    $ python grn2petsc.py --refine 2 grn.nc grn2p5km.dat
+    $ mkdir test2p5km/
+    $ mpiexec -n 6 ./mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -mah_Neps 8 -snes_monitor -pc_type asm -sub_pc_type lu
 

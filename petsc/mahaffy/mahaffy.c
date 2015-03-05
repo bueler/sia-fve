@@ -39,7 +39,7 @@ Compare methods:
 High-res success (also -da_refine 7 works):
    mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
 
-Generate .png figs FIXME:
+Generate .png figs:
    mkdir foo/
    ./mahaffy -mah_dump foo/
    cd foo/
