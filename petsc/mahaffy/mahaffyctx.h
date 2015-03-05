@@ -28,7 +28,7 @@ typedef struct {
   PetscBool mtrue,  // use true Mahaffy method instead of Mahaffy* (default)
             read,   // read grid and data from PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")
-            jsa,    // use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
+            bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
             showdata,// show b and m with X viewer
             dump;   // dump fields into ASCII VTK files
   char      figsprefix[512],

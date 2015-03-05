@@ -16,11 +16,15 @@ static const char help[] =
 "For case (1) usage read usage comment at start of mahaffy.c.\n"
 "For case (2) usage see README.md.\n\n";
 
-/* Usage:
-   ./mahaffy -help |grep mah_  # get help
+/* Usage help:
+   ./mahaffy -help |grep mah_
 
-   ./mahaffy
+Use one of these three:
+   ./mahaffy -mah_dome         # default
+   ./mahaffy -mah_bedstep
+   ./mahaffy -mah_read foo.dat # see README.md for Greenland example
 
+Solution options:
    ./mahaffy -mah_true         # use true Mahaffy
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
 
@@ -76,6 +80,7 @@ int main(int argc,char **argv) {
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
+  // default settings of parameters
   user.Nx     = -12;        // so DMDACreate2d() defaults to 12x12
   user.Ny     = -12;
   user.Lx     = 900.0e3;    // m
@@ -93,9 +98,9 @@ int main(int argc,char **argv) {
   user.Neps   = 13;
   user.mtrue  = PETSC_FALSE;
 
-  user.dome   = PETSC_TRUE;  // defaults to this case
   user.read   = PETSC_FALSE;
-  user.jsa    = PETSC_FALSE;
+  user.dome   = PETSC_TRUE;  // defaults to this case
+  user.bedstep= PETSC_FALSE;
 
   user.showdata= PETSC_FALSE;
   user.dump   = PETSC_FALSE;
@@ -106,10 +111,8 @@ int main(int argc,char **argv) {
 
   if (user.read == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "reading dimensions and grid spacing from %s ...\n",
-          user.readname); CHKERRQ(ierr);
-      // sets user.[Nx,Ny,Lx,Ly,dx]
-      ierr = ReadDimensions(&user); CHKERRQ(ierr);
+          "reading dimensions and grid spacing from %s ...\n",user.readname); CHKERRQ(ierr);
+      ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
   }
 
   // this DMDA is used for scalar fields on nodes; cell-centered grid
@@ -117,7 +120,7 @@ int main(int argc,char **argv) {
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
                       user.Nx,user.Ny,PETSC_DECIDE,PETSC_DECIDE,  // default grid if Nx<0, Ny<0
-                      1, 1,                               // dof=1,  stencilwidth=1
+                      1, 1,                                       // dof=1,  stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
   ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
@@ -164,17 +167,14 @@ int main(int argc,char **argv) {
           CHKERRQ(ierr);
       if (user.dome == PETSC_TRUE) {
           ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
-          ierr = SetToDomeSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+          ierr = SetToDomeCMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
           ierr = SetToDomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
-      } else if (user.jsa == PETSC_TRUE) {
-          SETERRQ(PETSC_COMM_WORLD,2,"ERROR: JSA exact solution not implemented ...\n");
-/*FIXME
-          ierr = SetToJSABed(user.b,&user); CHKERRQ(ierr);
-          ierr = SetToJSASMB(user.m,&user); CHKERRQ(ierr);
-          ierr = SetToJSAExactThickness(user.Hexact,&user); CHKERRQ(ierr);
-*/
+      } else if (user.bedstep == PETSC_TRUE) {
+          ierr = SetToBedStepBed(user.b,&user); CHKERRQ(ierr);
+          ierr = SetToBedStepCMB(user.m,&user); CHKERRQ(ierr);
+          ierr = SetToBedStepExactThickness(user.Hexact,&user); CHKERRQ(ierr);
       } else {
-          SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,jsa] must be TRUE since user.read is FALSE...\n");
+          SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,bedstep] must be TRUE since user.read is FALSE...\n");
       }
   }
 
@@ -194,8 +194,8 @@ int main(int argc,char **argv) {
   KSP        ksp;
   PetscInt   its, kspits, m;
   PetscReal  eps_sched[13] = {1.0,    0.5,    0.2,     0.1,     0.05,
-                                       0.02,   0.01,   0.005,   0.002,   0.001,
-                                       0.0005, 0.0002, 0.0000};
+                              0.02,   0.01,   0.005,   0.002,   0.001,
+                              0.0005, 0.0002, 0.0000};
   SNESConvergedReason reason;
   for (m = 0; m<user.Neps; m++) {
       user.eps = eps_sched[m];
@@ -452,17 +452,21 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
 
 PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
+  PetscBool      domechosen;
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-bedstep", "use bedrock step exact solution by Jarosh, Schoof, Anslow (2013)",
+      NULL,user->bedstep,&user->bedstep,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-dome", "use dome exact solution by Bueler (2003) [default]",
+      NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-jsa", "use bedrock-step exact solution by Jarosh, Schoof, Anslow (2013)",
-      NULL,user->jsa,&user->jsa,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
@@ -477,11 +481,14 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if ((user->jsa == PETSC_TRUE) && (user->read == PETSC_TRUE)) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: option conflict: both user.jsa and user.read are true\n");
+  if ((user->dome == PETSC_TRUE) && (user->read == PETSC_TRUE)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: option conflict: both user.dome and user.read are true\n");
   }
-  if ((user->jsa == PETSC_TRUE) || (user->read == PETSC_TRUE)) {
-      user->dome = PETSC_FALSE;
+  if (user->bedstep == PETSC_TRUE) {
+      if (domechosen == PETSC_TRUE) {
+        SETERRQ(PETSC_COMM_WORLD,1,"ERROR: option conflict: both -mah_dome and -mah_bedstep are true\n");
+      } else
+        user->dome = PETSC_FALSE;    // here user has chosen -mah_bedstep and not -mah_dome
   }
   PetscFunctionReturn(0);
 }

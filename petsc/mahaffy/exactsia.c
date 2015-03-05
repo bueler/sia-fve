@@ -18,7 +18,7 @@ PetscReal radialcoord(const DMDACoor2d c) {
 #define domeL  750.0e3 // radius of exact ice sheet
 #define domeH0 3600.0  // center thickness of exact ice sheet
 
-PetscErrorCode SetToDomeSMB(Vec m, PetscBool chopneg, const AppCtx *user) {
+PetscErrorCode SetToDomeCMB(Vec m, PetscBool chopneg, const AppCtx *user) {
   PetscErrorCode ierr;
 
   const PetscReal L  = domeL,
@@ -93,6 +93,24 @@ PetscErrorCode SetToDomeExactThickness(Vec H, const AppCtx *user) {
   }
   ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode SetToBedStepBed(Vec b, const AppCtx *user) {
+  SETERRQ(PETSC_COMM_WORLD,1,"ERROR: bedrock step exact solution not implemented ...\n");
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode SetToBedStepCMB(Vec m, const AppCtx *user) {
+  SETERRQ(PETSC_COMM_WORLD,1,"ERROR: bedrock step exact solution not implemented ...\n");
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode SetToBedStepExactThickness(Vec Hexact, const AppCtx *user) {
+  SETERRQ(PETSC_COMM_WORLD,1,"ERROR: bedrock step exact solution not implemented ...\n");
   PetscFunctionReturn(0);
 }
 

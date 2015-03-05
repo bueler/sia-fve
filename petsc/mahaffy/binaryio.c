@@ -128,6 +128,9 @@ PetscErrorCode ViewToBinary(PetscBool fromrankzero, Vec v, const char prefix[], 
 
 
 //  write various vectors to petsc binary files, one file per vec
+//  FIXME: this could be re-designed to write a combined file like the one
+//         we read, but with H and Herror appended, but this would require
+//         mods to figsmahaffy.py
 PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
