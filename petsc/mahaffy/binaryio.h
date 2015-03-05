@@ -1,18 +1,16 @@
 /* (C) 2015 Ed Bueler */
 
-#ifndef MAHIO_H_
-#define MAHIO_H_
+#ifndef BINARYIO_H_
+#define BINARYIO_H_
 
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for AppCtx
 
-typedef struct {
-  Vec  topgread, cmbread, thkobsread;  // only valid if user.read is TRUE
-} SerialReadVecs;
+PetscErrorCode ReadDimensions(AppCtx*);
+PetscErrorCode ReadAndReshape2DVec(Vec,PetscViewer,AppCtx*);
+PetscErrorCode ReadDataVecs(AppCtx*);
 
 PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
 PetscErrorCode DumpToFiles(Vec,AppCtx*);
-PetscErrorCode CreateReadVecs(SerialReadVecs*,AppCtx*);
-PetscErrorCode ReshapeAndDestroyReadVecs(SerialReadVecs*,AppCtx*);
 
-#endif // MAHIO_H_
+#endif // BINARYIO_H_

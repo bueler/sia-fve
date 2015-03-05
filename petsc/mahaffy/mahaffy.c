@@ -72,7 +72,6 @@ int main(int argc,char **argv) {
   SNES                snes;
   Vec                 H, Htry;
   AppCtx              user;
-  SerialReadVecs      readvecs;
   DMDALocalInfo       info;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -107,10 +106,10 @@ int main(int argc,char **argv) {
 
   if (user.read == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "reading grid, bed topography, climatic mass balance, and observed thickness from %s ...\n",
+          "reading dimensions and grid spacing from %s ...\n",
           user.readname); CHKERRQ(ierr);
-      // sets user.[Nx,Ny,Lx,Ly,dx] and reads serial Vecs user.[topgread,cmbread,thkobsread]
-      ierr = CreateReadVecs(&readvecs,&user); CHKERRQ(ierr);
+      // sets user.[Nx,Ny,Lx,Ly,dx]
+      ierr = ReadDimensions(&user); CHKERRQ(ierr);
   }
 
   // this DMDA is used for scalar fields on nodes; cell-centered grid
@@ -155,20 +154,28 @@ int main(int argc,char **argv) {
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
-      ierr = ReshapeAndDestroyReadVecs(&readvecs,&user); CHKERRQ(ierr);
-  } else if (user.dome == PETSC_TRUE) {
-      ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
-      ierr = SetToDomeSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
-      ierr = SetToDomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
-  } else if (user.jsa == PETSC_TRUE) {
-      SETERRQ(PETSC_COMM_WORLD,2,"ERROR: JSA exact solution not implemented ...\n");
-/*FIXME
-      ierr = SetToJSABed(user.b,&user); CHKERRQ(ierr);
-      ierr = SetToJSASMB(user.m,&user); CHKERRQ(ierr);
-      ierr = SetToJSAExactThickness(user.Hexact,&user); CHKERRQ(ierr);
-*/
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+          "reading bed topography b, climatic mass balance m, and observed thickness Hexact from %s ...\n",
+          user.readname); CHKERRQ(ierr);
+      ierr = ReadDataVecs(&user); CHKERRQ(ierr);
   } else {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[read,dome,jsa] must be PETSC_TRUE ...\n");
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+          "generating bed topography b, climatic mass balance m, and exact thickness Hexact from formulas ...\n");
+          CHKERRQ(ierr);
+      if (user.dome == PETSC_TRUE) {
+          ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
+          ierr = SetToDomeSMB(user.m,PETSC_FALSE,&user); CHKERRQ(ierr);
+          ierr = SetToDomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+      } else if (user.jsa == PETSC_TRUE) {
+          SETERRQ(PETSC_COMM_WORLD,2,"ERROR: JSA exact solution not implemented ...\n");
+/*FIXME
+          ierr = SetToJSABed(user.b,&user); CHKERRQ(ierr);
+          ierr = SetToJSASMB(user.m,&user); CHKERRQ(ierr);
+          ierr = SetToJSAExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+*/
+      } else {
+          SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,jsa] must be TRUE since user.read is FALSE...\n");
+      }
   }
 
   if (user.showdata == PETSC_TRUE) {
