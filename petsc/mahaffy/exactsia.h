@@ -1,12 +1,10 @@
 /* (C) 2015 Ed Bueler */
 
-#ifndef EXACTSIACTX_H_   /* Include guard */
+#ifndef EXACTSIACTX_H_
 #define EXACTSIACTX_H_
 
-#include <petscdmda.h>
 #include <petscvec.h>
-
-#include "mahaffyctx.h"
+#include "mahaffyctx.h"  // for AppCtx
 
 PetscErrorCode SetToDomeSMB(Vec,PetscBool,const AppCtx*);
 PetscErrorCode SetToDomeExactThickness(Vec,const AppCtx*);
