@@ -6,7 +6,7 @@
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for AppCtx
 
-PetscErrorCode SetToDomeCMB(Vec,PetscBool,const AppCtx*);
+PetscErrorCode SetToDomeCMB(Vec,const AppCtx*);
 PetscErrorCode SetToDomeExactThickness(Vec,const AppCtx*);
 
 PetscErrorCode SetToBedStepBed(Vec,const AppCtx*);
