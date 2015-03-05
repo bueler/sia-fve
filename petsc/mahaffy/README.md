@@ -35,20 +35,16 @@ density 910 kg m-3.
     $ ./preprocess.sh
     $ cd ~/layer-conserve/petsc/mahaffy/    # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
-    $ ncks -v x1,y1,thk,topg,climatic_mass_balance pism_Greenland_5km_v1.1.nc -d x1,0,299 grn.nc
-    $ ncap2 -O -s "cmb=3.48228182586954e-11*climatic_mass_balance" grn.nc grn.nc
-    $ ncatted -O -a units,cmb,o,c,"m s-1" grn.nc
+    $ ./cleangrn.sh    # uses NCO to clean up pism_Greenland_5km_v1.1.nc; creates grn.nc
 
 Stage 2 of setup is to convert to PETSc binary using PETSc scripts:
 
     $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
-    $ python grn2petsc.py grn.nc grn5km.dat                  # defaults to 5km
+    $ python grn2petsc.py grn.nc grn5km.dat    # defaults to 5km
 
-For maint branch of petsc, instead:
-    $ ln -s ~/petsc-maint/bin/pythonscripts/PetscBinaryIO.py
-    $ ln -s ~/petsc-maint/bin/pythonscripts/petsc_conf.py
-
+(For maint branch of petsc replace `bin/petsc-pythonscripts/` by just
+`bin/petsc-pythonscripts/`).
 
 Stage 3 is to run it and view results:  FIXME: does not make it to level 8; why?
 
@@ -59,7 +55,7 @@ Stage 3 is to run it and view results:  FIXME: does not make it to level 8; why?
     $ ../figsmahaffy.py
     $ eog *.png
 
-A higher-res (2.5 km), parallel version looks like; the `-pc_type` and
+A higher-res (2.5 km), parallel version looks like this; the `-pc_type` and
 `-sub_pc_type` choices are _not_ necessary, as the defaults also work:
 
     $ python grn2petsc.py --refine 2 grn.nc grn2p5km.dat
