@@ -67,7 +67,7 @@ extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 
 extern PetscErrorCode ProcessOptions(AppCtx*);
-extern PetscErrorCode ErrorReport(Vec,DMDALocalInfo*,AppCtx*);
+extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 
 
 int main(int argc,char **argv) {
@@ -206,14 +206,15 @@ int main(int argc,char **argv) {
   SNESConvergedReason reason;
   for (m = 0; m<user.Neps; m++) {
       user.eps = eps_sched[m];
+      user.maxD = 0.0;
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
       if (reason < 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. DIVERGED   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
-                     m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                     "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                     m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
           if (user.eps > 0.0) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                          "         ... try again w eps *= 1.5\n");CHKERRQ(ierr);
@@ -226,18 +227,18 @@ int main(int argc,char **argv) {
               ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
               if (reason < 0) {
                   ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "     DIVERGED AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
-                         user.eps,kspits,its,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                         "     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                         SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
                   break;
               }
           }
       }
       if (reason >= 0) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. converged  with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters (%s)\n",
-                     m+1,kspits,its,user.eps,SNESConvergedReasons[reason]);CHKERRQ(ierr);
+                     "%3d. %s  with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                     m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-          ierr = ErrorReport(H,&info,&user); CHKERRQ(ierr);
+          ierr = StateReport(H,&info,&user); CHKERRQ(ierr);
       }
   }
 
@@ -329,7 +330,7 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
                         PetscReal locx, PetscReal locy, // = (x,y) coords in element
                         Grad gs,                        // compute with gradsatpt() first
                         PetscReal **H,                  // H[k][j] are node values
-                        const AppCtx *user, Flux *q) {
+                        AppCtx *user, Flux *q) {
   const PetscReal eps = user->eps,  dx = user->dx,  dy = dx,
                   x[4]  = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
                   y[4]  = {1.0 - locy / dy, 1.0 - locy / dy, locy / dy,       locy / dy};
@@ -339,6 +340,7 @@ PetscErrorCode fluxatpt(PetscInt j, PetscInt k,         // (j,k) is the element 
   }
   HH = x[0] * y[0] * H[k][j] + x[1] * y[1] * H[k][j+1] + x[2] * y[2] * H[k+1][j] + x[3] * y[3] * H[k+1][j+1];
   DD = (1.0 - eps) * getD(HH,gs.x,gs.y,user) + eps * user->D0;
+  user->maxD = PetscMax(user->maxD, DD);
   q->x = - DD * gs.x;
   q->y = - DD * gs.y;
   PetscFunctionReturn(0);
@@ -535,19 +537,34 @@ PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason 
 }
 
 
-// prints the |.|_inf = (max error) and |.|_1/(dim) = (av error) norms
-PetscErrorCode ErrorReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
-  PetscErrorCode ierr;
-  PetscScalar enorminf,enorm1;
-  Vec dH;
+// prints the current volume and current max diffusivity
+// also prints thickness error norms:
+//    |.|_inf = (max error)  and  |.|_1/(dim) = (av error)
+// and volume difference
+PetscErrorCode StateReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
+  PetscErrorCode  ierr;
+  const PetscReal darea = user->dx * user->dx,
+                  NN = info->mx * info->my;
+  PetscReal       sumH, maxD, enorminf, enorm1, sumHexact, voldiffrel;
+  Vec             dH;
+
+  ierr = VecSum(H,&sumH); CHKERRQ(ierr);
+  ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
+             sumH * darea / 1.0e9, maxD); CHKERRQ(ierr);
+
   ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
   ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);    // dH := (-1.0) Hexact + H = H - Hexact
   ierr = VecNorm(dH,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
   ierr = VecNorm(dH,NORM_1,&enorm1); CHKERRQ(ierr);
   ierr = VecDestroy(&dH); CHKERRQ(ierr);
-  enorm1 /= info->mx * info->my;
+  ierr = VecSum(user->Hexact,&sumHexact); CHKERRQ(ierr);
+  voldiffrel = PetscAbsReal(sumH - sumHexact) / sumHexact;
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "     errors:  max = %8.2f,  av = %8.2f\n",enorminf,enorm1); CHKERRQ(ierr);
+             "       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
+             enorminf, enorm1 / NN, 100.0 * voldiffrel); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }
 
