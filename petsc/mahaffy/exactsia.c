@@ -43,7 +43,7 @@ PetscReal radialcoord(const DMDACoor2d c) {
   return r;
 }
 
-PetscErrorCode SetToDomeCMB(Vec m, const AppCtx *user) {
+PetscErrorCode DomeCMB(Vec m, const AppCtx *user) {
   PetscErrorCode ierr;
   const PetscReal L  = domeL,
                   H0 = domeH0,
@@ -76,7 +76,7 @@ PetscErrorCode SetToDomeCMB(Vec m, const AppCtx *user) {
 }
 
 
-PetscErrorCode SetToDomeExactThickness(Vec H, const AppCtx *user) {
+PetscErrorCode DomeExactThickness(Vec H, const AppCtx *user) {
   PetscErrorCode ierr;
   const PetscReal L  = domeL,
                   H0 = domeH0,
@@ -118,7 +118,7 @@ PetscErrorCode SetToDomeExactThickness(Vec H, const AppCtx *user) {
 #define bedstepm0 2.0/secpera
 
 // formula (45) in Jarosch et al (2013)
-PetscErrorCode SetToBedStepBed(Vec b, const AppCtx *user) {
+PetscErrorCode BedStepBed(Vec b, const AppCtx *user) {
   PetscErrorCode ierr;
   DMDALocalInfo info;
   DMDACoor2d    **coords;
@@ -131,7 +131,10 @@ PetscErrorCode SetToBedStepBed(Vec b, const AppCtx *user) {
   ierr = DMDAVecGetArray(user->da, b, &ab);CHKERRQ(ierr);
   for (k=info.ys; k<info.ys+info.ym; k++) {
       for (j=info.xs; j<info.xs+info.xm; j++) {
-          absx = PetscAbsReal(coords[k][j].x);
+          if (user->swapxy == PETSC_TRUE)
+              absx = PetscAbsReal(coords[k][j].y);
+          else
+              absx = PetscAbsReal(coords[k][j].x);
           if (absx < bedstepxs)
               ab[k][j] = bedstepb0;
           else
@@ -145,7 +148,7 @@ PetscErrorCode SetToBedStepBed(Vec b, const AppCtx *user) {
 
 
 // formula (54) in Jarosch et al (2013)
-PetscErrorCode SetToBedStepCMB(Vec m, const AppCtx *user) {
+PetscErrorCode BedStepCMB(Vec m, const AppCtx *user) {
   PetscErrorCode ierr;
   const PetscReal n  = user->n,
                   xm = bedstepxm,
@@ -161,7 +164,10 @@ PetscErrorCode SetToBedStepCMB(Vec m, const AppCtx *user) {
   ierr = DMDAVecGetArray(user->da, m, &am);CHKERRQ(ierr);
   for (k=info.ys; k<info.ys+info.ym; k++) {
       for (j=info.xs; j<info.xs+info.xm; j++) {
-          absx = PetscAbsReal(coords[k][j].x);
+          if (user->swapxy == PETSC_TRUE)
+              absx = PetscAbsReal(coords[k][j].y);
+          else
+              absx = PetscAbsReal(coords[k][j].x);
           am[k][j] = C * PetscPowReal(absx * PetscAbsReal(xm - absx),n-1) * (xm - 2.0 * absx);
           am[k][j] = PetscMax(am[k][j], - bedstepm0);  // limit below at -2 m/a
       }
@@ -175,7 +181,7 @@ PetscErrorCode SetToBedStepCMB(Vec m, const AppCtx *user) {
 // formulas (56)--(59) in Jarosch et al (2013)
 // Note  "h_{s+}(x)" in (58) is really  h_{s+} = lim_{x \to x_s^+} h(x), so it does
 //   not depend on x.  Similar comments apply to (59).
-PetscErrorCode SetToBedStepExactThickness(Vec Hexact, const AppCtx *user) {
+PetscErrorCode BedStepExactThickness(Vec Hexact, const AppCtx *user) {
   PetscErrorCode ierr;
   const PetscReal xm = bedstepxm,
                   xs = bedstepxs,
@@ -204,7 +210,10 @@ PetscErrorCode SetToBedStepExactThickness(Vec Hexact, const AppCtx *user) {
   ierr = DMDAVecGetArray(user->da, Hexact, &aHex);CHKERRQ(ierr);
   for (k=info.ys; k<info.ys+info.ym; k++) {
       for (j=info.xs; j<info.xs+info.xm; j++) {
-          absx = PetscAbsReal(coords[k][j].x);
+          if (user->swapxy == PETSC_TRUE)
+              absx = PetscAbsReal(coords[k][j].y);
+          else
+              absx = PetscAbsReal(coords[k][j].x);
           if (absx >= xm)
               aHex[k][j] = 0.0;
           else {

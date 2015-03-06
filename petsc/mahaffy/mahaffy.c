@@ -98,6 +98,7 @@ int main(int argc,char **argv) {
   user.read   = PETSC_FALSE;
   user.dome   = PETSC_TRUE;  // defaults to this case
   user.bedstep= PETSC_FALSE;
+  user.swapxy = PETSC_FALSE;
 
   user.showdata= PETSC_FALSE;
   user.dump   = PETSC_FALSE;
@@ -170,14 +171,14 @@ int main(int argc,char **argv) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
              "generating b, m, Hexact from dome formulas in Bueler (2003) ...\n"); CHKERRQ(ierr);
           ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
-          ierr = SetToDomeCMB(user.m,&user); CHKERRQ(ierr);
-          ierr = SetToDomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+          ierr = DomeCMB(user.m,&user); CHKERRQ(ierr);
+          ierr = DomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
       } else if (user.bedstep == PETSC_TRUE) {
           ierr = PetscPrintf(PETSC_COMM_WORLD,
              "generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n"); CHKERRQ(ierr);
-          ierr = SetToBedStepBed(user.b,&user); CHKERRQ(ierr);
-          ierr = SetToBedStepCMB(user.m,&user); CHKERRQ(ierr);
-          ierr = SetToBedStepExactThickness(user.Hexact,&user); CHKERRQ(ierr);
+          ierr = BedStepBed(user.b,&user); CHKERRQ(ierr);
+          ierr = BedStepCMB(user.m,&user); CHKERRQ(ierr);
+          ierr = BedStepExactThickness(user.Hexact,&user); CHKERRQ(ierr);
       } else {
           SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,bedstep] must be TRUE since user.read is FALSE...\n");
       }
@@ -192,7 +193,7 @@ int main(int argc,char **argv) {
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
   // alternatives:
-  //ierr = SetTo[VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
+  //ierr = [VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
@@ -482,6 +483,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-showdata", "use PETSc X viewers to show bed elevation, climatic mass balance, and observed thickness data",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
+      NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default Mahaffy*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);

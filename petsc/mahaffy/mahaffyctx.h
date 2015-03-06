@@ -29,6 +29,7 @@ typedef struct {
             read,   // read grid and data from PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
+            swapxy, // swap x and y axes in building exact solution
             showdata,// show b and m with X viewer
             dump;   // dump fields into ASCII VTK files
   char      figsprefix[512],

@@ -6,11 +6,11 @@
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for AppCtx
 
-PetscErrorCode SetToDomeCMB(Vec,const AppCtx*);
-PetscErrorCode SetToDomeExactThickness(Vec,const AppCtx*);
+PetscErrorCode DomeCMB(Vec,const AppCtx*);
+PetscErrorCode DomeExactThickness(Vec,const AppCtx*);
 
-PetscErrorCode SetToBedStepBed(Vec,const AppCtx*);
-PetscErrorCode SetToBedStepCMB(Vec,const AppCtx*);
-PetscErrorCode SetToBedStepExactThickness(Vec,const AppCtx*);
+PetscErrorCode BedStepBed(Vec,const AppCtx*);
+PetscErrorCode BedStepCMB(Vec,const AppCtx*);
+PetscErrorCode BedStepExactThickness(Vec,const AppCtx*);
 
 #endif // EXACTSIACTX_H_
