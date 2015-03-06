@@ -132,7 +132,7 @@ PetscErrorCode ViewToBinary(PetscBool fromrankzero, Vec v, const char prefix[], 
 PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
-    Vec            x, y, dH;
+    Vec            x, y;
     PetscInt       j, k;
     PetscReal      *ax, *ay;
 
@@ -156,12 +156,10 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
 
     ierr = ViewToBinary(PETSC_FALSE,user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,user->Hexact,user->figsprefix,"Hexact.dat"); CHKERRQ(ierr);
+
     ierr = ViewToBinary(PETSC_FALSE,H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
 
-    ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
-    ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);    // dH := (-1.0) Hexact + H = H - Hexact
-    ierr = ViewToBinary(PETSC_FALSE,dH,user->figsprefix,"Herror.dat"); CHKERRQ(ierr);
-    ierr = VecDestroy(&dH); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

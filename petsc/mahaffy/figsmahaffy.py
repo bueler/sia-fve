@@ -54,14 +54,13 @@ def readvec(fname,shape=(0,0)):
         sys.exit(4)
         return
 
-# write fields **in particular order**; see method DumpToFiles() in mahaffy.c for order
-print "reading vars x,y,b,m,H,Herror from *.dat ..."
+print "reading vars x,y,b,m,Hexact,H from *.dat ..."
 x = readvec('x.dat')
 y = readvec('y.dat')
 b = readvec('b.dat',shape=(len(y),len(x)))
 m = readvec('m.dat',shape=(len(y),len(x)))
+Hexact = readvec('Hexact.dat',shape=(len(y),len(x)))
 H = readvec('H.dat',shape=(len(y),len(x)))
-Herror = readvec('Herror.dat',shape=(len(y),len(x)))
 
 figdebug = False
 def figsave(name):
@@ -87,6 +86,21 @@ plt.colorbar()
 plt.title('thickness solution H (m) with min=%.2f, max=%.2f' % (H.min(),H.max()))
 figsave('H.png')
 
+def gets(H,b):
+    Hdraft = -(910.0/1028.0) * H
+    icebase = np.maximum(b,Hdraft)
+    s = H + icebase
+    return s
+
+plt.figure(figsize=(12,6))
+plt.title('center cross-sections of s: solution (red) and exact (blue)')
+n = len(y) / 2
+plt.plot(x,gets(H[n][:],b[n][:]),'r',x,gets(Hexact[n][:],b[n][:]),'b')
+plt.xlabel('x (m)')
+plt.ylabel('thickness (m)')
+plt.grid(True)
+figsave('HHexact1d.png')
+
 plt.figure(figsize=fsize)
 plt.pcolormesh(x,y,b)
 plt.axis('tight')
@@ -96,7 +110,7 @@ plt.title('bed elevation b (m) with min=%.2f, max=%.2f' % (b.min(),b.max()))
 figsave('b.png')
 
 plt.figure(figsize=fsize)
-s = np.maximum(0.0, H + b)
+s = gets(H,b)
 plt.pcolormesh(x,y,s)
 plt.axis('tight')
 plt.colorbar()
@@ -112,6 +126,7 @@ plt.title('surface mass balance m (m/a) with min=%.2f, max=%.2f' % (m.min(),m.ma
 figsave('m.png')
 
 plt.figure(figsize=fsize)
+Herror = H - Hexact
 plt.pcolormesh(x,y,Herror)
 plt.axis('tight')
 plt.colorbar()
