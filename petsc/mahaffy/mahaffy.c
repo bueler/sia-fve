@@ -27,6 +27,7 @@ Use one of these three:
 Solution options:
    ./mahaffy -mah_true         # use true Mahaffy
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
+   ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
 
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
 
@@ -99,6 +100,7 @@ int main(int argc,char **argv) {
   user.dome   = PETSC_TRUE;  // defaults to this case
   user.bedstep= PETSC_FALSE;
   user.swapxy = PETSC_FALSE;
+  user.divergetryagain = PETSC_FALSE;
 
   user.showdata= PETSC_FALSE;
   user.dump   = PETSC_FALSE;
@@ -210,11 +212,11 @@ int main(int argc,char **argv) {
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+                 "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                 m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
       if (reason < 0) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                     m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
-          if (user.eps > 0.0) {
+          if ((user.divergetryagain == PETSC_TRUE) && (user.eps > 0.0)) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                          "         ... try again w eps *= 1.5\n");CHKERRQ(ierr);
               //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
@@ -224,21 +226,16 @@ int main(int argc,char **argv) {
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
               ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
-              if (reason < 0) {
-                  ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                         SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
+              ierr = PetscPrintf(PETSC_COMM_WORLD,
+                     "     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                     SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
+              if (reason < 0)
                   break;
-              }
-          }
+          } else
+              break;
       }
-      if (reason >= 0) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "%3d. %s  with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                     m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
-          ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-          ierr = StateReport(H,&info,&user); CHKERRQ(ierr);
-      }
+      ierr = VecCopy(Htry,H); CHKERRQ(ierr);
+      ierr = StateReport(H,&info,&user); CHKERRQ(ierr);
   }
 
   if (user.dump == PETSC_TRUE) {
@@ -496,6 +493,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-dome", "use dome exact solution by Bueler (2003) [default]",
       NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-divergetryagain", "on SNES diverge, try again with eps *= 1.5",
+      NULL,user->divergetryagain,&user->divergetryagain,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
@@ -509,7 +509,7 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-showdata", "use PETSc X viewers to show bed elevation, climatic mass balance, and observed thickness data",
+      "-showdata", "use PETSc X viewers to show b, m, and exact/observed H",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",

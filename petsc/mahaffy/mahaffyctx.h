@@ -32,6 +32,7 @@ typedef struct {
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
             swapxy, // swap x and y axes in building exact solution
             showdata,// show b and m with X viewer
+            divergetryagain,// on SNES diverge, try again with eps *= 1.5
             dump;   // dump fields into ASCII VTK files
   char      figsprefix[512],
             readname[512];
