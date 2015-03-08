@@ -206,7 +206,6 @@ int main(int argc,char **argv) {
   SNESConvergedReason reason;
   for (m = 0; m<user.Neps; m++) {
       user.eps = eps_sched[m];
-      user.maxD = 0.0;
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
@@ -391,6 +390,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   Vec             bloc, qloc;
 
   PetscFunctionBeginUser;
+  user->maxD = 0.0;
+
   ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);

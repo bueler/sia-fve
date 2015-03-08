@@ -21,7 +21,7 @@ typedef struct {
             A,      // ice softness
             Gamma,  // coefficient for SIA flux term
             eps,    // dimensionless regularization
-            maxD,   // local value used for reporting maximum of diffusivity
+            maxD,   // local value maximum of diffusivity; used for reporting
             D0;     // representative value of diffusivity (in regularization)
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
