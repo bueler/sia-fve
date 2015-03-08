@@ -287,15 +287,16 @@ typedef struct {
 /* the second formula for SIA: evaluate the flux from gradient and thickness;
 also applies diffusivity-regularization part of continuation scheme;
 also updates maximum of diffusivity */
-PetscErrorCode getflux(const Grad gs,       // compute with gradsatpt() first
-                       const PetscReal H,   // compute with thicknessatpt() first
-                       AppCtx *user, Flux *q) {
+Flux getflux(const Grad gs,       // compute with gradsatpt() first
+             const PetscReal H,   // compute with thicknessatpt() first
+             AppCtx *user) {
   const PetscReal eps = user->eps,
                   DD  = (1.0 - eps) * getD(gs,H,user) + eps * user->D0;
+  Flux q;
   user->maxD = PetscMax(user->maxD, DD);
-  q->x = - DD * gs.x;
-  q->y = - DD * gs.y;
-  PetscFunctionReturn(0);
+  q.x = - DD * gs.x;
+  q.y = - DD * gs.y;
+  return q;
 }
 
 
@@ -403,19 +404,15 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               // above-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,ab,user,&gsn); CHKERRQ(ierr);
               ierr = thicknessatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,   user,&Hn); CHKERRQ(ierr);
-              ierr = getflux(gsn,Hn,user,&qn); CHKERRQ(ierr);
               // below-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0,     dy/4.0,H,ab,user,&gss); CHKERRQ(ierr);
               ierr = thicknessatpt(j,k,     dx/2.0,     dy/4.0,H,   user,&Hs); CHKERRQ(ierr);
-              ierr = getflux(gss,Hs,user,&qs); CHKERRQ(ierr);
               // right-of-center point in element
               ierr =     gradsatpt(j,k, 3.0*dx/4.0,     dy/2.0,H,ab,user,&gse); CHKERRQ(ierr);
               ierr = thicknessatpt(j,k, 3.0*dx/4.0,     dy/2.0,H,   user,&He); CHKERRQ(ierr);
-              ierr = getflux(gse,He,user,&qe); CHKERRQ(ierr);
               // left-of-center point in element
               ierr =     gradsatpt(j,k,     dx/4.0,     dy/2.0,H,ab,user,&gsw); CHKERRQ(ierr);
               ierr = thicknessatpt(j,k,     dx/4.0,     dy/2.0,H,   user,&Hw ); CHKERRQ(ierr);
-              ierr = getflux(gsw,Hw,user,&qw); CHKERRQ(ierr);
           } else {  // true Mahaffy method
                     // this implementation is at least a factor of two inefficient
               Grad  gsn_nbr, gss_nbr, gse_nbr, gsw_nbr;
@@ -426,7 +423,6 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 gsn  = gradav(gsn,gsn_nbr);
               }
               ierr = thicknessatpt(j,k,   dx/2.0, dy,H,   user,&Hn); CHKERRQ(ierr);
-              ierr = getflux(gsn,Hn,user,&qn); CHKERRQ(ierr);
               // center-bottom point in element
               ierr =     gradsatpt(j,k,   dx/2.0, 0.0,H,ab,user,&gss); CHKERRQ(ierr);
               if (k > info->ys - 1) {
@@ -434,7 +430,6 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 gss  = gradav(gss,gss_nbr);
               }
               ierr = thicknessatpt(j,k,   dx/2.0, 0.0,H,   user,&Hs); CHKERRQ(ierr);
-              ierr = getflux(gss,Hs,user,&qs); CHKERRQ(ierr);
               // center-right point in element
               ierr =     gradsatpt(j,k,   dx,  dy/2.0,H,ab,user,&gse); CHKERRQ(ierr);
               if (j < info->xs + info->xm - 1) {
@@ -442,7 +437,6 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 gse  = gradav(gse,gse_nbr);
               }
               ierr = thicknessatpt(j,k,   dx,  dy/2.0,H,   user,&He); CHKERRQ(ierr);
-              ierr = getflux(gse,He,user,&qe); CHKERRQ(ierr);
               // center-left point in element
               ierr =     gradsatpt(j,k,   0.0, dy/2.0,H,ab,user,&gsw); CHKERRQ(ierr);
               if (j > info->xs - 1) {
@@ -450,8 +444,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 gsw  = gradav(gsw,gsw_nbr);
               }
               ierr = thicknessatpt(j,k,   0.0, dy/2.0,H,   user,&Hw); CHKERRQ(ierr);
-              ierr = getflux(gsw,Hw,user,&qw); CHKERRQ(ierr);
           }
+          qn = getflux(gsn,Hn,user);
+          qs = getflux(gss,Hs,user);
+          qe = getflux(gse,He,user);
+          qw = getflux(gsw,Hw,user);
           aq[k][j] = (FluxQuad){qn.x,qs.x,qe.y,qw.y};
       }
   }
