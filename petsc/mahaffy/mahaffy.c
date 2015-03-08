@@ -267,34 +267,31 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 }
 
 
-/* the first formula for SIA: diffusivity from values of thickness and surface gradient;
-also applies power-regularization part of continuation scheme */
-PetscReal getD(const PetscReal H, const PetscReal sx, const PetscReal sy, const AppCtx *user) {
-    const PetscReal eps = user->eps,
-                    n   = (1.0 - eps) * user->n + eps * 1.0;
-    return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
-}
-
-
-
 typedef struct {
     PetscReal x,y;
 } Grad;
+
+/* the first formula for SIA: diffusivity from values of thickness and surface gradient;
+also applies power-regularization part of continuation scheme */
+PetscReal getD(const Grad gs, const PetscReal H, const AppCtx *user) {
+    const PetscReal eps = user->eps,
+                    n   = (1.0 - eps) * user->n + eps * 1.0;
+    return user->Gamma * PetscPowReal(H,n+2.0) * PetscPowReal(gs.x*gs.x + gs.y*gs.y,(n-1.0)/2);
+}
 
 
 typedef struct {
     PetscReal x,y;
 } Flux;
 
-
 /* the second formula for SIA: evaluate the flux from gradient and thickness;
 also applies diffusivity-regularization part of continuation scheme;
 also updates maximum of diffusivity */
-PetscErrorCode getflux(Grad gs,                        // compute with gradsatpt() first
-                       PetscReal H,                    // compute with thicknessatpt() first
+PetscErrorCode getflux(const Grad gs,       // compute with gradsatpt() first
+                       const PetscReal H,   // compute with thicknessatpt() first
                        AppCtx *user, Flux *q) {
   const PetscReal eps = user->eps,
-                  DD  = (1.0 - eps) * getD(H,gs.x,gs.y,user) + eps * user->D0;
+                  DD  = (1.0 - eps) * getD(gs,H,user) + eps * user->D0;
   user->maxD = PetscMax(user->maxD, DD);
   q->x = - DD * gs.x;
   q->y = - DD * gs.y;
