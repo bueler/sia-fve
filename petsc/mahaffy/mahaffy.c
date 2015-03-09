@@ -295,25 +295,47 @@ note:
    W = - delta * grad b     (vector)
 so
    q = - D grad H + W H^{n+2}
-(and also q = - D grad s)
-also applies diffusivity- and power-regularization parts of continuation scheme;
-also updates maximum of diffusivity */
+(and also q = - D grad s) where  H = H_{j*,k*} at point (x_{j*}, y_{k*});
+note  W = (W.x,W.y)  and  q = (q.x,q.y)  in code;
+in this upwinding case, for  j <= j* <= j+1,  k <= k* <= k+1,
+   q.x = - D gH.x + W.x^+ H_{j,k*}^{n+2} + W.x^- H_{j+1,k*}^{n+2}
+   q.y = - D gH.y + W.y^+ H_{j*,k}^{n+2} + W.y^- H_{j*,k+1}^{n+2}
+and so the input should have inputs
+   Hj = H_{j,k*},  Hjplus = H_{j+1,k*},  Hk = H_{j*,k},  Hkplus = H_{j*,k+1}
+this method also applies diffusivity- and power-regularization parts of the
+continuation scheme, and it updates maximum of diffusivity */
+Flux getfluxUP(const Grad gH, const Grad gb,
+               const PetscReal H,
+               const PetscReal Hj, const PetscReal Hjplus,
+               const PetscReal Hk, const PetscReal Hkplus,
+               AppCtx *user) {
+  const PetscReal eps   = user->eps,
+                  n     = (1.0 - eps) * user->n + eps * 1.0,
+                  delta = getdelta(gH,gb,user);
+  PetscReal D;
+  Flux W, q;
+  D = (1.0 - eps) * delta * PetscPowReal(H,n+2.0) + eps * user->D0;
+  user->maxD = PetscMax(user->maxD, D);
+  W.x = - delta * gb.x;
+  W.y = - delta * gb.y;
+  q.x = - D * gH.x;
+  if (W.x >= 0.0)
+    q.x += W.x * PetscPowReal(Hj,n+2.0);
+  else
+    q.x += W.x * PetscPowReal(Hjplus,n+2.0);
+  q.y = - D * gH.y;
+  if (W.y >= 0.0)
+    q.y += W.y * PetscPowReal(Hk,n+2.0);
+  else
+    q.y += W.y * PetscPowReal(Hkplus,n+2.0);
+  return q;
+}
+
+// the non-upwinding form of the method
 Flux getflux(const Grad gH, const Grad gb, // compute with gradsatpt() first
              const PetscReal H,            // compute with thicknessatpt() first
              AppCtx *user) {
-  const PetscReal eps   = user->eps,
-                  n     = (1.0 - eps) * user->n + eps * 1.0,
-                  Hpow  = PetscPowReal(H,n+2.0),
-                  delta = getdelta(gH,gb,user);
-  PetscReal D, Wx, Wy;
-  Flux q;
-  D = (1.0 - eps) * delta * Hpow + eps * user->D0;
-  user->maxD = PetscMax(user->maxD, D);
-  Wx = - delta * gb.x;
-  Wy = - delta * gb.y;
-  q.x = - D * gH.x + Wx * Hpow;
-  q.y = - D * gH.y + Wy * Hpow;
-  return q;
+  return getfluxUP(gH,gb,H,H,H,H,H,user);
 }
 
 
