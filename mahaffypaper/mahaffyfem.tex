@@ -58,6 +58,8 @@
 \newcommand{\dxtwo}{\tfrac{\Delta x}{2}}
 \newcommand{\dytwo}{\tfrac{\Delta y}{2}}
 
+\newcommand{\half}{\tfrac{1}{2}}
+
 
 \begin{document}
 
@@ -86,85 +88,99 @@ JaroschSchoofAnslow2013}.  In these applications the SIA is solved with essentia
 
 In fact we show that the classical \cite{Mahaffy1976} FD scheme is simply a non-standard quadrature choice in a conforming finite element (FE) method.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \citep{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can be regarded as either a Petrov-Galerkin method \citep{Elmanetal2005} or as a ``finite volume element'' (FVE) method \citep{Cai1990,EwingLinLin2002}.  We adopt the latter terminology because of the enhanced clarity which comes from regarding the mass conservation equation in classical flux-integral, i.e.~finite volume, form.
 
-Based on this re-interpretation of the Mahaffy scheme we propose and test a ``\Mstar'' scheme which uses an obvious, and more accurate, quadrature choice when evaluating the finite volume flux integral.  The new scheme also uses first-order upwinding on the part of the flux that comes from the bedrock slope, but we see that the results are actually better than those from higher-resolution schemes when applied to a bedrock-step exact solution \citep{JaroschSchoofAnslow2013}.  Nonetheless the scheme is based on the same stencil, i.e.~uses only the same gridded values, as the classical Mahaffy scheme.  Additionally we describe how to construct this \Mstar scheme on unstructured grids consisting of suitable finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes (compare \cite{Ringleretal2013}).
+Based on this re-interpretation of the Mahaffy scheme we propose and test a ``\Mstar'' scheme which uses an obvious, and more accurate, quadrature choice when evaluating the finite volume flux integral.  The new scheme also uses first-order upwinding on the part of the flux that comes from the bedrock slope, but we see that the results are actually better than those from higher-resolution schemes when applied to a bedrock-step exact solution \citep{JaroschSchoofAnslow2013}.  Nonetheless the scheme is based on the same stencil, i.e.~uses only the same gridded values, as the classical Mahaffy scheme.  We also describe how to construct the improved scheme on unstructured finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes \citep{EgholmNielsen2010,Ringleretal2013}.
 
 \section*{Continuum model}
 
-Let $H$ be the ice thickness.  For any ice-dynamics model, the time-dependent evolution equation for $H$ is a mass conservation equation,
+The time-dependent evolution equation for the ice thickness $H$ is a mass conservation equation,
 \begin{equation}
 \frac{\partial H}{\partial t} + \Div \bq = m,  \label{eq:siaevolution}
 \end{equation}
-where $\bq$ denotes the vertically-integrated flux (units $\text{m}^2/\text{s}$), or volume flux \cite{GreveBlatter2009}, and $m$ ($\text{m}/\text{s}$) is the surface mass balance, also called the accumulation/ablation function.  The divergence ``$\Div$'' is computed in horizontal $x,y$ directions only.
+where $\bq$ denotes the vertically-integrated flux (units $\text{m}^2/\text{s}$) and $m$ ($\text{m}/\text{s}$) is the surface mass balance, also called the accumulation/ablation function.  The divergence ``$\Div$'' is computed in horizontal $x,y$ directions only.
+
+The SIA continuum model is the lubrication approximation \citep{Fowler1997} of the Stokes equations for slow-flowing ice, in non-sliding contact with the bed and with a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law \citep{GreveBlatter2009} case.  Let $b$ be the bed and $s = H+b$ the ice surface elevation.  In the isothermal SIA the flux $\bq$ is given by
+\begin{equation}
+\bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
+\end{equation}
+where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the Glen power $n$, the ice softness $A$, the ice density $\rho$, and gravity $g$ \citep{Bueleretal2005}.
+
+The flux in \eqref{eq:siaflux} has multiple interpretations.  Equation \eqref{eq:siaevolution} is usually interpreted as nonlinear diffusion in which
+\begin{equation}
+\bq = - D \grad s \quad \text{and} \quad D =  \Gamma H^{n+2} |\grad s|^{n-1}. \label{eq:siafluxdiffusion}
+\end{equation}
+However, if the bed is not flat then $\grad s$ and $\grad H$ are different.  On the other hand one can compute a vertically-averaged velocity $\bV$, and suppose that the flux arises from the transport of the thickness by $\bV$, that is,
+\begin{equation}
+\bq = \bV H \quad \text{where} \quad \bV = - \Gamma H^{n+1} |\grad s|^{n-1} \grad s. \label{eq:siafluxvelocity}
+\end{equation}
+In this case \eqref{eq:siaevolution} is, apparently, a hyperbolic conservation equation, but this appearance is superficial because the velocity depends in part on the gradient of the transported quantity.
+
+The former diffusion interpretation \eqref{eq:siafluxdiffusion} is more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} can be transformed to a $p$-Laplacian diffusion equation \citep{CDDSV}.  In general, however, the diffusion-equation interpretation of \eqref{eq:siaevolution} is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
+
+In this paper we modify a form suggested by \cite{JaroschSchoofAnslow2013}, and write
+\begin{equation}
+\bq = - D \grad H + \bW H^{n+2},\label{eq:fluxform}
+\end{equation}
+where $D$ is the same as in \eqref{eq:siafluxdiffusion} and
+\begin{equation}
+\bW = - \Gamma |\grad s|^{n-1} \grad b.  \label{eq:siaWdefine}
+\end{equation}
+The vector field $\bW$ should be thought of as a ``velocity'' which transports $H^{n+2}$; compare ``$\boldsymbol{\omega}$'' in equation (19) in \citep{JaroschSchoofAnslow2013}.  Note that $\bW=0$ in the case of flat beds.  The advantage of form \eqref{eq:fluxform} in numerical schemes, over either \eqref{eq:siafluxdiffusion} or \eqref{eq:siafluxvelocity}, is that we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while preserving accuracy by applying a centered scheme to the full diffusive term ``$-D \grad H$''.
 
 In this paper we solve only the steady-state form of \eqref{eq:siaevolution},
 \begin{equation}
 \Div \bq = m.  \label{eq:siasteady}
 \end{equation}
-Though this equation is evidently simpler than \eqref{eq:siaevolution}, it is technically more difficult in the sense that the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}, that is, it is a free-boundary problem.  The domain where \eqref{eq:siasteady} applies, and the location of the boundary where $\bq=0$, cannot be treated as a small modification of a known boundary, which is the standard approach with time-stepping schemes \citep{Bueleretal2005,Huybrechtsetal1996}
+Though this equation is simpler than \eqref{eq:siaevolution}, it is technically more difficult in the sense that the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}, that is, it is a free-boundary problem.  The domain where \eqref{eq:siasteady} applies, and the location of the boundary where $\bq=0$, cannot be treated as a small modification of a known boundary, which is the standard approach with time-stepping schemes \citep{Bueleretal2005,Huybrechtsetal1996}.
 
-The SIA continuum model we consider in this paper is the lubrication approximation \citep{Fowler1997} of the Stokes equations for slow-flowing ice which is in non-sliding contact with the bed and which has a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law \citep{GreveBlatter2009} case.  Let $b$ be the bed elevation and $s = H+b$ the ice surface elevation.  In the isothermal SIA the flux $\bq$ is given by
+To relate numerical solutions of the steady problem \eqref{eq:siasteady} to fully-implicit  solutions of \eqref{eq:siaevolution}, suppose we discretize \eqref{eq:siaevolution} only in time (``semi-discretized'') by the backward Euler method.  Denoting the approximate thickness function at time $t_m$ by $H_m$, we have a problem essentially the same as \eqref{eq:siasteady} to solve at each time-step $\Delta t> 0$:
 \begin{equation}
-\bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
+\Delta t\,\Div \bq_m + H_m = H_{m-1} + \Delta t\,m,  \label{eq:siaBE}
 \end{equation}
-where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the Glen power $n$, the ice softness $A$, the ice density $\rho$, and gravity $g$.
+where $\bq_m$ depends on the unknown function $H_m$ by one of the above flux formulas.  If the surface mass balance $m$ is surface elevation independent then the right side of \eqref{eq:siaBE} is known, just like the right side in \eqref{eq:siasteady}.  Solving \eqref{eq:siaBE} can be done by exactly the same kind of spatial discretization and constrained-Newton method as we apply to \eqref{eq:siasteady}.  Both equations should be solved as free boundary problems of ``elliptic'' type \citep{JouvetBueler2012}.
 
-The flux in \eqref{eq:siaflux} has multiply interpretations.  Equation \eqref{eq:siaevolution} is often interpreted as a nonlinear diffusion equation with diffusivity $D$, that is,
-\begin{equation}
-\bq = - D \grad s, \quad \text{where} \quad D =  \Gamma H^{n+2} |\grad s|^{n-1}. \label{eq:siafluxdiffusion}
-\end{equation}
-However, if the bed is not flat then $\grad s$ and $\grad H$ are different.  At the other extreme, one can compute a vertically-averaged velocity $\bV$, and describe the flux as arising from the transport of the thickness by $\bV$, that is,
-\begin{equation}
-\bq = \bV H, \quad \text{where} \quad \bV = - \Gamma H^{n+1} |\grad s|^{n-1} \grad s. \label{eq:siafluxvelocity}
-\end{equation}
-In this case \eqref{eq:siaevolution} is apparently a hyperbolic conservation equation, but this appearance is superficial because the velocity comes, in part, from the gradient of the transported quantity.
+Thus the SIA problem we solve consists of equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data to this problem consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$ defined on some larger domain $\Omega$.  The solution is the nonnegative thickness function $H(x,y)$, and corresponding surface elevation $s(x,y)$.
 
-The former diffusion interpretation \eqref{eq:siafluxdiffusion} is probably more appropriate in the flat-bed case $b=0$ because \eqref{eq:siaevolution} can then be transformed to a $p$-Laplacian diffusion equation \cite{CDDSV}.  In general the diffusion-equation interpretation of \eqref{eq:siaevolution} is obscured by the bed gradient $\grad b$ appearing implicitly in formula \eqref{eq:siafluxdiffusion} for $D$, which is a barrier to theoretical progress on proving the existence and uniqueness of solutions to \eqref{eq:siasteady} \citep{JouvetBueler2012} and which generates conservation errors at the ice margin \citep{JaroschSchoofAnslow2013}.
-
-Thus we modify a form suggested in \citep{JaroschSchoofAnslow2013}, and we write
-\begin{equation}
-\bq = - D \grad H + \bW H^{n+2},\label{eq:fluxform}
-\end{equation}
-where $D$ is the same as in \eqref{eq:siafluxdiffusion} and where
-\begin{equation}
-\bW = - \Gamma |\grad s|^{n-1} \grad b.  \label{eq:siaWdefine}
-\end{equation}
-The vector field $\bW$ should be thought of as a ``velocity'' which transports $H^{n+2}$; compare ``$\boldsymbol{\omega}$'' in equation (19) in \citep{JaroschSchoofAnslow2013}.  Note that $\bW=0$ in the case of flat beds.  The advantage of form \eqref{eq:fluxform} over either \eqref{eq:siafluxdiffusion} or \eqref{eq:siafluxvelocity} is that in the numerical treatment of equation \eqref{eq:siasteady} with flux given by \eqref{eq:fluxform} we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while preserving accuracy by applying a centered scheme to the higher-order clearly-diffusive term ``$-D \grad H$''.
-
-The input data to SIA problem \eqref{eq:siasteady}, \eqref{eq:siaflux} consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$ defined on some larger domain $\Omega$.  The solution is the nonnegative thickness function $H(x,y)$, with corresponding surface elevation $s(x,y)$.  If the $m$ is sufficiently-negative near the boundary of $\Omega$ then $H$ reaches zero inside the domain at a free boundary \citep{JouvetBueler2012}.  This free boundary, at which both $H\to 0$ and $\bq \to 0$, also has degenerate diffusivity $D \to 0$.  Solving \eqref{eq:siasteady} as such a free-boundary problem, or solving each step of a time-stepping method for \eqref{eq:siaevolution} as a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We consider only such a whole models here.
+If $m$ is sufficiently-negative near the boundary of $\Omega$ then $H$ reaches zero inside the domain at a free boundary \citep{JouvetBueler2012}.  This free boundary, at which both $H\to 0$ and $\bq \to 0$, also has degenerate diffusivity $D \to 0$.  Solving equation \eqref{eq:siasteady}, or each time-step equation \eqref{eq:siaBE}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model, to which we restrict our attention.
 
 
 \section{The classical Mahaffy scheme}   \label{sec:mahaffyfd}
 
-The Mahaffy scheme calculates the vertically-integrated ice flux $\bq$ at the staggered grid points \cite[equations (19), (20)]{Mahaffy1976}.  Consider the FD grid in Figure \ref{fig:fdfemgrids}a.  At the staggered location $(x_{j+1/2},y_k)$, the scheme computes the $x$-component of the flux by
+Consider the FD grid in Figure \ref{fig:fdfemgrids}a.  The Mahaffy scheme calculates the flux $\bq$ at the staggered grid points marked by a triangles in the Figure \cite[equations (19), (20)]{Mahaffy1976}.  Specifically, at $(x_{j+\half},y_k)$ the scheme computes the $x$-component of the flux by
 \begin{equation}
-q^x_{j+1/2,k} = - \Gamma \left(\frac{H_{j,k} + H_{j+1,k}}{2}\right)^{n+2} \alpharight^{\,n-1} \frac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyWqx}
+q^x_{j+\half,k} = - \Gamma (H_{j+\half,k})^{\,n+2} \alpharight^{\,n-1} \frac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyqx}
 \end{equation}
-where $s_{j,k} = H_{j,k} + b_{j,k}$.  The quantity ``$\alpharight$\!'' is an estimate of the surface slope $|\grad s|$, a key quantity in \eqref{eq:siaflux}, at the right-hand staggered-grid location shown with ``$\blacktriangleright$'' in Figure \ref{fig:fdfemgrids}a:
+where $s_{j,k} = H_{j,k} + b_{j,k}$ and the staggered-grid value of the thickness is simply the average
 \begin{equation}
-\alpharight^{\,2} = \left(\frac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2 + \left(\frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2.  \label{eq:mahaffyWalphax}
+  H_{j+\half,k} = \frac{H_{j,k} + H_{j+1,k}}{2}.  \label{eq:mahaffyHav}
 \end{equation}
-The formula for the flux $q^y_{j,k+1/2}$ at the staggered-grid location $(x_j,y_{k+1/2})$, at the center of the top edge of the control volume, follow by swapping the roles of $j$ and $k$ in equations \eqref{eq:mahaffyWqx} and \eqref{eq:mahaffyWalphax}:
+The quantity ``$\alpharight$\!'' is an estimate of $|\grad s|$:
 \begin{align}
-q^y_{j,k+1/2} &= - \Gamma \left(\frac{H_{j,k} + H_{j,k+1}}{2}\right)^{n+2} \alphaup^{\,n-1} \frac{s_{j,k+1} - s_{j,k}}{\Delta y}, \label{eq:mahaffyWqy} \\
-\alphaup^{\,2} &= \left(\frac{s_{j+1,k} + s_{j+1,k+1} - s_{j-1,k} - s_{j-1,k+1}}{4 \Delta x}\right)^2 + \left(\frac{s_{j,k+1} - s_{j,k}}{\Delta y}\right)^2.  \label{eq:mahaffyWalphay}
+\alpharight^{\,2} &= \left(\frac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2  \label{eq:mahaffyalphax} \\
+  &\quad + \left(\frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2. \notag
 \end{align}
-Slope approximations \eqref{eq:mahaffyWalphax} and \eqref{eq:mahaffyWalphay} are perhaps the least-obvious aspect of the Mahaffy scheme.  Solving SIA equation \eqref{eq:siasteady} then uses straightforward centered-difference formulas \cite{MortonMayers2005} for the flux divergence:
-\begin{equation}
-\frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}.  \label{eq:siasteadyfd}
-\end{equation}
+The formulas for the flux $q^y_{j,k+\half}$, thickness average $H_{j,k+\half}$, and slope estimate $\alphaup$\!, at staggered location $(x_j,y_{k+\half})$, follow by swapping the roles of $j$ and $k$, and $\Delta x$ and $\Delta y$ also, in the above equations.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{{\large \textbf{a.}}~A structured grid as an FD grid with regular (dots) and staggered (triangles) locations.  {\large \textbf{b.}}~The same grid as an FE grid with rectangular elements (solid), nodes (dots), and dual rectangular control volumes (dashed).}
+\caption{\textbf{a.}~A structured grid as an FD grid with regular (dots) and staggered (triangles) locations.  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), and a dual rectangular control volume $V_{j,k}$ (dashed).}
 \label{fig:fdfemgrids}
 \end{figure}
+
+Slope approximation \eqref{eq:mahaffyalphax}, and its equivalents for computing slopes $|\grad s|$ at the other locations marked by triangles in Figure \ref{fig:fdfemgrids}a, is the least-obvious aspect of the Mahaffy scheme.  However, the SIA equation \eqref{eq:siasteady} itself is discretized by \cite{Mahaffy1976} using straightforward centered-difference formulas \citep{MortonMayers2005} for the flux divergence:
+\begin{equation}
+\frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}.  \label{eq:siasteadyfd}
+\end{equation}
+
+Equation \eqref{eq:siasteadyfd} is one equation in an algebraic system which should determine all values $H_{j,k}$ simultaneously.  Equation \eqref{eq:siasteadyfd} is centered at $(x_j,y_k)$ and it involves all nine unknown values of $H$ at the regular grid points (dots) in Figure \ref{fig:fdfemgrids}a.  We call this pattern of dependence the ``stencil'' of the scheme \citep{MortonMayers2005}.
 
 
 \section{A finite volume element interpretation} \label{sec:fveinterpretation}
 
-The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but deriving the same scheme from an FE or finite volume (FV) perspective \cite{LeVeque}, as we do now, is new.  Our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for piecewise-constant test functions which are discontinuous at the FD method's staggered grid points.  The method is both of Petrov-Galerkin FE type, because the trial and test functions come from different spaces \cite{Elmanetal2005}, and a ``finite volume element'' (FVE) method \cite{EwingLinLin2002} in which exact discrete conservation follows in the standard FV understanding.
+The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers.  We now re-derive the scheme from an FE \emph{and} finite volume (FV; LeVeque, 2002)\nocite{LeVeque} perspective, and we believe this is new.  Our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for (discontinuous) piecewise-constant test functions.  These test functions are discontinuous at the FD method's staggered grid points in particular (Figure \ref{fig:fdfemgrids}).  The method is a ``finite volume element'' method (FVE; Cai, 1990)\nocite{Cai1990} in which exact discrete conservation, and the construction of upwind-type flux components, will follow in the standard FV understanding.  The FE character remains because we will use values of the interpolating trial function, from the interior of the element, in evaluating the finite volume integral.
+
+FIXME FROM HERE Note that formula \eqref{eq:mahaffyqx} computes the normal component of the flux $\bq$ at the center of the right edge of the control volume shown in Figure \ref{fig:fdfemgrids}b.  
 
 To re-derive the scheme we suppose \eqref{eq:siasteady} holds and we take a subregion $V$ of $\Omega$.  By the divergence theorem,
 \begin{equation}
