@@ -62,7 +62,7 @@
 
 \title[Stable FVE schemes for the shallow ice approximation]{Stable finite volume element schemes \\ for the shallow ice approximation}
 
-\abstract{FIXME}
+\abstract{The isothermal, non-sliding shallow ice approximation is a model for ice sheet and glacier flow which can determine the ice geometry as a free-boundary problem.  By solving the steady-state form of this problem we demonstrate fully-implicit schemes with no stability restrictions at all.  We first consider the \cite{Mahaffy1976} finite difference calculation of discrete flux.  By re-interpreting the Mahaffy scheme as a ``finite volume element'' scheme, however, so that we have both a function space of everywhere-defined approximate thickness and also a control-volume approach to the conservation of mass equation, we build an improved scheme which has better quadrature choices in the control-volume integral and which uses upwinding on the part of the flux coming from the bed gradient.  By solving both the original and improved schemes in steady state by a parallel Newton scheme, respecting the constraint that thicknesses are nonnegative, we show that the improved scheme has superior accuracy than any published results both for flat bed \citep{Bueler2003} and bedrock-step \citep{JaroschSchoofAnslow2013} exact solutions.  We apply the improved scheme at 1km resolution to the compute the steady-state shape of the Greenland ice sheet in a laptop-scale computation.}
 
 \author{Ed Bueler}
 
