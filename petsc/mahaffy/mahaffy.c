@@ -95,6 +95,7 @@ int main(int argc,char **argv) {
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
   user.mtrue  = PETSC_FALSE;
+  user.upwind = PETSC_FALSE;
 
   user.read   = PETSC_FALSE;
   user.dome   = PETSC_TRUE;  // defaults to this case
@@ -239,6 +240,8 @@ int main(int argc,char **argv) {
   }
 
   if (user.dump == PETSC_TRUE) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+          "writing x,y,b,m,Hexact,H to %s*.dat ...\n", user.figsprefix); CHKERRQ(ierr);
       ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
   }
 
@@ -433,16 +436,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   // note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
-          if (user->mtrue == PETSC_FALSE) {  // default Mahaffy* method
+          // get gradients and (non-upwinded) thicknesses
+          if (user->mtrue == PETSC_FALSE) {  // Mahaffy* or Mahaffy++ method
               // above-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,ab,user,&gHn,&gbn); CHKERRQ(ierr);
-/*
-              if (gbn.x <= 0.0) {  // W.x >= case
-                  ierr = thicknessatpt(j,k,0.0,3.0*dy/4.0,H,user,&Hn_xup); CHKERRQ(ierr);
-              } else {
-                  ierr = thicknessatpt(j,k, dx,3.0*dy/4.0,H,user,&Hn_xup); CHKERRQ(ierr);
-              }
-*/
               ierr = thicknessatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,   user,&Hn); CHKERRQ(ierr);
               // below-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0,     dy/4.0,H,ab,user,&gHs,&gbs); CHKERRQ(ierr);
@@ -492,10 +489,40 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               }
               ierr = thicknessatpt(j,k,   0.0, dy/2.0,H,   user,&Hw); CHKERRQ(ierr);
           }
-          qnx = getflux(gHn,gbn,Hn,X,user);
-          qsx = getflux(gHs,gbs,Hs,X,user);
-          qey = getflux(gHe,gbe,He,Y,user);
-          qwy = getflux(gHw,gbw,Hw,Y,user);
+          // evaluate fluxes
+          if (user->upwind == PETSC_TRUE) {
+              // Mahaffy++ method = Mahaffy* + first-order upwinding on grad b part
+              PetscReal Hnup, Hsup, Heup, Hwup;
+              if (gbn.x <= 0.0) {  // W.x >= 0 case
+                  ierr = thicknessatpt(j,k,0.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+              } else {
+                  ierr = thicknessatpt(j,k, dx,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+              }
+              if (gbs.x <= 0.0) {  // W.x >= 0 case
+                  ierr = thicknessatpt(j,k,0.0,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
+              } else {
+                  ierr = thicknessatpt(j,k, dx,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
+              }
+              if (gbe.y <= 0.0) {  // W.y >= 0 case
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,0.0,H,user,&Heup); CHKERRQ(ierr);
+              } else {
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0, dy,H,user,&Heup); CHKERRQ(ierr);
+              }
+              if (gbw.y <= 0.0) {  // W.y >= 0 case
+                  ierr = thicknessatpt(j,k,    dx/4.0,0.0,H,user,&Hwup); CHKERRQ(ierr);
+              } else {
+                  ierr = thicknessatpt(j,k,    dx/4.0, dy,H,user,&Hwup); CHKERRQ(ierr);
+              }
+              qnx = getfluxUP(gHn,gbn,Hn,Hnup,X,user);
+              qsx = getfluxUP(gHs,gbs,Hs,Hsup,X,user);
+              qey = getfluxUP(gHe,gbe,He,Heup,Y,user);
+              qwy = getfluxUP(gHw,gbw,Hw,Hwup,Y,user);
+          } else { // both true Mahaffy and Mahaffy* methods
+              qnx = getflux(gHn,gbn,Hn,X,user);
+              qsx = getflux(gHs,gbs,Hs,X,user);
+              qey = getflux(gHe,gbe,He,Y,user);
+              qwy = getflux(gHw,gbw,Hw,Y,user);
+          }
           aq[k][j] = (FluxQuad){qnx,qsx,qey,qwy};
       }
   }
@@ -558,6 +585,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default Mahaffy*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-upwind", "upwind ''W H^{n+2}'' term in flux formula  q = - D grad H + W H^{n+2}",
+      NULL,user->upwind,&user->upwind,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
   if (user->read == PETSC_TRUE) {
