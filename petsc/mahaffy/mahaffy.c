@@ -26,20 +26,26 @@ Use one of these three:
 
 Solution options:
    ./mahaffy -mah_true         # use true Mahaffy
+   ./mahaffy -mah_upwind       # a kind of first-order upwinding on  grad b  part of flux
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
+   ./mahaffy -mah_D0 10.0      # change constant diffusivity, used in continuation, to other value than
+                               # default = 1.0;  big may be good for convergence, esp. w upwinding
    ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
 
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
 
+Successes:
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -mah_upwind -snes_max_it 1000  # needs 604 SNES iterations!
+   mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor
+
+
 Divergence and error cases:
-   ./mahaffy -da_refine 2      # divergence, but no crash
-   ./mahaffy -da_refine 3      # crash at SNESSolve_VINEWTONRSLS() line 505
-                               #     in /home/ed/petsc-maint/src/snes/impls/vi/rs/virs.c
-   ./mahaffy -da_refine 1 -pc_type mg  # error at line 506 of virs.c
+   ./mahaffy -da_refine 2      # divergence at 9
+   ./mahaffy -da_refine 3      # divergence at 9
 
 Compare methods:
    mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10
-   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_true   # again, line 505 of virs.c
+   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_true   # line 505 of virs.c
 
 High-res success (also -da_refine 7 works):
    mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
@@ -199,7 +205,15 @@ int main(int argc,char **argv) {
   //ierr = [VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
-  ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
+  if (user.mtrue == PETSC_TRUE) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,    "solving by true Mahaffy method ...\n"); CHKERRQ(ierr);
+  } else {
+      if (user.upwind == PETSC_TRUE) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by Mahaffy*-with-upwinding (Mahaffy++) method ...\n"); CHKERRQ(ierr);
+      } else {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by Mahaffy* method (without upwinding) ...\n"); CHKERRQ(ierr);
+      }
+  }
 
   KSP        ksp;
   PetscInt   its, kspits, m;
@@ -207,6 +221,7 @@ int main(int argc,char **argv) {
                               0.02,   0.01,   0.005,   0.002,   0.001,
                               0.0005, 0.0002, 0.0000};
   SNESConvergedReason reason;
+  ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
   for (m = 0; m<user.Neps; m++) {
       user.eps = eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
@@ -316,11 +331,11 @@ PetscReal getfluxUP(const Grad gH, const Grad gb,
                   D     = (1.0-eps) * delta * PetscPowReal(H,n+2.0) + eps * user->D0;
   user->maxD = PetscMax(user->maxD, D);
   if (dir == X) {
-      const PetscReal  W = - delta * gb.x;
-      return - D * gH.x + W * PetscPowReal(Hup,n+2.0);
+      const PetscReal  Wx = - delta * gb.x;
+      return - D * gH.x + Wx * PetscPowReal(Hup,n+2.0);
   } else {
-      const PetscReal  W = - delta * gb.y;
-      return - D * gH.y + W * PetscPowReal(Hup,n+2.0);
+      const PetscReal  Wy = - delta * gb.y;
+      return - D * gH.y + Wy * PetscPowReal(Hup,n+2.0);
   }
 }
 
@@ -494,24 +509,24 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               // Mahaffy++ method = Mahaffy* + first-order upwinding on grad b part
               PetscReal Hnup, Hsup, Heup, Hwup;
               if (gbn.x <= 0.0) {  // W.x >= 0 case
-                  ierr = thicknessatpt(j,k,0.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,    dx/4.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k, dx,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
               }
               if (gbs.x <= 0.0) {  // W.x >= 0 case
-                  ierr = thicknessatpt(j,k,0.0,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,    dx/4.0,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k, dx,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
               }
               if (gbe.y <= 0.0) {  // W.y >= 0 case
-                  ierr = thicknessatpt(j,k,3.0*dx/4.0,0.0,H,user,&Heup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,    dy/4.0,H,user,&Heup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k,3.0*dx/4.0, dy,H,user,&Heup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,3.0*dy/4.0,H,user,&Heup); CHKERRQ(ierr);
               }
               if (gbw.y <= 0.0) {  // W.y >= 0 case
-                  ierr = thicknessatpt(j,k,    dx/4.0,0.0,H,user,&Hwup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,    dx/4.0,    dy/4.0,H,user,&Hwup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k,    dx/4.0, dy,H,user,&Hwup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,    dx/4.0,3.0*dy/4.0,H,user,&Hwup); CHKERRQ(ierr);
               }
               qnx = getfluxUP(gHn,gbn,Hn,Hnup,X,user);
               qsx = getfluxUP(gHs,gbs,Hs,Hsup,X,user);

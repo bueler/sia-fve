@@ -55,10 +55,13 @@ Stage 3 is to run it and view results:  FIXME: does not make it to level 8; why?
     $ ../figsmahaffy.py
     $ eog *.png
 
-A higher-res (2.5 km), parallel version looks like this; the `-pc_type` and
-`-sub_pc_type` choices are _not_ necessary, as the defaults also work:
+A higher-res (2.5 km), parallel, with-upwinding version looks like this; the `-pc_type` and
+`-sub_pc_type` choices may be helpful:
 
     $ python grn2petsc.py --refine 2 grn.nc grn2p5km.dat
     $ mkdir test2p5km/
-    $ mpiexec -n 6 ./mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -mah_Neps 8 -snes_monitor -pc_type asm -sub_pc_type lu
+    $ mpiexec -n 6 ./mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -mah_upwind -snes_monitor -pc_type asm -sub_pc_type lu
 
+Or this
+
+    $ mpiexec -n 6 ./mahaffy -mah_read grn2p5km.dat -mah_upwind -mah_dump test5km/ -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
