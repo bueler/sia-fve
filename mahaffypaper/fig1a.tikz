@@ -1,4 +1,7 @@
-\begin{tikzpicture}[scale=0.75]
+\begin{tikzpicture}[scale=8.6cm/9.0cm]
+% min x = -1.5, max x = 6.75  so  width = 8.25 cm, but we pad
+% 8.6cm is one-column width for J Glaciol
+
   %uncomment to see grid on which it was generated:
   %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
 
@@ -40,5 +43,5 @@
 
   % label as "a"
   \tikzstyle{fontbf} = [font=\bf]
-  \draw (-1.5,5.5) node[fontbf] {{\large a.}};
+  \draw (-1.5,5.5) node[fontbf] {a.};
 \end{tikzpicture}

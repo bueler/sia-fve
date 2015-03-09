@@ -1,23 +1,16 @@
-\documentclass[11pt]{amsart}
+\NeedsTeXFormat{LaTeX2e}
+\documentclass[twocolumn]{igs}
+%\documentclass[review,letterpaper]{igs}
 
-\renewcommand{\baselinestretch}{1.08}
-
-\usepackage{geometry}
-\geometry{letterpaper, margin=1in}
-
-\usepackage{verbatim,xspace,amssymb}
+\usepackage{verbatim,xspace,amsmath,amssymb}
 
 \usepackage{tikz}
 \usetikzlibrary{arrows}
 
-% hyperref should be the last package we load
-\usepackage[pdftex,
-            colorlinks=true,
-            plainpages=false,
-            linkcolor=blue,   % only if colorlinks=true
-            citecolor=red,    % only if colorlinks=true
-            urlcolor=magenta  % only if colorlinks=true
-]{hyperref}
+\usepackage{igsnatbib}  % see igs2eguide.tex for example citation styles
+
+\newcommand{\onecol}[1]{\includegraphics[width=86mm]{#1}}
+\newcommand{\twocol}[1]{\includegraphics[width=178mm]{#1}}
 
 % math macros
 \newcommand\bb{\mathbf{b}}
@@ -53,7 +46,6 @@
 \newcommand{\nhat}{\mathbf{n}}
 \newcommand\lam{\lambda}
 \newcommand\lap{\triangle}
-\newcommand\Matlab{\textsc{Matlab}\xspace}
 \newcommand\RR{\mathbb{R}}
 \newcommand\vf{\varphi}
 
@@ -66,24 +58,23 @@
 \newcommand{\dytwo}{\tfrac{\Delta y}{2}}
 
 
+\begin{document}
 
-\title[The Mahaffy scheme is an FVE method]{The Mahaffy (1976) numerical scheme \\ for the shallow ice approximation \\ is a finite volume element method}
+\title[Stable FVE schemes for the shallow ice approximation]{Stable finite volume element schemes \\ for the shallow ice approximation}
+
+\abstract{FIXME}
 
 \author{Ed Bueler}
 
-
-\begin{document}
-
-%\begin{abstract}
-%\end{abstract}
+\affiliation{Department of Mathematics and Statistics, and Geophysical Institute, University of Alaska Fairbanks, USA \\
+E-mail: \emph{\texttt{elbueler\@@alaska.edu}}}
 
 \maketitle
 
-\thispagestyle{empty}
+\sectionsize
 
 
-\section{Introduction} \label{sec:intro}
-
+\section*{Introduction}
 
 The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling the Barnes Ice Cap was used in the first clear success in modeling ice sheet flow and geometry evolution in two horizontal dimensions.  This scheme is still a widely-used choice for numerically solving the shallow ice approximation, and its accuracy properties are relatively-well understood \cite{Bueleretal2005}.   The scheme computes the ice flux at staggered-grid points using particular choices when evaluating the ice surface slope and thickness.  In a test where an analytical solution is known and the ice rheology is realistic, these choices imply higher accuracy than an alternative widely-used scheme, while using a smaller stencil (``computational molecule''), thereby reducing memory usage in implicit implementations \cite{HindmarshPayne1996}.  As a scheme for non-sliding glacier flow, it is used as part of the stress balance solution method in a membrane-stress-resolving hybrid ice dynamics model \cite{BuelerBrown2009}.
 
@@ -289,9 +280,13 @@ FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day c
 
 FIXME: The first idea in the paper is that a FVE interpretation is compatible with the original Mahaffy FD scheme.  The second idea is that the flux approximation is discontinuous along element edges, so, in evaluating the quadrature along the boundary of the control volume, there is either a doubling of the range over which derivatives are evaluated (Mahaffy) or a doubling of the number of quadrature points (\Mstar).  The new \Mstar method is slightly more accurate, especially at coarse resolution, and easier to understand and implement in a $Q^1$ FE world.  The computed examples using this method are novel, except for \cite{JouvetBueler2012}, by going directly to steady state from zero ice.
 
+\section*{Acknowledgements}
+This work was supported by NASA grant \#NNX13AM16G and a grant of high-performance computing resources from the Arctic Region Supercomputing Center.
+
+
 %         References
 \bibliography{../layerpaper/lc}
-\bibliographystyle{siam}
+\bibliographystyle{igs}
 
 
 \begin{comment}
