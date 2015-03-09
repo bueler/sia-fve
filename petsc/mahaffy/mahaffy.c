@@ -285,9 +285,8 @@ PetscReal getdelta(const Grad gH, const Grad gb, const AppCtx *user) {
 }
 
 
-typedef struct {
-    PetscReal x,y;
-} Flux;
+enum Direction  {X, Y};
+typedef enum Direction Direction;
 
 /* the second formula for SIA: evaluate the flux from gradients and thickness;
 note:
@@ -304,28 +303,31 @@ and so if  W.x >= 0  and  W.y >= 0  the input should have inputs
    H = H_{j*,k*},  Hxup = H_{j,k*},  Hyup = H_{j*,k},
 this method also applies diffusivity- and power-regularization parts of the
 continuation scheme, and it updates maximum of diffusivity */
-Flux getfluxUP(const Grad gH, const Grad gb,
-               const PetscReal H, const PetscReal Hxup, const PetscReal Hyup,
-               AppCtx *user) {
+PetscReal getfluxUP(const Grad gH, const Grad gb,
+                    const PetscReal H, const PetscReal Hup,
+                    const Direction dir,
+                    AppCtx *user) {
   const PetscReal eps   = user->eps,
                   n     = (1.0 - eps) * user->n + eps * 1.0,
-                  delta = getdelta(gH,gb,user);
-  PetscReal D;
-  Flux W, q;
-  D = (1.0 - eps) * delta * PetscPowReal(H,n+2.0) + eps * user->D0;
+                  delta = getdelta(gH,gb,user),
+                  D     = (1.0-eps) * delta * PetscPowReal(H,n+2.0) + eps * user->D0;
   user->maxD = PetscMax(user->maxD, D);
-  W.x = - delta * gb.x;
-  W.y = - delta * gb.y;
-  q.x = - D * gH.x + W.x * PetscPowReal(Hxup,n+2.0);
-  q.y = - D * gH.y + W.y * PetscPowReal(Hyup,n+2.0);
-  return q;
+  if (dir == X) {
+      const PetscReal  W = - delta * gb.x;
+      return - D * gH.x + W * PetscPowReal(Hup,n+2.0);
+  } else {
+      const PetscReal  W = - delta * gb.y;
+      return - D * gH.y + W * PetscPowReal(Hup,n+2.0);
+  }
 }
 
-// the non-upwinding form of the method
-Flux getflux(const Grad gH, const Grad gb, // compute with gradsatpt() first
-             const PetscReal H,            // compute with thicknessatpt() first
-             AppCtx *user) {
-  return getfluxUP(gH,gb,H,H,H,user);
+
+// the non-upwinding form of the method, i.e. pure Mahaffy*
+PetscReal getflux(const Grad gH, const Grad gb, // compute with gradsatpt() first
+                  const PetscReal H,            // compute with thicknessatpt() first
+                  const Direction dir,
+                  AppCtx *user) {
+  return getfluxUP(gH,gb,H,H,dir,user);
 }
 
 
@@ -412,7 +414,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   Grad            gHn, gHs, gHe, gHw,
                   gbn, gbs, gbe, gbw;
   PetscReal       Hn, Hs, He, Hw;
-  Flux            qn, qs, qe, qw;
+  PetscReal       qnx, qsx, qey, qwy;
   Vec             bloc, qloc;
 
   PetscFunctionBeginUser;
@@ -434,6 +436,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           if (user->mtrue == PETSC_FALSE) {  // default Mahaffy* method
               // above-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,ab,user,&gHn,&gbn); CHKERRQ(ierr);
+/*
+              if (gbn.x <= 0.0) {  // W.x >= case
+                  ierr = thicknessatpt(j,k,0.0,3.0*dy/4.0,H,user,&Hn_xup); CHKERRQ(ierr);
+              } else {
+                  ierr = thicknessatpt(j,k, dx,3.0*dy/4.0,H,user,&Hn_xup); CHKERRQ(ierr);
+              }
+*/
               ierr = thicknessatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,   user,&Hn); CHKERRQ(ierr);
               // below-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0,     dy/4.0,H,ab,user,&gHs,&gbs); CHKERRQ(ierr);
@@ -483,11 +492,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               }
               ierr = thicknessatpt(j,k,   0.0, dy/2.0,H,   user,&Hw); CHKERRQ(ierr);
           }
-          qn = getflux(gHn,gbn,Hn,user);
-          qs = getflux(gHs,gbs,Hs,user);
-          qe = getflux(gHe,gbe,He,user);
-          qw = getflux(gHw,gbw,Hw,user);
-          aq[k][j] = (FluxQuad){qn.x,qs.x,qe.y,qw.y};
+          qnx = getflux(gHn,gbn,Hn,X,user);
+          qsx = getflux(gHs,gbs,Hs,X,user);
+          qey = getflux(gHe,gbe,He,Y,user);
+          qwy = getflux(gHw,gbw,Hw,Y,user);
+          aq[k][j] = (FluxQuad){qnx,qsx,qey,qwy};
       }
   }
   // loop over nodes to get residual
