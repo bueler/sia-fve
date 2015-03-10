@@ -64,4 +64,4 @@ A higher-res (2.5 km), parallel, with-upwinding version looks like this; the `-p
 
 Or this
 
-    $ mpiexec -n 6 ./mahaffy -mah_read grn2p5km.dat -mah_upwind -mah_dump test5km/ -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
+    $ mpiexec -n 6 ./mahaffy -mah_read grn2p5km.dat -mah_upwind -mah_dump test2p5km/ -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
