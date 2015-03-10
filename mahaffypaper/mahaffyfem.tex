@@ -284,27 +284,35 @@ Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp}
 
 \section{An improved scheme}  \label{sec:star}
 
-If our goal is to convert FVE equation \eqref{eq:siafve} into an algebraic equation by a choice of quadrature along the boundary of the control volume $\partial V_{j,k}$, it is easy to propose an improvement over the Mahaffy choices.  To recap, because $H^h$ and $s^h$ live in the space of continuous and piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined on the interior of each element.  However, because the gradient $\grad s^h$ is discontinuous across the element boundaries, also $\bq^h$ is discontinuous across element boundaries.
+Our goal is to accurately replace flux integral equation \eqref{eq:siafve} by an algebraic equation, by using quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy choices.  In addition, in this section we use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on the part of the flux which is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme which we test in the next section.
 
-Because of the discontinuity of the integrand on the element boundary, we break each interval of integration on the right-hand side of \eqref{eq:fluxintdecomp} into two parts, so that we are integrating smooth functions.  For example, we break the first integral on the right-hand side of \eqref{eq:fluxintdecomp} at $y=y_k$.  Then we use the midpoint rule, the optimal one-point rule for smooth functions, in each subinterval; recall notation \eqref{eq:definexypm}:
+To recap, because $H^h$ and $b^h$ live in the space of continuous piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined and smooth on the interior of each element.  However, the gradient $\grad s^h$, and thus $\bq^h$, is discontinuous across the element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts.  For example, we break the first integral at $y=y_k$.  Then we use the midpoint rule, the optimal one-point rule for smooth functions, in each subinterval:
 \begin{align}
 &\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy  \label{eq:starbreakfirst} \\
   &\quad= \int_{y_k^-}^{y_k} q^x(x_j^+,y)\,dy + \int_{y_k}^{y_k^+} q^x(x_j^+,y)\,dy \notag \\
   &\quad\approx \frac{\Delta y}{2} \left(q^x(x_j^+,y_k-\tfrac{\Delta y}{4}) + q^x(x_j^+,y_k+\tfrac{\Delta y}{4})\right). \notag
 \end{align}
-The values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are simply evaluations of $q^x(x,y)$ on the appropriate element, at points of continuity; see Figure \ref{fig:mahaffystar}.  In particular $(x_j^+,y_k+\tfrac{\Delta y}{4})$ is a point inside element $\square_{j,k}$ while $(x_j^+,y_k-\tfrac{\Delta y}{4})$ is a point inside element $\square_{j,k-1}$.  Similar formulas apply to the other three integrals on the right-hand side of \eqref{eq:fluxintdecomp}.
+The values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$---recall notation \eqref{eq:definexypm}---are simply evaluations of $q^x(x,y)$ at points of continuity; see Figure \ref{fig:improvequadrature}.  Note $(x_j^+,y_k+\tfrac{\Delta y}{4})$ is a point inside element $\square_{j,k}$ while $(x_j^+,y_k-\tfrac{\Delta y}{4})$ is inside element $\square_{j,k-1}$.  
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig3.tikz}
 \end{center}
 \caption{To compute the integral in equation \eqref{eq:siafve} more accurately, we evaluate $\bq^h(x,y)$ at eight quadrature points (circles) along $\partial V_{j,k}$, where $\bq^h$ is continuous.  The specific coordinates in equation \eqref{eq:starbreakfirst} are indicated.}
-\label{fig:mahaffystar}
+\label{fig:improvequadrature}
 \end{figure}
 
-Figure \ref{fig:mahaffystar} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}, so the total number of flux-evaluation locations for the improved method is twice that for the classical method.  In fact the improved method evaluates $\bq^h(x,y)$ at only four locations \emph{in each element}, as does the classical Mahaffy method, when interpreted as an FVE method; it evaluates the flux at the midpoint of every side of every element.  However, the stencils for the two methods are the same in the sense that both methods the discrete conservation equation---equation \eqref{eq:siasteadyfd} or \eqref{eq:siafve} according to interpretation---uses the same nine nodal values of $H^h$ (solid dots in Figures \ref{fig:fdfemgrids}a, \ref{fig:fdfemgrids}b, and \ref{fig:mahaffystar}).
+Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.  Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}.  We see that the total number of flux-evaluation locations for the improved method is twice that for the classical method, but in fact the improved method evaluates $\bq^h(x,y)$ at only four locations \emph{in each element}, as does the classical Mahaffy method, which evaluates the flux at the midpoint of every side of every element.  The stencils for the two methods are the same.  That is, in both methods the discrete conservation equation---equation \eqref{eq:siasteadyfd} or \eqref{eq:siafve} according to interpretation---uses the same nine nodal values of $H^h$ (solid dots in Figures \ref{fig:fdfemgrids}a, \ref{fig:fdfemgrids}b, and \ref{fig:improvequadrature}).
 
-Indeed, eight half-edges make up $\partial V_{j,k}$, with each half-edge entirely inside an element and $\bq^h$ smooth along each half-edge.  Thus one could propose further-improved methods, replacing the midpoint rule by higher-order quadrature (e.g.~2-point Gauss-Legendre quadrature or 3-point Simpson's rule).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, we observe that the largest numerical SIA errors occur near the free boundary, namely at the ice sheet margin \citep{Bueleretal2005}.  At such locations the exact solution $H$ has low regularity \citep{JouvetBueler2012}.  Any FE method of any order therefore suffers in the sense that the exact free boundary may pass through an element.  Because $\bq^h$ represents a smooth approximation on the element to a merely-continuous (and not smooth) exact flux $\bq$, higher-order quadrature and interpolation will probably not give much advantage on such free boundary elements.  Our improved method represents a measurable improvement over the classical Mahaffy method (see the next section) primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the midpoint rule or bilinear interpolation is flawed.
+Eight half-edges make up $\partial V_{j,k}$, with each half-edge entirely inside an element and $\bq^h$ smooth along each half-edge.  Thus one could propose further-improved methods, replacing the midpoint rule by higher-order quadrature (e.g.~2-point Gauss-Legendre quadrature).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, we observe that the largest numerical SIA errors occur near the free boundary, namely at the ice sheet margin \citep{Bueleretal2005}.  At such locations the exact solution $H$ has low regularity \citep{JouvetBueler2012}.  Any FE method of any order therefore suffers in the sense that the exact free boundary may pass through an element.  Because $\bq^h$ represents a smooth approximation on the element to a merely-continuous (and not smooth) exact flux $\bq$, higher-order quadrature and interpolation will probably not give much advantage near the free boundary.  Our improved method represents a measurable improvement over the classical Mahaffy method (see the next section) primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the midpoint rule or bilinear interpolation, both of which are implicitly used in the classical method, are flawed.
+
+\begin{figure}[ht]
+\begin{center}
+\input{fig4.tikz}
+\end{center}
+\caption{On element $\square_{j,k}$, upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ replaces thicknesses evaluated at quadrature points (circles) with thicknesses from locations shown with ``$+$'', along element diagonals (dotted), according to the sign of the components of $\bW$.}
+\label{fig:upwindterm}
+\end{figure}
 
 FIXME: We call the method which combines improved quadrature and upwinding on the ``$\bW H^{n+2}$'' term the ``\Mstar'' method.
 
@@ -315,10 +323,10 @@ FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g
 
 FIXME: code \texttt{petsc/mahaffy.c} implements \Mstar and Mahaffy methods; verification relative to steady part of Test D from \cite{Bueleretal2005}, i.e.~``Bueler profile'' from \cite{vanderVeen2013}; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
 
-FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (2km?)
+FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (1km)
 
 
-\section{Conclusion} \label{sec:conclusion}
+\section{Discussion and Conclusion} \label{sec:conclusion}
 
 FIXME: The first idea in the paper is that a FVE interpretation is compatible with the original Mahaffy FD scheme.  The second idea is that the flux approximation is discontinuous along element edges, so, in evaluating the quadrature along the boundary of the control volume, there is either a doubling of the range over which derivatives are evaluated (Mahaffy) or a doubling of the number of quadrature points (\Mstar).  The new \Mstar method is slightly more accurate, especially at coarse resolution, and easier to understand and implement in a $Q^1$ FE world.  The computed examples using this method are novel, except for \cite{JouvetBueler2012}, by going directly to steady state from zero ice.
 
