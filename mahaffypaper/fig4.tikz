@@ -43,5 +43,9 @@
   \draw (0,-0.5) node {$x_j$};
   \draw (-0.7,0) node {$y_k$};
 
+  % indicate coordinates of quadrature point
+  \draw (1.5,-0.5) node {$x_j^+$};
+  \draw[dotted] (2.8,0.5) -- (3.1, 0.5);
+  \draw (3.6,0.52) node {$y_k+\tfrac{\Delta y}{4}$};
 
 \end{tikzpicture}

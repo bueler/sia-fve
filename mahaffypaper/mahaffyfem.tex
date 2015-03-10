@@ -2,6 +2,7 @@
 \documentclass[twocolumn,letterpaper]{igs}
 %\documentclass[review,letterpaper]{igs}
 
+\usepackage{stfloats}
 \usepackage{verbatim,xspace,amsmath,amssymb,bm}
 
 \usepackage{tikz}
@@ -50,7 +51,7 @@
 \newcommand\RR{\mathbb{R}}
 \newcommand\vf{\varphi}
 
-\newcommand{\Mstar}{$\text{Mahaffy}^{\bigstar}$\xspace}
+\newcommand{\Mstar}{$\text{M}^{\bigstar}$\xspace}
 
 \newcommand\alpharight{\alpha_{{}_{\blacktriangleright}}}
 \newcommand\alphaup{\alpha_{{\!}_{\blacktriangle}}}
@@ -65,7 +66,7 @@
 
 \title[Stable FVE schemes for the shallow ice approximation]{Stable finite volume element schemes \\ for the shallow ice approximation}
 
-\abstract{The isothermal, non-sliding shallow ice approximation is a model for ice sheet and glacier flow which determines the ice geometry as the solution of a free-boundary problem.  By solving the steady-state version of the problem, we demonstrate a fully-implicit scheme with no stability restrictions.  We first consider the \cite{Mahaffy1976} finite difference calculation of discrete flux, but re-interpreted as a ``finite volume element'' (FVE) scheme.  In this FVE context, both everywhere-defined approximations and a finite volume integral form of the conservation statement are available.  Thereby we build an improved scheme which has both a better quadrature in the integral and upwinding on the part of the flux coming from the bed gradient.  By solving both the original and improved schemes in steady state by a parallel Newton scheme, respecting the constraint that thicknesses are nonnegative, we show that the improved scheme has superior accuracy to any published results both for flat bed \citep{Bueler2003} and bedrock-step \citep{JaroschSchoofAnslow2013} exact solutions.  We then apply the improved scheme at 1km resolution to the compute the steady-state geometry of the Greenland ice sheet, using only bedrock elevation and present-day surface mass balance data, in a laptop-scale computation.}
+\abstract{The isothermal, non-sliding shallow ice approximation is a model for ice sheet and glacier flow which determines the ice geometry as the solution of a free-boundary problem.  By solving the steady-state version of the problem, we demonstrate a fully-implicit scheme with no stability restrictions.  We first consider the \cite{Mahaffy1976} finite difference calculation of discrete flux, but we re-interpret it as a ``finite volume element'' (FVE) scheme.  In this FVE context, both everywhere-defined approximations and a finite volume integral form of the conservation statement are available.  Then we build an improved scheme which has both a better quadrature in the integral and upwinding on the part of the flux coming from the bed gradient.  By solving both the original and improved schemes in steady state by a parallel Newton scheme, respecting the constraint that thicknesses are nonnegative, we show that the improved scheme has superior accuracy to any published results both for flat bed \citep{Bueler2003} and bedrock-step \citep{JaroschSchoofAnslow2013} exact solutions.  We then apply the improved scheme at 1km resolution to the compute the steady-state geometry of the Greenland ice sheet, using only bedrock elevation and present-day surface mass balance data, in a laptop-scale computation.}
 
 \author{Ed Bueler}
 
@@ -84,9 +85,9 @@ The finite difference (FD) scheme introduced by \cite{Mahaffy1976} for modeling 
 Existing numerical schemes for the SIA solve the time-dependent SIA with explicit, semi-implicit, or fully-implicit schemes with known or apparent stability restrictions \citep[among others]{Bueleretal2005,EgholmNielsen2010,HindmarshPayne1996,Huybrechtsetal1996,
 JaroschSchoofAnslow2013}.  In these applications the SIA is solved with essentially \emph{ad hoc} treatment of the free margin of the ice sheet, for example using projection in explicit schemes to reset computed negative thicknesses back to zero \citep{Bueleretal2005,JaroschSchoofAnslow2013}.
 
-\cite{JouvetBueler2012} construct the one exception to the above usage pattern.  They pose and numerically-solve the steady state SIA free-boundary problem as a variational inequality \citep{KinderlehrerStampacchia} which includes the nonnegative-ice-thickness constraint.  Here we follow \cite{JouvetBueler2012} in solving the steady state free-boundary problem, but we do it by re-interpreting the well-known Mahaffy method so that it becomes a highly-accurate and scalable scheme.  The new schemes are non-the-less easy to implement because Newton solvers modified to including the nonnegative-thickness constraint \citep{BensonMunson2006} are available within the open-source PETSc library \citep{Balayetal2014}.
+\cite{JouvetBueler2012} construct the one exception to the above usage pattern.  They pose and numerically-solve the steady state SIA free-boundary problem as a variational inequality \citep{KinderlehrerStampacchia1980} which includes the nonnegative-ice-thickness constraint.  Here we follow \cite{JouvetBueler2012} in solving the steady state free-boundary problem, but we do it by re-interpreting the well-known Mahaffy method so that it becomes a highly-accurate and scalable scheme.  The new schemes are non-the-less easy to implement because Newton solvers modified to including the nonnegative-thickness constraint \citep{BensonMunson2006} are available within the open-source PETSc library \citep{Balayetal2014}.
 
-In fact we show that the classical \cite{Mahaffy1976} FD scheme is simply a non-standard quadrature choice in a conforming finite element (FE) method.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \citep{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can be regarded as either a Petrov-Galerkin method \citep{Elmanetal2005} or as a ``finite volume element'' (FVE) method \citep{Cai1990,EwingLinLin2002}.  We adopt the FVE terminology because of the greater clarity which comes from regarding the mass conservation equation in classical flux-integral, i.e.~finite volume (FV; LeVeque, 2002),\nocite{LeVeque} form.
+In fact we show that the classical \cite{Mahaffy1976} FD scheme is simply a non-standard quadrature choice in a conforming finite element (FE) method.  The trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \citep{Elmanetal2005}.  The test functions are piecewise-constant with support on dual rectangular control volumes, so the scheme can be regarded as either a Petrov-Galerkin method \citep{Elmanetal2005} or as a ``finite volume element'' (FVE) method \citep{Cai1990,EwingLinLin2002}.  We adopt the FVE terminology because of the greater clarity which comes from regarding the mass conservation equation in classical flux-integral, i.e.~finite volume (FV; LeVeque, 2002),\nocite{LeVeque2002} form.
 
 Based on this re-interpretation of the Mahaffy scheme we propose and test a ``\Mstar'' scheme which uses an obvious, and more accurate, quadrature choice when evaluating the finite volume flux integral.  The new scheme also uses first-order upwinding on the part of the flux that comes from the bedrock slope, but we see that the results are actually better than those from higher-resolution schemes when applied to a bedrock-step exact solution \citep{JaroschSchoofAnslow2013}.  Nonetheless the scheme is based on the same stencil, i.e.~uses only the same gridded values, as the classical Mahaffy scheme.  We also describe how to construct the improved scheme on unstructured finite element triangulations with dual control volumes, i.e.~Delaunay/Voronoi dual meshes \citep{EgholmNielsen2010,Ringleretal2013}.
 
@@ -114,7 +115,7 @@ However, if the bed is not flat then $\grad s$ and $\grad H$ are different.  On 
 \end{equation}
 In this case \eqref{eq:siaevolution} is, apparently, a hyperbolic conservation equation, but this appearance is superficial because the velocity depends in part on the gradient of the transported quantity.
 
-The former diffusion interpretation \eqref{eq:siafluxdiffusion} is more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} can be transformed to a $p$-Laplacian diffusion equation \citep{CDDSV}.  In general, however, the diffusion-equation interpretation of \eqref{eq:siaevolution} is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
+The former diffusion interpretation \eqref{eq:siafluxdiffusion} is more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}.  In general, however, the diffusion-equation interpretation of \eqref{eq:siaevolution} is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
 
 Later in this paper we will settle on a modification of the flux form suggested by \cite{JaroschSchoofAnslow2013}, namely
 \begin{equation}
@@ -306,17 +307,48 @@ Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals
 
 Eight half-edges make up $\partial V_{j,k}$, with each half-edge entirely inside an element and $\bq^h$ smooth along each half-edge.  Thus one could propose further-improved methods, replacing the midpoint rule by higher-order quadrature (e.g.~2-point Gauss-Legendre quadrature).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, we observe that the largest numerical SIA errors occur near the free boundary, namely at the ice sheet margin \citep{Bueleretal2005}.  At such locations the exact solution $H$ has low regularity \citep{JouvetBueler2012}.  Any FE method of any order therefore suffers in the sense that the exact free boundary may pass through an element.  Because $\bq^h$ represents a smooth approximation on the element to a merely-continuous (and not smooth) exact flux $\bq$, higher-order quadrature and interpolation will probably not give much advantage near the free boundary.  Our improved method represents a measurable improvement over the classical Mahaffy method (see the next section) primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the midpoint rule or bilinear interpolation, both of which are implicitly used in the classical method, are flawed.
 
+\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme suffers from significant mass conservation errors at locations of abrupt change in the bed elevation, even away from the free boundary.  (I.e.~even with positive thickness at all involved grid points.)  In such cases, when the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They propose and demonstrate that a particular higher-resolution upwinding scheme \citep{LeVeque2002} based on the form $\bq = \boldsymbol{\omega} H^{n+2}$ of the entire SIA flux reduces error at such locations.  Their upwinding scheme expands the stencil of the scheme so that, for example, computing $\bq$ at point $(x_j,y_k)$ involves thickness $H_{j+2,k}$ which is two cells away.  Furthermore they use explicit time-stepping to update the thickness.  Compare to theirs, we propose an implicit (see next section), FE-based, stencil-non-expanding form of upwinding, but we use their bedrock-step exact solution for testing our scheme (see Examples section).  Note that for our implicit implementation, upwinding is not required for stability or non-oscillation in smooth bed cases.
+
+First recall form \eqref{eq:fluxform}, which decomposes the flux into a diffusion term and a transport term.  We denote the transport term by $\tilde \bq$:
+\begin{equation}
+  \bq = - D \grad H + \tilde \bq \quad \text{where} \quad \tilde \bq = \bW H^{n+2}, \label{eq:transporttermdefine}
+\end{equation}
+and $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but we propose to upwind only the $\tilde \bq$ term, and only by changing the location where $H^{n+2}$ is evaluated.  Our evaluation of $D\grad H$ and $\bW$ are unchanged.
+
+Recall that our improved scheme evaluates $\bq^h$ at quadrature point $(x_j^+,y_k+\tfrac{\Delta y}{4})$ shown in Figure \ref{fig:improvequadrature}, among other points.  We show the upwind modification at this point.  It uses the sign of the $x$-component $W^x$ of $\bW = (W^x,W^y)$ at the point, namely
+\begin{equation}
+W^x_* = W^x(x_j^+,y_k+\tfrac{\Delta y}{4}),
+\end{equation}
+to shift the evaluation of $H$ in $\tilde \bq$ upwind by a quarter of an element width:
+\begin{align}
+&\tilde \bq^x(x_j^+,y_k+\tfrac{\Delta y}{4})  \label{eq:upwindschemex} \\
+&\quad = W^x_* \begin{cases}
+                 H(x_j+\tfrac{\Delta x}{4},y_k+\tfrac{\Delta y}{4})^{n+2}, & W^x_* \ge 0, \\
+                 H(x_j+\tfrac{3\Delta x}{4},y_k+\tfrac{\Delta y}{4})^{n+2}, & W^x_* < 0.
+             \end{cases} \notag
+\end{align}
+Note that the sign of $W_x^*$ is fully-determined by---i.e.~opposite to---the sign of the $x$-component of the bed gradient $\grad b$; see equation \eqref{eq:siaWdefine}.
+
+The upwind modification at this quadrature point is shown by horizontal arrows in Figure \ref{fig:upwindterm}.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.  Note that these upwinding modifications do not expand the stencil of the scheme \citep[compare][]{JaroschSchoofAnslow2013}.  Though this is a form of first-order upwinding in theory, the change is most important at locations of low regularity of the solution, and we will see in verification that it improves accuracy over the apparently second-order Mahaffy scheme.
+
 \begin{figure}[ht]
 \begin{center}
 \input{fig4.tikz}
 \end{center}
-\caption{On element $\square_{j,k}$, upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ replaces thicknesses evaluated at quadrature points (circles) with thicknesses from locations shown with ``$+$'', along element diagonals (dotted), according to the sign of the components of $\bW$.}
+\caption{On element $\square_{j,k}$, in computing the flux at quadrature points (circles), upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ evaluates the thicknesses $H$ at locations shown with ``$+$'', according to the sign of the components of $\bW$.  These locations are along element diagonals (dotted).}
 \label{fig:upwindterm}
 \end{figure}
 
-FIXME: We call the method which combines improved quadrature and upwinding on the ``$\bW H^{n+2}$'' term the ``\Mstar'' method.
+This upwind modification is the second of our two improvements over the classical Mahaffy scheme.  We call the method which combines these two improvements (quadrature and upwinding) the ``\Mstar'' method.  We will see that the primary benefit is in the convergence of the method for solving the system of nonlinear algebraic equations.  A secondary benefit is a small improvement in accuracy, especially on coarse grids.
 
-FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
+FIXME: appendix? the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
+
+
+\section{Solution of the equations} \label{sec:solution}
+
+FIXME: implicit by Newton, but using reduced-set \citep{BensonMunson2006} and Jacobian calculation by finite differencing.  thus only need to write a residual routine.
+
+FIXME: continuation on $n$ and on $D$
 
 
 \section{Examples} \label{sec:examples}
