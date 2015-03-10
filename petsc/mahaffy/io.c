@@ -1,6 +1,6 @@
 /* (C) 2015 Ed Bueler */
 
-#include "binaryio.h"
+#include "io.h"
 
 PetscErrorCode ReadDimensions(AppCtx *user) {
     PetscErrorCode ierr;

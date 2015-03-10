@@ -1,7 +1,7 @@
 /* (C) 2015 Ed Bueler */
 
-#ifndef BINARYIO_H_
-#define BINARYIO_H_
+#ifndef IO_H_
+#define IO_H_
 
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for AppCtx
@@ -18,4 +18,4 @@ PetscErrorCode DumpToFiles(Vec,AppCtx*);
 // use X viewers to show b,m,Hexact
 PetscErrorCode ShowFields(AppCtx *user);
 
-#endif // BINARYIO_H_
+#endif // IO_H_

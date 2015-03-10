@@ -7,9 +7,9 @@
 include ${PETSC_DIR}/lib/petsc-conf/variables
 include ${PETSC_DIR}/lib/petsc-conf/rules
 
-mahaffy: mahaffy.o exactsia.o binaryio.o chkopts
-	-${CLINKER} -o mahaffy mahaffy.o exactsia.o binaryio.o  ${PETSC_SNES_LIB}
-	${RM} mahaffy.o exactsia.o binaryio.o
+mahaffy: mahaffy.o exactsia.o io.o chkopts
+	-${CLINKER} -o mahaffy mahaffy.o exactsia.o io.o  ${PETSC_SNES_LIB}
+	${RM} mahaffy.o exactsia.o io.o
 
 .PHONY: distclean texclean
 

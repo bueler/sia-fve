@@ -63,7 +63,7 @@ Generate .png figs:
 
 #include "mahaffyctx.h"
 #include "exactsia.h"
-#include "binaryio.h"
+#include "io.h"
 
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
