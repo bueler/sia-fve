@@ -1,5 +1,6 @@
 /* (C) 2015 Ed Bueler */
 
+#include <sys/time.h>
 #include "io.h"
 
 PetscErrorCode ReadDimensions(AppCtx *user) {
@@ -160,6 +161,21 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
 
     ierr = ViewToBinary(PETSC_FALSE,H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
 
+    PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode WriteHistoryFile(const char name[],int argc,char **argv, AppCtx *user) {
+    SETERRQ(PETSC_COMM_WORLD,1,"NOT IMPLEMENTED ... stopping\n");
+/*
+struct timeval  tv1, tv2;
+gettimeofday(&tv1, NULL);
+// stuff
+gettimeofday(&tv2, NULL);
+printf ("Total time = %f seconds\n",
+         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+         (double) (tv2.tv_sec - tv1.tv_sec));
+*/
     PetscFunctionReturn(0);
 }
 
