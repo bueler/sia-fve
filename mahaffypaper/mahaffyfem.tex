@@ -116,7 +116,7 @@ In this case \eqref{eq:siaevolution} is, apparently, a hyperbolic conservation e
 
 The former diffusion interpretation \eqref{eq:siafluxdiffusion} is more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} can be transformed to a $p$-Laplacian diffusion equation \citep{CDDSV}.  In general, however, the diffusion-equation interpretation of \eqref{eq:siaevolution} is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
 
-In this paper we modify a form suggested by \cite{JaroschSchoofAnslow2013}, and write
+Later in this paper we will settle on a modification of the flux form suggested by \cite{JaroschSchoofAnslow2013}, namely
 \begin{equation}
 \bq = - D \grad H + \bW H^{n+2},\label{eq:fluxform}
 \end{equation}
@@ -268,15 +268,23 @@ The average of these values is not a value of $s_y^h$---thus the hat notation---
 \end{equation}
 Formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in FD formula \eqref{eq:mahaffyalphax}.
 
-FIXME FROM HERE  In our FVE interpretation, we see that the Mahaffy scheme uses \eqref{eq:femsxstag}, \eqref{eq:femHstag}, and \eqref{eq:femsystagcrime} in the midpoint rule:
+In our FVE interpretation, the Mahaffy scheme uses \eqref{eq:femsxstag}, \eqref{eq:femHstag}, and \eqref{eq:femsystagcrime} in the midpoint rule:
+\begin{align}
+&\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy  \label{eq:femmahaffyfirstint} \\
+  &\quad\approx - \Delta y\, \Gamma H^h(x_j^+,y_k)^{n+2} \hat \alpharight^{(n-1)/2} s^h_x(x_j^+,y_k). \notag 
+\end{align}
+where
 \begin{equation}
-\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy \approx - \Gamma H^h(x_j^+,y_k)^{n+2} \left(s^h_x(x_j^+,y_k)^2 + \widehat{s^h_y}(x_j^+,y_k)^2\right)^{(n-1)/2} s^h_x(x_j^+,y_k)\,\Delta y. \label{eq:femmahaffyfirstint}
+\alpharight^2 = s^h_x(x_j^+,y_k)^2 + \widehat{s^h_y}(x_j^+,y_k)^2
 \end{equation}
-Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a smart quadrature ``crime'' (compare \cite{Strang1972}), averaging across discontinuities to reconstruct slopes.  Approximation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the staggered-grid fluxes as \eqref{eq:mahaffyWqx}, \eqref{eq:mahaffyWalphax}, \eqref{eq:mahaffyWqy}, and \eqref{eq:mahaffyWalphay}.  In particular, dividing the resulting approximation of equation \eqref{eq:siafve} by the control volume area $\Delta x\,\Delta y$ gives FD equation \eqref{eq:siasteadyfd}.
+is the same as in \eqref{eq:mahaffyalphax}.
 
-\section{An improved scheme on structured and unstructured grids}  \label{sec:star}
+Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by an understandable quadrature ``crime'' \citep[compare][]{Strang1972}, namely by averaging across discontinuities to reconstruct slopes.  Equation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the fluxes as \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyalphax} at staggered points $(x_{j+\half},y_k)$, and the corresponding approximations at staggered points $(x_j,y_{k+\half})$.  By using these approximate fluxes to compute the integrals in equation \eqref{eq:fluxintdecomp}, and then dividing equation \eqref{eq:siafve} by the control volume area $\Delta x\,\Delta y$, we get FD equation \eqref{eq:siasteadyfd}.
 
-If our goal is to convert FVE equation \eqref{eq:siafve} into an algebraic equation by a choice of quadrature along the boundary of the control volume ($\partial V_{j,k}$), it is easy to propose a straightforward improvement over the Mahaffy scheme of the previous section.  To recap the situation, because $H^h$ and $s^h$ live in the $Q^1$ space of continuous, piecewise-bilinear functions $S_h$, the numerical approximation $q^h$ from formula \eqref{eq:siaflux} is defined on the interior of each element.  However, because the gradient $\grad s^h$ is discontinuous across the element boundaries, also $\bq^h$ is discontinuous across element boundaries.
+
+\section{An improved scheme}  \label{sec:star}
+
+If our goal is to convert FVE equation \eqref{eq:siafve} into an algebraic equation by a choice of quadrature along the boundary of the control volume $\partial V_{j,k}$, it is easy to propose an improvement over the Mahaffy choices.  To recap, because $H^h$ and $s^h$ live in the space of continuous and piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined on the interior of each element.  However, because the gradient $\grad s^h$ is discontinuous across the element boundaries, also $\bq^h$ is discontinuous across element boundaries.
 
 Because of the discontinuity of the integrand on the element boundary, we break each interval of integration on the right-hand side of \eqref{eq:fluxintdecomp} into two parts, so that we are integrating smooth functions.  For example, we break the first integral on the right-hand side of \eqref{eq:fluxintdecomp} at $y=y_k$.  Then we use the midpoint rule, which is the optimal one-point rule for smooth functions, in each subinterval; recall notation \eqref{eq:definexypm}:
 \begin{align}
