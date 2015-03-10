@@ -1,4 +1,7 @@
-\begin{tikzpicture}[scale=0.5]
+\begin{tikzpicture}[scale=8.6cm/16.0cm]
+% min x = 0, max x = 12  so  width = 12 cm, but we pad
+% 8.6cm is one-column width for J Glaciol
+%\begin{tikzpicture}[scale=0.5]
 
   % strong grid around elements
   \draw[thick] (0,0) -- (8,0);
@@ -32,6 +35,6 @@
 
   % label as "b"
   \tikzstyle{fontbf} = [font=\bf]
-  \draw (0,8) node[fontbf] {{\large b.}};
+  \draw (0,8) node[fontbf] {b.};
 
 \end{tikzpicture}
