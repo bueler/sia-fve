@@ -38,6 +38,12 @@ Successes:
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000  # needs 604 SNES iterations!
    mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor
 
+Refinement path with full diagnostics:
+   for lev in 0 1 2 3 4 5; do (mkdir dome${lev}/ && ./mahaffy -da_refine $lev -snes_max_it 200 -mah_dump dome${lev}/ && cd dome${lev}/ && ../figsmahaffy.py); done
+   cat dome?/history.txt |'grep' "spacing in x"
+   cat dome?/history.txt |'grep' "last successful"
+   cat dome?/history.txt |'grep' "max thickness error"
+   cat dome?/history.txt |'grep' "av thickness error"
 
 Divergence and error cases:
    ./mahaffy -da_refine 2      # divergence at 9
