@@ -3,6 +3,7 @@
 #ifndef MAHAFFYCTX_H_   /* Include guard */
 #define MAHAFFYCTX_H_
 
+#include <sys/time.h>
 #include <petscdmda.h>
 #include <petscvec.h>
 
@@ -37,6 +38,8 @@ typedef struct {
             dump;   // dump fields into ASCII VTK files
   char      figsprefix[512],
             readname[512];
+  struct timeval starttime,
+                 endtime;
 } AppCtx;
 
 #endif // MAHAFFYCTX_H_

@@ -15,10 +15,18 @@ PetscErrorCode ReadDataVecs(AppCtx*);
 PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
 PetscErrorCode DumpToFiles(Vec,AppCtx*);
 
+// utilities to compute quantities in reports and history files
+PetscErrorCode GetMaxDiffusivity(AppCtx*,PetscReal*);
+PetscErrorCode GetVolumes(Vec,AppCtx*,PetscReal*,PetscReal*);
+PetscErrorCode GetErrors(Vec,AppCtx*,PetscReal*,PetscReal*);
+
+// print a report to stdout
+PetscErrorCode StdoutReport(Vec,DMDALocalInfo*,AppCtx*);
+
 // write a text history file, including command line
-PetscErrorCode WriteHistoryFile(const char[],int,char**,AppCtx*);
+PetscErrorCode WriteHistoryFile(Vec,const char[],int,char**,DMDALocalInfo*,AppCtx*);
 
 // use X viewers to show b,m,Hexact
-PetscErrorCode ShowFields(AppCtx *user);
+PetscErrorCode ShowFields(AppCtx*);
 
 #endif // IO_H_

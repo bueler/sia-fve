@@ -222,6 +222,7 @@ int main(int argc,char **argv) {
                               0.0005, 0.0002, 0.0000};
   SNESConvergedReason reason;
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
+  gettimeofday(&user.starttime, NULL);
   for (m = 0; m<user.Neps; m++) {
       user.eps = eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
@@ -245,18 +246,22 @@ int main(int argc,char **argv) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
                      "     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
                      SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
-              if (reason < 0)
-                  break;
-          } else
+          }
+          if (reason < 0) {
+              user.eps = (m>0 ? eps_sched[m-1] : eps_sched[0]); // record last successful eps
               break;
+          }
       }
       ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-      ierr = StateReport(H,&info,&user); CHKERRQ(ierr);
+      ierr = StdoutReport(H,&info,&user); CHKERRQ(ierr);
   }
+  gettimeofday(&user.endtime, NULL);
 
   if (user.dump == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "writing x,y,b,m,Hexact,H to %s*.dat ...\n", user.figsprefix); CHKERRQ(ierr);
+          "writing history.txt,x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",
+          user.figsprefix); CHKERRQ(ierr);
+      ierr = WriteHistoryFile(H,"history.txt",argc,argv,&info,&user); CHKERRQ(ierr);
       ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
   }
 
@@ -648,35 +653,4 @@ PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason 
   PetscFunctionReturn(0);
 }
 
-
-// prints the current volume and current max diffusivity
-// also prints thickness error norms:
-//    |.|_inf = (max error)  and  |.|_1/(dim) = (av error)
-// and volume difference
-PetscErrorCode StateReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
-  PetscErrorCode  ierr;
-  const PetscReal darea = user->dx * user->dx,
-                  NN = info->mx * info->my;
-  PetscReal       sumH, maxD, enorminf, enorm1, sumHexact, voldiffrel;
-  Vec             dH;
-
-  ierr = VecSum(H,&sumH); CHKERRQ(ierr);
-  ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
-             sumH * darea / 1.0e9, maxD); CHKERRQ(ierr);
-
-  ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
-  ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);    // dH := (-1.0) Hexact + H = H - Hexact
-  ierr = VecNorm(dH,NORM_INFINITY,&enorminf); CHKERRQ(ierr);
-  ierr = VecNorm(dH,NORM_1,&enorm1); CHKERRQ(ierr);
-  ierr = VecDestroy(&dH); CHKERRQ(ierr);
-  ierr = VecSum(user->Hexact,&sumHexact); CHKERRQ(ierr);
-  voldiffrel = PetscAbsReal(sumH - sumHexact) / sumHexact;
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
-             enorminf, enorm1 / NN, 100.0 * voldiffrel); CHKERRQ(ierr);
-
-  PetscFunctionReturn(0);
-}
 

@@ -165,17 +165,97 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
 }
 
 
-PetscErrorCode WriteHistoryFile(const char name[],int argc,char **argv, AppCtx *user) {
-    SETERRQ(PETSC_COMM_WORLD,1,"NOT IMPLEMENTED ... stopping\n");
-/*
-struct timeval  tv1, tv2;
-gettimeofday(&tv1, NULL);
-// stuff
-gettimeofday(&tv2, NULL);
-printf ("Total time = %f seconds\n",
-         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
-         (double) (tv2.tv_sec - tv1.tv_sec));
-*/
+// maxD has units m^2 s-1
+PetscErrorCode GetMaxDiffusivity(AppCtx *user, PetscReal *maxD) {
+  PetscErrorCode  ierr;
+  ierr = MPI_Allreduce(&user->maxD,maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+// volH and volHexact have units m^3
+PetscErrorCode GetVolumes(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact) {
+  PetscErrorCode  ierr;
+  const PetscReal darea = user->dx * user->dx;
+  ierr = VecSum(H,volH); CHKERRQ(ierr);
+  ierr = VecSum(user->Hexact,volHexact); CHKERRQ(ierr);
+  *volH      *= darea;
+  *volHexact *= darea;
+  PetscFunctionReturn(0);
+}
+
+
+// enorminf = ||H - Hexact||_infty,  enorm1 = ||H-Hexact||_1;  both have units of m
+PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *enorm1) {
+  PetscErrorCode  ierr;
+  Vec             dH;
+  ierr = VecDuplicate(H,&dH); CHKERRQ(ierr);
+  ierr = VecWAXPY(dH,-1.0,user->Hexact,H); CHKERRQ(ierr);  // dH := (-1.0) Hexact + H = H - Hexact
+  ierr = VecNorm(dH,NORM_INFINITY,enorminf); CHKERRQ(ierr);
+  ierr = VecNorm(dH,NORM_1,enorm1); CHKERRQ(ierr);
+  ierr = VecDestroy(&dH); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode StdoutReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
+  PetscErrorCode  ierr;
+  const PetscReal NN = info->mx * info->my;
+  PetscReal       maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
+
+  ierr = GetMaxDiffusivity(user, &maxD); CHKERRQ(ierr);
+  ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
+             volH / 1.0e9, maxD); CHKERRQ(ierr);
+
+  ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
+  voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
+  ierr = PetscPrintf(PETSC_COMM_WORLD,
+             "       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
+             enorminf, enorm1 / NN, 100.0 * voldiffrel); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv, DMDALocalInfo *info, AppCtx *user) {
+    PetscErrorCode  ierr;
+    PetscViewer     viewer;
+    const PetscReal NN = info->mx * info->my;
+    char            cmdline[1024] = "", filename[1024] = "";
+    int             j, strerr, size;
+    double          computationtime;
+    PetscReal       volH, volHexact, voldiffrel, enorminf, enorm1;
+
+    strerr = sprintf(filename,"%s%s",user->figsprefix,name);
+    if (strerr < 0) { SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr); }
+    ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,filename,&viewer); CHKERRQ(ierr);
+    for (j=0; j<argc; j++) {
+        strcat(cmdline,argv[j]);
+        strcat(cmdline," ");
+    }
+    ierr = PetscViewerASCIIPrintf(viewer,"%s\n",cmdline); CHKERRQ(ierr);
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"number of processors  %d\n",size); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"grid points in x-direction  %d\n",info->mx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"grid points in y-direction  %d\n",info->my); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in x-direction (m)  %.6f\n",user->Lx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in y-direction (m)  %.6f\n",user->Ly); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"spacing in x-direction (m)  %.6f\n",user->dx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",user->dx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"last successful value of eps  %.6e\n",user->eps); CHKERRQ(ierr);
+    ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"solution ice volume (m^3)  %.6e\n",volH); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"exact ice volume (m^3)  %.6e\n",volHexact); CHKERRQ(ierr);
+    voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
+    ierr = PetscViewerASCIIPrintf(viewer,"relative volume difference  %.6e\n",voldiffrel); CHKERRQ(ierr);
+    ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"max thickness error (m)  %.6e\n",enorminf); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"av thickness error (m)  %.6e\n",enorm1 / NN); CHKERRQ(ierr);
+    computationtime =   (double)(user->endtime.tv_usec - user->starttime.tv_usec) / 1.0e6
+                      + (double)(user->endtime.tv_sec -  user->starttime.tv_sec);
+    ierr = PetscViewerASCIIPrintf(viewer,"total time (seconds)  %.6f\n",computationtime); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
