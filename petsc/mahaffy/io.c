@@ -200,7 +200,7 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
              "        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
-             volH / 1.0e9, maxD); CHKERRQ(ierr);
+             (double)volH / 1.0e9, (double)maxD); CHKERRQ(ierr);
 
   ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
   NN = info.mx * info.my;
@@ -208,7 +208,7 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
   ierr = PetscPrintf(PETSC_COMM_WORLD,
              "       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
-             enorminf, enorm1 / NN, 100.0 * voldiffrel); CHKERRQ(ierr);
+             (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -237,17 +237,17 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     ierr = PetscViewerASCIIPrintf(viewer,"number of processors  %d\n",size); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"grid points in x-direction  %d\n",info.mx); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"grid points in y-direction  %d\n",info.my); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in x-direction (m)  %.6f\n",user->Lx); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in y-direction (m)  %.6f\n",user->Ly); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"spacing in x-direction (m)  %.6f\n",user->dx); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",user->dx); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"last successful value of eps  %.6e\n",user->eps); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in x-direction (m)  %.6f\n",(double)user->Lx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in y-direction (m)  %.6f\n",(double)user->Ly); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"spacing in x-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"last successful value of eps  %.6e\n",(double)user->eps); CHKERRQ(ierr);
     ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"solution ice volume (m^3)  %.6e\n",volH); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"exact ice volume (m^3)  %.6e\n",volHexact); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"solution ice volume (m^3)  %.6e\n",(double)volH); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"exact ice volume (m^3)  %.6e\n",(double)volHexact); CHKERRQ(ierr);
     ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"max thickness error (m)  %.6e\n",enorminf); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"av thickness error (m)  %.6e\n",enorm1 / NN); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"max thickness error (m)  %.6e\n",(double)enorminf); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"av thickness error (m)  %.6e\n",(double)enorm1 / NN); CHKERRQ(ierr);
     computationtime =   (double)(user->endtime.tv_usec - user->starttime.tv_usec) / 1.0e6
                       + (double)(user->endtime.tv_sec -  user->starttime.tv_sec);
     ierr = PetscViewerASCIIPrintf(viewer,"total time (seconds)  %.6f\n",computationtime); CHKERRQ(ierr);
