@@ -27,8 +27,8 @@ typedef struct {
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
             Neps;   // number of levels in regularization/continuation
-  PetscBool mtrue,  // use true Mahaffy method instead of Mahaffy* (default)
-            upwind, // upwind "W H^{n+2}" term in flux formula  q = - D grad H + W H^{n+2}
+  PetscBool mtrue,  // use true Mahaffy method instead of M*
+            noupwind,// do not upwind "W H^{n+2}" term in flux formula  q = - D grad H + W H^{n+2}
             read,   // read grid and data from PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)

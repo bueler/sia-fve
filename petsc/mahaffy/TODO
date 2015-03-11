@@ -1,6 +1,3 @@
-
-* change to -mah_noupwind option, and have M* refer to both improvements, as in paper
-
 * write figures in PDF for paper
 
 * implement explicit step as smoother

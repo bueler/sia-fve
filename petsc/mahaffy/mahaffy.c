@@ -9,12 +9,12 @@ static const char help[] =
 "Note  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
 "Domain is  -Lx < x < Lx,  -Ly < y < Ly,  with periodic boundary conditions.\n\n"
 "Computed by Q1 FVE method with FD evaluation of Jacobian (i.e. no analytical yet).\n"
-"Compares Mahaffy* (default) and true Mahaffy schemes.\n"
+"Compares M* improved scheme (default) and true Mahaffy schemes.\n"
 "Uses SNESVI (-snes_type vinewtonrsls) with constraint  H(x,y) >= 0.\n\n"
-"Two cases: (1) flat bed case where analytical solution is known,\n"
-"           (2) -mah_read foo.dat reads b and m from PETSc binary file.\n\n"
-"For case (1) usage read usage comment at start of mahaffy.c.\n"
-"For case (2) usage see README.md.\n\n";
+"Two cases: (1) flat bed case where analytical solution is known\n"
+"               (see usage comments at start of mahaffy.c);\n"
+"           (2) -mah_read foo.dat reads b and m from PETSc binary file\n\n"
+"               (see usage in README.md).\n\n";
 
 /* Usage help:
    ./mahaffy -help |grep mah_
@@ -25,8 +25,8 @@ Use one of these three:
    ./mahaffy -mah_read foo.dat # see README.md for Greenland example
 
 Solution options:
-   ./mahaffy -mah_true         # use true Mahaffy
-   ./mahaffy -mah_upwind       # a kind of first-order upwinding on  grad b  part of flux
+   ./mahaffy -mah_true         # use true Mahaffy (neither quadrature nor upwind improvements)
+   ./mahaffy -mah_noupwind     # do not use upwinding on  grad b  part of flux
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
    ./mahaffy -mah_D0 10.0      # change constant diffusivity, used in continuation, to other value than
                                # default = 1.0;  big may be good for convergence, esp. w upwinding
@@ -35,7 +35,7 @@ Solution options:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
 
 Successes:
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -mah_upwind -snes_max_it 1000  # needs 604 SNES iterations!
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000  # needs 604 SNES iterations!
    mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor
 
 
@@ -101,7 +101,7 @@ int main(int argc,char **argv) {
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
   user.mtrue  = PETSC_FALSE;
-  user.upwind = PETSC_FALSE;
+  user.noupwind = PETSC_FALSE;
 
   user.read   = PETSC_FALSE;
   user.dome   = PETSC_TRUE;  // defaults to this case
@@ -208,10 +208,10 @@ int main(int argc,char **argv) {
   if (user.mtrue == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,    "solving by true Mahaffy method ...\n"); CHKERRQ(ierr);
   } else {
-      if (user.upwind == PETSC_TRUE) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by Mahaffy*-with-upwinding (Mahaffy++) method ...\n"); CHKERRQ(ierr);
+      if (user.noupwind == PETSC_TRUE) {
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by M* method _without_ upwinding ...\n"); CHKERRQ(ierr);
       } else {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by Mahaffy* method (without upwinding) ...\n"); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by M* method ...\n"); CHKERRQ(ierr);
       }
   }
 
@@ -345,7 +345,7 @@ PetscReal getfluxUP(const Grad gH, const Grad gb,
 }
 
 
-// the non-upwinding form of the method, i.e. pure Mahaffy*
+// the non-upwinding form of the flux
 PetscReal getflux(const Grad gH, const Grad gb, // compute with gradsatpt() first
                   const PetscReal H,            // compute with thicknessatpt() first
                   const Direction dir,
@@ -457,7 +457,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
           // get gradients and (non-upwinded) thicknesses
-          if (user->mtrue == PETSC_FALSE) {  // Mahaffy* or Mahaffy++ method
+          if (user->mtrue == PETSC_FALSE) {  // M* method, with or without upwind
               // above-center point in element
               ierr =     gradsatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,ab,user,&gHn,&gbn); CHKERRQ(ierr);
               ierr = thicknessatpt(j,k,     dx/2.0, 3.0*dy/4.0,H,   user,&Hn); CHKERRQ(ierr);
@@ -470,8 +470,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               // left-of-center point in element
               ierr =     gradsatpt(j,k,     dx/4.0,     dy/2.0,H,ab,user,&gHw,&gbw); CHKERRQ(ierr);
               ierr = thicknessatpt(j,k,     dx/4.0,     dy/2.0,H,   user,&Hw ); CHKERRQ(ierr);
-          } else {  // true Mahaffy method
-                    // this implementation is at least a factor of two inefficient
+          } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
               // center-top point in element
               ierr =     gradsatpt(j,k,   dx/2.0, dy,H,ab,user,&gHn,&gbn); CHKERRQ(ierr);
               if (k < info->ys + info->ym - 1) {
@@ -510,8 +509,12 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               ierr = thicknessatpt(j,k,   0.0, dy/2.0,H,   user,&Hw); CHKERRQ(ierr);
           }
           // evaluate fluxes
-          if (user->upwind == PETSC_TRUE) {
-              // Mahaffy++ method = Mahaffy* + first-order upwinding on grad b part
+          if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
+              qnx = getflux(gHn,gbn,Hn,X,user);
+              qsx = getflux(gHs,gbs,Hs,X,user);
+              qey = getflux(gHe,gbe,He,Y,user);
+              qwy = getflux(gHw,gbw,Hw,Y,user);
+          } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hnup, Hsup, Heup, Hwup;
               if (gbn.x <= 0.0) {  // W.x >= 0 case
                   ierr = thicknessatpt(j,k,    dx/4.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
@@ -537,19 +540,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               qsx = getfluxUP(gHs,gbs,Hs,Hsup,X,user);
               qey = getfluxUP(gHe,gbe,He,Heup,Y,user);
               qwy = getfluxUP(gHw,gbw,Hw,Hwup,Y,user);
-          } else { // both true Mahaffy and Mahaffy* methods
-              qnx = getflux(gHn,gbn,Hn,X,user);
-              qsx = getflux(gHs,gbs,Hs,X,user);
-              qey = getflux(gHe,gbe,He,Y,user);
-              qwy = getflux(gHw,gbw,Hw,Y,user);
           }
           aq[k][j] = (FluxQuad){qnx,qsx,qey,qwy};
       }
   }
   // loop over nodes to get residual
   // This is the integral over boundary of control volume using two quadrature
-  // points on each side of control volume.  For Mahaffy* it is two instances of
-  // midpoint rule on each side.  For Mahaffy it is just one, but with averaged
+  // points on each side of control volume.  For M* it is two instances of
+  // midpoint rule on each side.  For true Mahaffy it is just one, but with averaged
   // gradient calculation at the midpoint of the side.
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
@@ -593,6 +591,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-noupwind", "do not upwind ''W H^{n+2}'' term in flux formula  q = - D grad H + W H^{n+2}",
+      NULL,user->noupwind,&user->noupwind,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
@@ -603,11 +604,8 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-true", "use true Mahaffy method, not default Mahaffy*",
+      "-true", "use true Mahaffy method, not default M*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-upwind", "upwind ''W H^{n+2}'' term in flux formula  q = - D grad H + W H^{n+2}",
-      NULL,user->upwind,&user->upwind,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
   if (user->read == PETSC_TRUE) {
@@ -624,6 +622,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   }
   if ((user->read == PETSC_TRUE) && (user->bedstep == PETSC_TRUE)) {
       SETERRQ(PETSC_COMM_WORLD,3,"ERROR option conflict: both -mah_bedstep and -mah_read not allowed\n");
+  }
+  if (user->mtrue == PETSC_TRUE) {
+      user->noupwind = PETSC_TRUE;
   }
   PetscFunctionReturn(0);
 }
@@ -652,5 +653,4 @@ PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason 
   ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
