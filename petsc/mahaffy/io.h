@@ -16,7 +16,6 @@ PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
 PetscErrorCode DumpToFiles(Vec,AppCtx*);
 
 // utilities to compute quantities in reports and history files
-PetscErrorCode GetMaxDiffusivity(AppCtx*,PetscReal*);
 PetscErrorCode GetVolumes(Vec,AppCtx*,PetscReal*,PetscReal*);
 PetscErrorCode GetErrors(Vec,AppCtx*,PetscReal*,PetscReal*);
 

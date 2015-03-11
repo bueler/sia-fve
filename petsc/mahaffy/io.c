@@ -165,14 +165,6 @@ PetscErrorCode DumpToFiles(Vec H, AppCtx *user) {
 }
 
 
-// maxD has units m^2 s-1
-PetscErrorCode GetMaxDiffusivity(AppCtx *user, PetscReal *maxD) {
-  PetscErrorCode  ierr;
-  ierr = MPI_Allreduce(&user->maxD,maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
 // volH and volHexact have units m^3
 PetscErrorCode GetVolumes(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact) {
   PetscErrorCode  ierr;
@@ -203,7 +195,7 @@ PetscErrorCode StdoutReport(Vec H, DMDALocalInfo *info, AppCtx *user) {
   const PetscReal NN = info->mx * info->my;
   PetscReal       maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
 
-  ierr = GetMaxDiffusivity(user, &maxD); CHKERRQ(ierr);
+  ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
   ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
              "        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
