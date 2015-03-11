@@ -79,6 +79,8 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 
+extern PetscErrorCode ExplicitStepSmoother(Vec,AppCtx*);
+
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 
@@ -246,6 +248,7 @@ int main(int argc,char **argv) {
               //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
               user.eps = 1.5 * eps_sched[m];
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+              //ierr = ExplicitStepSmoother(Htry,&user); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
               ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
@@ -259,7 +262,7 @@ int main(int argc,char **argv) {
           }
       }
       ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-      ierr = StdoutReport(H,&info,&user); CHKERRQ(ierr);
+      ierr = StdoutReport(H,&user); CHKERRQ(ierr);
   }
   gettimeofday(&user.endtime, NULL);
 
@@ -267,7 +270,7 @@ int main(int argc,char **argv) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
           "writing history.txt,x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",
           user.figsprefix); CHKERRQ(ierr);
-      ierr = WriteHistoryFile(H,"history.txt",argc,argv,&info,&user); CHKERRQ(ierr);
+      ierr = WriteHistoryFile(H,"history.txt",argc,argv,&user); CHKERRQ(ierr);
       ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
   }
 
@@ -432,7 +435,11 @@ typedef struct {
 } FluxQuad;
 
 
-/* for call-back: evaluate residual FF(x) on local process patch */
+/* for call-back: evaluate residual FF on local process patch;
+note
+   FF_{j,k} = \int_{\partial V_{j,k}} \mathbf{q} \cdot \mathbf{n} - m_{j,k} \Delta x \Delta y
+where V_{j,k} is the control volume centered at (x_j,y_k)
+*/
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
@@ -550,13 +557,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           aq[k][j] = (FluxQuad){qnx,qsx,qey,qwy};
       }
   }
-  // loop over nodes to get residual
-  // This is the integral over boundary of control volume using two quadrature
-  // points on each side of control volume.  For M* it is two instances of
-  // midpoint rule on each side.  For true Mahaffy it is just one, but with averaged
-  // gradient calculation at the midpoint of the side.
+  // loop over nodes, not including ghosts, to get residual
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
+          // This is the integral over control volume boundary using two quadrature
+          // points on each side of control volume.  For M* it is two instances of
+          // midpoint rule on each side, and the two values of aq[][] per side are
+          // in fact different.  For true Mahaffy the two gradient values are
+          // already averaged, so the two values of aq[][] are actually the same.
           FF[k][j] =  (aq[k][j].xs     + aq[k-1][j].xn  ) * dy/2.0
                     + (aq[k][j-1].ye   + aq[k][j].yw    ) * dx/2.0
                     - (aq[k][j-1].xs   + aq[k-1][j-1].xn) * dy/2.0
@@ -571,6 +579,56 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   ierr = VecDestroy(&bloc); CHKERRQ(ierr);
   ierr = VecDestroy(&qloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode ExplicitStepSmoother(Vec H, AppCtx *user) {
+    PetscErrorCode  ierr;
+    DMDALocalInfo   info;
+    PetscReal       **aHloc, **aR, **aH, maxD, tmpeps, deltat, mu;
+    PetscInt        j, k;
+    Vec             Hloc, R;
+
+    PetscFunctionBeginUser;
+    // generate ghosted version of thickness H
+    ierr = DMCreateLocalVector(user->da, &Hloc); CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(user->da,H,INSERT_VALUES,Hloc); CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(user->da,H,INSERT_VALUES,Hloc); CHKERRQ(ierr);
+
+    // prepare to get residual from FormFunctionLocal()
+    ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(user->da, &R); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, Hloc, &aHloc);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, H, &aH);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(user->da, R, &aR);CHKERRQ(ierr);
+
+    // get eps=0 residual corresponding to H
+    //user->eps = 0.0;
+    tmpeps = user->eps; // set aside current value of eps
+    ierr = FormFunctionLocal(&info,aHloc,aR,user);CHKERRQ(ierr); // computes aR and user->maxD
+    user->eps = tmpeps; // restore it
+
+    // based on maxD we can take a max-principle stable explicit step
+    //dxinvsum = 1.0 / ((1.0 / user->dx) + (1.0 / user->dy));  <- replaces dx/2
+    ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+    deltat = (user->dx / 2.0) / (2.0 * maxD);
+
+    // take step aH, which is in-place since we have residual
+    // mu = deltat / (user->dx * user->dy);
+    mu = deltat / (user->dx * user->dx);
+    for (k=info.ys; k<info.ys+info.ym; k++) {
+        for (j=info.xs; j<info.xs+info.xm; j++) {
+            aH[k][j] = PetscMax(0.0, aH[k][j] - mu * aR[k][j]);
+        }
+    }
+
+    // clean up
+    ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(user->da, R, &aR);CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(user->da, Hloc, &aHloc);CHKERRQ(ierr);
+    ierr = VecDestroy(&Hloc); CHKERRQ(ierr);
+    ierr = VecDestroy(&R); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
 
