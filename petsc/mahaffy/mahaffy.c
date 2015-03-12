@@ -38,13 +38,6 @@ Successes:
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000  # needs 604 SNES iterations!
    mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor
 
-Refinement path with full diagnostics:
-   for lev in 0 1 2 3 4 5; do (mkdir dome${lev}/ && ./mahaffy -da_refine $lev -snes_max_it 200 -mah_dump dome${lev}/ && cd dome${lev}/ && ../figsmahaffy.py); done
-   cat dome?/history.txt |'grep' "spacing in x"
-   cat dome?/history.txt |'grep' "last successful"
-   cat dome?/history.txt |'grep' "max thickness error"
-   cat dome?/history.txt |'grep' "av thickness error"
-
 Divergence and error cases:
    ./mahaffy -da_refine 2      # divergence at 9
    ./mahaffy -da_refine 3      # divergence at 9
@@ -108,17 +101,20 @@ int main(int argc,char **argv) {
   user.eps    = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
-  user.mtrue  = PETSC_FALSE;
+
+  user.mtrue    = PETSC_FALSE;
   user.noupwind = PETSC_FALSE;
 
-  user.read   = PETSC_FALSE;
-  user.dome   = PETSC_TRUE;  // defaults to this case
-  user.bedstep= PETSC_FALSE;
-  user.swapxy = PETSC_FALSE;
+  user.dome     = PETSC_TRUE;  // defaults to this case
+  user.bedstep  = PETSC_FALSE;
+  user.swapxy   = PETSC_FALSE;
   user.divergetryagain = PETSC_FALSE;
 
-  user.showdata= PETSC_FALSE;
-  user.dump   = PETSC_FALSE;
+  user.read     = PETSC_FALSE;
+  user.showdata = PETSC_FALSE;
+  user.history  = PETSC_FALSE;
+  user.dump     = PETSC_FALSE;
+
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
 
@@ -266,11 +262,16 @@ int main(int argc,char **argv) {
   }
   gettimeofday(&user.endtime, NULL);
 
+  if (user.history == PETSC_TRUE) {
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+          "writing history.txt to %s ...\n", user.figsprefix); CHKERRQ(ierr);
+      ierr = WriteHistoryFile(H,"history.txt",argc,argv,&user); CHKERRQ(ierr);
+  }
+
   if (user.dump == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "writing history.txt,x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",
+          "writing x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",
           user.figsprefix); CHKERRQ(ierr);
-      ierr = WriteHistoryFile(H,"history.txt",argc,argv,&user); CHKERRQ(ierr);
       ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
   }
 
@@ -635,6 +636,7 @@ PetscErrorCode ExplicitStepSmoother(Vec H, AppCtx *user) {
 PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
   PetscBool      domechosen;
+  char           histprefix[512];
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsBool(
@@ -652,6 +654,10 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
+  strcpy(histprefix,"PREFIX/");
+  ierr = PetscOptionsString(
+      "-history", "write history.txt file with this prefix (also written under -mah_dump)",
+      NULL,histprefix,histprefix,512,&user->history); CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
@@ -689,6 +695,11 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   }
   if (user->mtrue == PETSC_TRUE) {
       user->noupwind = PETSC_TRUE;
+  }
+  if (user->dump == PETSC_TRUE) {
+      user->history = PETSC_TRUE;
+  } else if (user->history == PETSC_TRUE) {
+      strcpy(user->figsprefix,histprefix);
   }
   PetscFunctionReturn(0);
 }
