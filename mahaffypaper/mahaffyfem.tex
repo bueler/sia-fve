@@ -369,7 +369,27 @@ J = \left(\,\frac{\partial F_{j,k}}{\partial H_{r,s}}\,\right),
 \end{equation}
 is computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes so that only nine evaluations of the residual are needed to compute the finite-difference derivatives \citep{CurtisPowellReid1974}, but, because of periodicity, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.
 
-FIXME: a simple continuation scheme; compare \citep{KelleyKeyes1998}
+A Newton solver requires an initial iterate $H^{(0)}$.  For this purpose we give a heuristic which seems to work adequately-well for both ice sheet and glacier scale problems.  From the steady surface mass balance data $m_{j,k}$, here measured in meters per year, we compute
+\begin{equation}
+H_{j,k}^{(0)} = \big(1000.0\,m_{j,k}\big)_+,  \label{eq:nonlininitialheuristic}
+\end{equation}
+where $x_+ = \max\{0,x\}$.  In other words, we build the initial iterate by simply piling up one thousand years of accumulation, without flow.
+
+Additionally we apply a simple ``continuation'' scheme \citep[compare][]{KelleyKeyes1998} so as to start the Newton iteration with an easier problem, so as to work up to the fully nonlinear and degenerate SIA problem.  Consider this list of thirteen regularization values,
+\begin{align}
+\eps &= 1,\, 0.5,\, 0.2,\, 0.1,\, 0.05, \label{eq:continuationseq} \\
+     &\qquad 0.02,\, 0.01,\, 0.005,\, 0.002,\, 0.001, \notag \\
+     &\qquad 0.0005,\, 0.0002,\, 0, \notag
+\end{align}
+and define
+\begin{align}
+n(\eps) &= (1-\eps) n + \eps\, n_0,  \label{eq:continuationn} \\
+D(\eps) &= (1-\eps) D + \eps D_0,  \label{eq:continuationD}
+\end{align}
+where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=1$ or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(0)=n$ and $D(0)=D$.
+
+We use \eqref{eq:continuationseq}--\eqref{eq:continuationD} as follows.  FIXME
+
 
 
 \section{Examples} \label{sec:examples}

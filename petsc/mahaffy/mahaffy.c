@@ -208,7 +208,7 @@ int main(int argc,char **argv) {
   // initialize by chop & scale SMB
   ierr = VecCopy(user.m,H); CHKERRQ(ierr);
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
-  ierr = VecScale(H,1500.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
+  ierr = VecScale(H,1000.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
   // alternatives:
   //ierr = [VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
   //ierr = VecSet(H,0.0); CHKERRQ(ierr);
