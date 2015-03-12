@@ -7,3 +7,4 @@ petsc_conf.py
 *.dat.info
 *.nc
 *.pyc
+*.verif

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # refinement path for dome test: for result from -da_refine levels 0 ... 4
-# put into file foo.txt, on 6 processes, do
-#   $ ./domeconv.sh foo.txt 4 6
+# put into file foo.verif, on 6 processes, do
+#   $ ./domeconv.sh foo.verif 4 6
 
 # creates and destroys files lev?history.txt
 
