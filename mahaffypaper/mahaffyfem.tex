@@ -178,25 +178,27 @@ Slope approximation \eqref{eq:mahaffyalphax}, and its modifications for the othe
 Equation \eqref{eq:siasteadyfd} is one equation in an algebraic system which determines all values $H_{j,k}$ simultaneously.  Equation \eqref{eq:siasteadyfd}, centered at $(x_j,y_k)$, involves all nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a.  We call this pattern of dependence the ``stencil'' of the scheme \citep{MortonMayers2005}.
 
 
-\section{Finite volume element version} \label{sec:fveinterpretation}
+\section{FVE\, Interpretation} \label{sec:fveinterpretation}
 
 The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  Our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for (discontinuous) piecewise-constant test functions.  These test functions are discontinuous at the FD method's staggered grid points in particular (Figure \ref{fig:fdfemgrids}).  The method is a ``finite volume element'' (FVE) method in which exact discrete conservation, and the construction of upwind-type flux components, will follow in the standard FV understanding.  The FE character remains in that we use values of the interpolating trial function, from the interior of the element, in evaluating the finite volume integral.
 
 To re-derive the Mahaffy scheme we suppose \eqref{eq:siasteady} holds and we apply the divergence theorem to a subregion $V$ of $\Omega$:
 \begin{equation}
-  - \int_{\partial V} \bq \cdot \bn\,ds = \int_V m\, dx\,dy. \label{eq:siaasconservation}
+  \int_{\partial V} \bq \cdot \bn\,ds = \int_V m\, dx\,dy. \label{eq:siaasconservation}
 \end{equation}
 Here $\partial V$ denotes the boundary of $V$, $\bn$ is the outward normal unit vector, and $ds$ the length element on the closed curve $\partial V$.  Equation \eqref{eq:siaasconservation} is simply the integral form of \eqref{eq:siasteady}.
 
 An FVE method supposes that the approximation $H^h$ of the thickness solution lies in a finite-dimensional space of continuous functions which are differentiable almost everywhere.  These functions are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere and can be integrated along $\partial V$ in \eqref{eq:siaasconservation}.  In the method, integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of volumes $V$ which together tile $\Omega$.  This generates a finite system of nonlinear algebraic equations which can be solved by Newton's method (see Examples section).  This derivation of the algebraic system uses \eqref{eq:siaasconservation} the same way an FV method would solve differential equation \eqref{eq:siasteady}.
 
-Again consider the structured grid of rectangular elements shown in Figure \ref{fig:fdfemgrids}b.  Denote the element with lower-left corner at $(x_j,y_k)$ by $\square_{j,k}$.  These rectangles are $Q^1$ finite elements \citep{Elmanetal2005} when associated with bilinear functions.  A basis for such functions on $\square_{j,k}$ is a set of four functions $\{\chi_l(x-x_j,y-y_k)\}$ where
-\begin{align}
-\chi_1(x,y) &= \left(1-\frac{x}{\Delta x}\right) \left(1-\frac{y}{\Delta y}\right), \label{eq:elementbasis} \\
-\chi_2(x,y) &= \frac{x}{\Delta x} \left(1-\frac{y}{\Delta y}\right), \notag \\
-\chi_3(x,y) &= \left(1-\frac{x}{\Delta x}\right) \frac{y}{\Delta y}, \notag \\
-\chi_4(x,y) &= \frac{x}{\Delta x} \frac{y}{\Delta y}. \notag
-\end{align}
+Again consider the structured grid of rectangular elements shown in Figure \ref{fig:fdfemgrids}b.  Denote the element with lower-left corner at $(x_j,y_k)$ by $\square_{j,k}$.  These rectangles are $Q^1$ finite elements \citep{Elmanetal2005} when associated with bilinear functions.  A basis for such functions on $\square_{j,k}$ is a set of four functions
+\begin{equation}
+\chi_l\left(\frac{x-x_j}{\Delta x},\frac{y-y_k}{\Delta y}\right)  \label{eq:elementbasis}
+\end{equation}
+where
+\begin{align*}
+\chi_1(\xi,\nu) &= \left(1-\xi\right) \left(1-\nu\right), & \chi_2(\xi,\nu) &= \xi \left(1-\nu\right), \\
+\chi_3(\xi,\nu) &= \left(1-\xi\right) \nu, & \chi_4(\xi,\nu) &= \xi \nu.
+\end{align*}
 Now let
 \begin{equation}
 S_h = \{u \text{ is bilinear on each $\square_{j,k}$}\}
@@ -222,7 +224,7 @@ Bases of $S_h$ and $S_h^*$ are formed by those functions which take value one at
 
 We seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b$, and let $s^h=H^h+b^h$, so both are in $S_h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$, so $\bq^h$ is well-defined on the interior of each element.  We require \eqref{eq:siaasconservation} to hold for this $\bq^h$ and all volumes $V_{j,k}$, but this is equivalent to multiplying \eqref{eq:siasteady} by any $\omega_{j,k}$ and then integrating.  We use midpoint quadrature on the right-hand integral in \eqref{eq:siaasconservation}.  Thus we seek $H^h$ in $S_h$ satisfying
 \begin{equation}
-  - \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
+  \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
 \end{equation}
 for all $j,k$.  This gives a finite algebraic system once we choose a quadrature rule on the left.
 
@@ -340,9 +342,7 @@ The upwind modification at this quadrature point is shown by horizontal arrows i
 \label{fig:upwindterm}
 \end{figure}
 
-This upwind modification is the second of our two improvements over the classical Mahaffy scheme.  We call the method which combines these two improvements (quadrature and upwinding) the ``\Mstar'' method.  We will see that the primary benefit is in the convergence of the method for solving the system of nonlinear algebraic equations.  A secondary benefit is a small improvement in accuracy, especially on coarse grids.
-
-FIXME: appendix? the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
+This upwind modification is the second of our two improvements over the classical Mahaffy scheme.  We call the method which combines these two improvements (quadrature and upwinding) the ``\Mstar'' method.  We will see that the primary benefit is in the convergence of the method for solving the system of nonlinear algebraic equations.  A secondary benefit is a small improvement in accuracy, especially on coarse grids.  In the Appendix we describe an unstructured-mesh version of the \Mstar scheme.
 
 
 \section{Solution of the equations} \label{sec:solution}
@@ -363,7 +363,7 @@ H_{j,k} \ge 0.  \label{eq:nonlinconstraints}
 \end{equation}
 Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980} or complementarity problem \citep{BensonMunson2006}.  In either formulation, we solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.
 
-The open-source C code used in the current paper\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/layer-conserve}\end{center}  Then see \texttt{README.md} in subdirectory \texttt{petsc/mahaffy/} to compile the code \texttt{mahaffy.c} and run the examples.  The residual-evaluating part is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
+The open-source C code used in the current paper\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/layer-conserve}\end{center}  Then see \texttt{README.md} in subdirectory \texttt{petsc/mahaffy/} to compile the code \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
 J = \left(\,\frac{\partial F_{j,k}}{\partial H_{r,s}}\,\right),
 \end{equation}
@@ -386,17 +386,25 @@ and define
 n(\eps) &= (1-\eps) n + \eps\, n_0,  \label{eq:continuationn} \\
 D(\eps) &= (1-\eps) D + \eps D_0,  \label{eq:continuationD}
 \end{align}
-where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=1$ or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(0)=n$ and $D(0)=D$.
+where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.1$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(0)=n$ and $D(0)=D$.
 
-We use \eqref{eq:continuationseq}--\eqref{eq:continuationD} as follows.  FIXME
+We use \eqref{eq:continuationseq}--\eqref{eq:continuationD} as follows.  We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} with the first $\eps$ value from \eqref{eq:continuationseq}, thus with power $n(1)$ and diffusivity $D(1)$, using initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} but using the second $\eps$ value.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
 
+Note that because $D(1)=D_0$, in the flat bed case the first of these continuation-method problems is actually a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  Though this problem is nonlinear, because of the constraint which generates a non-trivial free-boundary problem, it is an easy problem on which the Newton solver can establish a first estimate of the ice-covered domain.
 
+Now, before giving computed examples which justify our claim of practical, not just theoretical, stability, we should explain the relationship between our steady-state computations and fully-implicit time-stepping methods for the time dependent SIA evolution equation \eqref{eq:siaevolution}.  Our problem corresponds to taking infinite time steps in such a fully-implicit method.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
+\begin{equation}
+\frac{H^\ell - H^{\ell-1}}{\Delta t} + \Div \bq^\ell = m \label{eq:backwardeuler}
+\end{equation}
+where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value or the result of solving at the previous time step, and the start of the continuation sequence can even be avoided.  If $\Delta t$ is not too big then actually \eqref{eq:backwardeuler} is also easier than the steady state limit $\Delta t\to \infty$, i.e.~equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  In fact, solving the steady state problem all at once is much harder than any single fully-implicit time-step.
 
 \section{Examples} \label{sec:examples}
 
-FIXME: code \texttt{petsc/mahaffy.c} implements \Mstar and Mahaffy methods; verification relative to steady part of Test D from \cite{Bueleretal2005}, i.e.~``Bueler profile'' from \cite{vanderVeen2013}; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
+FIXME: verification on steady part of Test D from \cite{Bueleretal2005}, i.e.~``Bueler profile'' from \cite{vanderVeen2013}; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
 
-FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (1km)
+FIXME: verification on bedrock step solution from \cite{JaroschSchoofAnslow2013}
+
+FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (1km); like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
 
 
 \section{Discussion and Conclusion} \label{sec:conclusion}
@@ -410,6 +418,11 @@ This work was supported by NASA grant \#NNX13AM16G and a grant of high-performan
 %         References
 \bibliography{../layerpaper/lc}
 \bibliographystyle{igs}
+
+\appendix
+\section{Appendix}  \label{sec:app}
+
+FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
 
 
 \begin{comment}
