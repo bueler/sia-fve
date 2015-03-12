@@ -22,6 +22,7 @@
 \newcommand\bv{\mathbf{v}}
 \newcommand\by{\mathbf{y}}
 
+\newcommand\bH{\mathbf{H}}
 \newcommand\bQ{\mathbf{Q}}
 \newcommand\bV{\mathbf{V}}
 \newcommand\bW{\mathbf{W}}
@@ -346,9 +347,23 @@ FIXME: appendix? the same \Mstar idea can be extended to dual Delaunay/Voronoi m
 
 \section{Solution of the equations} \label{sec:solution}
 
-FIXME: implicit by Newton, but using reduced-set \citep{BensonMunson2006} and Jacobian calculation by finite differencing.  thus only need to write a residual routine.
+We have, so far, re-interpreted the Mahaffy FD scheme as an FVE schme, and we have proposed improvements to the local accuracy (i.e.~better quadrature) and stability with respect to bed elevation gradients (i.e.~upwinding).  The resulting \Mstar scheme allows us to assemble a system of nonlinear algebraic equations, but it remains to describe, at a high level appropriate to our advanced mathematical software tools, the numerical solution of the system.
 
-FIXME: continuation on $n$ and on $D$
+We suppose that the structured grid covers a rectangular domain which has the easiest boundary conditions (b.c.s) appropriate to a whole ice sheet model, namely periodic b.c.s in both $x$- and $y$-directions.  (For the Greenland computation in the next section the reader may suppose that these b.c.s are ``applied'' at locations in the deep ocean, but in fact ``periodic b.c.s'' simply means that all nodes see the same configuration of neighboring nodes.)  If there are $N_x,N_y$ nodes in each direction then there are $N=N_x N_y$ total nodes, and there are the same number of elements and control volumes.
+
+Our highly-nonlinear system of $N$ equations
+\begin{equation}
+F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
+\end{equation}
+relates $N$ unknowns $\{H_{j,k}\}$ which form a vector $\bH$.  In \Mstar, each equation $F_{j,k}(\bH) = 0$ is simply equation \eqref{eq:siafve} with quadrature \eqref{eq:starbreakfirst} and upwind modification \eqref{eq:upwindschemex}, based on evaluating the everywhere-defined functions $H^h$ and $b^h$ in the FE function space $S_h$.  (Of course $H^h$ and $\bH$ are two descriptions of the same thing, the discrete approximation to the thickness.)
+
+System \eqref{eq:nonlinsystem} is not, by itself, an adequate description because we must also respect $N$ inequalities
+\begin{equation}
+H_{j,k} \ge 0.  \label{eq:nonlinconstraints}
+\end{equation}
+The combination of requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a single variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980} or into a complementarity problem \citep{BensonMunson2006}.  In either formulation, we will solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method implemented in PETSc \citep{Balayetal2014,BensonMunson2006}.  The open-source C code used here\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/layer-conserve}\end{center}  Then see \texttt{README.md} in subdirectory \texttt{petsc/mahaffy/} to compile and run the examples.} is surprisingly brief because we only write a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the matrix formed from entries $\partial F_{j,k}(\bH)/\partial H_{r,s}$, is computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}, made efficient by ``coloring'' the nodes so that no node shares a neighbor of the same color, and thus so that few evaluations of the residual are needed to compute the finite-difference derivatives \citep{CurtisPowellReid1974}.
+
+FIXME: a simple continuation scheme; compare \citep{KelleyKeyes1998}
 
 
 \section{Examples} \label{sec:examples}
