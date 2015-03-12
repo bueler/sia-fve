@@ -11,6 +11,9 @@ mahaffy: mahaffy.o exactsia.o io.o chkopts
 	-${CLINKER} -o mahaffy mahaffy.o exactsia.o io.o  ${PETSC_SNES_LIB}
 	${RM} mahaffy.o exactsia.o io.o
 
+domeverif.txt: mahaffy domeconv.sh
+	./domeconv.sh domeverif.sh 6 6
+
 .PHONY: distclean texclean
 
 dirclean:
