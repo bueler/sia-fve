@@ -14,6 +14,9 @@ mahaffy: mahaffy.o exactsia.o io.o chkopts
 dome.verif: mahaffy domeconv.sh
 	./domeconv.sh dome.verif 6 6
 
+bedstep.verif: mahaffy bedstepconv.sh
+	./bedstepconv.sh bedstep.verif 4 1
+
 .PHONY: distclean texclean
 
 dirclean:
