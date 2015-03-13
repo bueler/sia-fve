@@ -88,9 +88,6 @@ int main(int argc,char **argv) {
   PetscInitialize(&argc,&argv,(char*)0,help);
 
   // default settings of parameters
-  user.Nx     = -12;        // so DMDACreate2d() defaults to 12x12
-  user.Ny     = -12;
-
   user.n      = 3.0;
   user.g      = 9.81;       // m/s^2
   user.rho    = 910.0;      // kg/m^3
@@ -126,11 +123,15 @@ int main(int argc,char **argv) {
       ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
   } else {
       if (user.dome == PETSC_TRUE) {
-          user.Lx     = 900.0e3;    // m
-          user.Ly     = 900.0e3;    // m
+          user.Nx = -18;        // so DMDACreate2d() defaults to 18x18
+          user.Ny = -18;
+          user.Lx = 900.0e3;    // m
+          user.Ly = 900.0e3;    // m
       } else {
-          user.Lx     = 30.0e3;    // m
-          user.Ly     = 30.0e3;    // m
+          user.Nx = -30;
+          user.Ny = -30;
+          user.Lx = 30.0e3;    // m
+          user.Ly = 30.0e3;    // m
       }
   }
 
