@@ -46,14 +46,18 @@ Stage 2 of setup is to convert to PETSc binary using PETSc scripts:
 (For maint branch of petsc replace `bin/petsc-pythonscripts/` by just
 `bin/petsc-pythonscripts/`).
 
-Stage 3 is to run it and view results:  FIXME: does not make it to level 8; why?
+Stage 3 is to run it:  FIXME: does not make it to level 8; why?
 
     $ make mahaffy
     $ mkdir test/
     $ ./mahaffy -mah_read grn5km.dat -mah_Neps 8 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
+
+Stage 4 is to generate result `.pdf` and `.png` figures:
+
     $ cd test/
-    $ ../figsmahaffy.py
-    $ eog *.png
+    $ ../figsmahaffy.py --profile --observed --map
+
+View the figures in the usual ways.
 
 A higher-res (2.5 km), parallel, with-upwinding version looks like this; the `-pc_type` and
 `-sub_pc_type` choices may be helpful:
