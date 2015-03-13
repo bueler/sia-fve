@@ -403,20 +403,34 @@ where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$
 FIXME: verification on steady part of Test D from \cite{Bueleretal2005}, i.e.~``Bueler profile'' from \cite{vanderVeen2013}; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
 
 \begin{figure}[ht]
+\onecol{domeprofile.pdf}
+\caption{Result from \Mstar method on the Bueler profile exact solution ($\Delta x=25$ km).}
+\label{fig:domeprofile}
+\end{figure}
+
+\begin{figure}[ht]
 \onecol{domeverif.pdf}
-\caption{FIXME}
+\caption{Average and maximum error on the Bueler dome exact solution.}
 \label{fig:domeverif}
 \end{figure}
 
 FIXME: verification on bedrock step solution from \cite{JaroschSchoofAnslow2013}
 
 \begin{figure}[ht]
+\onecol{bedstepprofile.pdf}
+\caption{Result from \Mstar method on the Bueler profile exact solution ($\Delta x=500$ m).  The bed elevation is dashed.}
+\label{fig:bedstepprofile}
+\end{figure}
+
+\begin{figure}[ht]
 \onecol{bedstepverif.pdf}
-\caption{FIXME}
+\caption{Average and maximum error on the JSA bedrock-step exact solution.}
 \label{fig:bedstepverif}
 \end{figure}
 
 FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (1km); like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
+
+FIXME: idea: because we solve implicitly, very little of high-res (e.g. TVD-diminishing) transport scheme theory carries over.  what is important, it appears, is the smoothness of the discrete approximation in the sense that a helpful Jacobian can be formed (whether fd or not, perhaps) that allows convergence at the $\eps=0$ (or near) level
 
 
 \section{Discussion and Conclusion} \label{sec:conclusion}
