@@ -1,7 +1,8 @@
 mahaffy
 PetscBinaryIO.py
 petsc_conf.py
-*.png
+*/*.pdf
+*/*.png
 */*.txt
 *.dat
 *.dat.info
