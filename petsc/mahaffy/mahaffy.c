@@ -99,18 +99,21 @@ int main(int argc,char **argv) {
   user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
 
-  user.mtrue    = PETSC_FALSE;
-  user.noupwind = PETSC_FALSE;
+  user.mtrue      = PETSC_FALSE;
+  user.noupwind   = PETSC_FALSE;
+  user.upwindfull = PETSC_FALSE;
 
-  user.dome     = PETSC_TRUE;  // defaults to this case
-  user.bedstep  = PETSC_FALSE;
-  user.swapxy   = PETSC_FALSE;
+  user.dome       = PETSC_TRUE;  // defaults to this case
+  user.bedstep    = PETSC_FALSE;
+  user.swapxy     = PETSC_FALSE;
   user.divergetryagain = PETSC_FALSE;
+  user.checkadmissible = PETSC_FALSE;
+  user.forceadmissible = PETSC_FALSE;
 
-  user.read     = PETSC_FALSE;
-  user.showdata = PETSC_FALSE;
-  user.history  = PETSC_FALSE;
-  user.dump     = PETSC_FALSE;
+  user.read       = PETSC_FALSE;
+  user.showdata   = PETSC_FALSE;
+  user.history    = PETSC_FALSE;
+  user.dump       = PETSC_FALSE;
 
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
@@ -445,7 +448,10 @@ where V_{j,k} is the control volume centered at (x_j,y_k)
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
                                  AppCtx *user) {
   PetscErrorCode  ierr;
-  const PetscReal dx = user->dx, dy = dx;
+  const PetscReal dx = user->dx,
+                  dy = dx,
+                  upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0,
+                  upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0;
   PetscInt        j, k;
   PetscReal       **am, **ab;
   FluxQuad        **aq;
@@ -457,6 +463,20 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
 
   PetscFunctionBeginUser;
   user->maxD = 0.0;
+
+  if ((user->checkadmissible == PETSC_TRUE) || (user->forceadmissible == PETSC_TRUE)) {
+      // loop over locally-owned elements, including ghosts, checking/forcing nonnegativity of thickness
+      for (k = info->ys-1; k < info->ys + info->ym; k++) {
+          for (j = info->xs-1; j < info->xs + info->xm; j++) {
+              if ((user->checkadmissible == PETSC_TRUE) && (H[k][j] < 0.0)) {
+                  SETERRQ3(PETSC_COMM_WORLD,1,"ERROR: inadmissible H[%d][%d] = %.3e < 0\n",k,j,H[k][j]);
+              }
+              if (user->forceadmissible == PETSC_TRUE) {
+                  H[k][j] = PetscAbsReal(H[k][j]);
+              }
+          }
+      }
+  }
 
   ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
@@ -532,24 +552,24 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hnup, Hsup, Heup, Hwup;
               if (gbn.x <= 0.0) {  // W.x >= 0 case
-                  ierr = thicknessatpt(j,k,    dx/4.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,  upmin*dx,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k,3.0*dx/4.0,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,  upmax*dx,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
               }
               if (gbs.x <= 0.0) {  // W.x >= 0 case
-                  ierr = thicknessatpt(j,k,    dx/4.0,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,  upmin*dx,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k,3.0*dx/4.0,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,  upmax*dx,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
               }
               if (gbe.y <= 0.0) {  // W.y >= 0 case
-                  ierr = thicknessatpt(j,k,3.0*dx/4.0,    dy/4.0,H,user,&Heup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,  upmin*dy,H,user,&Heup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k,3.0*dx/4.0,3.0*dy/4.0,H,user,&Heup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,3.0*dx/4.0,  upmax*dy,H,user,&Heup); CHKERRQ(ierr);
               }
               if (gbw.y <= 0.0) {  // W.y >= 0 case
-                  ierr = thicknessatpt(j,k,    dx/4.0,    dy/4.0,H,user,&Hwup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,    dx/4.0,  upmin*dy,H,user,&Hwup); CHKERRQ(ierr);
               } else {
-                  ierr = thicknessatpt(j,k,    dx/4.0,3.0*dy/4.0,H,user,&Hwup); CHKERRQ(ierr);
+                  ierr = thicknessatpt(j,k,    dx/4.0,  upmax*dy,H,user,&Hwup); CHKERRQ(ierr);
               }
               qnx = getfluxUP(gHn,gbn,Hn,Hnup,X,user);
               qsx = getfluxUP(gHs,gbs,Hs,Hsup,X,user);
@@ -644,6 +664,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-bedstep", "use bedrock step exact solution by Jarosh, Schoof, Anslow (2013)",
       NULL,user->bedstep,&user->bedstep,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
+      "-checkadmissible", "in FormFunctionLocal(), stop if H < 0.0",
+      NULL,user->checkadmissible,&user->checkadmissible,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
       "-dome", "use dome exact solution by Bueler (2003) [default]",
       NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
@@ -655,6 +678,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-forceadmissible", "in FormFunctionLocal(), set H = abs(H)",
+      NULL,user->forceadmissible,&user->forceadmissible,NULL);CHKERRQ(ierr);
   strcpy(histprefix,"PREFIX/");
   ierr = PetscOptionsString(
       "-history", "write history.txt file with this prefix (also written under -mah_dump)",
@@ -677,6 +703,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default M*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-upwindfull", "when upwinding ''W H^{n+2}'' term, go all the way to element edge",
+      NULL,user->upwindfull,&user->upwindfull,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
   if (user->read == PETSC_TRUE) {

@@ -29,11 +29,14 @@ typedef struct {
             Neps;   // number of levels in regularization/continuation
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             noupwind,// do not upwind "W H^{n+2}" term in flux formula  q = - D grad H + W H^{n+2}
+            upwindfull,// when upwinding "W H^{n+2}" term, go all the way to element edge
             read,   // read grid and data from special-format PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
             swapxy, // swap x and y axes in building exact solution
             showdata,// show b and m with X viewer
+            checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
+            forceadmissible,// in FormFunctionLocal(), set H = abs(H)
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
             dump,   // dump fields into individual PETSc binary files
             history;// write ASCII history file
