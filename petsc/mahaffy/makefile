@@ -15,7 +15,7 @@ dome.verif: mahaffy domeconv.sh
 	./domeconv.sh dome.verif 6 6
 
 bedstep.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstep.verif 3 6
+	./bedstepconv.sh bedstep.verif 4 6
 
 .PHONY: distclean texclean
 

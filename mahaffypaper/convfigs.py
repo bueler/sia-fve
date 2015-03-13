@@ -67,8 +67,8 @@ else:
     plt.hold(False)
     plt.ylabel('thickness error  (m)',fontsize=12.0)
     if args.bedstep:
-        plt.axis([200.0, 3000.0, 5.0, 200.0])
-        plt.xticks(np.array([250.0, 500.0, 1000.0, 2000.0]), ('250','500','1000','2000'))
+        plt.axis([100.0, 3000.0, 5.0, 200.0])
+        plt.xticks(np.array([125.0, 250.0, 500.0, 1000.0, 2000.0]), ('125','250','500','1000','2000'))
         plt.xlabel(r'$\Delta x$  (m)',fontsize=12.0)
         plt.legend(fontsize=12.0,loc='upper right')
     else:
