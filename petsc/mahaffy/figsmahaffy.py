@@ -92,14 +92,20 @@ def gets(H,b):
     s = H + icebase
     return s
 
-plt.figure(figsize=(12,6))
-plt.title('center cross-sections of s: solution (red) and exact (blue)')
+plt.figure(figsize=(7,5))
+#plt.title('center cross-sections of s: solution (red) and exact (blue)')
 n = len(y) / 2
-plt.plot(x,gets(H[n][:],b[n][:]),'r',x,gets(Hexact[n][:],b[n][:]),'b')
-plt.xlabel('x (m)')
-plt.ylabel('thickness (m)')
+half = (x>0)
+plt.plot(x[half],gets(H[n][half],b[n][half]),'ok',label='numerical solution',markersize=2.0)
+plt.hold(True)
+plt.plot(x[half],gets(Hexact[n][half],b[n][half]),'--k',label='exact solution')
+plt.plot(x[half],b[n][half],'k')
+plt.hold(False)
+plt.xlabel('x  (km)')
+plt.ylabel('z  (m)')
 plt.grid(True)
-figsave('HHexact1d.png')
+plt.legend(fontsize=12.0)
+figsave('HHexact1d.pdf')
 
 plt.figure(figsize=fsize)
 plt.pcolormesh(x,y,b)
