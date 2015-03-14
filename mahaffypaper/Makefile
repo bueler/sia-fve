@@ -28,7 +28,7 @@ domeprofile.pdf: ../petsc/mahaffy/mahaffy ../petsc/mahaffy/figsmahaffy.py
 	mkdir tmpdome/
 	../petsc/mahaffy/mahaffy -mah_dump tmpdome/ -da_refine 2
 	(cd tmpdome/ && ../../petsc/mahaffy/figsmahaffy.py --profile --half)
-	cp tmpdome/HHexact1d.pdf ../domeprofile.pdf
+	cp tmpdome/HHexact1d.pdf domeprofile.pdf
 	rm -rf tmpdome/
 
 bedstepprofile.pdf: ../petsc/mahaffy/mahaffy ../petsc/mahaffy/figsmahaffy.py
