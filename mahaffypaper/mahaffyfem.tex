@@ -101,27 +101,31 @@ The time-dependent evolution equation for the ice thickness $H$ is a mass conser
 \begin{equation}
 \frac{\partial H}{\partial t} + \Div \bq = m,  \label{eq:siaevolution}
 \end{equation}
-where $\bq$ denotes the vertically-integrated flux (units $\text{m}^2/\text{s}$) and $m$ ($\text{m}/\text{s}$) is the surface mass balance, also called the accumulation/ablation function.  The divergence ``$\Div$'' is computed in horizontal $x,y$ directions only.
+where $\bq$ denotes the vertically-integrated flux (units $\text{m}^2/\text{s}$) and $m$ ($\text{m}/\text{s}$) is the surface mass balance, also called the accumulation/ablation function.
 
-The SIA continuum model is the lubrication approximation \citep{Fowler1997} of the Stokes equations for slow-flowing ice, in non-sliding contact with the bed and with a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law \citep{GreveBlatter2009} case.  Let $b$ be the bed and $s = H+b$ the ice surface elevation.  In the isothermal SIA the flux $\bq$ is given by
+The SIA continuum model is the lubrication approximation \citep{Fowler1997} of the Stokes equations for slow-flowing ice, in non-sliding contact with the bed and with a freely-evolving upper surface.  We only consider the isothermal, Glen-power-law \citep{GreveBlatter2009} case.  Let $b$ be the bed and $s = H+b$ the ice surface elevation.  The flux $\bq$ is given by
 \begin{equation}
 \bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
 \end{equation}
-where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the Glen power $n$, the ice softness $A$, the ice density $\rho$, and gravity $g$ \citep{Bueleretal2005}.
+where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the Glen power $n$, ice softness $A$, ice density $\rho$, and gravity $g$.
 
-The flux in \eqref{eq:siaflux} has multiple interpretations.  Equation \eqref{eq:siaevolution} is usually interpreted as nonlinear diffusion in which
+The flux $\bq$ has multiple interpretations.  Equations \eqref{eq:siaevolution} and \eqref{eq:siaflux} are often interpreted as a single nonlinear diffusion equation \cite{Huybrechtsetal1996}.  In this case
 \begin{equation}
 \bq = - D \grad s \quad \text{and} \quad D =  \Gamma H^{n+2} |\grad s|^{n-1}. \label{eq:siafluxdiffusion}
 \end{equation}
-However, if the bed is not flat then $\grad s$ and $\grad H$ are different.  On the other hand one can compute a vertically-averaged velocity $\bV$, and suppose that the flux arises from the transport of the thickness by $\bV$, that is,
+However, if the bed is not flat then $\grad s$ and $\grad H$ are different.  On the other hand one can compute a vertically-averaged velocity $\bV$, and then treat the flux as arising from the transport of the thickness by $\bV$, that is,
 \begin{equation}
 \bq = \bV H \quad \text{where} \quad \bV = - \Gamma H^{n+1} |\grad s|^{n-1} \grad s. \label{eq:siafluxvelocity}
 \end{equation}
-In this case \eqref{eq:siaevolution} is, apparently, a hyperbolic conservation equation, but this appearance is superficial because the velocity depends in part on the gradient of the transported quantity.
+In this case \eqref{eq:siaevolution} is apparently a hyperbolic conservation equation, but this appearance is superficial and deceiving because the velocity depends in part on the gradient of the transported quantity.
 
-The former diffusion interpretation \eqref{eq:siafluxdiffusion} is more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}.  In general, however, the diffusion-equation interpretation of \eqref{eq:siaevolution} is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
+The former diffusion interpretation \eqref{eq:siafluxdiffusion} is surely more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} and \eqref{eq:siaflux} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}.  In general, however, the diffusion-equation interpretation is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
 
-Later in this paper we will settle on a modification of the flux form suggested by \cite{JaroschSchoofAnslow2013}, namely
+In fact, \cite{JaroschSchoofAnslow2013} propose a third form for the flux, namely
+\begin{equation}
+   \bq = \boldsymbol{\omega} H^{n+2} \quad \text{where} \quad \boldsymbol{\omega} = - \Gamma |\grad s|^{n-1} \grad s. \label{eq:siafluxjsa}
+\end{equation}
+The vector field $\boldsymbol{\omega}$ can be thought of as a ``velocity'' which transports $H^{n+2}$, and in this thinking the combination of \eqref{eq:siaevolution} and \eqref{eq:siafluxjsa} becomes a kind of nonlinear hyperbolic equation, but again with a ``velocity'' that actually depends on the gradient of the transported quantity $H$.  However, we will settle on a modification of form \eqref{eq:siafluxjsa}, namely
 \begin{equation}
 \bq = - D \grad H + \bW H^{n+2},\label{eq:fluxform}
 \end{equation}
@@ -129,23 +133,19 @@ where $D$ is the same as in \eqref{eq:siafluxdiffusion} and
 \begin{equation}
 \bW = - \Gamma |\grad s|^{n-1} \grad b.  \label{eq:siaWdefine}
 \end{equation}
-The vector field $\bW$ can be thought of as a ``velocity'' which transports $H^{n+2}$; compare ``$\boldsymbol{\omega}$'' in equation (19) in \citep{JaroschSchoofAnslow2013}.  Note that $\bW=0$ in the case of flat beds.  The advantage of form \eqref{eq:fluxform} in numerical schemes, over either \eqref{eq:siafluxdiffusion} or \eqref{eq:siafluxvelocity}, is that we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while preserving accuracy by applying a centered scheme to the diffusive term ``$-D \grad H$''.
+The vector field $\bW$ can again be thought of as a ``velocity'' which transports $H^{n+2}$, and the combination of \eqref{eq:siaevolution} and \eqref{eq:fluxform} defines a highly-nonlinear diffusion-advection equation.  Note that $\bW=0$ in the case of flat beds, while $\boldsymbol{\omega}$ is both nonzero and diffusive (i.e.~exactly points along $-\grad H$) in that case.
 
-In this paper we solve only the steady-state form of \eqref{eq:siaevolution},
+In numerical schemes the advantage of form \eqref{eq:fluxform} over any of \eqref{eq:siafluxdiffusion}, \eqref{eq:siafluxvelocity}, or \eqref{eq:siafluxjsa} is that we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while preserving accuracy by applying a centered scheme to the diffusive term ``$-D \grad H$''.  The presence of the (often-dominant) leading-order diffusion is also a motivation to use implicit time-stepping, but such implicit schemes also need to determine the location of the free boundary at each time step.
+
+In fact we will only solve the steady-state form of \eqref{eq:siaevolution}, namely
 \begin{equation}
 \Div \bq = m.  \label{eq:siasteady}
 \end{equation}
-Though this equation is simpler than \eqref{eq:siaevolution}, it is more difficult to solve in the sense that the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}, that is, it is a free-boundary problem.  The domain where \eqref{eq:siasteady} applies, and the location of the boundary where $\bq=0$, cannot be treated as a small modification of a known boundary, the standard approach of time-stepping schemes \citep{Bueleretal2005,Huybrechtsetal1996}.
+Though this equation is apparently simpler than \eqref{eq:siaevolution}, it is more difficult to solve in the sense that it is a boundary-value problem wherein the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}.  The ice-covered domain where \eqref{eq:siasteady} applies, and the location of the boundary where $\bq=0$, cannot be treated as a small modification of a known boundary in the steady-state problem, while that is the standard approach of time-stepping schemes \citep{Bueleretal2005,Huybrechtsetal1996}.
 
-Numerical solutions of the steady problem \eqref{eq:siasteady} are closely-related to fully-implicit  solutions of \eqref{eq:siaevolution}.  Suppose we discretize \eqref{eq:siaevolution} only in time (``semi-discretized'') by the backward Euler method.  Denoting the approximate thickness function at time $t_l$ by $H_l$, we have a problem essentially the same as \eqref{eq:siasteady} at each time-step $\Delta t> 0$:
-\begin{equation}
-\Delta t\,\Div \bq_l + H_l = \Delta t\,m + H_{l-1}.  \label{eq:siaBE}
-\end{equation}
-Here the unknown flux $\bq_l$ depends on the thickness solution $H_l$ via a flux formula (e.g.~\eqref{eq:fluxform}).  If the surface mass balance $m$ is independent of surface elevation then the right side of \eqref{eq:siaBE} is known, just as in \eqref{eq:siasteady}.  Solving \eqref{eq:siaBE} can be done by exactly the same kind of spatial discretization and constrained-Newton method as we apply to \eqref{eq:siasteady}.  Both equations should be solved as free boundary problems of ``elliptic'' type \citep{JouvetBueler2012}.
+To be somewhat more precise about boundary conditions, if $m$ is sufficiently-negative near the boundary of $\Omega$ then $H$ reaches zero inside the domain at the free boundary.  At this free boundary, $H\to 0$ and $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  The problem also has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
 
-The problem we solve consists of equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$, $\bW$ are defined in \eqref{eq:siafluxdiffusion}, \eqref{eq:siaWdefine} respectively.  The input data to this problem consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$ defined on some larger domain $\Omega$.  The solution is the nonnegative thickness function $H(x,y)$, and corresponding surface elevation $s(x,y)$.
-
-If $m$ is sufficiently-negative near the boundary of $\Omega$ then $H$ reaches zero inside the domain at a free boundary \citep{JouvetBueler2012}.  This free boundary, at which both $H\to 0$ and $\bq \to 0$, also has degenerate diffusivity $D \to 0$.  Solving equation \eqref{eq:siasteady}, or each time-step equation \eqref{eq:siaBE}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
+The problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these fields are defined on some larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by a free boundary.  (Alternatively, as in our practical computations, $\Omega$ has no boundary because it is periodic.)  The solution is the nonnegative thickness function $H(x,y)$, and corresponding surface elevation $s(x,y)$.
 
 
 \section{Classical Mahaffy scheme}   \label{sec:mahaffyfd}
