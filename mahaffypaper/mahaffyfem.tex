@@ -284,7 +284,7 @@ where
 \end{equation}
 is the same as in \eqref{eq:mahaffyalphax}.
 
-Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by an perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972}, through averaging across a discontinuity to reconstruct a slope.  Equation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the fluxes as \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyalphax} at staggered points $(x_j^\pm,y_k)$ and $(x_j,y_k^\pm)$.  By using these approximate fluxes to compute the integrals in equation \eqref{eq:fluxintdecomp}, and then dividing equation \eqref{eq:siafve} by the control volume area $\Delta x\,\Delta y$, we get FD equation \eqref{eq:siasteadyfd}.
+Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by an perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Equation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the fluxes as \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyalphax} at staggered points $(x_j^\pm,y_k)$ and $(x_j,y_k^\pm)$.  By using these approximate fluxes to compute the integrals in equation \eqref{eq:fluxintdecomp}, and dividing equation \eqref{eq:siafve} by control volume area $\Delta x\,\Delta y$, we get FD equation \eqref{eq:siasteadyfd}.
 
 
 \section{An improved scheme}  \label{sec:star}
@@ -311,15 +311,11 @@ Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to c
 
 Eight half-edges make up $\partial V_{j,k}$, with each half-edge entirely inside an element.  Thus one could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, even in the flat bed case we observe that the largest numerical SIA errors occur near the free boundary, at the ice sheet margin where the exact solution $H$ has low regularity \citep{Bueleretal2005}.  The accuracy of an FE method of any order suffers where the exact free boundary passes through an element because $\bq^h$ is a smooth approximation (on the element) to a merely-continuous, and not smooth (across the free boundary) exact flux $\bq$.  Thus higher-order quadrature and interpolation will probably not give much advantage.  Our improved method represents a measurable accuracy and Newton-method-convergence improvement over the classical Mahaffy method---see Results section---primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed.
 
-\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme suffers from significant mass conservation errors at locations of abrupt change in the bed elevation, even away from the free boundary.  (I.e.~even with positive thickness at all involved grid points.)  In such cases, when the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They propose and demonstrate that a particular higher-resolution upwinding scheme \citep{LeVeque2002} based on the form $\bq = \boldsymbol{\omega} H^{n+2}$ of the entire SIA flux reduces error at such locations.  Their upwinding scheme expands the stencil of the scheme so that, for example, computing $\bq$ at point $(x_j,y_k)$ involves thickness $H_{j+2,k}$ which is two cells away.  Furthermore they use explicit time-stepping to update the thickness.  Compare to theirs, we propose an implicit (see next section), FE-based, stencil-non-expanding form of upwinding, but we use their bedrock-step exact solution for testing our scheme (Results section).  Note that for our implicit implementation, upwinding is not required for stability or non-oscillation in smooth bed cases.
+\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation, even away from the free boundary.  (I.e.~even with positive thickness at all involved grid points.)  In such cases, when the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They implement a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}, and they show it reduces error such mass conservation errors, in the sense of giving numerical results which are close in volume to an exact solution (see Results section).  Their upwinding scheme expands the stencil, however, so that computing $\bq$ at point $(x_j,y_k)$ involves thickness $H_{j+2,k}$, two cells away, and they use explicit time-stepping.  Compare to theirs, we propose an implicit (see next section), first-order form of upwinding, and we use their bedrock-step exact solution for testing our scheme (Results section).  For our implicit solution method, upwinding is not required for stability or non-oscillation.
 
-First recall form \eqref{eq:fluxform}, which decomposes the flux into a diffusion term and a transport term.  We denote the transport term by $\tilde \bq$:
-\begin{equation}
-  \bq = - D \grad H + \tilde \bq \quad \text{where} \quad \tilde \bq = \bW H^{n+2}, \label{eq:transporttermdefine}
-\end{equation}
-and $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but we propose to upwind only the $\tilde \bq$ term, and only by changing the location where $H^{n+2}$ is evaluated.  Our evaluation of $D\grad H$ and $\bW$ are unchanged.
+Recall flux form \eqref{eq:fluxform}, which decomposes into a diffusion term and a transport term.  We denote the transport term by $\tilde \bq = \bW H^{n+2}$, where $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but we propose to upwind only the $\tilde \bq$ term, and only by changing the location where $H^{n+2}$ is evaluated.  Evaluation of $D\grad H$ and $\bW$ is unchanged.
 
-Recall that our improved scheme evaluates $\bq^h$ at quadrature point $(x_j^+,y_k+\tfrac{\Delta y}{4})$ shown in Figure \ref{fig:improvequadrature}, among other points.  We show the upwind modification at this point.  It uses the sign of the $x$-component $W^x$ of $\bW = (W^x,W^y)$ at the point, namely
+Our improved scheme evaluates $\bq^h$ at $(x_j^+,y_k+\tfrac{\Delta y}{4})$, among other points; see Figure \ref{fig:upwindterm}.  We show the upwind modification at this point, which uses the sign of the $x$-component $W^x$ of $\bW = (W^x,W^y)$ at the point, namely
 \begin{equation}
 W^x_* = W^x(x_j^+,y_k+\tfrac{\Delta y}{4}),
 \end{equation}
@@ -331,19 +327,19 @@ to shift the evaluation of $H$ in $\tilde \bq$ upwind by a quarter of an element
                  H(x_j+\tfrac{3\Delta x}{4},y_k+\tfrac{\Delta y}{4})^{n+2}, & W^x_* < 0.
              \end{cases} \notag
 \end{align}
-Note that the sign of $W_x^*$ is fully-determined by---i.e.~opposite to---the sign of the $x$-component of the bed gradient $\grad b$; see equation \eqref{eq:siaWdefine}.
+Note $\operatorname{sgn}\, W^x_*=-\operatorname{sgn} b^x(x_j^+,y_k+\tfrac{\Delta y}{4})$, where $\grad b = (b^x,b^y)$.
 
-The upwind modification at this quadrature point is shown by horizontal arrows in Figure \ref{fig:upwindterm}.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.  Note that these upwinding modifications do not expand the stencil of the scheme \citep[compare][]{JaroschSchoofAnslow2013}.  Though this is a form of first-order upwinding in theory, the change is most important at locations of low regularity of the solution, and we will see in verification that it improves accuracy over the apparently second-order Mahaffy scheme.
+The upwind modification at this quadrature point is shown by horizontal arrows in Figure \ref{fig:upwindterm}.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.  Note that these upwinding modifications do not expand the stencil of the scheme \citep[compare][]{JaroschSchoofAnslow2013}.  This is upwinding change is most important at locations of low regularity of the solution, and we will see in verification that it improves accuracy over both the apparently second-order Mahaffy scheme and the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig4.tikz}
 \end{center}
-\caption{On element $\square_{j,k}$, in computing the flux at quadrature points (circles), upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ evaluates the thicknesses $H$ at locations shown with ``$+$'', according to the sign of the components of $\bW$.  These locations are along element diagonals (dotted).}
+\caption{On element $\square_{j,k}$, when computing the flux at quadrature points (circles), upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ evaluates the thicknesses $H$ at locations shown with ``$+$'', according to the sign of the components of $\bW$.}
 \label{fig:upwindterm}
 \end{figure}
 
-This upwind modification is the second of our two improvements over the classical Mahaffy scheme.  We call the method which combines these two improvements (quadrature and upwinding) the ``\Mstar'' method.  We will see that the primary benefit is in the convergence of the method for solving the system of nonlinear algebraic equations.  A secondary benefit is a small improvement in accuracy, especially on coarse grids.  In the Appendix we describe an unstructured-mesh version of the \Mstar scheme.
+We call the method which combines these two improvements (quadrature and upwinding) the ``\Mstar'' method.  We will see that the primary benefit is in improving the convergence of the Newton method for solving the system of nonlinear algebraic equations, with improved accuracy as a secondary benefit.
 
 
 \section{Solution of the equations} \label{sec:solution}
