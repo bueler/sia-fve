@@ -386,18 +386,17 @@ where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$
 
 \section{Results}
 
-\subsection{Verification} 
-FIXME: verification on steady part of Test D from \cite{Bueleretal2005}, i.e.~``Bueler profile'' from \cite{vanderVeen2013}; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
+Verification is the process of ensuring that our numerical scheme approximately solves the intended continuum equations in a measurably-convergent manner.  In the flat bed steady state case the angularly-symmetric exact solution constructed by \cite{Bueler2003}, which we call the ``dome'' exact solution, is suitable; see also subsection FIXME of \cite{vanderVeen2013}.  In a case with parameters suitable for a medium-sized ice sheet, this exact solution and a relatively coarse-grid application of the \Mstar method are compared in Figure \ref{fig:domeprofile}.  Under grid refinement we can measure the maximum and average thickness error both for the classical Mahaffy method and for the \Mstar method.  FIXME ADD CLASSICAL RESULTS; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
 
 \begin{figure}[ht]
 \onecol{domeprofile.pdf}
-\caption{Result from \Mstar method on the Bueler profile exact solution ($\Delta x=25$ km).}
+\caption{Result from \Mstar method compared to the dome exact solution ($\Delta x=25$ km).}
 \label{fig:domeprofile}
 \end{figure}
 
 \begin{figure}[ht]
 \onecol{domeverif.pdf}
-\caption{Average and maximum error on the Bueler dome exact solution.}
+\caption{Average and maximum error under grid refinement using the dome exact solution.}
 \label{fig:domeverif}
 \end{figure}
 
@@ -405,15 +404,25 @@ FIXME: verification on bedrock step solution from \cite{JaroschSchoofAnslow2013}
 
 \begin{figure}[ht]
 \onecol{bedstepprofile.pdf}
-\caption{Result from \Mstar method on the Bueler profile exact solution ($\Delta x=500$ m).  The bed elevation is dashed.}
+\caption{Result from \Mstar method compared to the bedrock-step exact solution ($\Delta x=500$ m).}
 \label{fig:bedstepprofile}
 \end{figure}
 
 \begin{figure}[ht]
 \onecol{bedstepverif.pdf}
-\caption{Average and maximum error on the JSA bedrock-step exact solution.}
+\caption{Average and maximum error under grid refinement using the bedrock-step exact solution.}
 \label{fig:bedstepverif}
 \end{figure}
+
+\begin{table}[ht]
+  \caption{Relative volume $(V_{\text{numerical}} - V_{\text{exact}}) / V_{\text{exact}}$ for \Mstar implicit scheme on steady state problem, and as reported by \cite{JaroschSchoofAnslow2013} for explicit implementations of their best ``Superbee''-limited MUSCL scheme, and for the Mahaffy scheme.}
+  \vskip4mm \centering
+  \begin{tabular}{lccc}
+    $\Delta x$ & \Mstar & Superbee & M2 \\  \hline
+\input{bedsteptable.tex}
+  \end{tabular}
+  \label{tab:bedstepvol}
+\end{table}
 
 \subsection{Greenland} 
 FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (1km); like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
