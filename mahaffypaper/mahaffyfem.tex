@@ -313,9 +313,7 @@ Eight half-edges make up $\partial V_{j,k}$, with each half-edge entirely inside
 
 \cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation, even away from the free boundary.  (I.e.~even with positive thickness at all involved grid points.)  In such cases, when the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They implement a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}, and they show it reduces error such mass conservation errors, in the sense of giving numerical results which are close in volume to an exact solution (see Results section).  Their upwinding scheme expands the stencil, however, so that computing $\bq$ at point $(x_j,y_k)$ involves thickness $H_{j+2,k}$, two cells away, and they use explicit time-stepping.  Compare to theirs, we propose an implicit (see next section), first-order form of upwinding, and we use their bedrock-step exact solution for testing our scheme (Results section).  For our implicit solution method, upwinding is not required for stability or non-oscillation.
 
-Recall flux form \eqref{eq:fluxform}, which decomposes into a diffusion term and a transport term.  We denote the transport term by $\tilde \bq = \bW H^{n+2}$, where $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but we propose to upwind only the $\tilde \bq$ term, and only by changing the location where $H^{n+2}$ is evaluated.  Evaluation of $D\grad H$ and $\bW$ is unchanged.
-
-Our improved scheme evaluates $\bq^h$ at $(x_j^+,y_k+\tfrac{\Delta y}{4})$, among other points; see Figure \ref{fig:upwindterm}.  We show the upwind modification at this point, which uses the sign of the $x$-component $W^x$ of $\bW = (W^x,W^y)$ at the point, namely
+Recall flux form \eqref{eq:fluxform}, which decomposes into a diffusion term and a transport term.  We denote the transport term by $\tilde \bq = \bW H^{n+2}$, where $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but we propose to upwind the $\tilde \bq$ term, and only by changing the location where $H^{n+2}$ is evaluated.  Evaluation of $D\grad H$ and $\bW$ is unchanged.  Recall that in \eqref{eq:starbreakfirst} we evaluate $\bq^h$ at $(x_j^+,y_k+\tfrac{\Delta y}{4})$, among other points; see Figure \ref{fig:upwindterm}.  The upwind modification at this point uses the sign of the $x$-component $\bW = (W^x,W^y)$, namely
 \begin{equation}
 W^x_* = W^x(x_j^+,y_k+\tfrac{\Delta y}{4}),
 \end{equation}
@@ -329,7 +327,7 @@ to shift the evaluation of $H$ in $\tilde \bq$ upwind by a quarter of an element
 \end{align}
 Note $\operatorname{sgn}\, W^x_*=-\operatorname{sgn} b^x(x_j^+,y_k+\tfrac{\Delta y}{4})$, where $\grad b = (b^x,b^y)$.
 
-The upwind modification at this quadrature point is shown by horizontal arrows in Figure \ref{fig:upwindterm}.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.  Note that these upwinding modifications do not expand the stencil of the scheme \citep[compare][]{JaroschSchoofAnslow2013}.  This is upwinding change is most important at locations of low regularity of the solution, and we will see in verification that it improves accuracy over both the apparently second-order Mahaffy scheme and the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.
+The upwind modifications are shown by horizontal arrows in Figure \ref{fig:upwindterm}.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.  This modification, which does not expand the stencil, is most important at locations of low regularity of the solution, and we will see in verification that it achieves higher accuracy than both the apparently second-order Mahaffy scheme and the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.
 
 \begin{figure}[ht]
 \begin{center}
@@ -339,61 +337,51 @@ The upwind modification at this quadrature point is shown by horizontal arrows i
 \label{fig:upwindterm}
 \end{figure}
 
-We call the method which combines these two improvements (quadrature and upwinding) the ``\Mstar'' method.  We will see that the primary benefit is in improving the convergence of the Newton method for solving the system of nonlinear algebraic equations, with improved accuracy as a secondary benefit.
+We call the method which combines both improvements (quadrature and upwinding) the ``\Mstar'' method.  A significant benefit is improved convergence of the Newton method for solving the system of constrained nonlinear algebraic equations.
 
 
 \section{Solution of the equations} \label{sec:solution}
 
-We have, so far, proposed improvements to the local accuracy (i.e.~better quadrature) and stability with respect to bed elevation gradients (i.e.~upwinding) of the Mahaffy FD scheme, based on re-interpreting it as an FVE method.  The resulting \Mstar scheme allows us to assemble a system of nonlinear algebraic equations.  However, it remains to describe, at a high level appropriate to our advanced mathematical software tools, the numerical solution of the system.
-
-We suppose that the structured grid covers a rectangular domain which has the easiest boundary conditions (b.c.s) appropriate to a whole ice sheet model, namely periodic b.c.s in both $x$- and $y$-directions.  For the Greenland computation in the next section the reader may suppose that these b.c.s are ``applied'' at locations in the deep ocean, but in fact ``periodic b.c.s'' simply means that all nodes see the same configuration of neighboring nodes.
-
-Recall there are $N=N_x N_y$ total nodes, elements, and control volumes.  In \Mstar, each equation is simply equation \eqref{eq:siafve} with quadrature \eqref{eq:starbreakfirst} and upwind modification \eqref{eq:upwindschemex}, based on evaluating the everywhere-defined functions $H^h$ and $b^h$ in the FE function space $S_h$.  The resulting highly-nonlinear system of $N$ equations
+Our proposed improvements to the accuracy and stability of the Mahaffy scheme merely allow us to write down a system of nonlinear algebraic equations.  It remains to describe the numerical solution of this system.  We suppose that the structured grid has periodic boundary conditions (b.c.s) in each direction, appropriate to a whole ice sheet model.  Each equation in the \Mstar scheme is simply \eqref{eq:siafve} with quadrature \eqref{eq:starbreakfirst} and upwind modification \eqref{eq:upwindschemex}.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
 \begin{equation}
 F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
 \end{equation}
-relates $N$ unknowns $\{H_{j,k}\}$ which form a vector $\bH$.  Note $H^h$ and $\bH$ are two descriptions of the same discrete approximation to the thickness.
-
-System \eqref{eq:nonlinsystem} is not, by itself, an adequate description because we must also respect $N$ inequalities
+is believed to determine $N$ unknowns, a vector $\bH=\{H_{j,k}\}$.  (Note $H^h$ and $\bH$ are two notations for the same discrete approximation to the thickness.)  System \eqref{eq:nonlinsystem} is not, by itself, an adequate description because each unknown is constrained by an obvious inequality
 \begin{equation}
 H_{j,k} \ge 0.  \label{eq:nonlinconstraints}
 \end{equation}
-Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980} or complementarity problem \citep{BensonMunson2006}.  In either formulation, we solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.
+Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980} or complementarity problem \citep{BensonMunson2006}.
 
-The open-source C code used in the current paper\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/layer-conserve}\end{center}  Then see \texttt{README.md} in subdirectory \texttt{petsc/mahaffy/} to compile the code \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
+We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.  The open-source C code used in the current paper\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/layer-conserve}\end{center}  Then see \texttt{README.md} in subdirectory \texttt{petsc/mahaffy/} to compile the code \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
 J = \left(\,\frac{\partial F_{j,k}}{\partial H_{r,s}}\,\right),
 \end{equation}
-is computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes so that only nine evaluations of the residual are needed to compute the finite-difference derivatives \citep{CurtisPowellReid1974}, but, because of periodicity, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.
+is computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes so that only nine evaluations of the residual are needed to compute the finite-difference derivatives \citep{CurtisPowellReid1974}.  Because of periodicity and the coloring algorithm, the grid dimensions $N_x$ and $N_y$ must be divisible by three.
 
-A Newton solver requires an initial iterate $H^{(0)}$.  For this purpose we give a heuristic which seems to work adequately-well for both ice sheet and glacier scale problems.  From the steady surface mass balance data $m_{j,k}$, here measured in meters per year, we compute
+A Newton solver requires an initial iterate $H^{(0)}$, for which we give a heuristic which seems to work well for both ice sheet and glacier scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
-H_{j,k}^{(0)} = \big(1000.0\,m_{j,k}\big)_+,  \label{eq:nonlininitialheuristic}
+H_{j,k}^{(0)} = \big(1000.0\,m_{j,k}\big)_+  \label{eq:nonlininitialheuristic}
 \end{equation}
 where $x_+ = \max\{0,x\}$.  In other words, we build the initial iterate by simply piling up one thousand years of accumulation, without flow.
 
-Additionally we apply a simple ``continuation'' scheme \citep[compare][]{KelleyKeyes1998} so as to start the Newton iteration with an easier problem, so as to work up to the fully nonlinear and degenerate SIA problem.  Consider this list of thirteen regularization values,
+Additionally we apply a simple ``parameter continuation'' scheme.  We first apply the Newton iteration to an easiest form of the free-boundary problem, one with constant diffusivity.  Then we adjust a parameter toward the fully-nonlinear and degenerate SIA problem.  Specifically, from this list of thirteen parameter values
 \begin{align}
 \eps &= 1,\, 0.5,\, 0.2,\, 0.1,\, 0.05, \label{eq:continuationseq} \\
      &\qquad 0.02,\, 0.01,\, 0.005,\, 0.002,\, 0.001, \notag \\
-     &\qquad 0.0005,\, 0.0002,\, 0, \notag
+     &\qquad 0.0005,\, 0.0002,\, 0 \notag
 \end{align}
-and define
+we define
 \begin{align}
 n(\eps) &= (1-\eps) n + \eps\, n_0,  \label{eq:continuationn} \\
 D(\eps) &= (1-\eps) D + \eps D_0,  \label{eq:continuationD}
 \end{align}
-where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.1$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(0)=n$ and $D(0)=D$.
+where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=1$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.   In the continuation scheme we solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} with the first value $\eps=1$ and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} but using the second value $\eps=0.5$.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.  In the flat bed case the first of these continuation-method problems is actually a Laplacian obstacle problem, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  This relatively well-understood free-boundary problem \citep{KinderlehrerStampacchia1980} allows the Newton solver to generate a first estimate of the ice-covered domain.
 
-We use \eqref{eq:continuationseq}--\eqref{eq:continuationD} as follows.  We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} with the first $\eps$ value from \eqref{eq:continuationseq}, thus with power $n(1)$ and diffusivity $D(1)$, using initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} but using the second $\eps$ value.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
-
-Note that because $D(1)=D_0$, in the flat bed case the first of these continuation-method problems is actually a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  Though this problem is nonlinear, because of the constraint which generates a non-trivial free-boundary problem, it is an easy problem on which the Newton solver can establish a first estimate of the ice-covered domain.
-
-Now, before giving computed examples which justify our claim of practical, not just theoretical, stability, we should explain the relationship between our steady-state computations and fully-implicit time-stepping methods for the time dependent SIA evolution equation \eqref{eq:siaevolution}.  Our problem corresponds to taking infinite time steps in such a fully-implicit method.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
+Now, before giving computed examples which justify our claim of practical, not just theoretical, stability, we should explain the relationship between our steady-state computations and fully-implicit time-stepping methods for the SIA evolution equation \eqref{eq:siaevolution}.  Our computations effectively take infinite time steps.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
 \begin{equation}
 \frac{H^\ell - H^{\ell-1}}{\Delta t} + \Div \bq^\ell = m \label{eq:backwardeuler}
 \end{equation}
-where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value or the result of solving at the previous time step, and the start of the continuation sequence can even be avoided.  If $\Delta t$ is not too big then actually \eqref{eq:backwardeuler} is also easier than the steady state limit $\Delta t\to \infty$, i.e.~equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  In fact, solving the steady state problem all at once is much harder than any single fully-implicit time-step.
+where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value, or the solution at the previous time step, and the continuation sequence can even be avoided.  If $\Delta t$ is not too large then \eqref{eq:backwardeuler} is easier than the steady state limit $\Delta t\to \infty$, i.e.~equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  Solving the steady state problem is thus harder than any single fully-implicit time-step.
 
 
 \section{Results}
