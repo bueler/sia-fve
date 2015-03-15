@@ -154,7 +154,8 @@ int main(int argc,char **argv) {
                                             -user.Ly+user.dx/2, user.Ly+user.dx/2,
                                    0.0,1.0); CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,
-      "solving on [-Lx,Lx]x[-Ly,Ly] with Lx=%.3f km and Ly=%.3f km,  %d x %d grid,  spacing dx = %.6f km ...\n",
+      "solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
+      "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
       user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
 
   // this DMDA is used for evaluating flux components at quad points on elements
