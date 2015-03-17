@@ -18,16 +18,16 @@ bedstep.verif: mahaffy bedstepconv.sh
 	./bedstepconv.sh bedstep.verif 4 6
 
 # these targets are just for regression testing
-dome.short: mahaffy domeconv.sh
-	./domeconv.sh dome.short 1 6
-bedstep.short: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstep.short 0 6
-true.short: mahaffy domeconv.sh
-	./domeconv.sh true.short 0 6 -mah_true
-noupwind.short: mahaffy domeconv.sh
-	./domeconv.sh noupwind.short 0 6 -mah_noupwind
-test: dome.short bedstep.short true.short noupwind.short
-	git diff *.short
+regress/dome.short: mahaffy domeconv.sh
+	./domeconv.sh regress/dome.short 1 6
+regress/bedstep.short: mahaffy bedstepconv.sh
+	./bedstepconv.sh regress/bedstep.short 0 6
+regress/true.short: mahaffy domeconv.sh
+	./domeconv.sh regress/true.short 0 6 -mah_true
+regress/noupwind.short: mahaffy domeconv.sh
+	./domeconv.sh regress/noupwind.short 0 6 -mah_noupwind
+test: regress/dome.short regress/bedstep.short regress/true.short regress/noupwind.short
+	git diff regress/
 
 .PHONY: distclean texclean
 
