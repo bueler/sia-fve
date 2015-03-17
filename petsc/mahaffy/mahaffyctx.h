@@ -23,7 +23,8 @@ typedef struct {
             Gamma,  // coefficient for SIA flux term
             eps,    // dimensionless regularization
             maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
-            D0;     // representative value of diffusivity (in regularization)
+            D0,     // representative value of diffusivity (in regularization)
+            coeff[8]; // coefficients in computing flux integral
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
             Neps;   // number of levels in regularization/continuation

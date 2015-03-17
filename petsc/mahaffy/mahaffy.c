@@ -79,6 +79,11 @@ extern PetscErrorCode ExplicitStepSmoother(Vec,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 
+// indexing of the 8 points along the boundary of the control volume
+static const PetscInt  je[8] = {0,  0, -1, -1, -1, -1,  0,  0},
+                       ke[8] = {0,  0,  0,  0, -1, -1, -1, -1},
+                       ce[8] = {0,  3,  1,  0,  2,  1,  3,  2};
+
 
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
@@ -86,6 +91,7 @@ int main(int argc,char **argv) {
   Vec                 H, Htry;
   AppCtx              user;
   DMDALocalInfo       info;
+  PetscReal           dx,dy;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -148,17 +154,24 @@ int main(int argc,char **argv) {
                       1, 1,                                       // dof=1,  stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
+
+  // we now know grid spacing
   ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
   if (user.read == PETSC_FALSE) {
       user.dx = 2.0 * user.Lx / (PetscReal)(info.mx);
   }
-  ierr = DMDASetUniformCoordinates(user.da, -user.Lx+user.dx/2, user.Lx+user.dx/2,
-                                            -user.Ly+user.dx/2, user.Ly+user.dx/2,
+  dx = user.dx; // for now,
+  dy = user.dx; // square elements
+  ierr = DMDASetUniformCoordinates(user.da, -user.Lx+dx/2, user.Lx+dx/2, -user.Ly+dy/2, user.Ly+dy/2,
                                    0.0,1.0); CHKERRQ(ierr);
+  user.coeff[0] =  dy/2;  user.coeff[1] =  dx/2;
+  user.coeff[2] =  dx/2;  user.coeff[3] = -dy/2;
+  user.coeff[4] = -dy/2;  user.coeff[5] = -dx/2;
+  user.coeff[6] = -dx/2;  user.coeff[7] =  dy/2;
   ierr = PetscPrintf(PETSC_COMM_WORLD,
       "solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
       "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
-      user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0); CHKERRQ(ierr);
+      user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,dx/1000.0); CHKERRQ(ierr);
 
   // this DMDA is used for evaluating flux components at quad points on elements
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
@@ -416,28 +429,38 @@ Grad gradav(Grad g1, Grad g2) {
 }
 
 
-/* on element shown, indexed by (j,k) node at lower-left corner @,
- FluxQuad holds x-components at * and y-components at %
-   ---------------
-  |       |       |
-  |       *xn     |
-  |  yw   |  ye   |
-  |---%--- ---%---|
-  |       |       |
-  |       *xs     |
-  |       |       |
-  @---------------
-(j,k)
-*/
-typedef struct {
-    PetscReal xn, xs, ye, yw;
-} FluxQuad;
-
-
-/* for call-back: evaluate residual FF on local process patch;
-note
+/* For call-back.
+Evaluate residual FF on local process patch:
    FF_{j,k} = \int_{\partial V_{j,k}} \mathbf{q} \cdot \mathbf{n} - m_{j,k} \Delta x \Delta y
-where V_{j,k} is the control volume centered at (x_j,y_k)
+where V_{j,k} is the control volume centered at (x_j,y_k).
+
+Regarding indexing the location along the boundary of the control volume where
+flux is evaluated, this shows four elements and one control volume centered
+at (x_j,y_k).  The boundary of the control volume has 8 points, numbered 0,...,7:
+   -------------------
+  |         |         |
+  |    ..2..|..1..    |
+  |   3:    |    :0   |
+k |--------- ---------|
+  |   4:    |    :7   |
+  |    ..5..|..6..    |
+  |         |         |
+   -------------------
+            j
+
+Regarding flux-component indexing on the element indexed by (j,k) node, as shown,
+the value  aq[k][j][c]  for c=0,1,2,3, is an x-component at "*" and a y-component
+at "%":
+   -------------------
+  |         :         |
+  |         *2        |
+  |    3    :    1    |
+  |....%.... ....%....|
+  |         :         |
+  |         *0        |
+  |         :         |
+  @-------------------
+(j,k)
 */
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
                                  AppCtx *user) {
@@ -447,12 +470,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                   upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0,
                   upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0;
   PetscInt        j, k;
-  PetscReal       **am, **ab;
-  FluxQuad        **aq;
+  PetscReal       **am, **ab, ***aq;
   Grad            gHn, gHs, gHe, gHw,
                   gbn, gbs, gbe, gbw;
   PetscReal       Hn, Hs, He, Hw;
-  PetscReal       qnx, qsx, qey, qwy;
   Vec             bloc, qloc;
 
   PetscFunctionBeginUser;
@@ -483,7 +504,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
 
   ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes
   // note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
@@ -554,10 +575,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           }
           // evaluate fluxes
           if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
-              qnx = getflux(gHn,gbn,Hn,X,user);
-              qsx = getflux(gHs,gbs,Hs,X,user);
-              qey = getflux(gHe,gbe,He,Y,user);
-              qwy = getflux(gHw,gbw,Hw,Y,user);
+              aq[k][j][0] = getflux(gHs,gbs,Hs,X,user);
+              aq[k][j][1] = getflux(gHe,gbe,He,Y,user);
+              aq[k][j][2] = getflux(gHn,gbn,Hn,X,user);
+              aq[k][j][3] = getflux(gHw,gbw,Hw,Y,user);
           } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hnup, Hsup, Heup, Hwup;
               if (gbn.x <= 0.0) {  // W.x >= 0 case
@@ -580,12 +601,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               } else {
                   ierr = fieldatpt(j,k,    dx/4.0,  upmax*dy,H,user,&Hwup); CHKERRQ(ierr);
               }
-              qnx = getfluxUP(gHn,gbn,Hn,Hnup,X,user);
-              qsx = getfluxUP(gHs,gbs,Hs,Hsup,X,user);
-              qey = getfluxUP(gHe,gbe,He,Heup,Y,user);
-              qwy = getfluxUP(gHw,gbw,Hw,Hwup,Y,user);
+              aq[k][j][0] = getfluxUP(gHs,gbs,Hs,Hsup,X,user);
+              aq[k][j][1] = getfluxUP(gHe,gbe,He,Heup,Y,user);
+              aq[k][j][2] = getfluxUP(gHn,gbn,Hn,Hnup,X,user);
+              aq[k][j][3] = getfluxUP(gHw,gbw,Hw,Hwup,Y,user);
           }
-          aq[k][j] = (FluxQuad){qnx,qsx,qey,qwy};
       }
   }
   // loop over nodes, not including ghosts, to get residual
@@ -596,16 +616,15 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           // midpoint rule on each side, and the two values of aq[][] per side are
           // in fact different.  For true Mahaffy the two gradient values are
           // already averaged, so the two values of aq[][] are actually the same.
-          FF[k][j] =  (aq[k][j].xs     + aq[k-1][j].xn  ) * dy/2.0
-                    + (aq[k][j-1].ye   + aq[k][j].yw    ) * dx/2.0
-                    - (aq[k][j-1].xs   + aq[k-1][j-1].xn) * dy/2.0
-                    - (aq[k-1][j-1].ye + aq[k-1][j].yw  ) * dx/2.0
-                    - am[k][j] * dx * dy;
+          PetscInt s;
+          FF[k][j] = - am[k][j] * dx * dy;
+          for (s=0; s<8; s++)
+            FF[k][j] += user->coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
 
   ierr = VecDestroy(&bloc); CHKERRQ(ierr);
   ierr = VecDestroy(&qloc); CHKERRQ(ierr);
