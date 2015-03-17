@@ -473,7 +473,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   PetscReal       **am, **ab, ***aq;
   Grad            gHn, gHs, gHe, gHw,
                   gbn, gbs, gbe, gbw;
-  PetscReal       Hn, Hs, He, Hw;
+  PetscReal       He[4];
   Vec             bloc, qloc;
 
   PetscFunctionBeginUser;
@@ -514,19 +514,19 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               // above-center point in element
               ierr =  gradatpt(j,k,     dx/2.0, 3.0*dy/4.0,H, user,&gHn); CHKERRQ(ierr);
               ierr =  gradatpt(j,k,     dx/2.0, 3.0*dy/4.0,ab,user,&gbn); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k,     dx/2.0, 3.0*dy/4.0,H, user,&Hn); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,     dx/2.0, 3.0*dy/4.0,H, user,&He[2]); CHKERRQ(ierr);
               // below-center point in element
               ierr =  gradatpt(j,k,     dx/2.0,     dy/4.0,H, user,&gHs); CHKERRQ(ierr);
               ierr =  gradatpt(j,k,     dx/2.0,     dy/4.0,ab,user,&gbs); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k,     dx/2.0,     dy/4.0,H, user,&Hs); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,     dx/2.0,     dy/4.0,H, user,&He[0]); CHKERRQ(ierr);
               // right-of-center point in element
               ierr =  gradatpt(j,k, 3.0*dx/4.0,     dy/2.0,H, user,&gHe); CHKERRQ(ierr);
               ierr =  gradatpt(j,k, 3.0*dx/4.0,     dy/2.0,ab,user,&gbe); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k, 3.0*dx/4.0,     dy/2.0,H, user,&He); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k, 3.0*dx/4.0,     dy/2.0,H, user,&He[1]); CHKERRQ(ierr);
               // left-of-center point in element
               ierr =  gradatpt(j,k,     dx/4.0,     dy/2.0,H, user,&gHw); CHKERRQ(ierr);
               ierr =  gradatpt(j,k,     dx/4.0,     dy/2.0,ab,user,&gbw); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k,     dx/4.0,     dy/2.0,H, user,&Hw); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,     dx/4.0,     dy/2.0,H, user,&He[3]); CHKERRQ(ierr);
           } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
               // center-top point in element
               ierr = gradatpt(j,k,   dx/2.0, dy,H, user,&gHn); CHKERRQ(ierr);
@@ -538,7 +538,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 ierr = gradatpt(j,k+1, dx/2.0, 0.0,ab,user,&gbn_nbr); CHKERRQ(ierr);
                 gbn  = gradav(gbn,gbn_nbr);
               }
-              ierr = fieldatpt(j,k,   dx/2.0, dy,H,user,&Hn); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,   dx/2.0, dy,H,user,&He[2]); CHKERRQ(ierr);
               // center-bottom point in element
               ierr = gradatpt(j,k,   dx/2.0, 0.0,H, user,&gHs); CHKERRQ(ierr);
               ierr = gradatpt(j,k,   dx/2.0, 0.0,ab,user,&gbs); CHKERRQ(ierr);
@@ -549,7 +549,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 ierr = gradatpt(j,k-1, dx/2.0, dy,ab,user,&gbs_nbr); CHKERRQ(ierr);
                 gbs  = gradav(gbs,gbs_nbr);
               }
-              ierr = fieldatpt(j,k,   dx/2.0, 0.0,H,user,&Hs); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,   dx/2.0, 0.0,H,user,&He[0]); CHKERRQ(ierr);
               // center-right point in element
               ierr = gradatpt(j,k,   dx,  dy/2.0,H, user,&gHe); CHKERRQ(ierr);
               ierr = gradatpt(j,k,   dx,  dy/2.0,ab,user,&gbe); CHKERRQ(ierr);
@@ -560,7 +560,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 ierr = gradatpt(j+1,k, 0.0, dy/2.0,ab,user,&gbe_nbr); CHKERRQ(ierr);
                 gbe  = gradav(gbe,gbe_nbr);
               }
-              ierr = fieldatpt(j,k,   dx,  dy/2.0,H,user,&He); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,   dx,  dy/2.0,H,user,&He[1]); CHKERRQ(ierr);
               // center-left point in element
               ierr = gradatpt(j,k,   0.0, dy/2.0,H, user,&gHw); CHKERRQ(ierr);
               ierr = gradatpt(j,k,   0.0, dy/2.0,ab,user,&gbw); CHKERRQ(ierr);
@@ -571,14 +571,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                 ierr = gradatpt(j-1,k, dx,  dy/2.0,ab,user,&gbw_nbr); CHKERRQ(ierr);
                 gbw  = gradav(gbw,gbw_nbr);
               }
-              ierr = fieldatpt(j,k,   0.0, dy/2.0,H,user,&Hw); CHKERRQ(ierr);
+              ierr = fieldatpt(j,k,   0.0, dy/2.0,H,user,&He[3]); CHKERRQ(ierr);
           }
           // evaluate fluxes
           if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
-              aq[k][j][0] = getflux(gHs,gbs,Hs,X,user);
-              aq[k][j][1] = getflux(gHe,gbe,He,Y,user);
-              aq[k][j][2] = getflux(gHn,gbn,Hn,X,user);
-              aq[k][j][3] = getflux(gHw,gbw,Hw,Y,user);
+              aq[k][j][0] = getflux(gHs,gbs,He[0],X,user);
+              aq[k][j][1] = getflux(gHe,gbe,He[1],Y,user);
+              aq[k][j][2] = getflux(gHn,gbn,He[2],X,user);
+              aq[k][j][3] = getflux(gHw,gbw,He[3],Y,user);
           } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hnup, Hsup, Heup, Hwup;
               if (gbn.x <= 0.0) {  // W.x >= 0 case
@@ -601,10 +601,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               } else {
                   ierr = fieldatpt(j,k,    dx/4.0,  upmax*dy,H,user,&Hwup); CHKERRQ(ierr);
               }
-              aq[k][j][0] = getfluxUP(gHs,gbs,Hs,Hsup,X,user);
-              aq[k][j][1] = getfluxUP(gHe,gbe,He,Heup,Y,user);
-              aq[k][j][2] = getfluxUP(gHn,gbn,Hn,Hnup,X,user);
-              aq[k][j][3] = getfluxUP(gHw,gbw,Hw,Hwup,Y,user);
+              aq[k][j][0] = getfluxUP(gHs,gbs,He[0],Hsup,X,user);
+              aq[k][j][1] = getfluxUP(gHe,gbe,He[1],Heup,Y,user);
+              aq[k][j][2] = getfluxUP(gHn,gbn,He[2],Hnup,X,user);
+              aq[k][j][3] = getfluxUP(gHw,gbw,He[3],Hwup,Y,user);
           }
       }
   }
