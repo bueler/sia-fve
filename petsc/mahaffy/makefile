@@ -19,9 +19,9 @@ bedstep.verif: mahaffy bedstepconv.sh
 
 # these targets are just for regression testing
 dome.short: mahaffy domeconv.sh
-	./domeconv.sh dome.short 3 6
+	./domeconv.sh dome.short 2 6
 bedstep.short: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstep.short 2 6
+	./bedstepconv.sh bedstep.short 1 6
 
 .PHONY: distclean texclean
 
