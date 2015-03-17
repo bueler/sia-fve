@@ -463,7 +463,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                   dy = dx,
                   upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0,
                   upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0,
-                  coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2};
+                  // lengths & dirs of segments on bdry of control vol:
+                  coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2},
+                  // local (element-wise) coords of quadrature points for M*
+                  locx[4] = {   dx/2.0, 3.0*dx/4.0,     dx/2.0,   dx/4.0},
+                  locy[4] = {   dy/4.0,     dy/2.0, 3.0*dy/4.0,   dy/2.0};
   PetscInt        j, k, s;
   PetscReal       **am, **ab, ***aq, He[4];
   Grad            gH[4], gb[4];
@@ -504,22 +508,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
           // get gradients and (non-upwinded) thicknesses
           if (user->mtrue == PETSC_FALSE) {  // M* method, with or without upwind
-              // above-center point in element
-              ierr =  gradatpt(j,k,     dx/2.0, 3.0*dy/4.0,H, user,&gH[2]); CHKERRQ(ierr);
-              ierr =  gradatpt(j,k,     dx/2.0, 3.0*dy/4.0,ab,user,&gb[2]); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k,     dx/2.0, 3.0*dy/4.0,H, user,&He[2]); CHKERRQ(ierr);
-              // below-center point in element
-              ierr =  gradatpt(j,k,     dx/2.0,     dy/4.0,H, user,&gH[0]); CHKERRQ(ierr);
-              ierr =  gradatpt(j,k,     dx/2.0,     dy/4.0,ab,user,&gb[0]); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k,     dx/2.0,     dy/4.0,H, user,&He[0]); CHKERRQ(ierr);
-              // right-of-center point in element
-              ierr =  gradatpt(j,k, 3.0*dx/4.0,     dy/2.0,H, user,&gH[1]); CHKERRQ(ierr);
-              ierr =  gradatpt(j,k, 3.0*dx/4.0,     dy/2.0,ab,user,&gb[1]); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k, 3.0*dx/4.0,     dy/2.0,H, user,&He[1]); CHKERRQ(ierr);
-              // left-of-center point in element
-              ierr =  gradatpt(j,k,     dx/4.0,     dy/2.0,H, user,&gH[3]); CHKERRQ(ierr);
-              ierr =  gradatpt(j,k,     dx/4.0,     dy/2.0,ab,user,&gb[3]); CHKERRQ(ierr);
-              ierr = fieldatpt(j,k,     dx/4.0,     dy/2.0,H, user,&He[3]); CHKERRQ(ierr);
+              for (s=0; s<4; s++) {
+                  ierr =  gradatpt(j,k,locx[s],locy[s],H, user,&gH[s]); CHKERRQ(ierr);
+                  ierr =  gradatpt(j,k,locx[s],locy[s],ab,user,&gb[s]); CHKERRQ(ierr);
+                  ierr = fieldatpt(j,k,locx[s],locy[s],H, user,&He[s]); CHKERRQ(ierr);
+              }
           } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
               // center-top point in element
               ierr = gradatpt(j,k,   dx/2.0, dy,H, user,&gH[2]); CHKERRQ(ierr);
@@ -571,31 +564,16 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               for (s=0; s<4; s++)
                   aq[k][j][s] = getflux(gH[s],gb[s],He[s],xdire[s],user);
           } else {  // M* method including first-order upwinding on grad b part
-              PetscReal Hnup, Hsup, Heup, Hwup;
-              if (gb[2].x <= 0.0) {  // W.x >= 0 case
-                  ierr = fieldatpt(j,k,  upmin*dx,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
-              } else {
-                  ierr = fieldatpt(j,k,  upmax*dx,3.0*dy/4.0,H,user,&Hnup); CHKERRQ(ierr);
+              PetscReal Hup, locxup[4], locyup[4];
+              for (s=0; s<4; s++) {  locxup[s] = locx[s];  locyup[s] = locy[s];  }  // copy
+              locxup[0] = (gb[0].x <= 0.0) ? upmin*dx : upmax*dx;
+              locyup[1] = (gb[1].y <= 0.0) ? upmin*dy : upmax*dy;
+              locxup[2] = (gb[2].x <= 0.0) ? upmin*dx : upmax*dx;
+              locyup[3] = (gb[3].y <= 0.0) ? upmin*dy : upmax*dy;
+              for (s=0; s<4; s++) {
+                  ierr = fieldatpt(j,k,locxup[s],locyup[s],H,user,&Hup); CHKERRQ(ierr);
+                  aq[k][j][s] = getfluxUP(gH[s],gb[s],He[s],Hup,xdire[s],user);
               }
-              if (gb[0].x <= 0.0) {  // W.x >= 0 case
-                  ierr = fieldatpt(j,k,  upmin*dx,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
-              } else {
-                  ierr = fieldatpt(j,k,  upmax*dx,    dy/4.0,H,user,&Hsup); CHKERRQ(ierr);
-              }
-              if (gb[1].y <= 0.0) {  // W.y >= 0 case
-                  ierr = fieldatpt(j,k,3.0*dx/4.0,  upmin*dy,H,user,&Heup); CHKERRQ(ierr);
-              } else {
-                  ierr = fieldatpt(j,k,3.0*dx/4.0,  upmax*dy,H,user,&Heup); CHKERRQ(ierr);
-              }
-              if (gb[3].y <= 0.0) {  // W.y >= 0 case
-                  ierr = fieldatpt(j,k,    dx/4.0,  upmin*dy,H,user,&Hwup); CHKERRQ(ierr);
-              } else {
-                  ierr = fieldatpt(j,k,    dx/4.0,  upmax*dy,H,user,&Hwup); CHKERRQ(ierr);
-              }
-              aq[k][j][0] = getfluxUP(gH[0],gb[0],He[0],Hsup,xdire[0],user);
-              aq[k][j][1] = getfluxUP(gH[1],gb[1],He[1],Heup,xdire[1],user);
-              aq[k][j][2] = getfluxUP(gH[2],gb[2],He[2],Hnup,xdire[2],user);
-              aq[k][j][3] = getfluxUP(gH[3],gb[3],He[3],Hwup,xdire[3],user);
           }
       }
   }
