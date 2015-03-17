@@ -1,9 +1,9 @@
 petsc/mahaffy/
 ==============
 
-The code `mahaffy.c` tests Mahaffy and Mahaffy* finite volume element methods,
-which solve the shallow ice approximation (SIA) on a structured Q1 grid.  It
-uses PETSc DMDA and SNESVI to solve the steady SIA free boundary problem.
+The code `mahaffy.c` tests classical Mahaffy and improved (M*) finite volume
+element methods for the shallow ice approximation (SIA) on a structured Q1 grid.
+We use PETSc DMDA and SNESVI to solve the steady SIA free boundary problem.
 
 This code is documented by manuscript `../mahaffy/mahaffyfem.tex`.  It is also
 an instance of the general situation documented in `../paper/lc.tex`.
