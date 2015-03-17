@@ -165,10 +165,6 @@ int main(int argc,char **argv) {
   dy = user.dx; // square elements
   ierr = DMDASetUniformCoordinates(user.da, -user.Lx+dx/2, user.Lx+dx/2, -user.Ly+dy/2, user.Ly+dy/2,
                                    0.0,1.0); CHKERRQ(ierr);
-  user.coeff[0] =  dy/2;  user.coeff[1] =  dx/2;
-  user.coeff[2] =  dx/2;  user.coeff[3] = -dy/2;
-  user.coeff[4] = -dy/2;  user.coeff[5] = -dx/2;
-  user.coeff[6] = -dx/2;  user.coeff[7] =  dy/2;
   ierr = PetscPrintf(PETSC_COMM_WORLD,
       "solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
       "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
@@ -466,7 +462,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   const PetscReal dx = user->dx,
                   dy = dx,
                   upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0,
-                  upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0;
+                  upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0,
+                  coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2};
   PetscInt        j, k, s;
   PetscReal       **am, **ab, ***aq, He[4];
   Grad            gH[4], gb[4];
@@ -612,7 +609,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           // already averaged, so the two values of aq[][] are actually the same.
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
-            FF[k][j] += user->coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
+            FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
