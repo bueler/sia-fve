@@ -22,7 +22,9 @@ dome.short: mahaffy domeconv.sh
 	./domeconv.sh dome.short 1 6
 bedstep.short: mahaffy bedstepconv.sh
 	./bedstepconv.sh bedstep.short 0 6
-test: dome.short bedstep.short
+true.short: mahaffy domeconv.sh
+	./domeconv.sh true.short 0 6 -mah_true
+test: dome.short bedstep.short true.short
 	git diff *.short
 
 .PHONY: distclean texclean
