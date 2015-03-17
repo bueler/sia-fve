@@ -32,7 +32,9 @@ Solution options:
                                # default = 1.0;  big may be good for convergence, esp. w upwinding
    ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
 
+Feedback on solution process:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
+   ./mahaffy -da_refine 3 -snes_monitor -snes_monitor_solution -snes_monitor_residual
 
 Successes:
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000  # needs 604 SNES iterations!

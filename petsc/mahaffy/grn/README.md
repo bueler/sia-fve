@@ -37,12 +37,29 @@ Stage 3 is to run it:  FIXME: does not make it to level 8; why?
     $ mkdir test/
     $ ../mahaffy -mah_read grn5km.dat -mah_Neps 8 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
 
-Stage 4 is to generate result `.pdf` and `.png` figures:
+A helpful view of the solution process comes from adding
+
+    -snes_monitor_solution -snes_monitor_residual
+
+to the options.  Recall we are solving equations `F(H)=0`, or rather the
+variational inequality version of that, with constraint `H>=0`.  One sees with
+the above options that the solution `H` starts out too diffuse because
+the continuation method over-regularizes at the beginning.  You also see that
+in the ice-covered area the residual goes to zero as each Newton (SNES)
+iteration completes, but that in the _ice-free area_ `H=0` the residual `F(H)`
+is large and positive even when the SNES converges.  This reflects the
+complementarity interpretation of the variational inequality, i.e.
+
+    H >= 0  and  F(H) >= 0  and  H F(H) = 0.
+
+Option `-snes_monitor_solution_update` may also be useful.
+
+Stage 4 is to generate result figures:
 
     $ cd test/
     $ ../../figsmahaffy.py --profile --observed --map
 
-View the figures in the usual ways.
+View these `.pdf` and `.png` figures in the usual ways.
 
 A higher-res (2.5 km), parallel, with-upwinding version looks like this; the `-pc_type` and
 `-sub_pc_type` choices may be helpful:
