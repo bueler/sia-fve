@@ -323,7 +323,7 @@ pseudo-velocity W, from values of thickness and surface gradient
 note:
    delta = Gamma |grad s|^{n-1}
 where s = H+b; also applies power-regularization part of continuation scheme */
-PetscReal getdelta(const Grad gH, const Grad gb, const AppCtx *user) {
+PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user) {
     const PetscReal eps = user->eps,
                     n   = (1.0 - eps) * user->n + eps * 1.0,
                     sx  = gH.x + gb.x,
@@ -347,10 +347,8 @@ and so if  W.x >= 0  and  W.y >= 0  the input should have inputs
    H = H_{j*,k*},  Hxup = H_{j,k*},  Hyup = H_{j*,k},
 this method also applies diffusivity- and power-regularization parts of the
 continuation scheme, and it updates maximum of diffusivity */
-PetscReal getfluxUP(const Grad gH, const Grad gb,
-                    const PetscReal H, const PetscReal Hup,
-                    const PetscBool xdir,
-                    AppCtx *user) {
+PetscReal getfluxUP(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+                    PetscBool xdir, AppCtx *user) {
   const PetscReal eps   = user->eps,
                   n     = (1.0 - eps) * user->n + eps * 1.0,
                   delta = getdelta(gH,gb,user),
@@ -367,10 +365,8 @@ PetscReal getfluxUP(const Grad gH, const Grad gb,
 
 
 // the non-upwinding form of the flux
-PetscReal getflux(const Grad gH, const Grad gb, // compute with gradatpt() first
-                  const PetscReal H,            // compute with fieldatpt() first
-                  const PetscBool xdir,
-                  AppCtx *user) {
+PetscReal getflux(Grad gH, Grad gb, PetscReal H,
+                  PetscBool xdir, AppCtx *user) {
   return getfluxUP(gH,gb,H,H,xdir,user);
 }
 
@@ -380,7 +376,7 @@ PetscReal getflux(const Grad gH, const Grad gb, // compute with gradatpt() first
 PetscErrorCode fieldatpt(PetscInt j, PetscInt k,         // (j,k) is the element (by lower-left corner)
                          PetscReal locx, PetscReal locy, // = (x,y) coords in element
                          PetscReal **f,                  // f[k][j] are node values
-                         AppCtx *user,
+                         const AppCtx *user,
                          PetscReal *fatpt) {
   const PetscReal dx = user->dx,  dy = dx,
                   x[4]  = {1.0 - locx / dx, locx / dx,       1.0 - locx / dx, locx / dx},
