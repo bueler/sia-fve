@@ -11,16 +11,16 @@ static const char help[] =
 "Computed by Q1 FVE method with FD evaluation of Jacobian (i.e. no analytical yet).\n"
 "Compares M* improved scheme (default) and true Mahaffy schemes.\n"
 "Uses SNESVI (-snes_type vinewtonrsls) with constraint  H(x,y) >= 0.\n\n"
-"Two cases: (1) flat bed case where analytical solution is known\n"
-"               (see usage comments at start of mahaffy.c);\n"
-"           (2) -mah_read foo.dat reads b and m from PETSc binary file\n\n"
-"               (see usage in README.md).\n\n";
+"Three problem cases:\n"
+"  (1) flat bed case where analytical solution is known\n"
+"  (2) bedrock-step case where analytical solution is known\n"
+"  (3) -mah_read foo.dat reads b and m from PETSc binary file; see grn/README.md.\n\n";
 
 /* Usage help:
    ./mahaffy -help |grep mah_
 
-Use one of these three:
-   ./mahaffy -mah_dome         # default
+Use one of these problem cases:
+   ./mahaffy -mah_dome         # default problem
    ./mahaffy -mah_bedstep
    ./mahaffy -mah_read foo.dat # see README.md for Greenland example
 
@@ -33,20 +33,30 @@ Solution options:
                                # default = 1.0;  big may be good for convergence, esp. w upwinding
    ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
 
+PETSc solver variations:
+   ./mahaffy -mah_forceadmissible -snes_type vinewtonssls
+
 Feedback on solution process:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
    ./mahaffy -da_refine 3 -snes_monitor -snes_monitor_solution -snes_monitor_residual -draw_pause 1
 
 Successes:
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000  # needs 604 SNES iterations!
-   mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor
-
-Divergence and error cases:
-   ./mahaffy -da_refine 2      # divergence at 9
-   ./mahaffy -da_refine 3      # divergence at 9
-
-High-res success (also -da_refine 7 works):
+   mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor  # DIVERGED_LINE_SEARCH at 12
    mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
+
+Divergence:
+   ./mahaffy -da_refine 0                   # no divergence
+   ./mahaffy -da_refine 1                   # no divergence
+   ./mahaffy -da_refine 2                   # divergence at 12
+   ./mahaffy -da_refine 3                   # divergence at 11
+   ./mahaffy -da_refine 4 -snes_max_it 200  # divergence at 11
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 0    # DIVERGED_LINE_SEARCH at 12
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 1 -snes_max_it 1000  # DIVERGED_FUNCTION_COUNT at 13
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 2    # DIVERGED_LINE_SEARCH at 13
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 3    # DIVERGED_LINEAR_SOLVE at 4
+   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4    # DIVERGED_LINEAR_SOLVE at 4
+   mpiexec -n 6 ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 \  # zero pivot at 13
+       -snes_max_it 1000 -pc_type asm -sub_pc_type lu
 
 Generate .png figs:
    mkdir foo/
