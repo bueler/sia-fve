@@ -41,7 +41,9 @@ A helpful view of the solution process comes from adding
 
     -snes_monitor_solution -snes_monitor_residual
 
-to the options.  Recall we are solving equations `F(H)=0`, or rather the
+to the options.
+
+Recall we are solving equations `F(H)=0`, or rather the
 variational inequality version of that, with constraint `H>=0`.  One sees with
 the above options that the solution `H` starts out too diffuse because
 the continuation method over-regularizes at the beginning.  You also see that
@@ -51,6 +53,8 @@ is large and positive even when the SNES converges.  This reflects the
 complementarity interpretation of the variational inequality, i.e.
 
     H >= 0  and  F(H) >= 0  and  H F(H) = 0.
+
+Thus the new `-snes_vi_monitor_residual` option may be useful.
 
 Option `-snes_monitor_solution_update` may also be useful.
 
@@ -71,3 +75,11 @@ A higher-res (2.5 km), parallel, with-upwinding version looks like this; the `-p
 Or this
 
     $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_upwind -mah_dump test2p5km/ -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
+
+To run a lower resolution, do (for example)
+
+    $ ncks -d x1,,,4 -d y1,,,4 grn.nc grn20km.nc
+    $ ./grn2petsc.py grn20km.nc grn20km.dat
+    $ mkdir test20km/
+    $ ../mahaffy -mah_read grn20km.dat -snes_monitor -snes_vi_monitor_residual -mah_dump test20km/
+

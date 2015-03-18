@@ -34,7 +34,7 @@ except:
 parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')
 # positional
 parser.add_argument('inname', metavar='INNAME',
-                    help='name of NetCDF input file with x1,y1,topg,cmb,thk variables (e.g. pism_Greenland_5km_v1.1.nc)',
+                    help='name of NetCDF input file with x1,y1,topg,cmb,thk variables (e.g. grn.nc)',
                     default='')
 parser.add_argument('outname', metavar='OUTNAME',
                     help='name of output PETSc binary file (e.g. grn.dat)',
