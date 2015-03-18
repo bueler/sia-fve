@@ -25,7 +25,8 @@ Use one of these three:
    ./mahaffy -mah_read foo.dat # see README.md for Greenland example
 
 Solution options:
-   ./mahaffy -mah_true         # use true Mahaffy (neither quadrature nor upwind improvements)
+   ./mahaffy -mah_true -da_grid_x 15 -da_grid_y 15
+                               # use true Mahaffy (sans quadrature & upwind improvements), but with 5|mx and 5|my
    ./mahaffy -mah_noupwind     # do not use upwinding on  grad b  part of flux
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
    ./mahaffy -mah_D0 10.0      # change constant diffusivity, used in continuation, to other value than
@@ -34,7 +35,7 @@ Solution options:
 
 Feedback on solution process:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
-   ./mahaffy -da_refine 3 -snes_monitor -snes_monitor_solution -snes_monitor_residual
+   ./mahaffy -da_refine 3 -snes_monitor -snes_monitor_solution -snes_monitor_residual -draw_pause 1
 
 Successes:
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000  # needs 604 SNES iterations!
@@ -43,10 +44,6 @@ Successes:
 Divergence and error cases:
    ./mahaffy -da_refine 2      # divergence at 9
    ./mahaffy -da_refine 3      # divergence at 9
-
-Compare methods:
-   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10
-   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_Neps 10 -mah_true   # line 505 of virs.c
 
 High-res success (also -da_refine 7 works):
    mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
@@ -152,7 +149,7 @@ int main(int argc,char **argv) {
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
                       user.Nx,user.Ny,PETSC_DECIDE,PETSC_DECIDE,  // default grid if Nx<0, Ny<0
-                      1, 1,                                       // dof=1,  stencilwidth=1
+                      1, (user.mtrue==PETSC_TRUE) ? 2 : 1,        // dof=1, stencilwidth=1
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
@@ -175,7 +172,7 @@ int main(int argc,char **argv) {
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
                       info.mx,info.my,PETSC_DECIDE,PETSC_DECIDE,
-                      4, 1,                               // dof=4,  stencilwidth=1
+                      4, (user.mtrue==PETSC_TRUE) ? 2 : 1,  // dof=1,  stencilwidth=1
                       NULL,NULL,&user.quadda);
   ierr = DMSetApplicationContext(user.quadda, &user);CHKERRQ(ierr);
 
@@ -466,8 +463,14 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                   // lengths & dirs of segments on bdry of control vol:
                   coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2},
                   // local (element-wise) coords of quadrature points for M*
-                  locx[4] = {   dx/2.0, 3.0*dx/4.0,     dx/2.0,   dx/4.0},
-                  locy[4] = {   dy/4.0,     dy/2.0, 3.0*dy/4.0,   dy/2.0};
+                  locx[4]     = { dx/2.0, 3.0*dx/4.0,     dx/2.0, dx/4.0},
+                  locy[4]     = { dy/4.0,     dy/2.0, 3.0*dy/4.0, dy/2.0},
+                  locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
+                  locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
+                  locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
+                  locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
+  const PetscInt  jnbr[4] = { 0,  1,  0, -1},
+                  knbr[4] = {-1,  0,  1,  0};
   PetscInt        j, k, s;
   PetscReal       **am, **ab, ***aq, He[4];
   Grad            gH[4], gb[4];
@@ -509,55 +512,21 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           // get gradients and (non-upwinded) thicknesses
           if (user->mtrue == PETSC_FALSE) {  // M* method, with or without upwind
               for (s=0; s<4; s++) {
+                  ierr = fieldatpt(j,k,locx[s],locy[s],H, user,&He[s]); CHKERRQ(ierr);
                   ierr =  gradatpt(j,k,locx[s],locy[s],H, user,&gH[s]); CHKERRQ(ierr);
                   ierr =  gradatpt(j,k,locx[s],locy[s],ab,user,&gb[s]); CHKERRQ(ierr);
-                  ierr = fieldatpt(j,k,locx[s],locy[s],H, user,&He[s]); CHKERRQ(ierr);
               }
           } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
-              // center-top point in element
-              ierr = gradatpt(j,k,   dx/2.0, dy,H, user,&gH[2]); CHKERRQ(ierr);
-              ierr = gradatpt(j,k,   dx/2.0, dy,ab,user,&gb[2]); CHKERRQ(ierr);
-              if (k < info->ys + info->ym - 1) {
-                Grad gHn_nbr, gbn_nbr;
-                ierr = gradatpt(j,k+1, dx/2.0, 0.0,H, user,&gHn_nbr); CHKERRQ(ierr);
-                gH[2] = gradav(gH[2],gHn_nbr);
-                ierr = gradatpt(j,k+1, dx/2.0, 0.0,ab,user,&gbn_nbr); CHKERRQ(ierr);
-                gb[2] = gradav(gb[2],gbn_nbr);
+              Grad gH_nbr[4], gb_nbr[4];
+              for (s=0; s<4; s++) {
+                  ierr = fieldatpt(j,k,locxtrue[s],locytrue[s],H, user,&He[s]); CHKERRQ(ierr);
+                  ierr =  gradatpt(j,k,locxtrue[s],locytrue[s],H, user,&gH[s]); CHKERRQ(ierr);
+                  ierr =  gradatpt(j,k,locxtrue[s],locytrue[s],ab,user,&gb[s]); CHKERRQ(ierr);
+                  ierr =  gradatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],H, user,&gH_nbr[s]); CHKERRQ(ierr);
+                  ierr =  gradatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user,&gb_nbr[s]); CHKERRQ(ierr);
+                  gH[s] = gradav(gH[s],gH_nbr[s]);
+                  gb[s] = gradav(gb[s],gb_nbr[s]);
               }
-              ierr = fieldatpt(j,k,   dx/2.0, dy,H,user,&He[2]); CHKERRQ(ierr);
-              // center-bottom point in element
-              ierr = gradatpt(j,k,   dx/2.0, 0.0,H, user,&gH[0]); CHKERRQ(ierr);
-              ierr = gradatpt(j,k,   dx/2.0, 0.0,ab,user,&gb[0]); CHKERRQ(ierr);
-              if (k > info->ys - 1) {
-                Grad gHs_nbr, gbs_nbr;
-                ierr = gradatpt(j,k-1, dx/2.0, dy,H, user,&gHs_nbr); CHKERRQ(ierr);
-                gH[0] = gradav(gH[0],gHs_nbr);
-                ierr = gradatpt(j,k-1, dx/2.0, dy,ab,user,&gbs_nbr); CHKERRQ(ierr);
-                gb[0] = gradav(gb[0],gbs_nbr);
-              }
-              ierr = fieldatpt(j,k,   dx/2.0, 0.0,H,user,&He[0]); CHKERRQ(ierr);
-              // center-right point in element
-              ierr = gradatpt(j,k,   dx,  dy/2.0,H, user,&gH[1]); CHKERRQ(ierr);
-              ierr = gradatpt(j,k,   dx,  dy/2.0,ab,user,&gb[1]); CHKERRQ(ierr);
-              if (j < info->xs + info->xm - 1) {
-                Grad gHe_nbr, gbe_nbr;
-                ierr = gradatpt(j+1,k, 0.0, dy/2.0,H, user,&gHe_nbr); CHKERRQ(ierr);
-                gH[1] = gradav(gH[1],gHe_nbr);
-                ierr = gradatpt(j+1,k, 0.0, dy/2.0,ab,user,&gbe_nbr); CHKERRQ(ierr);
-                gb[1] = gradav(gb[1],gbe_nbr);
-              }
-              ierr = fieldatpt(j,k,   dx,  dy/2.0,H,user,&He[1]); CHKERRQ(ierr);
-              // center-left point in element
-              ierr = gradatpt(j,k,   0.0, dy/2.0,H, user,&gH[3]); CHKERRQ(ierr);
-              ierr = gradatpt(j,k,   0.0, dy/2.0,ab,user,&gb[3]); CHKERRQ(ierr);
-              if (j > info->xs - 1) {
-                Grad gHw_nbr, gbw_nbr;
-                ierr = gradatpt(j-1,k, dx,  dy/2.0,H, user,&gHw_nbr); CHKERRQ(ierr);
-                gH[3] = gradav(gH[3],gHw_nbr);
-                ierr = gradatpt(j-1,k, dx,  dy/2.0,ab,user,&gbw_nbr); CHKERRQ(ierr);
-                gb[3] = gradav(gb[3],gbw_nbr);
-              }
-              ierr = fieldatpt(j,k,   0.0, dy/2.0,H,user,&He[3]); CHKERRQ(ierr);
           }
           // evaluate fluxes
           if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
