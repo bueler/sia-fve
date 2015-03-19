@@ -79,7 +79,7 @@ Consider a fluid which moves in a thin layer over a substrate.  Fluid mass can b
 
 We will only consider models which describe such fluid layers by a \emph{thickness}, or equivalent quantity, typically by integrating vertically (e.g.~along gravity).  In such models the boundary addition/removal processes become signed source terms in a two-spatial-dimension conservation equation.  The layer occupies a subset of a larger fixed region of the plane, and the domain where the fluid layer is present, and the conservation equation applies, is the set where the thickness is positive.  This domain changes in time, so the conservation problem is of free-boundary type.
 
-In such layer models for constant density fluids the thickness is the conserved quantity, equivalent to mass, and this thickness must be nonnegative.  In layer models for variable density fluids the vertical integral of density is the conserved quantity, and it must be nonnegative.  In layer models of conservation of energy, the vertical integral of internal energy or temperature is the conserved quantity, and in some such cases this vertical energy must be bounded below because the layer is only one phase \cite{AschwandenBuelerKhroulevBlatter}.  However, we consider only conservation of scalar properties, and not, for example conservation of vectors like momentum.  As the mass of a constant-density fluid is a primary example of the conserved scalar in such layer models, we will for simplicity call the conserved quantity ``mass'' and the corresponding nonnegative variable ``thickness''.
+In such layer models for constant density fluids the thickness is the conserved quantity, equivalent to mass, and this thickness must be nonnegative.  In layer models for variable density fluids the vertical integral of density is the conserved quantity, and it must be nonnegative.  In layer models of conservation of energy, the vertical integral of internal energy or temperature is the conserved quantity, and in some such cases this vertical energy must be bounded below because the layer is only one phase \cite{Aschwandenetal2012}.  However, we consider only conservation of scalar properties, and not, for example conservation of vectors like momentum.  As the mass of a constant-density fluid is a primary example of the conserved scalar in such layer models, we will for simplicity call the conserved quantity ``mass'' and the corresponding nonnegative variable ``thickness''.
 
 Thus we suppose $\Omega \subset \RR^d$, $d\ge 1$, is a bounded open region with regular (Lipshitz) boundary.  Our time-dependent model is usually stated in strong form, combining a conservation equation and an oft-ignored constraint:
 \begin{align}
@@ -130,9 +130,9 @@ Our second question is perhaps less obvious, but of substantial importance in mo
   \end{quote}
 By considering this question abstractly, we conclude that the answer is ``no,'' in particular in the case where the answer to (i) is ``yes.''  That is, our answer to the brief question ``can a numerical model of a fluid layer governed by \eqref{eq:massconserve} and \eqref{eq:constraint} conserve mass?'' is ``no''.  We can, however, quantify the non-conservation error associated to the free boundary (below).
 
-Free-boundary problems of the above kind appear for the evolution of ice sheets \cite{BLKCB,CDDSV,EgholmNielsen2010,JouvetBueler2012}, shallow liquid water flowing over marshes \cite{AlonsoSantillanaDawson}, shallow water equation models for tsunumi run-up \cite{LeVequeGeorge2008}, coupled surface/subsurface hydrological modelling \cite{Maxwelletal2014}, subglacial hydrology \cite{AschwandenBuelerKhroulevBlatter,BuelervanPeltDRAFT,Schoofetal2012}, supraglacial runoff \cite{AschwandenBuelerKhroulevBlatter}, ice shelves [FIXME], and sea ice [FIXME], among many other applications.  FIXME: point out categorization by diffusive versus hyperbolic
+Free-boundary problems of the above kind appear for the evolution of ice sheets \cite{Bueleretal2005,Calvoetal2002,EgholmNielsen2010,JouvetBueler2012}, shallow liquid water flowing over marshes \cite{AlonsoSantillanaDawson2008}, shallow water equation models for tsunumi run-up \cite{LeVequeGeorge2008}, coupled surface/subsurface hydrological modelling \cite{Maxwelletal2014}, subglacial hydrology \cite{Aschwandenetal2012,BuelervanPeltDRAFT,Schoofetal2012}, supraglacial runoff \cite{Aschwandenetal2012}, ice shelves [FIXME], and sea ice [FIXME], among many other applications.  FIXME: point out categorization by diffusive versus hyperbolic
 
-Theoretical guidance as to the degree of achievable numerical (i.e.~discrete) conservation is generally absent in the literature of free-boundary fluid problems.  For instance, within the context of glacier \cite{JaroschSchoofAnslow2013} and ice shelf \cite{Albrechtetal2011} modeling, schemes for improved discrete mass conservation at free boundaries are proposed, but this small literature provides only \emph{ad hoc} solutions to improve conservation at the discrete level.  \emph{Local} discrete conservation, within the fluid and away from the free boundary, is a common goal and property of numerical schemes \cite{LeVeque}.  Indeed when we consider spatial discretization near the end of the paper (section FIXME), we will simply \emph{assume} that such local discrete conservation is already exact.  The discrete conservation limitations we identify are thus entirely at the free boundary.  Regarding conservation issues, we focus on the advance of the fluid layer into areas where it was absent a time-step earlier, and on its retreat from areas where it was present a time-step earlier.
+Theoretical guidance as to the degree of achievable numerical (i.e.~discrete) conservation is generally absent in the literature of free-boundary fluid problems.  For instance, within the context of glacier \cite{JaroschSchoofAnslow2013} and ice shelf \cite{Albrechtetal2011} modeling, schemes for improved discrete mass conservation at free boundaries are proposed, but this small literature provides only \emph{ad hoc} solutions to improve conservation at the discrete level.  \emph{Local} discrete conservation, within the fluid and away from the free boundary, is a common goal and property of numerical schemes \cite{LeVeque2002}.  Indeed when we consider spatial discretization near the end of the paper (section FIXME), we will simply \emph{assume} that such local discrete conservation is already exact.  The discrete conservation limitations we identify are thus entirely at the free boundary.  Regarding conservation issues, we focus on the advance of the fluid layer into areas where it was absent a time-step earlier, and on its retreat from areas where it was present a time-step earlier.
 
 Climate-scale circulation models generally claims exact discrete conservation as a goal [FIXME: CITE], but apparently always in a context without free boundary.  Such climate models are ``multiphysics'' models which generally attempt to conserve masses of the phases of water (in particular) separately, as these phases have different physical properties relevant to earth system dynamics.  For example, snow and ice have higher albedo and lower density than the liquid ocean.  In many such models, one or more fluids or phases form a layer with a moving free boundary.  We believe that auditable mass conservation does not generally occur in that case, except perhaps through \emph{ad hoc} redistribution of mass, or \emph{ad hoc} discrete schemes to locally balance the books at the free boundary.  Discrete conservation is presumably recovered in the temporal and spatial refinement limit in such models.
 
@@ -237,15 +237,15 @@ The intuition behind conditions \eqref{eq:strongconditionswherezero}, which will
 
 \section{Weak formulation of the single time-step problem}  \label{sec:weakform}
 
-A strong form of a free-boundary problem, such as PDE \eqref{eq:semimassconserve} subject to inequality \eqref{eq:semiconstraint}, is inadequate because the boundary conditions satisfied by $u_n$ along the free boundary $\partial\Omega_n$ are not clear.  Also, as noted already, statements \eqref{eq:semimassconserve} and \eqref{eq:strongconditionswherezero}, while intuitively correct, apply on solution-dependent sets.  By contrast, the weak form of the single time-step problem, which we derive in this section, namely a variational inequality \cite{Friedman,KinderlehrerStampacchia} on a convex set of admissible functions, can be well-posed.  This weak form refers only to the set $\Omega$ and its boundary $\partial\Omega$.
+A strong form of a free-boundary problem, such as PDE \eqref{eq:semimassconserve} subject to inequality \eqref{eq:semiconstraint}, is inadequate because the boundary conditions satisfied by $u_n$ along the free boundary $\partial\Omega_n$ are not clear.  Also, as noted already, statements \eqref{eq:semimassconserve} and \eqref{eq:strongconditionswherezero}, while intuitively correct, apply on solution-dependent sets.  By contrast, the weak form of the single time-step problem, which we derive in this section, namely a variational inequality \cite{Friedman1982,KinderlehrerStampacchia1980} on a convex set of admissible functions, can be well-posed.  This weak form refers only to the set $\Omega$ and its boundary $\partial\Omega$.
 
 We will state conditions on the discrete-time flux $\bQ_n$ first (subsection \ref{subsec:fluxassumptions}) so that we can then argue that a solution to the discrete-time strong problem is a solution to a certain variational inequality (subsection \ref{subsec:derivevi}); thereby we derive the weak form.  Then we show a converse, that a sufficiently-smooth solution of the weak problem solves the strong problem (subsection \ref{subsec:interior}).  Only in the next section \ref{sec:wellposed} do we address well-posedness, however, which depends on details of $\bQ_n$ which we do not need here.
 
-\subsection{Flux assumptions} \label{subsec:fluxassumptions}  Let $p\ge 1$ and recall that $L^p (\Omega)$ is the Banach space of functions with norm $\|v\|_{L^p} = \left(\int_\Omega |v|^p\,dx\right)^{1/p}$.  The Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v,\partial_1 v,\dots,\partial_d v \in L^p(\Omega)$ \cite{Evans}, with norm
+\subsection{Flux assumptions} \label{subsec:fluxassumptions}  Let $p\ge 1$ and recall that $L^p (\Omega)$ is the Banach space of functions with norm $\|v\|_{L^p} = \left(\int_\Omega |v|^p\,dx\right)^{1/p}$.  The Sobolev space $W^{1,p}(\Omega)$ is the Banach space of functions $v$ with $v,\partial_1 v,\dots,\partial_d v \in L^p(\Omega)$ \cite{Evans1998}, with norm
 \begin{equation}
   \|v\|_{1,p} = \left(\|v\|_{L^p}^p + \sum_i \|v\|_{L^p}^p\right)^{1/p}.  \label{eq:norm}
 \end{equation}
-Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans}, but otherwise $v$ may be discontinuous.  Denote by $W_0^{1,p}(\Omega)$ the closure of $C_c^\infty(\Omega)$ in $W^{1,p}(\Omega)$.
+Note that if $p>d$ then each $v\in W^{1,p}(\Omega)$ has a continuous representative \cite[``Morrey's inequality'']{Evans1998}, but otherwise $v$ may be discontinuous.  Denote by $W_0^{1,p}(\Omega)$ the closure of $C_c^\infty(\Omega)$ in $W^{1,p}(\Omega)$.
 
 We require these assumptions about $\bQ_n$ for the remainder of this work:
 
@@ -265,7 +265,7 @@ We require these assumptions about $\bQ_n$ for the remainder of this work:
 \bQ_n(\grad v,v,x)=0 \quad \text{a.e.~on } E_v. \label{eq:Qiszero}
 \end{equation}
 \end{enumerate}
-Note that $\grad v = 0$ a.e.~on $E_v$ by lemma A.4 in chapter II of \cite{KinderlehrerStampacchia}.
+Note that $\grad v = 0$ a.e.~on $E_v$ by lemma A.4 in chapter II of \cite{KinderlehrerStampacchia1980}.
 
 Thus we make two kinds of assumptions about the discrete-time flux, namely that $\bQ_n$ is a well-behaved function (i.e.~\eqref{eq:QisLq} and \eqref{eq:Qiscontinuous}) and
 that $\bQ_n=0$ if the thickness is zero (i.e.~\eqref{eq:Qiszero}).  The latter assumption relates to the core meaning of $\bQ_n$ in \eqref{eq:semimassconserve}, namely that $\bQ_n$ is the flux of a layer with nonnegative thickness.
@@ -364,7 +364,7 @@ From now on we will use set decomposition \eqref{eq:omegadecomposition} when ref
 
 \section{Well-posedness for the single time-step problem} \label{sec:wellposed}  Our goal in this section is to demonstrate that a variety of different fluxes $\bQ_n$ allow a well-posed weak single time-step problem, variational inequality \eqref{eq:theVI}.  The optimistic reader, one who already believes in well-posed mass conservation equation models with free boundaries, can proceed to section \ref{sec:spacediscretized} where fully-discretized, and thus implementable, numerical schemes are described.  Note, however, that the \emph{a posterior} analysis of free boundary conservation errors in section \ref{sec:timeseries} distinguishes time-semi-discretized (\emph{a la} this section) and fully-discretized (section \ref{sec:spacediscretized}) free boundary conservation errors.
 
-Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems.  We recall some of these tools, for monotone variational inequalities \cite{KinderlehrerStampacchia}, in subsection \ref{subsec:mono}.  Then in the next four subsections we prove existence and uniqueness of problem \eqref{eq:theVI} for these flux cases:
+Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-independent variational inequalities in Banach spaces are relatively well-established for certain linear and some nonlinear elliptic problems.  We recall some of these tools, for monotone variational inequalities \cite{KinderlehrerStampacchia1980}, in subsection \ref{subsec:mono}.  Then in the next four subsections we prove existence and uniqueness of problem \eqref{eq:theVI} for these flux cases:
 \begin{itemize}
 \item[\ref{subsec:plap}] $p$-Laplacian-type parabolic (diffusion) fluxes for $1<p<\infty$;
 \item[\ref{subsec:advect}] linear advection fluxes with differentiable velocity fields, with the addition of small parabolic leading-order terms;
@@ -375,17 +375,17 @@ Techniques for proving well-posedness, i.e.~existence and uniqueness, of time-in
 \smallskip
 Except for subsection \ref{subsec:explicit}, we only consider fully-implicit (i.e.~backward Euler) time-stepping schemes.  In \ref{subsec:explicit} we see how regularity issues stop us from having the well-posed, \emph{continuous-space} single time-step free boundary problems if time-stepping is explicit or semi-explicit.  The fully-discretized schemes in section \ref{sec:spacediscretized} allow explicitness, however.
 
-\subsection{Monotonicity and sufficient conditions on flux for well-posedness} \label{subsec:mono}  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia} if
+\subsection{Monotonicity and sufficient conditions on flux for well-posedness} \label{subsec:mono}  Recall that $\mathcal{X}$ is a Banach space and $\mathcal{K}$ is a closed, convex subset of $\mathcal{X}$.  We define a mapping $A : \mathcal{K} \to \mathcal{X}'$ to be \emph{monotone} \cite{KinderlehrerStampacchia1980} if
 \begin{equation}
    \ip{A(u) - A(v)}{u-v} \ge 0  \label{eq:monodef}
 \end{equation}
-for all $u,v\in\mathcal{K}$.  A monotone mapping $A$ is \emph{strictly monotone} if equality in \eqref{eq:monodef} implies $u=v$.  A mapping $A$ is \emph{coercive} \cite{KinderlehrerStampacchia} if there is $\phi\in \mathcal{K}$ so that
+for all $u,v\in\mathcal{K}$.  A monotone mapping $A$ is \emph{strictly monotone} if equality in \eqref{eq:monodef} implies $u=v$.  A mapping $A$ is \emph{coercive} \cite{KinderlehrerStampacchia1980} if there is $\phi\in \mathcal{K}$ so that
 \begin{equation}
    \lim_{\|u\|\to\infty} \frac{\ip{A(u) - A(\phi)}{u-\phi}}{\|u-\phi\|} = +\infty, \label{eq:coercivedef}
 \end{equation}
 where the limit is taken over $u\in\mathcal{K}$.  Intuitively, $A$ is coercive if the function $h(u)=\ip{A(u) - A(\phi)}{u-\phi}$ is ``confining'' at $\infty$, in the sense that it is bigger than the norm $\|u-\phi\|$.
 
-The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia} says that the variational inequality
+The theory of monotone variational inequalities in Banach spaces \cite[chapter III]{KinderlehrerStampacchia1980} says that the variational inequality
 \begin{equation}
     \ip{A(u)}{v-u} \ge 0 \quad \text{for all $v\in\mathcal{K}$}, \label{eq:VIabstract}
 \end{equation}
@@ -398,7 +398,7 @@ For \eqref{eq:theVI} with $A_n$ defined by \eqref{eq:defineAn}, we want to relat
    &\ip{A_n(u) - A_n(v)}{u-v}  \label{eq:AtoQcalculation} \\
    &\qquad = \int_\Omega (u-v)^2 - \Delta t\, \left[\bQ_n(\grad u,u,x) - \bQ_n(\grad v,v,x)\right] \cdot \grad(u-v).  \notag
 \end{align}
-The following lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans}.
+The following lemma uses the fact that $W^{1,p}(\Omega) \subset L^2(\Omega)$ if either $p>d$ or $d\le 2$; see Sobolev's lemma, theorems 5.6.2 and 5.6.5, in \cite{Evans1998}.
 
 \begin{lemma}  \label{lem:monotonecoercive}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$.  Suppose that $F_n=F_n(x) \in L^q(\Omega)$.  Then
 
@@ -419,7 +419,7 @@ Note that the right side of \eqref{eq:Qncoercive} is non-positive, and that it u
 
 In considering lemma \ref{lem:monotonecoercive}, note that in cases where $\bQ_n(\grad u,u,x)$ is proportional to $\grad u$ we expect, for physical reasons, that the flux $\bQ_n$ points in the direction of the negative of $\grad u$.  By contrast, if $\bQ_n = \alpha \grad u$ for $\alpha>0$ then PDE \eqref{eq:massconserve} would be the ill-posed backward heat equation.
 
-We need a bit of continuity to prove existence.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $\mathcal{M} \subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap \mathcal{M} \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia}.
+We need a bit of continuity to prove existence.  A mapping $A : \mathcal{K} \to \mathcal{X}'$ is \emph{continuous on finite-dimensional subspaces} if for each finite-dimensional subspace $\mathcal{M} \subset \mathcal{X}$, the restriction $A : \mathcal{K}\cap \mathcal{M} \to \mathcal{X}'$ is weakly-continuous \cite{KinderlehrerStampacchia1980}.
 
 \medskip
 \begin{lemma}  \label{lem:continuous}  Assume \eqref{eq:Qiscontinuous} for $\bQ_n$ and \eqref{eq:Fislip} for $F_n$.  The map $A_n$ defined by \eqref{eq:defineAn} is continuous on finite-dimensional subspaces.
@@ -433,13 +433,13 @@ is continuous because of the linearity of the integral, \eqref{eq:Qiscontinuous}
 \end{proof}
 
 \medskip
-Corollary III.1.8 of \cite{KinderlehrerStampacchia} now gives the following sufficient-conditions theorem.
+Corollary III.1.8 of \cite{KinderlehrerStampacchia1980} now gives the following sufficient-conditions theorem.
 
 \medskip
 \begin{theorem}  \label{thm:monowellposed}  Suppose $\frac{1}{2} \ge \frac{1}{p} - \frac{1}{d}$, $F_n=F_n(x)\in L^q(\Omega)$, that conditions \eqref{eq:QisLq}--\eqref{eq:Qiscontinuous} apply to $\bQ_n$, and that conditions \eqref{eq:FisLq}--\eqref{eq:Fislip} apply to $F_n$.  If \eqref{eq:Qncoercive} holds for $\bQ_n$ then the single time-step weak problem \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \end{theorem}
 
-\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply lemma \ref{lem:monotonecoercive} and theorem \ref{thm:monowellposed} to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ has the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans} flux
+\subsection{$p$-Laplacian fluxes} \label{subsec:plap}  We can immediately apply lemma \ref{lem:monotonecoercive} and theorem \ref{thm:monowellposed} to show well-posedness for some linear and non-linear parabolic cases, i.e.~where $\bq$ has the direction of $-\grad u$.  Consider the $p$-Laplacian \cite{Evans1998} flux
 \begin{equation}
   \bQ_n(\grad u) = - k |\grad u|^{p-2} \grad u \label{eq:plapflux}
 \end{equation}
@@ -485,7 +485,7 @@ Consider conditions \eqref{eq:Qnmonotone} and \eqref{eq:Qncoercive} applied to \
 \end{align}
 after integrating by parts, because $u=v=0$ on $\partial \Omega$.
 
-This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then clearly \eqref{eq:Qnmonotone} applies with $C=0$, and so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with $C = \frac{1}{2}\Delta t\,\|\Div\bX\|_{L^\infty(\Omega)}$, so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Note that any bound on this $C$ can be regarded as a CFL-type condition \cite{LeVeque}, though here the bound is not on the velocity magnitude but rather on a measure of the size of that part of the velocity field that is not ($\RR^d$-)volume-preserving.
+This result can be exploited in a couple of ways.  If the vector field is divergent, i.e.~if $\Div\bX\ge 0$, then clearly \eqref{eq:Qnmonotone} applies with $C=0$, and so $A_n$ is strictly monotone.  Otherwise, \eqref{eq:Qnmonotone} applies with $C = \frac{1}{2}\Delta t\,\|\Div\bX\|_{L^\infty(\Omega)}$, so it follows that $A_n$ is monotone if $C\le 1$, and strictly monotone if $C<1$.  Note that any bound on this $C$ can be regarded as a CFL-type condition \cite{LeVeque2002}, though here the bound is not on the velocity magnitude but rather on a measure of the size of that part of the velocity field that is not ($\RR^d$-)volume-preserving.
 
 There is no reason to suppose that the operator $A_n$ corresponding to \eqref{eq:advectflux}, defined by \eqref{eq:defineAn} as an operator from the convex subset $\mathcal{K} \subset \mathcal{X} = W_0^{1,p}(\Omega)$, to the dual $\mathcal{X}'$, is coercive.  However, if we add just a little bit of diffusion, here in the form of a $p$-Laplacian leading-order term with $p\ge 2$ for simplicity and coefficient $\eps>0$,
 \begin{equation}
@@ -513,7 +513,7 @@ then \eqref{eq:theVI} has a unique solution $u\in\mathcal{K}$.
 \begin{equation}
   \bQ_n(\grad u,u) = - k u^r |\grad u|^{p-2} \grad u \label{eq:doubleflux}
 \end{equation}
-where $k>0$, $r\ge 0$, and $1<p<\infty$.  Of course this includes, as the $r=0$ case, the $p$-Laplacian \eqref{eq:plapflux}.  However, at the opposite extreme it arises in the porous medium equation \cite{Vazquez2007}, where $p=2$ and $r=\gamma-1$ so that the flux is frequently written $- \tilde k \grad(u^\gamma)$.  However, both powers are nontrivial for the diffusive shallow water equations \cite{AlonsoSantillanaDawson}, where $1<r<2$ and $1<p\le 2$, and for the shallow ice approximation \cite{BLKCB,CDDSV,JouvetBueler2012}, where $r=n+2$ and $p=n+1$ for an experimentally-determined exponent $1 < n \lesssim 4$ \cite{GoldsbyKohlstedt2001}.  Thus
+where $k>0$, $r\ge 0$, and $1<p<\infty$.  Of course this includes, as the $r=0$ case, the $p$-Laplacian \eqref{eq:plapflux}.  However, at the opposite extreme it arises in the porous medium equation \cite{Vazquez2007}, where $p=2$ and $r=\gamma-1$ so that the flux is frequently written $- \tilde k \grad(u^\gamma)$.  However, both powers are nontrivial for the diffusive shallow water equations \cite{AlonsoSantillanaDawson2008}, where $1<r<2$ and $1<p\le 2$, and for the shallow ice approximation \cite{Bueleretal2005,Calvoetal2002,JouvetBueler2012}, where $r=n+2$ and $p=n+1$ for an experimentally-determined exponent $1 < n \lesssim 4$ \cite{GoldsbyKohlstedt2001}.  Thus
 
 Leaving the correct Sobolev space undetermined for a moment, we apply a power transformation
 \begin{equation}
@@ -542,7 +542,7 @@ Noting $u\ge 0$ if and only if $w\ge 0$ in transformation \eqref{eq:doubletransf
 \begin{equation}
 \ip{A_n(w)}{\phi} = \int_\Omega \Delta t\, K |\grad w|^{p-2} \grad w\cdot \grad \phi + G(w,x)\phi. \label{eq:doubleform}
 \end{equation}
-The weak formulation of \eqref{eq:doublestrong} is \eqref{eq:theVI} with $A_n$ defined in \eqref{eq:doubleform}.  The following theorem is, essentially, the argument in subsection III.3 of \cite{KinderlehrerStampacchia}.
+The weak formulation of \eqref{eq:doublestrong} is \eqref{eq:theVI} with $A_n$ defined in \eqref{eq:doubleform}.  The following theorem is, essentially, the argument in subsection III.3 of \cite{KinderlehrerStampacchia1980}.
 
 \medskip
 \begin{theorem}
@@ -627,12 +627,12 @@ However, even if $F_n$ is in the dual space, the variational inequality is not e
 \begin{equation}
 u_n = \max\{0,u_{n-1} + \Delta t\,F_n\} \in L^2(\Omega)  \label{eq:explicittruncation}
 \end{equation}
-\cite[page 27]{KinderlehrerStampacchia}.  But this is not very helpful because $u_n \in L^2(\Omega)$ is not regular enough so that $\Div \bq(\grad u_{n-1},u_{n-1},x) \in \mathcal{X}' \in L^2(\Omega)$, even in the closest case where $\bq = \bX(x) u$ (i.e.~$\bq$ is zeroth-order in $u$).  In summary, for explicit steps the solution to a single weakly-posed time step is truncation \eqref{eq:explicittruncation}, but that solution cannot be expected to be regular enough to yield a well-posed problem at the next step.
+\cite[page 27]{KinderlehrerStampacchia1980}.  But this is not very helpful because $u_n \in L^2(\Omega)$ is not regular enough so that $\Div \bq(\grad u_{n-1},u_{n-1},x) \in \mathcal{X}' \in L^2(\Omega)$, even in the closest case where $\bq = \bX(x) u$ (i.e.~$\bq$ is zeroth-order in $u$).  In summary, for explicit steps the solution to a single weakly-posed time step is truncation \eqref{eq:explicittruncation}, but that solution cannot be expected to be regular enough to yield a well-posed problem at the next step.
 
 On the other hand, fully-explicit and \emph{fully-discretized} numerical schemes are in widespread use for solving first-order and even second-order PDE problems.  So we return to these explicit schemes after adding spatial discretization in the next section.
 
 
-\section{The fully-discretized single time-step problem}  \label{sec:spacediscretized}   A major purpose of our work is to understand time-dependent free-boundary mass conservation models through time semi-discretized form, as a sequence of spatial free-boundary problems.  We can address well-posedness (section \ref{sec:wellposed}) and conservation errors at the free boundary (section \ref{sec:timeseries}; esp.~\ref{subsec:retreatloss}) in such a continuous-space framework.  But aspects of our theory are only completed by fully-discretizing the models.  In this section we make the weakest assumptions about the spatial discretization which is possible, namely that there is some finite volume \cite{LeVeque} interpretation of the fully-discrete scheme.  Within a fully-discrete framework we will be able to say a bit more about time-step restrictions for explicit and semi-explicit schemes (\ref{subsec:spaceexplicit}) so that we can tell a complete story about conservation errors at the free boundary (i.e.~subsection \ref{subsec:shellerror}).  First we set notation for a highly-generic finite volume scheme (\ref{subsec:spacenotation}).
+\section{The fully-discretized single time-step problem}  \label{sec:spacediscretized}   A major purpose of our work is to understand time-dependent free-boundary mass conservation models through time semi-discretized form, as a sequence of spatial free-boundary problems.  We can address well-posedness (section \ref{sec:wellposed}) and conservation errors at the free boundary (section \ref{sec:timeseries}; esp.~\ref{subsec:retreatloss}) in such a continuous-space framework.  But aspects of our theory are only completed by fully-discretizing the models.  In this section we make the weakest assumptions about the spatial discretization which is possible, namely that there is some finite volume \cite{LeVeque2002} interpretation of the fully-discrete scheme.  Within a fully-discrete framework we will be able to say a bit more about time-step restrictions for explicit and semi-explicit schemes (\ref{subsec:spaceexplicit}) so that we can tell a complete story about conservation errors at the free boundary (i.e.~subsection \ref{subsec:shellerror}).  First we set notation for a highly-generic finite volume scheme (\ref{subsec:spacenotation}).
 
 \subsection{Unstructured finite volume schemes} \label{subsec:spacenotation}  We restrict to $d=2$ or $d=3$, and we suppose $\Omega$ is a polygon (polyhedron).  An unstructured finite volume scheme here assumes only that $\Omega$ is tiled by cells which are themselves polygons (Figure \ref{fig:fvmesh-notation}).  These polygonal cells can be non-convex, and the number of edges (faces) per cell may vary.
 
@@ -652,7 +652,7 @@ The value $F_n^j$ is computed in some way from the geometry of cell $j$ and from
 \label{fig:fvmesh-notation}
 \end{figure}
 
-The discrete scalar normal flux across the edge $(j,k)$, outward from cell $j$, is denoted $Q_n^{(j,k)}$.  We assume that these fluxes are approximated by some scheme, based on some values $\{u_n^j\}$.  The details are not important here, but these discrete fluxes can be computed from the cell-averaged (representative) thicknesses, plus any other data, including by classical (e.g.~Gudonov) or flux-limited schemes \cite{LeVeque}.
+The discrete scalar normal flux across the edge $(j,k)$, outward from cell $j$, is denoted $Q_n^{(j,k)}$.  We assume that these fluxes are approximated by some scheme, based on some values $\{u_n^j\}$.  The details are not important here, but these discrete fluxes can be computed from the cell-averaged (representative) thicknesses, plus any other data, including by classical (e.g.~Gudonov) or flux-limited schemes \cite{LeVeque2002}.
 
 We make two specific assumptions about the fully-discrete finite volume scheme:\begin{enumerate}
 \item There is local conservation between any two adjacent cells which are fluid-filled:
@@ -667,7 +667,7 @@ We make two specific assumptions about the fully-discrete finite volume scheme:\
 
 Local conservation (i) is completely standard, but we do not expect it at the free boundary because a flux scheme at the edge (face) of a fluid-free cell, facing a fluid-filled cell, cannot easily be expected to generate flux which is compatible with monotonicity or coercivity properties in subsection \ref{subsec:mono}, for example.  Regarding (ii), recall that, at least heuristically, the divergence of a vector field $\bX$ is the limit of line (surface) integrals, $|R|^{-1} \int_{\partial R} \bX\cdot \bn\,ds \to \Div \bX(x)$, where $R\subset \RR^d$ denotes a region with Lipshitz boundary, enclosing $x$, with outward unit normal vector $\bn$ and boundary length (area) element $ds$.  Thus the discrete scheme is assumed to approximate such an integral. 
 
-Many schemes can be given interpretations \eqref{eq:fvthickness}--\eqref{eq:fvmassconserve}, including structured-grid (i.e.~uniform rectangular cell) finite difference \cite{MortonMayers2005} and finite volume \cite{LeVeque} schemes, and unstructured finite volume schemes.  Both the former structured-grid \cite{Winkelmannetal2011} and the latter unstructured-grid \cite{EgholmNielsen2010} schemes are used in ice sheet models.  A framework for unstructured-grid finite volume schemes has been implemented for ocean modeling \cite{Ringleretal2013}.  Furthermore, by considering a dual cell, the above finite volume interpretation can be applied to certain unstructured or structured finite element schemes.  Discontinuous Galerkin schemes can also be interpreted as \eqref{eq:fvmassconserve}.
+Many schemes can be given interpretations \eqref{eq:fvthickness}--\eqref{eq:fvmassconserve}, including structured-grid (i.e.~uniform rectangular cell) finite difference \cite{MortonMayers2005} and finite volume \cite{LeVeque2002} schemes, and unstructured finite volume schemes.  Both the former structured-grid \cite{Winkelmannetal2011} and the latter unstructured-grid \cite{EgholmNielsen2010} schemes are used in ice sheet models.  A framework for unstructured-grid finite volume schemes has been implemented for ocean modeling \cite{Ringleretal2013}.  Furthermore, by considering a dual cell, the above finite volume interpretation can be applied to certain unstructured or structured finite element schemes.  Discontinuous Galerkin schemes can also be interpreted as \eqref{eq:fvmassconserve}.
 
 \subsection{Newton-type methods for solving the single time-step variational inequality} \label{subsec:newtonvi}  FIXME: mostly generalities, but factor Jacobian into deriv of apparent stuff in \eqref{eq:theVI} and $\partial Q_n^j/\partial u_n^k$
 
@@ -842,7 +842,7 @@ For the $m$-dimensional ODE system
 \begin{equation}
   \by' = \bbf(t,\by),  \label{eq:abstractODE}
 \end{equation}
-every two-stage RK scheme with time-step $h=\Delta t$ can be written with Butcher tableau \cite{AscherPetzold}
+every two-stage RK scheme with time-step $h=\Delta t$ can be written with Butcher tableau \cite{AscherPetzold1998}
 \begin{equation}
 \begin{array}{c|cc}
 \tau_1 & a_{11} & a_{12}  \\
@@ -865,7 +865,7 @@ with $i=1,2$ in the first equation.  \emph{Explicit} methods have $a_{ij}=0$ for
 \end{equation*}
 when written as a two-stage scheme.  Note that $\theta>0$ methods are semi-implicit but not diagonally-implicit.
 
-So-called (singly) \emph{diagonally-implicit} RK (``DIRK'') methods are semi-implicit methods for which the diagonal entries $a_{ii}$ are independent of $i$, i.e.~$a_{11}=a_{22}$.  The accuracy of $s$-stage DIRK methods is limited to $p=s+1$ \cite{AscherPetzold}.  There exist strongly S-stable and stiffly-accurate \cite{AscherPetzold} DIRKs with $s$ stages and order of accuracy $p=s$ for $s=1,2,3$ \cite{Alexander1977}.  Note that ``strongly S-stable'' is also called ``stiff decay'' \cite{AscherPetzold}.
+So-called (singly) \emph{diagonally-implicit} RK (``DIRK'') methods are semi-implicit methods for which the diagonal entries $a_{ii}$ are independent of $i$, i.e.~$a_{11}=a_{22}$.  The accuracy of $s$-stage DIRK methods is limited to $p=s+1$ \cite{AscherPetzold1998}.  There exist strongly S-stable and stiffly-accurate \cite{AscherPetzold1998} DIRKs with $s$ stages and order of accuracy $p=s$ for $s=1,2,3$ \cite{Alexander1977}.  Note that ``strongly S-stable'' is also called ``stiff decay'' \cite{AscherPetzold1998}.
 
 The strong stability properties of these DIRK methods are exactly what is needed for many of the applications addressed in the current paper, namely diffusive cases where $\bq \sim - \grad u$.  In these diffusive cases the $m$-dimensional method-of-lines ODE system generated by spatially-semi-discretizing \eqref{eq:massconserve} would become arbitrarily stiff under spatial refinement.  Furthermore, semi-implicit methods have the computational advantage, especially in our large $m$ case arising from discretization of a PDE, that each stage represents a separate linear system of only $m$ equations to solve.  (General $s$-stage implicit RK schemes require solving size $sm$ linear systems, but for semi-implicit RK schemes the matrix has block lower-triangular form.)  DIRK methods have the further advantage that the $m\times m$ matrix $A$ for each stage $i$, or the Jacobian matrix arising from the linearization of the stage, can be re-used at each stage during a step. In fact the matrix has $i$-independent form $A = I - h a_{ii} J$, at least if the Jacobian $J$ is evaluated at only at the start of the time step in the nonlinear case: $J = \frac{\partial \bbf}{\partial y}(t_{n-1},\by_{n-1})$.
 
