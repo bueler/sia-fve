@@ -65,18 +65,14 @@ Stage 4 is to generate result figures:
 
 View these `.pdf` and `.png` figures in the usual ways.
 
-A higher-res (2.5 km), parallel, with-upwinding version looks like this; the `-pc_type` and
-`-sub_pc_type` choices may be helpful:
+A higher-res (2.5 km), parallel version might look like this; the robust
+`-pc_type asm -sub_pc_type lu` solver choice may be helpful:
 
     $ python grn2petsc.py --refine 2 grn.nc grn2p5km.dat
     $ mkdir test2p5km/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -mah_upwind -snes_monitor -pc_type asm -sub_pc_type lu
+    $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -snes_monitor -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
 
-Or this
-
-    $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_upwind -mah_dump test2p5km/ -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
-
-To run a lower resolution, do (for example)
+To run a lower resolution, and watch the residual, do (for example)
 
     $ ncks -d x1,,,4 -d y1,,,4 grn.nc grn20km.nc
     $ ./grn2petsc.py grn20km.nc grn20km.dat
