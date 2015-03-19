@@ -62,7 +62,7 @@ cmb = np.squeeze(nc.variables['cmb'][:])
 thk = np.squeeze(nc.variables['thk'][:])
 
 if (refine != 1):
-    print "refining grid to %.2f km ..." % (5.0/float(refine))
+    print "refining grid to %.3f km ..." % (5.0/float(refine))
     x = lininterp(x,refine)
     y = lininterp(y,refine)
     topg = quadinterp(topg,refine)

@@ -2,68 +2,90 @@ petsc/mahaffy/grn/
 ==============
 
 The main script `grn2petsc.py` here reads SeaRISE data from NetCDF format and
-converts it to PETSc binary format.  It requires the _netcdf4-python_ module; see
-https://github.com/Unidata/netcdf4-python.  The code `mahaffy.c` reads the
-specially-formatted binary file it produces.
+converts it to PETSc binary format.  It requires the
+[netcdf4-python module](https://github.com/Unidata/netcdf4-python).
+The code `mahaffy` can read the specially-formatted binary file it produces.
 
-Stage 1 of the setup is to get the data as slightly-cleaned NetCDF.  This stage
-requires both PISM and NCO.  Note dimensions must be multiples of 3 in
-`mahaffy.c` because we want a FD-by-coloring-evaluated Jacobian on a periodic
+Stage 1
+-------
+
+Get the data as slightly-cleaned NetCDF.  This stage requires
+[NCO](http://nco.sourceforge.net/) and a [PISM](http://www.pism-docs.org)
+preprocess script.
+
+The dimensions in the `.nc` file must be multiples of 3
+because `mahaffy.c` uses a FD-by-coloring-evaluated Jacobian on a periodic
 grid with stencil width 1.  Thus we trim the x dimension from 301 values to 300,
 but this removes only ocean cells.  The y dimension is already 561, which is
 divisible by 3.  Also note 1 / (910 * 31556926) = 3.48228182586954e-11
 is the conversion factor to turn  kg m-2 a-1  into  m s-1  for ice with
-density 910 kg m-3.  Do:
+density 910 kg m-3.
+
+Do:
 
     $ cd ~/pism/examples/std-greenland/
-    $ ./preprocess.sh
+    $ ./preprocess.sh                       # downloads Greenland_5km_v1.1.nc with wget if not present
     $ cd ~/layer-conserve/petsc/mahaffy/    # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
-    $ ./cleangrn.sh    # uses NCO to clean up pism_Greenland_5km_v1.1.nc; creates grn.nc
+    $ ./cleangrn.sh
 
-Stage 2 of setup is to convert to PETSc binary using PETSc scripts:
+The last command uses NCO to clean up pism_Greenland_5km_v1.1.nc and creates `grn.nc`.
 
-    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py
+Stage 2
+-------
+
+Convert `grn.nc` to PETSc binary `grn5km.dat` using PETSc scripts:
+
+    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py  # or similar for maint/3.5
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
     $ python grn2petsc.py grn.nc grn5km.dat    # defaults to 5km
 
-Note `grn2petsc.py` uses a module in file `interpad.py`.  In links, for the
-maint branch of petsc replace `bin/petsc-pythonscripts/` by just
-`bin/pythonscripts/`.
+Note `grn2petsc.py` uses a module `interpad.py`.
 
-Stage 3 is to run it:  FIXME: does not make it to level 8; why?
+Stage 3
+-------
+
+Build the executable `mahaffy`, and run on 5km grid using an over-estimate of
+diffusivity:
 
     $ (cd ../ && make mahaffy)
     $ mkdir test/
-    $ ../mahaffy -mah_read grn5km.dat -mah_Neps 8 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
+    $ ../mahaffy -mah_read grn5km.dat -mah_D0 20.0 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
 
-A helpful view of the solution process comes from adding
+This run only takes a few minutes and uses the data as is.
 
-    -snes_monitor_solution -snes_monitor_residual
+On viewing the solution process
+-------------------------------
 
-to the options.
+A helpful view of the solution process comes from adding one of
 
-Recall we are solving equations `F(H)=0`, or rather the
-variational inequality version of that, with constraint `H>=0`.  One sees with
-the above options that the solution `H` starts out too diffuse because
-the continuation method over-regularizes at the beginning.  You also see that
+    -snes_monitor_solution -snes_monitor_residual -snes_monitor_solution_update
+
+to the options.  With `-snes_monitor_solution` you see that the solution `H`
+starts out too diffuse because the continuation method over-regularizes at the
+beginning.
+
+However, recall we are solving the variational inequality version of equations
+`F(H)=0`, with constraint `H>=0`.  With `-snes_monitor_residual` you see that
 in the ice-covered area the residual goes to zero as each Newton (SNES)
-iteration completes, but that in the _ice-free area_ `H=0` the residual `F(H)`
-is large and positive even when the SNES converges.  This reflects the
-complementarity interpretation of the variational inequality, i.e.
+iteration completes, but that in the _ice-free_ area (i.e. where `H=0`) the
+residual `F(H)` is large and positive even when the SNES converges.  This
+reflects the complementarity interpretation of the variational inequality, i.e.
 
     H >= 0  and  F(H) >= 0  and  H F(H) = 0.
 
-Thus the new `-snes_vi_monitor_residual` option may be useful.
+Thus the new `-snes_vi_monitor_residual` option is helpful.
 
-Option `-snes_monitor_solution_update` may also be useful.
+Generating final figures:
+-------------------------
 
-Stage 4 is to generate result figures:
+Generate `.pdf` and `.png` figures:
 
     $ cd test/
     $ ../../figsmahaffy.py --profile --observed --map
 
-View these `.pdf` and `.png` figures in the usual ways.
+Higher/lower resolution
+-----------------------
 
 A higher-res (2.5 km), parallel version might look like this; the robust
 `-pc_type asm -sub_pc_type lu` solver choice may be helpful:
@@ -71,6 +93,8 @@ A higher-res (2.5 km), parallel version might look like this; the robust
     $ python grn2petsc.py --refine 2 grn.nc grn2p5km.dat
     $ mkdir test2p5km/
     $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -snes_monitor -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
+
+Around 700m grid (e.g. `--refine 7`) my 16Gb desktop runs out of memory.
 
 To run a lower resolution, and watch the residual, do (for example)
 
