@@ -1,44 +1,44 @@
-all: mahaffyfem.pdf
+all: siafve.pdf
 
 figures = domeverif.pdf bedstepverif.pdf domeprofile.pdf bedstepprofile.pdf
 tikzfigs = fig1a.tikz fig1b.tikz fig2a.tikz fig2b.tikz fig3.tikz
 
-mahaffyfem.pdf: mahaffyfem.aux mahaffyfem.tex bedsteptable.tex $(figures) $(tikzfigs)
-	pdflatex mahaffyfem
-	pdflatex mahaffyfem
+siafve.pdf: siafve.aux siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
+	pdflatex siafve
+	pdflatex siafve
 
-mahaffyfem.aux: mahaffyfem.tex bedsteptable.tex $(figures) $(tikzfigs)
-	pdflatex mahaffyfem
-	bibtex mahaffyfem
+siafve.aux: siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
+	pdflatex siafve
+	bibtex siafve
 
-mahaffyfem.bbl: mahaffyfem.aux ../paper/lc.bib
-	bibtex mahaffyfem
+siafve.bbl: siafve.aux ../paper/lc.bib
+	bibtex siafve
 
-domeverif.pdf: convfigs.py ../petsc/mahaffy/dome.verif
-	./convfigs.py -o domeverif.pdf ../petsc/mahaffy/dome.verif
+domeverif.pdf: convfigs.py ../petsc/dome.verif
+	./convfigs.py -o domeverif.pdf ../petsc/dome.verif
 
-bedstepverif.pdf: convfigs.py ../petsc/mahaffy/bedstep.verif
-	./convfigs.py --bedstep -o bedstepverif.pdf ../petsc/mahaffy/bedstep.verif
+bedstepverif.pdf: convfigs.py ../petsc/bedstep.verif
+	./convfigs.py --bedstep -o bedstepverif.pdf ../petsc/bedstep.verif
 
-bedsteptable.tex: convfigs.py ../petsc/mahaffy/bedstep.verif
-	./convfigs.py --bedsteptable ../petsc/mahaffy/bedstep.verif > bedsteptable.tex
+bedsteptable.tex: convfigs.py ../petsc/bedstep.verif
+	./convfigs.py --bedsteptable ../petsc/bedstep.verif > bedsteptable.tex
 
-../petsc/mahaffy/mahaffy: ../petsc/mahaffy/mahaffy.c
-	(cd ../petsc/mahaffy/ && make mahaffy)
+../petsc/mahaffy: ../petsc/mahaffy.c
+	(cd ../petsc/ && make mahaffy)
 
-domeprofile.pdf: ../petsc/mahaffy/mahaffy ../petsc/mahaffy/figsmahaffy.py
+domeprofile.pdf: ../petsc/mahaffy ../petsc/figsmahaffy.py
 	rm -rf tmpdome/
 	mkdir tmpdome/
-	../petsc/mahaffy/mahaffy -mah_dump tmpdome/ -da_refine 2
-	(cd tmpdome/ && ../../petsc/mahaffy/figsmahaffy.py --profile --half)
+	../petsc/mahaffy -mah_dump tmpdome/ -da_refine 2
+	(cd tmpdome/ && ../../petsc/figsmahaffy.py --profile --half)
 	cp tmpdome/HHexact1d.pdf domeprofile.pdf
 	rm -rf tmpdome/
 
-bedstepprofile.pdf: ../petsc/mahaffy/mahaffy ../petsc/mahaffy/figsmahaffy.py
+bedstepprofile.pdf: ../petsc/mahaffy ../petsc/figsmahaffy.py
 	rm -rf tmpbs/
 	mkdir tmpbs/
-	../petsc/mahaffy/mahaffy -mah_dump tmpbs/ -da_refine 2 -mah_bedstep -mah_D0 0.01
-	(cd tmpbs/ && ../../petsc/mahaffy/figsmahaffy.py --profile --half --sharpbed)
+	../petsc/mahaffy -mah_dump tmpbs/ -da_refine 2 -mah_bedstep -mah_D0 0.01
+	(cd tmpbs/ && ../../petsc/figsmahaffy.py --profile --half --sharpbed)
 	cp tmpbs/HHexact1d.pdf bedstepprofile.pdf
 	rm -rf tmpbs/
 
