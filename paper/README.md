@@ -1,5 +1,5 @@
-mahaffypaper/
-==============
+paper/
+======
 
 The manuscript shows that the Mahaffy method is an FVE method, and then improves
 it by better quadrature and selective upwinding.  The parallel, Newton
