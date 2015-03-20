@@ -87,6 +87,7 @@ extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 
 // indexing of the 8 points along the boundary of the control volume
+// point s=0,...,7 is in element (j,k) = (j+je[s],k+ke[s])
 static const PetscInt  je[8] = {0,  0, -1, -1, -1, -1,  0,  0},
                        ke[8] = {0,  0,  0,  0, -1, -1, -1, -1},
                        ce[8] = {0,  3,  1,  0,  2,  1,  3,  2};
