@@ -173,7 +173,7 @@ The formula for the flux $q^y_{j,k+\half}$ at staggered location $(x_j,y_k^+)$, 
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{\textbf{a.}~A structured FD grid with regular points (dots) and staggered points (triangles).  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), and a dual rectangular control volume $V_{j,k}$ (dashed).}
+\caption{\textbf{a.}~A structured FD grid with regular points (dots) and staggered points (triangles).  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), and a dual rectangular control volume $V_{j,k}$ (dashed).  Corners $\ell=0,1,2,3$ of the element are where bases functions $\chi_\ell$ equal one.}
 \label{fig:fdfemgrids}
 \end{figure}
 
@@ -199,14 +199,14 @@ An FVE method supposes that the approximation $H^h$ of the thickness solution li
 
 Again consider the structured grid of rectangular elements shown in Figure \ref{fig:fdfemgrids}b.  Denote the element with lower-left corner at $(x_j,y_k)$ by $\square_{j,k}$.  When associated with bilinear functions these rectangles are $Q^1$ finite elements \citep{Elmanetal2005}.  A basis for such functions on $\square_{j,k}$ is the set
 \begin{equation}
-\chi_l\left(\frac{x-x_j}{\Delta x},\frac{y-y_k}{\Delta y}\right)  \label{eq:elementbasis}
+\chi_\ell \left(\frac{x-x_j}{\Delta x},\frac{y-y_k}{\Delta y}\right), \label{eq:elementbasis}
 \end{equation}
-for $l=1,2,3,4$, where
+for $\ell=0,1,2,3$, where
 \begin{align*}
-\chi_1(\xi,\nu) &= \left(1-\xi\right) \left(1-\nu\right), & \chi_2(\xi,\nu) &= \xi \left(1-\nu\right), \\
-\chi_3(\xi,\nu) &= \left(1-\xi\right) \nu, & \chi_4(\xi,\nu) &= \xi \nu.
+\chi_0(\xi,\nu) &= \left(1-\xi\right) \left(1-\nu\right), & \chi_1(\xi,\nu) &= \xi \left(1-\nu\right), \\
+\chi_2(\xi,\nu) &= \xi \nu, & \chi_3(\xi,\nu) &= \left(1-\xi\right) \nu.
 \end{align*}
-Now let
+With this order, $\chi_\ell=1$ on element corners traversed in counter-clockwise order (Figure \ref{fig:fdfemgrids}b).  Now let
 \begin{equation}
 S_h = \{u \text{ is bilinear on each $\square_{j,k}$}\}
 \end{equation}
