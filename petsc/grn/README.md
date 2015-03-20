@@ -1,4 +1,4 @@
-petsc/mahaffy/grn/
+petsc/grn/
 ==============
 
 The main script `grn2petsc.py` here reads SeaRISE data from NetCDF format and
@@ -25,7 +25,7 @@ Do:
 
     $ cd ~/pism/examples/std-greenland/
     $ ./preprocess.sh                       # downloads Greenland_5km_v1.1.nc with wget if not present
-    $ cd ~/layer-conserve/petsc/mahaffy/    # back to this dir
+    $ cd ~/sia-fve/petsc/grn/    # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
     $ ./cleangrn.sh
 
