@@ -15,6 +15,7 @@
 
 % math macros
 \newcommand\bb{\mathbf{b}}
+\newcommand\bc{\mathbf{c}}
 \newcommand\bbf{\mathbf{f}}
 \newcommand\bn{\mathbf{n}}
 \newcommand\bq{\mathbf{q}}
@@ -284,30 +285,55 @@ where
 \end{equation}
 is the same as in \eqref{eq:mahaffyalphax}.
 
-Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by an perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Equation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the fluxes as \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyalphax} at staggered points $(x_j^\pm,y_k)$ and $(x_j,y_k^\pm)$.  By using these approximate fluxes to compute the integrals in equation \eqref{eq:fluxintdecomp}, and dividing equation \eqref{eq:siafve} by control volume area $\Delta x\,\Delta y$, we get FD equation \eqref{eq:siasteadyfd}.
+Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Equation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the fluxes as \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyalphax} at staggered points $(x_j^\pm,y_k)$ and $(x_j,y_k^\pm)$.  By using these approximate fluxes to compute the integrals in equation \eqref{eq:fluxintdecomp}, and dividing equation \eqref{eq:siafve} by control volume area $\Delta x\,\Delta y$, we get FD equation \eqref{eq:siasteadyfd}.
 
 
 \section{An improved scheme}  \label{sec:star}
 
-We now return to the goal of accurately-replacing flux integral equation \eqref{eq:siafve} by an algebraic equation through quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique, and we do so in this section.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on $\bW H^{n+2}$, because $\bW$ is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme which we test in the Results section.
+We now return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique, and we do so.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on $\bW H^{n+2}$, because $\bW$ is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme.
 
-To recap, because $H^h$ and $b^h$ live in the space of continuous piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined and smooth on the interior of each element, but discontinuous across the element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts.  For example, we break the first integral at $y=y_k$.  Then we use the midpoint rule, the optimal one-point rule for smooth functions, in each subinterval:
+Because $H^h$ and $b^h$ live in the space of continuous piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined and smooth on the interior of each element, but $\bq^h$ is discontinuous across the element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts and use the midpoint rule, the optimal one-point rule, on each half.  For example, we break the first integral at $y=y_k$:
 \begin{align}
 &\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy  \label{eq:starbreakfirst} \\
   &\quad= \int_{y_k^-}^{y_k} q^x(x_j^+,y)\,dy + \int_{y_k}^{y_k^+} q^x(x_j^+,y)\,dy \notag \\
   &\quad\approx \frac{\Delta y}{2} \left(q^x(x_j^+,y_k-\tfrac{\Delta y}{4}) + q^x(x_j^+,y_k+\tfrac{\Delta y}{4})\right). \notag
 \end{align}
-Recall notation \eqref{eq:definexypm}, the values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are simply evaluations of $q^x(x,y)$ at points of continuity: $(x_j^+,y_k+\tfrac{\Delta y}{4})$ is inside element $\square_{j,k}$ while $(x_j^+,y_k-\tfrac{\Delta y}{4})$ is inside $\square_{j,k-1}$.  See Figure \ref{fig:improvequadrature}.  Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.
+Recalling notation \eqref{eq:definexypm}, we see that values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are simply evaluations of $\bq^h$ at points of continuity: $(x_j^+,y_k+\tfrac{\Delta y}{4})$ is inside element $\square_{j,k}$ while $(x_j^+,y_k-\tfrac{\Delta y}{4})$ is inside $\square_{j,k-1}$.  Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.
+
+Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}.  At each quadrature point we evaluate the $x$- or $y$-component of $\bq^h$ and then multiply by a constant to get the appropriate integral.  Thus we can write our approximation of \eqref{eq:siafve} as
+\begin{equation}
+\sum_{s=0}^7 \bc_s \cdot \bq^h(x_j^s,y_k^s) = m_{j,k}\,\Delta x\,\Delta y  \label{eq:siamstar}
+\end{equation}
+where
+\begin{align}
+\bc_0 &= \bc_7 = \left(0, \tfrac{\Delta y}{2}\right),  \label{eq:cs} \\
+\bc_1 &= \bc_2 = \left(\tfrac{\Delta x}{2},0\right),  \notag \\
+\bc_3 &= \bc_4 = \left(0, -\tfrac{\Delta y}{2}\right),  \notag \\
+\bc_5 &= \bc_6 = \left(-\tfrac{\Delta x}{2},0\right),  \notag
+\end{align}
+and
+\begin{align}
+x_j^0 &= x_j^7 = x_j + \tfrac{\Delta x}{2}, & y_k^1 &= y_k^2 = y_k + \tfrac{\Delta y}{2}, \label{eq:xjsyks} \\
+x_j^1 &= x_j^6 = x_j + \tfrac{\Delta x}{4}, & y_k^0 &= y_k^3 = y_k + \tfrac{\Delta y}{4}, \notag \\
+x_j^2 &= x_j^5 = x_j - \tfrac{\Delta x}{4}, & y_k^4 &= y_k^7 = y_k - \tfrac{\Delta y}{4}, \notag \\
+x_j^3 &= x_j^4 = x_j - \tfrac{\Delta x}{2}, & y_k^5 &= y_k^6 = y_k - \tfrac{\Delta y}{2}. \notag
+\end{align}
+An important aspect of implementing \eqref{eq:siamstar}--\eqref{eq:xjsyks}, because we use the piecewise-defined FE flux $\bq^h(x,y)$, is that in our indexing we have
+\begin{align}
+&\qquad\qquad (x_j^s,y_k^s) \in \square_{u,v} \label{eq:quadpointinelement} \\
+&\iff \quad u = j\!-\!\eta(x_j^s\!-\!x_j) \text{ and } v\!=\!k-\eta(y_k^s\!-\!y_k), \notag
+\end{align}
+where $\eta(t)$ is the Heaviside step function, $\eta(t)=0$ if $t<0$ and $\eta(t)=1$ if $t>0$ (Figure \ref{fig:improvequadrature}).
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig3.tikz}
 \end{center}
-\caption{To compute the integral in equation \eqref{eq:siafve} more accurately, we evaluate $\bq^h(x,y)$ at eight quadrature points (circles) along $\partial V_{j,k}$.}
+\caption{For equation \eqref{eq:siamstar} we evaluate $\bq^h(x,y)$ at eight quadrature points (numbered circles) along $\partial V_{j,k}$ (dashed).  Note points $(x_j^0,y_k^0)$ and $(x_j^7,y_k^7)$ are the points used in \eqref{eq:starbreakfirst}.}
 \label{fig:improvequadrature}
 \end{figure}
 
-Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}.  We see that the total number of flux-evaluation locations for the improved method is twice that for the classical method, but in fact the improved method evaluates $\bq^h(x,y)$ at only four locations \emph{in each element}, as does the classical Mahaffy method, which evaluates the flux at the midpoint of every side of every element.  The stencils for the two methods are the same because in both methods the discrete conservation equation \eqref{eq:siafve} uses the same nine nodal values of $H^h$ (solid dots in Figure \ref{fig:improvequadrature}).
+We see that the total number of flux-evaluation locations for the improved method is twice that for the classical method, but in fact the improved method evaluates $\bq^h(x,y)$ at only four locations \emph{in each element}, as does the classical Mahaffy method, which evaluates the flux at the midpoint of every side of every element.  The stencils for the two methods are the same because in both methods the discrete conservation equation \eqref{eq:siafve} uses the same nine nodal values of $H^h$ (solid dots in Figure \ref{fig:improvequadrature}).
 
 Eight half-edges make up $\partial V_{j,k}$, with each half-edge entirely inside an element.  Thus one could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, even in the flat bed case we observe that the largest numerical SIA errors occur near the free boundary, at the ice sheet margin where the exact solution $H$ has low regularity \citep{Bueleretal2005}.  The accuracy of an FE method of any order suffers where the exact free boundary passes through an element because $\bq^h$ is a smooth approximation (on the element) to a merely-continuous, and not smooth (across the free boundary) exact flux $\bq$.  Thus higher-order quadrature and interpolation will probably not give much advantage.  Our improved method represents a measurable accuracy and Newton-method-convergence improvement over the classical Mahaffy method---see Results section---primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed.
 
