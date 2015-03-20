@@ -22,8 +22,8 @@
   \draw[dotted] (0,2) -- (3,0);
 
   % mark quadrature points
-  \draw (1.5,0.5) circle (2.0pt);
-  \draw (0.75,1.0) circle (2.0pt);
+  \draw (1.5,0.5) circle (2.0pt) node[shift={(0.2,0.2)}] {0};
+  \draw (0.75,1.0) circle (2.0pt) node[shift={(0.2,0.2)}] {1};
 
   % mark upwind points
   \draw (0.75,0.5) node {\large $+$};

@@ -1,5 +1,5 @@
-\begin{tikzpicture}[scale=8.6cm/10.0cm]
-% min x = -1.5, max x = 6.75  so  width = 8.25 cm, but we pad
+\begin{tikzpicture}[scale=8.6cm/9.5cm]
+% min x = -1.5, max x = 6.75  so  width = 8.25 cm, but we pad a bit
 % 8.6cm is one-column width for J Glaciol
 
   %uncomment to see grid on which it was generated:

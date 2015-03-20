@@ -1,6 +1,4 @@
-\begin{tikzpicture}[scale=8.6cm/10.0cm]
-% min x = -1.5, max x = 6.75  so  width = 8.25 cm, but we pad
-% 8.6cm is one-column width for J Glaciol
+\begin{tikzpicture}[scale=8.6cm/9.5cm]
 
   %uncomment to see grid on which it was generated:
   %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
@@ -23,6 +21,12 @@
   \filldraw (0,4) circle (2.5pt);
   \filldraw (3,4) circle (2.5pt);
   \filldraw (6,4) circle (2.5pt);
+
+  % some node labels
+  \draw (3-0.45,2-0.25) node {$\ell\!=\!0$};
+  \draw (6+0.45,2-0.25) node {$\ell\!=\!1$};
+  \draw (6+0.45,4+0.25) node {$\ell\!=\!2$};
+  \draw (3-0.45,4+0.25) node {$\ell\!=\!3$};
 
   % outline control volume
   \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
