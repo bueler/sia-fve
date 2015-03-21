@@ -23,6 +23,7 @@
 \newcommand\bv{\mathbf{v}}
 \newcommand\by{\mathbf{y}}
 
+\newcommand\bF{\mathbf{F}}
 \newcommand\bH{\mathbf{H}}
 \newcommand\bQ{\mathbf{Q}}
 \newcommand\bV{\mathbf{V}}
@@ -318,18 +319,14 @@ x_j^1 &= x_j^6 = x_j + \tfrac{\Delta x}{4}, & y_k^0 &= y_k^3 = y_k + \tfrac{\Del
 x_j^2 &= x_j^5 = x_j - \tfrac{\Delta x}{4}, & y_k^4 &= y_k^7 = y_k - \tfrac{\Delta y}{4}, \notag \\
 x_j^3 &= x_j^4 = x_j - \tfrac{\Delta x}{2}, & y_k^5 &= y_k^6 = y_k - \tfrac{\Delta y}{2}. \notag
 \end{align}
-An important aspect of implementing \eqref{eq:siamstar}--\eqref{eq:xjsyks}, because we use the piecewise-defined FE flux $\bq^h(x,y)$, is that in our indexing we have
-\begin{align}
-&\qquad\qquad (x_j^s,y_k^s) \in \square_{u,v} \label{eq:quadpointinelement} \\
-&\iff \quad u = j\!-\!\eta(x_j^s\!-\!x_j) \text{ and } v\!=\!k-\eta(y_k^s\!-\!y_k), \notag
-\end{align}
-where $\eta(t)$ is the Heaviside step function, $\eta(t)=0$ if $t<0$ and $\eta(t)=1$ if $t>0$ (Figure \ref{fig:improvequadrature}).
+
+Clearly, implementing equation \eqref{eq:siamstar} requires evaluating the piecewise-bilinear function $\bq^h(x,y)$ at a given quadrature point, which means finding the correct element from the indices $s,x,y$.  Let $\eta(t)$ be the Heaviside step function, so that $\eta(t)=0$ if $t<0$ and $\eta(t)=1$ if $t>0$.  In our indexing, point $(x_j^s,y_k^s)$ is in element $\square_{u,v}$ if and only if $u = j-\eta(x_j^s-x_j)$ and $v=k-\eta(y_k^s-y_k)$.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig3.tikz}
 \end{center}
-\caption{For equation \eqref{eq:siamstar} we evaluate $\bq^h(x,y)$ at eight quadrature points (numbered circles) along $\partial V_{j,k}$ (dashed).  Note points $(x_j^0,y_k^0)$ and $(x_j^7,y_k^7)$ are the points used in \eqref{eq:starbreakfirst}.}
+\caption{For equation \eqref{eq:siamstar} we evaluate $\bq^h(x,y)$ at eight quadrature points (numbered circles) along $\partial V_{j,k}$ (dashed).}
 \label{fig:improvequadrature}
 \end{figure}
 
@@ -370,17 +367,20 @@ We call the method which combines both improvements (quadrature and upwinding) t
 
 \section{Solution of the equations} \label{sec:solution}
 
-Our proposed improvements merely allow us to write down a system of nonlinear algebraic equations.  It remains to describe the numerical solution of this system.  This is nontrivial because we solve for steady state directly, and because numerically-locating the free boundary (ice sheet margin) is an integral part of the problem.
+We can now write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because we solve for steady state directly, and because numerically-locating the free boundary (ice sheet margin) is an integral part of the problem.  We suppose from now on that the structured grid has periodic boundary conditions (b.c.s), as appropriate to a whole ice sheet model.
 
-We suppose that the structured grid has periodic boundary conditions (b.c.s) in each direction, appropriate to a whole ice sheet model.  Each equation in the \Mstar scheme is simply \eqref{eq:siafve} with quadrature \eqref{eq:starbreakfirst} and upwind modification \eqref{eq:upwindschemex}.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
+Each equation in the \Mstar scheme is simply \eqref{eq:siamstar}, with upwind modification \eqref{eq:upwindschemex} used when evaluating the flux.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
 \begin{equation}
 F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
 \end{equation}
-is believed to determine $N$ unknowns, a vector $\bH=\{H_{j,k}\}$.  (Note $H^h$ and $\bH$ are two notations for the same discrete approximation to the thickness.)  System \eqref{eq:nonlinsystem} is not, by itself, an adequate description because each unknown is constrained by an obvious inequality
+is supposed to determine $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note ``$H^h(x,y)$'' and ``$\bH$'' are two notations for the same discrete thickness representation.  However, system \eqref{eq:nonlinsystem} is not, by itself, an adequate description because each unknown is constrained by the obvious fact that thicknesses are nonnegative numbers.  We write
 \begin{equation}
-H_{j,k} \ge 0.  \label{eq:nonlinconstraints}
+\bH \ge 0,  \label{eq:nonlinconstraints}
 \end{equation}
-Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980} or complementarity problem \citep{BensonMunson2006}.
+meaning that each component of the vector is nonnegative.  Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980}.  Equivalently, we can write them as a complementarity problem \citep{BensonMunson2006}:
+\begin{equation}
+\bH \ge 0, \quad \bF(\bH) \ge 0, \quad \bH \cdot \bF(\bH) = 0.  \label{eq:nonlincomplementarity}
+\end{equation}
 
 We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.  The open-source C code used in the current paper\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/sia-fve}\end{center}  See \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
