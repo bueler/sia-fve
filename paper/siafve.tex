@@ -367,34 +367,36 @@ We call the method which combines both improvements (quadrature and upwinding) t
 
 \section{Solution of the equations} \label{sec:solution}
 
-We can now write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because we solve for steady state directly, and because numerically-locating the free boundary (ice sheet margin) is an integral part of the problem.  We suppose from now on that the structured grid has periodic boundary conditions (b.c.s), as appropriate to a whole ice sheet model.
+We are ready to write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because we solve for steady state directly, and because numerically-locating the free boundary (ice sheet margin) is an integral part of the problem.  We suppose from now on that the structured grid has periodic boundary conditions (b.c.s), as appropriate to a whole ice sheet model.
 
-Each equation in the \Mstar scheme is simply \eqref{eq:siamstar}, with upwind modification \eqref{eq:upwindschemex} used when evaluating the flux.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
+Each equation in the \Mstar scheme is simply \eqref{eq:siamstar}, with upwind modification like \eqref{eq:upwindschemex} when evaluating the flux.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
 \begin{equation}
 F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
 \end{equation}
-is supposed to determine $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note ``$H^h(x,y)$'' and ``$\bH$'' are two notations for the same discrete thickness representation.  However, system \eqref{eq:nonlinsystem} is not, by itself, an adequate description because each unknown is constrained by the obvious fact that thicknesses are nonnegative numbers.  We write
+is supposed to determine $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note ``$H^h(x,y)$'' and ``$\bH$'' are two notations for the same discrete thickness representation.  However, system \eqref{eq:nonlinsystem} is not, by itself, an adequate description because each unknown thickness $H_{j,k}$ is constrained to be a nonnegative number.  We write
 \begin{equation}
-\bH \ge 0,  \label{eq:nonlinconstraints}
+\bH \ge 0.  \label{eq:nonlinconstraints}
 \end{equation}
-meaning that each component of the vector is nonnegative.  Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980}.  Equivalently, we can write them as a complementarity problem \citep{BensonMunson2006}:
+Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980}.  Equivalently, we can write them as a complementarity problem \citep{BensonMunson2006}:
 \begin{equation}
 \bH \ge 0, \quad \bF(\bH) \ge 0, \quad \bH \cdot \bF(\bH) = 0.  \label{eq:nonlincomplementarity}
 \end{equation}
 
-We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.  The open-source C code used in the current paper\footnote{Clone the repository at \begin{center}\texttt{https://github.com/bueler/sia-fve}\end{center}  See \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.  The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
-\begin{equation}
-J = \left(\,\frac{\partial F_{j,k}}{\partial H_{r,s}}\,\right),
-\end{equation}
-is computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes so that only nine evaluations of the residual are needed to compute the finite-difference derivatives \citep{CurtisPowellReid1974}.  Because of periodicity and the coloring algorithm, the grid dimensions $N_x$ and $N_y$ must be divisible by three.
+We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} as implemented in PETSc \citep{Balayetal2014}.  The open-source C code used here \footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve} and then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.
 
-A Newton solver requires an initial iterate $H^{(0)}$, for which we give a heuristic which seems to work well for both ice sheet and glacier scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
+The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
+\begin{equation}
+J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right),
+\end{equation}
+can be computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974}; in this case only ten residual evaluations are needed to approximate $J$.  Because of periodicity and coloring, however, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.
+
+A Newton solver requires an initial iterate $H^{(0)}$.  We give a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
 H_{j,k}^{(0)} = \big(1000.0\,m_{j,k}\big)_+  \label{eq:nonlininitialheuristic}
 \end{equation}
-where $x_+ = \max\{0,x\}$.  In other words, we build the initial iterate by simply piling up one thousand years of accumulation, without flow.
+where $x_+ = \max\{0,x\}$.  In other words, we build the initial ice sheet thickness iterate by simply piling up one thousand years of accumulation, without flow.
 
-Additionally we apply a simple ``parameter continuation'' scheme.  We first apply the Newton iteration to an easiest form of the free-boundary problem, one with constant diffusivity.  Then we adjust a parameter toward the fully-nonlinear and degenerate SIA problem.  Specifically, from this list of thirteen parameter values
+Additionally we apply a simple ``parameter continuation'' scheme, to aid in the convergence of the Newton iteration on our degenerate and nonlinear diffusion problem.  We first apply the Newton method to an easier free-boundary problem, one with constant diffusivity.  Then we adjust parameters toward the full SIA equations.  Specifically, from this list of thirteen parameter values
 \begin{align}
 \eps &= 1,\, 0.5,\, 0.2,\, 0.1,\, 0.05, \label{eq:continuationseq} \\
      &\qquad 0.02,\, 0.01,\, 0.005,\, 0.002,\, 0.001, \notag \\
@@ -405,13 +407,17 @@ we define
 n(\eps) &= (1-\eps) n + \eps\, n_0,  \label{eq:continuationn} \\
 D(\eps) &= (1-\eps) D + \eps D_0,  \label{eq:continuationD}
 \end{align}
-where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=1$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.   In the continuation scheme we solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} with the first value $\eps=1$ and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} but using the second value $\eps=0.5$.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.  In the flat bed case the first of these continuation-method problems is actually a Laplacian obstacle problem, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  This relatively well-understood free-boundary problem \citep{KinderlehrerStampacchia1980} allows the Newton solver to generate a first estimate of the ice-covered domain.
+where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.
 
-Now, before giving computed examples which justify our claim of practical, not just theoretical, stability, we should explain the relationship between our steady-state computations and fully-implicit time-stepping methods for the SIA evolution equation \eqref{eq:siaevolution}.  Our computations effectively take infinite time steps.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
+Thus we start by solving \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} with values $n(1)$ and $D(1)$ from \eqref{eq:continuationn} and \eqref{eq:continuationD}, and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} but using the second value $\eps=0.5$ in \eqref{eq:continuationn} and \eqref{eq:continuationD}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
+
+In the flat bed case the $\eps=1$ problem is actually a Laplacian obstacle problem, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  This relatively well-understood free-boundary problem \citep{KinderlehrerStampacchia1980} allows the Newton solver to generate a first estimate of the ice-covered domain, so that the free boundary (ice margin) is in the ablation zone as expected.
+
+Now, before giving computed examples which justify our claim of practical, not just theoretical, stability, we explain the relationship between our steady-state computations and fully-implicit time-stepping methods for the SIA evolution equation \eqref{eq:siaevolution}.  Here we effectively take infinite time steps.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
 \begin{equation}
 \frac{H^\ell - H^{\ell-1}}{\Delta t} + \Div \bq^\ell = m \label{eq:backwardeuler}
 \end{equation}
-where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value, or the solution at the previous time step, and the continuation sequence can even be avoided.  If $\Delta t$ is not too large then \eqref{eq:backwardeuler} is easier than the steady state limit $\Delta t\to \infty$, i.e.~equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  Solving the steady state problem is thus harder than any single fully-implicit time-step.
+where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value, or the solution at the previous time step, and the continuation sequence can be avoided or truncated to only include the smallest $\eps$ value.  If $\Delta t$ is not too large then \eqref{eq:backwardeuler} is easier to solve than the steady state limit equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  Solving the steady state problem is thus harder than any single fully-implicit time-step of finite duration.
 
 
 \section{Results}
