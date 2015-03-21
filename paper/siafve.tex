@@ -88,13 +88,15 @@ The classical finite difference (FD) scheme introduced by \cite{Mahaffy1976} for
 Existing numerical schemes for the SIA solve the time-dependent SIA with explicit, semi-implicit, or fully-implicit time-stepping schemes.  All of these have stability restrictions \citep[among others]{Bueleretal2005,EgholmNielsen2010,HindmarshPayne1996,Huybrechtsetal1996,
 JaroschSchoofAnslow2013}.  In these applications the SIA is solved with essentially \emph{ad hoc} treatment of the free margin of the ice sheet, for example using projection in explicit schemes to reset computed negative thicknesses back to zero \citep{Bueleretal2005,JaroschSchoofAnslow2013}.
 
-The work of \cite{JouvetBueler2012} is the one exception to the above usage pattern.  They pose and numerically-solve the steady state SIA free boundary problem as a variational inequality \citep{KinderlehrerStampacchia1980} which includes, as an inequality constraint, the fact that ice thickness is never negative.  We follow this idea, by also solving the steady state free boundary problem, but we do so by re-interpreting the well-known Mahaffy method so that it becomes a highly-accurate and scalable scheme.  The new scheme is none-the-less easy to implement because Newton solvers adapted to inequality constraints \citep{BensonMunson2006} are available in the open-source PETSc library \citep{Balayetal2014}.
+The work of \cite{CalvoDuranyVazquez2000,Vazquezetal2003} are exceptions to the above usage pattern, but in one-spatial dimension and only on flat beds, as they describe the time-dependent problem as a parabolic complementarity problem which includes the constraint that ice thickness is never negative.  They solve each time step numerically by a projected Gauss-Siedel scheme \citep{Ciarlet2002}, which has no chance of scaling to large problems.  Earlier work in one-dimension also examined the free-boundary problem but not regarding the nonnegative-thickness constraint as primary in the mathematical description \citep{Hindmarshetal1987,HindmarshHutter1988}.
+
+\cite{JouvetBueler2012} also pose and numerically-solve the steady state SIA free boundary problem as a variational inequality \citep{KinderlehrerStampacchia1980} which includes the inequality constraint, but in two spatial dimensions and with nontrivial bed elevation, and show a 5 km grid steady-state calculation for Greenland.  We follow this idea, by also solving the steady state free boundary problem, but via a re-interpretation of the well-known Mahaffy method.  Under this reinterpretation, both because of local scheme improvements and because we solve the whole free-boundary problem at once by a parallel Newton method, our modified Mahaffy scheme becomes a stable, more-accurate, and parallel-scalable scheme.  The new scheme is none-the-less easy to implement because Newton solvers adapted to inequality constraints \citep{BensonMunson2006} are available in the open-source PETSc library \citep{Balayetal2014}.
 
 The classical Mahaffy scheme turns out to be a non-standard quadrature choice in the flux integral which states the conservation of mass.  In this context the integrand, which is the vertically-integrated ice flux in the SIA, is defined everywhere because it comes from a thickness field which lives in a continuous space of trial functions.  These trial functions are piecewise-bilinear on a structured grid of rectangles---i.e.~$Q^1$ finite elements \citep{Elmanetal2005}.  If we think of the method as a ``true'' finite element (FE) method then the test functions we user are piecewise-constant with support on dual rectangular control volumes, so the scheme is a Petrov-Galerkin method \citep{Elmanetal2005}.  But it is more natural to regard the scheme as a ``finite volume element'' \citep[FVE;][]{Cai1990,EwingLinLin2002} method because the weak form we actually use in constructing fully-discrete schemes is simply the flux integral itself, over control volumes, just as would appear in finite volume \citep[FV;][]{LeVeque2002} schemes.  We adopt the FVE terminology because of the greater clarity which comes from regarding the mass conservation equation as being in classical flux-integral form.
 
 Our paper is organized as follows.  We start with a statement of the steady, isothermal SIA model.  We then recall the classical Mahaffy scheme in FD form before re-interpreting it as an FVE scheme and identifying its non-standard midpoint rule application in the flux integral.  Building off this re-interpretation we identify better quadrature in the flux integral, and we then add a bit of first-order upwinding on the part of the flux that comes from the bedrock slope.  The resulting improved scheme, which has the same stencil as the classical Mahaffy scheme, is called ``\Mstar.''  Next we describe the Newton solver which we apply to the discrete equations and constraints.  Results are then given in verification cases, and they are at least as good as those from higher-resolution upwind schemes when applied to the \cite{JaroschSchoofAnslow2013} bedrock-step exact solution.  Then we show how the method is applied to real ice sheets by computing, without time-stepping but at very high resolution, the steady state shape of the Greenland ice sheet in a present-day modeled climate.
 
-In the Appendix we describe how to construct, on certain unstructured finite element triangulations, an analog of the \Mstar improved scheme.
+In the Appendix A we describe how to construct, on certain unstructured finite element triangulations, an analog of the \Mstar improved scheme.
 
 
 \section*{The continuum model}
@@ -121,7 +123,7 @@ However, if the bed is not flat then $\grad s$ and $\grad H$ are different.  On 
 \end{equation}
 In this case \eqref{eq:siaevolution} is apparently a hyperbolic conservation equation, but this appearance is superficial and deceiving because the velocity depends in part on the gradient of the transported quantity.
 
-The former diffusion interpretation \eqref{eq:siafluxdiffusion} is surely more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} and \eqref{eq:siaflux} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}.  In general, however, the diffusion-equation interpretation is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
+The former diffusion interpretation \eqref{eq:siafluxdiffusion} is surely more appropriate in the flat-bed case $b=0$ because in that case \eqref{eq:siaevolution} and \eqref{eq:siaflux} can be transformed to a $p$-Laplacian diffusion equation \citep{Vazquezetal2003}.  In general, however, the diffusion-equation interpretation is obscured by the bed gradient $\grad b$ which is in formula \eqref{eq:siafluxdiffusion} for $D$.  This bed gradient is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012} and it generates conservation errors at the ice margin in numerical schemes \citep{JaroschSchoofAnslow2013}.
 
 In fact, \cite{JaroschSchoofAnslow2013} propose a third form for the flux, namely
 \begin{equation}
@@ -388,7 +390,7 @@ The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
 J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right),
 \end{equation}
-can be computed automatically and numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974}; in this case only ten residual evaluations are needed to approximate $J$.  Because of periodicity and coloring, however, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.
+can be computed on of two ways in our code.  First, it can be computed numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974}; in this case only ten residual evaluations are needed to approximate $J$.  Because of periodicity and coloring, however, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.  Second, it can be computed by a method that evaluates derivatives calculated by hand.  This latter case, covered in Appendix B, gives the best performance for small $\eps$ values. % FIXME  I hope!
 
 A Newton solver requires an initial iterate $H^{(0)}$.  We give a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
@@ -480,10 +482,9 @@ This work was supported by NASA grant \#NNX13AM16G and a grant of high-performan
 \bibliographystyle{igs}
 
 \appendix
-\section{Appendix}  \label{sec:app}
+\section{Appendix A.  Unstructured FVE scheme}  \label{sec:appA}
 
 FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
-
 
 \begin{comment}
 Here is what the MPAS Land-Ice User's Manual version 3.0 says:
@@ -495,6 +496,9 @@ Velocities and fluxes are calculated on the midpoint of Voronoi cell edges.  The
 
 Looking at this, and the code, I don't think they think of it as Petrov-Galerkin
 \end{comment}
+
+\section{Appendix B. Analytical Jacobi- an for \Mstar}  \label{sec:appB}
+
 
 
 \end{document}
