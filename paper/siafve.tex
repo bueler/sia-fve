@@ -388,7 +388,7 @@ We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constra
 
 The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
-J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right),
+J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right), \label{eq:nonlinjacobian}
 \end{equation}
 can be computed on of two ways in our code.  First, it can be computed numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974}; in this case only ten residual evaluations are needed to approximate $J$.  Because of periodicity and coloring, however, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.  Second, it can be computed by a method that evaluates derivatives calculated by hand.  This latter case, covered in Appendix B, gives the best performance for small $\eps$ values. % FIXME  I hope!
 
@@ -488,16 +488,33 @@ FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g
 
 \begin{comment}
 Here is what the MPAS Land-Ice User's Manual version 3.0 says:
-
 \begin{quote}
 \small
 Velocities and fluxes are calculated on the midpoint of Voronoi cell edges.  The normal component of surface slope is calculated on cell edges using surface elevation at adjacent cell centers.  The tangential component of surface slope is calculated on cell edges using surface elevation at adjacent vertices. The surface elevation at vertices is calculated from the values at adjacent cell centers using barycentric interpolation. Ice thickness on edges is calculated as the average of the adjacent cell center values (2nd-order approximation).
 \end{quote}
-
-Looking at this, and the code, I don't think they think of it as Petrov-Galerkin
+Looking at this, and their code, I don't think they think of it as Petrov-Galerkin
 \end{comment}
 
 \section{Appendix B. Analytical Jacobi- an for \Mstar}  \label{sec:appB}
+
+Though finite differencing can be used to approximate the Jacobian \eqref{eq:nonlinjacobian} of the nonlinear algebraic system \eqref{eq:nonlinsystem}, convergence is\footnote{should be} better with a highly-accurate Jacobian, especially for those rows that correspond to near-margin locations.  To describe the calculation of the exact Jacobian, for the \Mstar method without upwinding only, we start by recalling that each equation $F_{j,k}(\bH)=0$ in the system comes from equation \eqref{eq:siamstar}, that is,
+\begin{equation}
+  F_{j,k}(\bH) = \sum_{s=0}^7 Q(s,j,k,\bH) - m_{j,k}\,\Delta x\,\Delta y\label{eq:jacfirst}
+\end{equation}
+where we denote a single quadrature-evaluation term by
+\begin{equation}
+Q_s(j,k,\bH) = \bc_s\cdot \bq^h(x_j^s,y_k^s). \label{eq:jacQterm}
+\end{equation}
+We compute the derivative with respect to a thickness $H_{p,q}$,
+\begin{equation}
+\frac{\partial F_{j,k}}{\partial H_{p,q}} = \sum_{s=0}^7 \frac{\partial Q_s}{\partial H_{p,q}} \label{eq:jacQsum}
+\end{equation}
+where it is understood from now on that $Q_s$ depends on $j,k$ and (potentially) all elements of the discrete thickness vector $\bH$.  In fact, $\partial Q_s/\partial H_{p,q} \ne 0$ only if $p \in \{j,j+\sigma(x_j^s-x_j)\}$ and $q \in \{k,k+\sigma(y_k^s-y_k)\}$.
+
+FIXME: recall criteria so $x_j^s,y_k^s$ is in $\square_{u,v}$ and then write $Q$ in local coords $(\xi,\nu)$, and then compute deriv of $Q$ on element $u,v$ w.r.t.~thickness at corner $\ell$ of element:
+\begin{equation}
+\frac{\partial Q_s}{\partial \ell} = FIXME
+\end{equation}
 
 
 
