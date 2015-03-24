@@ -23,15 +23,19 @@ PetscErrorCode fieldatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
                          PetscReal **f, const AppCtx *user, PetscReal *f_atpt);
 
 // evaluate gradient  (\nabla f)(x,y)  at point (x,y), on element u,v
-PetscErrorCode gradatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                        PetscReal **f, const AppCtx *user, Grad *gradf_atpt);
+PetscErrorCode gradfatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                         PetscReal **f, const AppCtx *user, Grad *gradf_atpt);
 
 // evaluate derivative of scalar field  f(x,y)  with respect to nodal value f_l
 // at point (x,y), on element u,v
-/*
 PetscErrorCode dfieldatpt(PetscInt l,
                           PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                          PetscReal **f, const AppCtx *user, PetscReal *dfdl_atpt);
-*/
+                          const AppCtx *user, PetscReal *dfdl_atpt);
+
+// evaluate derivative of gradient   (\nabla f)(x,y)  with respect to nodal value f_l
+// at point (x,y), on element u,v
+PetscErrorCode dgradfatpt(PetscInt l,
+                          PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                          const AppCtx *user, Grad *dgradfdl_atpt);
 
 #endif // Q1OP_H_

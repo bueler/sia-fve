@@ -478,17 +478,17 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           if (user->mtrue == PETSC_FALSE) {  // M* method, with or without upwind
               for (s=0; s<4; s++) {
                   ierr = fieldatpt(j,k,locx[s],locy[s],H, user,&He[s]); CHKERRQ(ierr);
-                  ierr =  gradatpt(j,k,locx[s],locy[s],H, user,&gH[s]); CHKERRQ(ierr);
-                  ierr =  gradatpt(j,k,locx[s],locy[s],ab,user,&gb[s]); CHKERRQ(ierr);
+                  ierr = gradfatpt(j,k,locx[s],locy[s],H, user,&gH[s]); CHKERRQ(ierr);
+                  ierr = gradfatpt(j,k,locx[s],locy[s],ab,user,&gb[s]); CHKERRQ(ierr);
               }
           } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
               Grad gH_nbr[4], gb_nbr[4];
               for (s=0; s<4; s++) {
                   ierr = fieldatpt(j,k,locxtrue[s],locytrue[s],H, user,&He[s]); CHKERRQ(ierr);
-                  ierr =  gradatpt(j,k,locxtrue[s],locytrue[s],H, user,&gH[s]); CHKERRQ(ierr);
-                  ierr =  gradatpt(j,k,locxtrue[s],locytrue[s],ab,user,&gb[s]); CHKERRQ(ierr);
-                  ierr =  gradatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],H, user,&gH_nbr[s]); CHKERRQ(ierr);
-                  ierr =  gradatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user,&gb_nbr[s]); CHKERRQ(ierr);
+                  ierr = gradfatpt(j,k,locxtrue[s],locytrue[s],H, user,&gH[s]); CHKERRQ(ierr);
+                  ierr = gradfatpt(j,k,locxtrue[s],locytrue[s],ab,user,&gb[s]); CHKERRQ(ierr);
+                  ierr = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],H, user,&gH_nbr[s]); CHKERRQ(ierr);
+                  ierr = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user,&gb_nbr[s]); CHKERRQ(ierr);
                   gH[s] = gradav(gH[s],gH_nbr[s]);
                   gb[s] = gradav(gb[s],gb_nbr[s]);
               }
