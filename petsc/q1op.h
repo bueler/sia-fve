@@ -8,14 +8,30 @@
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for Grad and AppCtx
 
-// evaluate scalar field f(x,y)  at point (x,y), on element j,k, where
-// locx = x-x_j, locy = y-y_k, using DMDA Vec f[k][j]
-PetscErrorCode fieldatpt(PetscInt j, PetscInt k, PetscReal locx, PetscReal locy,
+/* In the following functions
+   * f(x,y) is represented by DMDA Vec {f[k][j]}
+   * use local coordinates:  locx = x-x_u, locy = y-y_v
+   * l indexes corner in counter-clockwise order:
+       l=0 is (x_u,    y_v)
+       l=1 is (x_{u+1},y_v)
+       l=2 is (x_{u+1},y_{v+1})
+       l=3 is (x_u,    y_{v+1})
+*/
+
+// evaluate scalar field  f(x,y)  at point (x,y), on element u,v
+PetscErrorCode fieldatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
                          PetscReal **f, const AppCtx *user, PetscReal *f_atpt);
 
-// evaluate gradient  (\nabla f)(x,y)  at point (x,y), on element j,k, where
-// locx = x-x_j, locy = y-y_k, using DMDA Vec f[k][j]
-PetscErrorCode gradatpt(PetscInt j, PetscInt k, PetscReal locx, PetscReal locy,
+// evaluate gradient  (\nabla f)(x,y)  at point (x,y), on element u,v
+PetscErrorCode gradatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
                         PetscReal **f, const AppCtx *user, Grad *gradf_atpt);
+
+// evaluate derivative of scalar field  f(x,y)  with respect to nodal value f_l
+// at point (x,y), on element u,v
+/*
+PetscErrorCode dfieldatpt(PetscInt l,
+                          PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                          PetscReal **f, const AppCtx *user, PetscReal *dfdl_atpt);
+*/
 
 #endif // Q1OP_H_
