@@ -358,8 +358,8 @@ and so if  W.x >= 0  and  W.y >= 0  the input should have inputs
    H = H_{j*,k*},  Hxup = H_{j,k*},  Hyup = H_{j*,k},
 this method also applies diffusivity- and power-regularization parts of the
 continuation scheme, and it updates maximum of diffusivity */
-PetscReal getfluxUP(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
-                    PetscBool xdir, AppCtx *user) {
+PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+                  PetscBool xdir, AppCtx *user) {
   const PetscReal eps   = user->eps,
                   n     = (1.0 - eps) * user->n + eps * 1.0,
                   delta = getdelta(gH,gb,user),
@@ -376,9 +376,9 @@ PetscReal getfluxUP(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
 
 
 // the non-upwinding form of the flux
-PetscReal getflux(Grad gH, Grad gb, PetscReal H,
-                  PetscBool xdir, AppCtx *user) {
-  return getfluxUP(gH,gb,H,H,xdir,user);
+PetscReal getfluxNOUP(Grad gH, Grad gb, PetscReal H,
+                      PetscBool xdir, AppCtx *user) {
+  return getflux(gH,gb,H,H,xdir,user);
 }
 
 
@@ -538,7 +538,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           // evaluate fluxes
           if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
               for (s=0; s<4; s++)
-                  aq[k][j][s] = getflux(gH[s],gb[s],He[s],xdire[s],user);
+                  aq[k][j][s] = getfluxNOUP(gH[s],gb[s],He[s],xdire[s],user);
           } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hup, locxup[4], locyup[4];
               for (s=0; s<4; s++) {  locxup[s] = locx[s];  locyup[s] = locy[s];  }  // copy
@@ -548,7 +548,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               locyup[3] = (gb[3].y <= 0.0) ? upmin*dy : upmax*dy;
               for (s=0; s<4; s++) {
                   ierr = fieldatpt(j,k,locxup[s],locyup[s],H,user,&Hup); CHKERRQ(ierr);
-                  aq[k][j][s] = getfluxUP(gH[s],gb[s],He[s],Hup,xdire[s],user);
+                  aq[k][j][s] = getflux(gH[s],gb[s],He[s],Hup,xdire[s],user);
               }
           }
       }
