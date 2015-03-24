@@ -1,5 +1,7 @@
 /* (C) 2015 Ed Bueler */
 
+/* Formulas for two exact solutions, one from Bueler2003 and one from JaroschSchoofAnslow2013. */
+
 #ifndef EXACTSIACTX_H_
 #define EXACTSIACTX_H_
 

@@ -1,5 +1,8 @@
 /* (C) 2015 Ed Bueler */
 
+/* Methods for reading and writing PETSc binary files, for use with mahaffy.c.
+Also utilities for computing stats, viewing at stdout, and viewing with X. */
+
 #ifndef IO_H_
 #define IO_H_
 

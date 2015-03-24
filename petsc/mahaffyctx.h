@@ -1,11 +1,17 @@
 /* (C) 2015 Ed Bueler */
 
-#ifndef MAHAFFYCTX_H_   /* Include guard */
+/* Structs which are used by mahaffy.c. */
+
+#ifndef MAHAFFYCTX_H_
 #define MAHAFFYCTX_H_
 
 #include <sys/time.h>
 #include <petscdmda.h>
 #include <petscvec.h>
+
+typedef struct {
+    PetscReal x,y;
+} Grad;
 
 typedef struct {
   DM        da, quadda;
