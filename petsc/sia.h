@@ -1,11 +1,11 @@
 /* (C) 2015 Ed Bueler */
 
-/* Implementation of SIA calculations. */
+/* Implementation of SIA flux calculation. */
 
 #ifndef SIA_H_
 #define SIA_H_
 
-#include <petscvec.h>
+#include <petsc.h>
 #include "mahaffyctx.h"  // for Grad and AppCtx
 
 /*
