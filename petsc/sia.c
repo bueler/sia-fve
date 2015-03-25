@@ -14,6 +14,14 @@ PetscReal getdelta(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
     return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
+/*
+int ddeltadgH(Grad gH, Grad gb, PetscReal Gamma, PetscReal n, PetscReal *ddeltadH1, PetscReal *ddeltadH2) {
+FIXME
+    const PetscReal sx  = gH.x + gb.x,
+                    sy  = gH.y + gb.y;
+    return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
+}
+*/
 
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
