@@ -73,6 +73,7 @@ Generate .png figs:
 #include "exactsia.h"
 #include "io.h"
 #include "q1op.h"
+#include "sia.h"
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
@@ -324,57 +325,6 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscFunctionReturn(0);
 }
 
-/* the first formula for SIA: compute delta, a factor of diffusivity D and
-pseudo-velocity W, from values of thickness and surface gradient
-note:
-   delta = Gamma |grad s|^{n-1}
-where s = H+b; also applies power-regularization part of continuation scheme */
-PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user) {
-    const PetscReal eps = user->eps,
-                    n   = (1.0 - eps) * user->n + eps * 1.0,
-                    sx  = gH.x + gb.x,
-                    sy  = gH.y + gb.y;
-    return user->Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
-}
-
-
-/* the second formula for SIA: evaluate the flux from gradients and thickness;
-note:
-   D = delta * H^{n+2}      (positive scalar)
-   W = - delta * grad b     (vector)
-so
-   q = - D grad H + W H^{n+2}
-(and also q = - D grad s) where  H = H_{j*,k*}  at point (x_{j*}, y_{k*});
-note  W = (W.x,W.y)  and  q = (q.x,q.y)  in code;
-in this upwinding case, for  j <= j* <= j+1,  k <= k* <= k+1,
-   q.x = - D gH.x + W.x^+ H_{j,k*}^{n+2} + W.x^- H_{j+1,k*}^{n+2}
-   q.y = - D gH.y + W.y^+ H_{j*,k}^{n+2} + W.y^- H_{j*,k+1}^{n+2}
-and so if  W.x >= 0  and  W.y >= 0  the input should have inputs
-   H = H_{j*,k*},  Hxup = H_{j,k*},  Hyup = H_{j*,k},
-this method also applies diffusivity- and power-regularization parts of the
-continuation scheme, and it updates maximum of diffusivity */
-PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
-                  PetscBool xdir, AppCtx *user) {
-  const PetscReal eps   = user->eps,
-                  n     = (1.0 - eps) * user->n + eps * 1.0,
-                  delta = getdelta(gH,gb,user),
-                  D     = (1.0-eps) * delta * PetscPowReal(H,n+2.0) + eps * user->D0;
-  user->maxD = PetscMax(user->maxD, D);
-  if (xdir == PETSC_TRUE) {
-      const PetscReal  Wx = - delta * gb.x;
-      return - D * gH.x + Wx * PetscPowReal(Hup,n+2.0);
-  } else {
-      const PetscReal  Wy = - delta * gb.y;
-      return - D * gH.y + Wy * PetscPowReal(Hup,n+2.0);
-  }
-}
-
-
-// the non-upwinding form of the flux
-PetscReal getfluxNOUP(Grad gH, Grad gb, PetscReal H,
-                      PetscBool xdir, AppCtx *user) {
-  return getflux(gH,gb,H,H,xdir,user);
-}
 
 // averages two gradients; only used in true Mahaffy
 Grad gradav(Grad g1, Grad g2) {
@@ -496,7 +446,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           // evaluate fluxes
           if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
               for (s=0; s<4; s++)
-                  aq[k][j][s] = getfluxNOUP(gH[s],gb[s],He[s],xdire[s],user);
+                  aq[k][j][s] = getflux(gH[s],gb[s],He[s],He[s],xdire[s],user);
           } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hup, locxup[4], locyup[4];
               for (s=0; s<4; s++) {  locxup[s] = locx[s];  locyup[s] = locy[s];  }  // copy

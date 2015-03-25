@@ -7,9 +7,9 @@
 include ${PETSC_DIR}/lib/petsc-conf/variables
 include ${PETSC_DIR}/lib/petsc-conf/rules
 
-mahaffy: mahaffy.o exactsia.o io.o q1op.o chkopts
-	-${CLINKER} -o mahaffy mahaffy.o exactsia.o io.o q1op.o  ${PETSC_SNES_LIB}
-	${RM} mahaffy.o exactsia.o io.o q1op.o
+mahaffy: mahaffy.o exactsia.o io.o q1op.o sia.o chkopts
+	-${CLINKER} -o mahaffy mahaffy.o exactsia.o io.o q1op.o sia.o  ${PETSC_SNES_LIB}
+	${RM} mahaffy.o exactsia.o io.o q1op.o sia.o
 
 # these targets are used for generating verification figures in ../../mahaffypaper/
 dome.verif: mahaffy domeconv.sh
