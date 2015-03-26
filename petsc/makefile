@@ -23,7 +23,7 @@ regress/dome.short: mahaffy domeconv.sh
 regress/bedstep.short: mahaffy bedstepconv.sh
 	./bedstepconv.sh regress/bedstep.short 0 6
 regress/true.short: mahaffy domeconv.sh
-	./domeconv.sh regress/true.short 1 6 "-mah_true -da_grid_x 15 -da_grid_y 15"
+	./domeconv.sh regress/true.short 1 6 "-mah_true -snes_fd_color -da_grid_x 15 -da_grid_y 15"
 regress/noupwind.short: mahaffy domeconv.sh
 	./domeconv.sh regress/noupwind.short 0 6 -mah_noupwind
 test: regress/dome.short regress/bedstep.short regress/true.short regress/noupwind.short

@@ -27,7 +27,8 @@ Use one of these problem cases:
 Solution options:
    ./mahaffy -mah_true -da_grid_x 15 -da_grid_y 15
                                # use true Mahaffy (sans quadrature & upwind improvements), but with 5|mx and 5|my
-   ./mahaffy -mah_noupwind     # do not use upwinding on  grad b  part of flux
+   ./mahaffy -mah_bedstep -mah_noupwind
+                               # do not use upwinding on  grad b  part of flux
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
    ./mahaffy -mah_D0 10.0      # change constant diffusivity, used in continuation, to other value than
                                # default = 1.0;  big may be good for convergence, esp. w upwinding
@@ -38,7 +39,8 @@ PETSc solver variations:
 
 Feedback on solution process:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
-   ./mahaffy -da_refine 3 -snes_monitor -snes_monitor_solution -snes_monitor_residual -draw_pause 1
+   mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_monitor_solution -draw_pause 0
+   mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_vi_monitor_residual -draw_pause 0
 
 Successes:
    mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor  # DIVERGED_LINE_SEARCH at 12
@@ -55,8 +57,8 @@ Divergence:
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 2    # DIVERGED_LINE_SEARCH at 13
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 3    # DIVERGED_LINEAR_SOLVE at 4
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4    # DIVERGED_LINEAR_SOLVE at 4
-   mpiexec -n 6 ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 \  # zero pivot at 13
-       -snes_max_it 1000 -pc_type asm -sub_pc_type lu
+   # zero pivot at 13:
+   mpiexec -n 6 ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000 -pc_type asm -sub_pc_type lu
 
 Generate .png figs:
    mkdir foo/
@@ -323,6 +325,28 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 }
 
 
+/* Loop over locally-owned elements, including ghosts, checking or forcing
+   nonnegativity of thickness. */
+PetscErrorCode checkforceadmissible(DMDALocalInfo *info, PetscScalar **H, const AppCtx *user) {
+  PetscInt        j, k;
+  PetscFunctionBeginUser;
+  if (user->forceadmissible == PETSC_TRUE) {
+      for (k = info->ys-1; k < info->ys + info->ym; k++) {
+          for (j = info->xs-1; j < info->xs + info->xm; j++) {
+              H[k][j] = PetscAbsReal(H[k][j]);
+          }
+      }
+  } else if (user->checkadmissible == PETSC_TRUE) {
+      for (k = info->ys-1; k < info->ys + info->ym; k++) {
+          for (j = info->xs-1; j < info->xs + info->xm; j++) {
+              if (H[k][j] < 0.0)
+                  SETERRQ3(PETSC_COMM_WORLD,1,"ERROR: inadmissible H[%d][%d] = %.3e < 0\n",k,j,H[k][j]);
+          }
+      }
+  }
+  PetscFunctionReturn(0);
+}
+
 // averages two gradients; only used in true Mahaffy
 Grad gradav(Grad g1, Grad g2) {
   Grad gav;
@@ -388,15 +412,7 @@ at "%":
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
-  // these are used in standard M*, thus in Jacobian also
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
-  // these only appear in this residual routine, not Jacobian
-  const PetscReal locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
-                  locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
-                  locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
-                  locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
-  const PetscInt  jnbr[4] = { 0,  1,  0, -1},
-                  knbr[4] = {-1,  0,  1,  0};
   PetscInt        j, k;
   PetscReal       **am, **ab, ***aq, He[4];
   Grad            gH[4], gb[4];
@@ -405,23 +421,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
   PetscFunctionBeginUser;
   user->maxD = 0.0;
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
-
-  // loop over locally-owned elements, including ghosts, forcing or checking
-  //     nonnegativity of thickness
-  if (user->forceadmissible == PETSC_TRUE) {
-      for (k = info->ys-1; k < info->ys + info->ym; k++) {
-          for (j = info->xs-1; j < info->xs + info->xm; j++) {
-              H[k][j] = PetscAbsReal(H[k][j]);
-          }
-      }
-  } else if (user->checkadmissible == PETSC_TRUE) {
-      for (k = info->ys-1; k < info->ys + info->ym; k++) {
-          for (j = info->xs-1; j < info->xs + info->xm; j++) {
-              if (H[k][j] < 0.0)
-                  SETERRQ3(PETSC_COMM_WORLD,1,"ERROR: inadmissible H[%d][%d] = %.3e < 0\n",k,j,H[k][j]);
-          }
-      }
-  }
+  ierr = checkforceadmissible(info,H,user); CHKERRQ(ierr);
 
   // need stencil width on b and locally-computed q
   ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
@@ -440,6 +440,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
           // evaluate gradients and (non-upwinded) thicknesses
           if (user->mtrue == PETSC_TRUE) {  // true Mahaffy method
               // this implementation is at least a factor of two inefficient
+              // these are for classical (true) Mahaffy, and do not appear in Jacobian
+              const PetscReal locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
+                              locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
+                              locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
+                              locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
+              const PetscInt  jnbr[4] = { 0,  1,  0, -1},
+                              knbr[4] = {-1,  0,  1,  0};
               Grad gH_nbr[4], gb_nbr[4];
               for (c=0; c<4; c++) {
                   He[c] = fieldatpt(j,k,locxtrue[c],locytrue[c],H, user);
@@ -480,10 +487,13 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
           PetscInt s;
-          // This is the integral over the control volume boundary using two quadrature
-          // points on each side of of the four sides of the rectangular control volume.
-          // For M*: two instances of midpoint rule on each side, with two different values of aq[][] per side
-          // For true Mahaffy: ditto, but the two values of aq[][] per side are actually the same.
+          // This is the integral over the control volume boundary using two
+          // quadrature points on each side of of the four sides of the
+          // rectangular control volume.
+          // For M*: two instances of midpoint rule on each side, with two
+          //         different values of aq[][] per side
+          // For true Mahaffy: ditto, but the two values of aq[][] per side are
+          //                   actually the same.
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
             FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
@@ -497,6 +507,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
   ierr = VecDestroy(&qloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
+
 
 typedef struct {
   PetscInt foo,k,j,bar;
@@ -519,10 +530,10 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   PetscReal       val[32];
 
   PetscFunctionBeginUser;
-  if ((user->mtrue == PETSC_TRUE) || (user->noupwind == PETSC_TRUE)) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: not clear analytical jacobian ready in these cases ...\n");
-  }
-
+  if (user->mtrue == PETSC_TRUE) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: analytical jacobian not ready in this cases ...\n"); }
+  //ierr = PetscPrintf(PETSC_COMM_WORLD,"[inside FormJacobianLocal()]\n"); CHKERRQ(ierr);
+  ierr = checkforceadmissible(info,aH,user); CHKERRQ(ierr);
   ierr = MatZeroEntries(jac); CHKERRQ(ierr);  // because using ADD_VALUES below
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
@@ -555,15 +566,16 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
               gH = gradfatpt(u,v,lx,ly,aH,user);
               gb = gradfatpt(u,v,lx,ly,ab,user);
               H  = fieldatpt(u,v,lx,ly,aH,user);
-              lxup = lx;
-              if (xdir == PETSC_TRUE) {
-                  lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
-              }
-              lyup = ly;
-              if (xdir == PETSC_FALSE) {
-                  lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
-              }
-              Hup = fieldatpt(u,v,lxup,lyup,aH,user);
+              if (user->noupwind == PETSC_FALSE) {
+                  lxup = lx;
+                  lyup = ly;
+                  if (xdir == PETSC_TRUE)
+                      lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
+                  if (xdir == PETSC_FALSE)
+                      lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
+                  Hup = fieldatpt(u,v,lxup,lyup,aH,user);
+              } else
+                  Hup = H;
               for (l=0; l<4; l++) {
                   const PetscInt djfroml[4] = { 0,  1,  1,  0},
                                  dkfroml[4] = { 0,  0,  1,  1};
@@ -571,7 +583,10 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   PetscReal dHdl, dHupdl;
                   dgHdl  = dgradfatpt(l,u,v,lx,ly,user);
                   dHdl   = dfieldatpt(l,u,v,lx,ly,user);
-                  dHupdl = dfieldatpt(l,u,v,lxup,lyup,user);
+                  if (user->noupwind == PETSC_FALSE)
+                      dHupdl = dfieldatpt(l,u,v,lxup,lyup,user);
+                  else
+                      dHupdl = dHdl;
                   col[4*s+l].j = u + djfroml[l];
                   col[4*s+l].k = v + dkfroml[l];
                   val[4*s+l] = coeff[s] * DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdir,user);
@@ -729,16 +744,16 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
 // start a SNESVI
 PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
   PetscErrorCode ierr;
+  PetscBool      flg = PETSC_FALSE;
   ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
   ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
   ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
-              (DMDASNESFunction)FormFunctionLocal,
-              user); CHKERRQ(ierr);
-/*
-  ierr = DMDASNESSetJacobianLocal(user->da,
-              (PetscErrorCode (*)(DMDALocalInfo*,void*,Mat,Mat,void*))FormJacobianLocal,
-              user); CHKERRQ(ierr);
-*/
+                (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
+  ierr = PetscOptionsGetBool(NULL,"-snes_fd_color",&flg,NULL);CHKERRQ(ierr);
+  if (!flg) {
+      ierr = DMDASNESSetJacobianLocal(user->da,
+                (DMDASNESJacobian)FormJacobianLocal,user); CHKERRQ(ierr);
+  }
   ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);

@@ -1,0 +1,4 @@
+* refactor Jacobian calculation to look like residual, so that on each element
+  we only call DfluxDl() four times
+
+* make schedules for eps and slopeeps into members of AppCtx
