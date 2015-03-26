@@ -17,6 +17,13 @@ PetscReal getdelta(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
     return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
+Grad getW(PetscReal delta, Grad gb) {
+    Grad W;
+    W.x = - delta * gb.x;
+    W.y = - delta * gb.y;
+    return W;
+}
+
 /* In continuation scheme, n(1)=1.0 and n(0)=n. */
 PetscReal ncont(const AppCtx *user) {
   return (1.0 - user->eps) * user->n + user->eps * 1.0;
@@ -35,13 +42,12 @@ PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
   const PetscReal n     = ncont(user),
                   delta = getdelta(gH,gb,user->Gamma,n),
                   D     = Dcont(delta,H,user);
+  const Grad      W     = getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
   if (xdir == PETSC_TRUE) {
-      const PetscReal  Wx = - delta * gb.x;
-      return - D * gH.x + Wx * PetscPowReal(Hup,n+2.0);
+      return - D * gH.x + W.x * PetscPowReal(Hup,n+2.0);
   } else {
-      const PetscReal  Wy = - delta * gb.y;
-      return - D * gH.y + Wy * PetscPowReal(Hup,n+2.0);
+      return - D * gH.y + W.y * PetscPowReal(Hup,n+2.0);
   }
 }
 
@@ -119,9 +125,25 @@ Grad DWDl(PetscInt l,
 
 //FIXME since  q.x = - D gH.x + W.x Hup^{n+2}  we have:
 //   d q.x / dl = - (d D / dl) gH.x - D (d gH.x / dl) + (d W.x / dl) Hup^{n+2} + W.x (n+2) Hup^{n+1} (d Hup / dl)
-/* will need code:
+// where D = Dcont and n = ncont
+/*
+PetscReal DfluxDl(PetscInt l,
+                  PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                  PetscReal Hup, PetscReal dHupdl,
+                  PetscReal **H, PetscReal **b, const AppCtx *user) {
     const Grad gH = gradfatpt(u,v,locx,locy,H,user),
-               gb = gradfatpt(u,v,locx,locy,b,user);
-    const PetscReal delta = getdelta(gH,gb,user->Gamma,n);
+               gb = gradfatpt(u,v,locx,locy,b,user),
+               dgHdl = dgradfatpt(l,u,v,locx,locy,user),
+               dWdl  = DWDl(l,u,v,locx,locy,H,b,user);
+    const PetscReal n     = ncont(user),
+                    Hatpt = fieldatpt(u,v,locx,locy,H,user),
+                    delta = getdelta(gH,gb,user->Gamma,n),
+                    D     = Dcont(delta,Hatpt,user);
+    const Grad W = getW(delta,gb,user);
+    // get d/dl values:
+    const PetscReal dDdl = DDcontDl(l,u,v,locx,locy,delta,H,b,user),
+    dHdl     = dfieldatpt(l,u,v,locx,locy,user),
+                    ddeltadl =   DdeltaDl(l,u,v,locx,locy,H,b,user);
+    return (1.0-user->eps) * Hpow * ( ddeltadl * Hatpt + delta * (n+2.0) * dHdl );
+}
 */
-
