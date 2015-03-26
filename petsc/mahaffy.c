@@ -427,18 +427,18 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
           // get gradients and (non-upwinded) thicknesses
           if (user->mtrue == PETSC_FALSE) {  // M* method, with or without upwind
               for (s=0; s<4; s++) {
-                  ierr = fieldatpt(j,k,locx[s],locy[s],H, user,&He[s]); CHKERRQ(ierr);
-                  ierr = gradfatpt(j,k,locx[s],locy[s],H, user,&gH[s]); CHKERRQ(ierr);
-                  ierr = gradfatpt(j,k,locx[s],locy[s],ab,user,&gb[s]); CHKERRQ(ierr);
+                  He[s] = fieldatpt(j,k,locx[s],locy[s],H, user);
+                  gH[s] = gradfatpt(j,k,locx[s],locy[s],H, user);
+                  gb[s] = gradfatpt(j,k,locx[s],locy[s],ab,user);
               }
           } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
               Grad gH_nbr[4], gb_nbr[4];
               for (s=0; s<4; s++) {
-                  ierr = fieldatpt(j,k,locxtrue[s],locytrue[s],H, user,&He[s]); CHKERRQ(ierr);
-                  ierr = gradfatpt(j,k,locxtrue[s],locytrue[s],H, user,&gH[s]); CHKERRQ(ierr);
-                  ierr = gradfatpt(j,k,locxtrue[s],locytrue[s],ab,user,&gb[s]); CHKERRQ(ierr);
-                  ierr = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],H, user,&gH_nbr[s]); CHKERRQ(ierr);
-                  ierr = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user,&gb_nbr[s]); CHKERRQ(ierr);
+                  He[s] = fieldatpt(j,k,locxtrue[s],locytrue[s],H, user);
+                  gH[s] = gradfatpt(j,k,locxtrue[s],locytrue[s],H, user);
+                  gb[s] = gradfatpt(j,k,locxtrue[s],locytrue[s],ab,user);
+                  gH_nbr[s] = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],H, user);
+                  gb_nbr[s] = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user);
                   gH[s] = gradav(gH[s],gH_nbr[s]);
                   gb[s] = gradav(gb[s],gb_nbr[s]);
               }
@@ -455,7 +455,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
               locxup[2] = (gb[2].x <= 0.0) ? upmin*dx : upmax*dx;
               locyup[3] = (gb[3].y <= 0.0) ? upmin*dy : upmax*dy;
               for (s=0; s<4; s++) {
-                  ierr = fieldatpt(j,k,locxup[s],locyup[s],H,user,&Hup); CHKERRQ(ierr);
+                  Hup = fieldatpt(j,k,locxup[s],locyup[s],H,user);
                   aq[k][j][s] = getflux(gH[s],gb[s],He[s],Hup,xdire[s],user);
               }
           }

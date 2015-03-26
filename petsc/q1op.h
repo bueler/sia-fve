@@ -19,23 +19,23 @@
 */
 
 // evaluate scalar field  f(x,y)  at point (x,y) on element u,v
-PetscErrorCode fieldatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                         PetscReal **f, const AppCtx *user, PetscReal *f_atpt);
+PetscReal fieldatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                    PetscReal **f, const AppCtx *user);
 
 // evaluate gradient  (\nabla f)(x,y)  at point (x,y) on element u,v
-PetscErrorCode gradfatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                         PetscReal **f, const AppCtx *user, Grad *gradf_atpt);
+Grad gradfatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+               PetscReal **f, const AppCtx *user);
 
 // evaluate derivative of scalar field  f(x,y)  with respect to nodal value f_l
 // at point (x,y) on element u,v
-PetscErrorCode dfieldatpt(PetscInt l,
-                          PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                          const AppCtx *user, PetscReal *dfdl_atpt);
+PetscReal dfieldatpt(PetscInt l,
+                     PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                     const AppCtx *user);
 
 // evaluate derivative of gradient   (\nabla f)(x,y)  with respect to nodal value f_l
 // at point (x,y) on element u,v
-PetscErrorCode dgradfatpt(PetscInt l,
-                          PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                          const AppCtx *user, Grad *dgradfdl_atpt);
+Grad dgradfatpt(PetscInt l,
+                PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                const AppCtx *user);
 
 #endif // Q1OP_H_

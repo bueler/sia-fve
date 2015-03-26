@@ -22,44 +22,42 @@ int weights(PetscReal dx, PetscReal dy, PetscReal locx, PetscReal locy,
   return 0;
 }
 
-PetscErrorCode fieldatpt(PetscInt u, PetscInt v,         // (j,k) is the element (by lower-left corner)
-                         PetscReal locx, PetscReal locy, // = (x,y) coords in element
-                         PetscReal **f,                  // f[k][j] are node values
-                         const AppCtx *user, PetscReal *f_atpt) {
+PetscReal fieldatpt(PetscInt u, PetscInt v,         // (j,k) is the element (by lower-left corner)
+                    PetscReal locx, PetscReal locy, // = (x,y) coords in element
+                    PetscReal **f,                  // f[k][j] are node values
+                    const AppCtx *user) {
   PetscReal x[4], y[4];
   weights(user->dx,user->dx,locx,locy,&x,&y,NULL,NULL);
-  if (f == NULL)  SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in fieldatpt() ...\n");
-  *f_atpt = x[0] * y[0] * f[v][u] + x[1] * y[1] * f[v][u+1] + x[2] * y[2] * f[v+1][u+1] + x[3] * y[3] * f[v+1][u];
-  PetscFunctionReturn(0);
+  return x[0] * y[0] * f[v][u] + x[1] * y[1] * f[v][u+1] + x[2] * y[2] * f[v+1][u+1] + x[3] * y[3] * f[v+1][u];
 }
 
-PetscErrorCode gradfatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                         PetscReal **f, const AppCtx *user, Grad *gradf_atpt) {
+Grad gradfatpt(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+               PetscReal **f, const AppCtx *user) {
   PetscReal x[4], y[4], gx[4], gy[4];
+  Grad gradf;
   weights(user->dx,user->dx,locx,locy,&x,&y,&gx,&gy);
-  if (f == NULL)  SETERRQ(PETSC_COMM_WORLD,1,"ERROR: illegal NULL ptr in gradatpt() ...\n");
-  gradf_atpt->x =   gx[0] * y[0] * f[v][u]     + gx[1] * y[1] * f[v][u+1]
-                  + gx[2] * y[2] * f[v+1][u+1] + gx[3] * y[3] * f[v+1][u];
-  gradf_atpt->y =    x[0] *gy[0] * f[v][u]     +  x[1] *gy[1] * f[v][u+1]
-                  +  x[2] *gy[2] * f[v+1][u+1] +  x[3] *gy[3] * f[v+1][u];
-  PetscFunctionReturn(0);
+  gradf.x =   gx[0] * y[0] * f[v][u]     + gx[1] * y[1] * f[v][u+1]
+            + gx[2] * y[2] * f[v+1][u+1] + gx[3] * y[3] * f[v+1][u];
+  gradf.y =    x[0] *gy[0] * f[v][u]     +  x[1] *gy[1] * f[v][u+1]
+            +  x[2] *gy[2] * f[v+1][u+1] +  x[3] *gy[3] * f[v+1][u];
+  return gradf;
 }
 
-PetscErrorCode dfieldatpt(PetscInt l,
-                          PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                          const AppCtx *user, PetscReal *dfdl_atpt) {
+PetscReal dfieldatpt(PetscInt l,
+                     PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                     const AppCtx *user) {
   PetscReal x[4], y[4];
   weights(user->dx,user->dx,locx,locy,&x,&y,NULL,NULL);
-  *dfdl_atpt = x[l] * y[l];
-  PetscFunctionReturn(0);
+  return x[l] * y[l];
 }
 
-PetscErrorCode dgradfatpt(PetscInt l,
-                          PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                          const AppCtx *user, Grad *dgradfdl_atpt) {
+Grad dgradfatpt(PetscInt l,
+                PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                const AppCtx *user) {
   PetscReal x[4], y[4], gx[4], gy[4];
+  Grad dgradfdl;
   weights(user->dx,user->dx,locx,locy,&x,&y,&gx,&gy);
-  dgradfdl_atpt->x = gx[l] *  y[l];
-  dgradfdl_atpt->y =  x[l] * gy[l];
-  PetscFunctionReturn(0);
+  dgradfdl.x = gx[l] *  y[l];
+  dgradfdl.y =  x[l] * gy[l];
+  return dgradfdl;
 }
