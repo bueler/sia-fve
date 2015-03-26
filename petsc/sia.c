@@ -53,18 +53,22 @@ PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
 // ******** DERIVATIVES ********
 
 /*
-Derivative of delta with respect to nodal value H_l, at point (x,y) on
-element u,v:
+Regularized derivative of delta with respect to nodal value H_l, at point (x,y)
+on element u,v:
    d delta / dl = (d delta / d gH.x) * (d gH.x / dl) + (d delta / d gH.y) * (d gH.y / dl),
 but
    d delta / d gH.x = Gamma * (n-1) * |gH + gb|^{n-3.0} * (gH.x + gb.x)
    d delta / d gH.y = Gamma * (n-1) * |gH + gb|^{n-3.0} * (gH.y + gb.y)
+However, power n-3.0 can be negative, so generating NaN in areas where the
+surface gradient gH+gb is zero or tiny.
 */
 PetscReal DdeltaDl(Grad gH, Grad gb, Grad dgHdl, const AppCtx *user) {
     const PetscReal sx  = gH.x + gb.x,
                     sy  = gH.y + gb.y,
                     n   = ncont(user),
-                    tmp = user->Gamma * (n-1) * PetscPowReal(sx*sx + sy*sy,(n-3.0)/2);
+                    slopeeps = 1.0e-4, // slope of 1 m in 10 km
+                    slopesqr = sx*sx + sy*sy + slopeeps*slopeeps,
+                    tmp = user->Gamma * (n-1) * PetscPowReal(slopesqr,(n-3.0)/2);
     return tmp * sx * dgHdl.x + tmp * sy * dgHdl.y;
 }
 
