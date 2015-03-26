@@ -422,11 +422,19 @@ at "%":
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
+  const PetscBool upwind = (!user->noupwind);
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
   PetscInt        j, k;
-  PetscReal       **am, **ab, ***aq, He[4];
-  Grad            gH[4], gb[4];
+  PetscReal       **am, **ab, ***aq;
   Vec             bloc, qloc;
+
+  // these are for classical (true) Mahaffy, and do not appear in Jacobian
+  const PetscReal locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
+                  locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
+                  locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
+                  locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
+  const PetscInt  jnbr[4] = { 0,  1,  0, -1},
+                  knbr[4] = {-1,  0,  1,  0};
 
   PetscFunctionBeginUser;
   user->maxD = 0.0;
@@ -446,49 +454,33 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
-          PetscInt c;
-          // evaluate gradients and (non-upwinded) thicknesses
-          if (user->mtrue == PETSC_TRUE) {  // true Mahaffy method
-              // this implementation is at least a factor of two inefficient
-              // these are for classical (true) Mahaffy, and do not appear in Jacobian
-              const PetscReal locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
-                              locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
-                              locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
-                              locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
-              const PetscInt  jnbr[4] = { 0,  1,  0, -1},
-                              knbr[4] = {-1,  0,  1,  0};
-              Grad gH_nbr[4], gb_nbr[4];
-              for (c=0; c<4; c++) {
-                  He[c] = fieldatpt(j,k,locxtrue[c],locytrue[c],aH,user);
-                  gH[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],aH,user);
-                  gb[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],ab,user);
-                  gH_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],aH,user);
-                  gb_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],ab,user);
-                  gH[c] = gradav(gH[c],gH_nbr[c]);
-                  gb[c] = gradav(gb[c],gb_nbr[c]);
+          PetscInt  c;
+          PetscReal H, Hup;
+          Grad      gH, gb;
+          for (c=0; c<4; c++) {
+              if (user->mtrue) {  // true Mahaffy method
+                  // this implementation is at least a factor of two inefficient
+                  H = fieldatpt(j,k,locxtrue[c],locytrue[c],aH,user);
+                  gH = gradfatpt(j,k,locxtrue[c],locytrue[c],aH,user);
+                  gb = gradfatpt(j,k,locxtrue[c],locytrue[c],ab,user);
+                  gH = gradav(gH,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],aH,user));
+                  gb = gradav(gb,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],ab,user));
+                  Hup = H; // no upwinding allowed in true Mahaffy
+              } else {
+                  H  = fieldatpt(j,k,locx[c],locy[c],aH,user);
+                  gH = gradfatpt(j,k,locx[c],locy[c],aH,user);
+                  gb = gradfatpt(j,k,locx[c],locy[c],ab,user);
+                  Hup = H;
+                  if (upwind) {
+                      PetscReal lxup = locx[c], lyup = locy[c];
+                      if (xdire[c] == PETSC_TRUE)
+                          lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
+                      else
+                          lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
+                      Hup = fieldatpt(j,k,lxup,lyup,aH,user);
+                  }
               }
-          } else {  // M* method, with or without upwind
-              for (c=0; c<4; c++) {
-                  He[c] = fieldatpt(j,k,locx[c],locy[c],aH,user);
-                  gH[c] = gradfatpt(j,k,locx[c],locy[c],aH,user);
-                  gb[c] = gradfatpt(j,k,locx[c],locy[c],ab,user);
-              }
-          }
-          // evaluate fluxes
-          if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
-              for (c=0; c<4; c++)
-                  aq[k][j][c] = getflux(gH[c],gb[c],He[c],He[c],xdire[c],user);
-          } else {  // M* method including first-order upwinding on grad b part
-              PetscReal Hup, locxup[4], locyup[4];
-              for (c=0; c<4; c++) {  locxup[c] = locx[c];  locyup[c] = locy[c];  }  // copy
-              locxup[0] = (gb[0].x <= 0.0) ? upmin*dx : upmax*dx;
-              locyup[1] = (gb[1].y <= 0.0) ? upmin*dy : upmax*dy;
-              locxup[2] = (gb[2].x <= 0.0) ? upmin*dx : upmax*dx;
-              locyup[3] = (gb[3].y <= 0.0) ? upmin*dy : upmax*dy;
-              for (c=0; c<4; c++) {
-                  Hup = fieldatpt(j,k,locxup[c],locyup[c],aH,user);
-                  aq[k][j][c] = getflux(gH[c],gb[c],He[c],Hup,xdire[c],user);
-              }
+              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
           }
       }
   }
@@ -532,6 +524,7 @@ For examples see $PETSC_DIR/src/snes/examples/tutorials/ex5.c or ex9.c.
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
+  const PetscBool upwind = (user->noupwind == PETSC_FALSE);
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
   PetscInt        j, k;
   PetscReal       **ab, ***adQ;
@@ -540,7 +533,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   PetscReal       val[32];
 
   PetscFunctionBeginUser;
-  if (user->mtrue == PETSC_TRUE) {
+  if (user->mtrue) {
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR: analytical jacobian not ready in this cases ...\n"); }
   //ierr = PetscPrintf(PETSC_COMM_WORLD,"[inside FormJacobianLocal()]\n"); CHKERRQ(ierr);
   ierr = checkforceadmissible(info,aH,user); CHKERRQ(ierr);
@@ -560,32 +553,27 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
           PetscInt  c, l;
-          PetscReal lxup, lyup;
           Grad      gH, gb;
           PetscReal H, Hup;
           for (c=0; c<4; c++) {
+              PetscReal lxup = locx[c], lyup = locy[c];
+              H  = fieldatpt(j,k,locx[c],locy[c],aH,user);
               gH = gradfatpt(j,k,locx[c],locy[c],aH,user);
               gb = gradfatpt(j,k,locx[c],locy[c],ab,user);
-              H  = fieldatpt(j,k,locx[c],locy[c],aH,user);
-              if (user->noupwind == PETSC_FALSE) {
-                  lxup = locx[c];
-                  lyup = locy[c];
-                  if (xdire[c] == PETSC_TRUE)
+              Hup = H;
+              if (upwind) {
+                  if (xdire[c])
                       lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
-                  if (xdire[c] == PETSC_FALSE)
+                  else
                       lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
                   Hup = fieldatpt(j,k,lxup,lyup,aH,user);
-              } else
-                  Hup = H;
+              }
               for (l=0; l<4; l++) {
                   Grad      dgHdl;
                   PetscReal dHdl, dHupdl;
                   dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],user);
                   dHdl   = dfieldatpt(l,j,k,locx[c],locy[c],user);
-                  if (user->noupwind == PETSC_FALSE)
-                      dHupdl = dfieldatpt(l,j,k,lxup,lyup,user);
-                  else
-                      dHupdl = dHdl;
+                  dHupdl = (upwind) ? dfieldatpt(l,j,k,lxup,lyup,user) : dHdl;
                   adQ[k][j][4*c+l] = DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
               }
           }
