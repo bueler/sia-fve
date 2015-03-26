@@ -8,7 +8,8 @@
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for Grad and AppCtx
 
-/* In the following functions
+/*
+In the following functions
    * f(x,y) is represented by PetscReal** array for DMDA Vec, i.e. by {f[k][j]}
    * use local coordinates:  locx = x-x_u, locy = y-y_v
    * l indexes corner in counter-clockwise order:
