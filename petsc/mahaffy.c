@@ -77,13 +77,10 @@ Generate .png figs:
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
-// extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*); // see SNES ex9.c
-
+extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
-
 extern PetscErrorCode ExplicitStepSmoother(Vec,AppCtx*);
-
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 
@@ -334,9 +331,29 @@ Grad gradav(Grad g1, Grad g2) {
   return gav;
 }
 
+void MstarArrays(PetscReal dx, PetscReal dy,
+                 PetscReal (*coeff)[8], PetscReal (*locx)[4], PetscReal (*locy)[4],
+                 PetscReal *upmin, PetscReal *upmax,
+                 const AppCtx *user) {
+    *upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0;
+    *upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0;
+    // lengths & dirs of segments on bdry of control vol:
+    if (coeff) {
+        (*coeff)[0] = dy/2;  (*coeff)[1] = dx/2;  (*coeff)[2] = dx/2;  (*coeff)[3] = -dy/2;
+        (*coeff)[4] = -dy/2; (*coeff)[5] = -dx/2; (*coeff)[6] = -dx/2; (*coeff)[7] = dy/2;
+    }
+    // local (element-wise) coords of quadrature points for M*
+    if (locx) {
+        (*locx)[0] = dx/2.0;  (*locx)[1] = 3.0*dx/4.0;  (*locx)[2] = dx/2.0;      (*locx)[3] = dx/4.0;
+    }
+    if (locy) {
+        (*locy)[0] = dy/4.0;  (*locy)[1] = dy/2.0;      (*locy)[2] = 3.0*dy/4.0;  (*locy)[3] = dy/2.0;
+    }
+}
 
-/* For call-back.
-Evaluate residual FF on local process patch:
+/* For call-back by SNES using DMDA info.
+
+Evaluates residual FF on local process patch:
    FF_{j,k} = \int_{\partial V_{j,k}} \mathbf{q} \cdot \mathbf{n} - m_{j,k} \Delta x \Delta y
 where V_{j,k} is the control volume centered at (x_j,y_k).
 
@@ -368,19 +385,14 @@ at "%":
   @-------------------
 (j,k)
 */
-PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar **FF,
-                                 AppCtx *user) {
+PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx,
-                  dy = dx,
-                  upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0,
-                  upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0,
-                  // lengths & dirs of segments on bdry of control vol:
-                  coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2},
-                  // local (element-wise) coords of quadrature points for M*
-                  locx[4]     = { dx/2.0, 3.0*dx/4.0,     dx/2.0, dx/4.0},
-                  locy[4]     = { dy/4.0,     dy/2.0, 3.0*dy/4.0, dy/2.0},
-                  locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
+                  dy = dx;
+  // these are used in standard M*, thus in Jacobian also
+  PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
+  // these only appear in this residual routine, not Jacobian
+  const PetscReal locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
                   locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
                   locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
                   locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
@@ -393,6 +405,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
 
   PetscFunctionBeginUser;
   user->maxD = 0.0;
+  MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
   // loop over locally-owned elements, including ghosts, forcing or checking
   //     nonnegativity of thickness
@@ -485,6 +498,60 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   ierr = VecDestroy(&qloc); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
+
+
+/* For call-back by SNES using DMDA info.
+
+Evaluates Jacobian matrix on local process patch.
+
+For examples see $PETSC_DIR/src/snes/examples/tutorials/ex5.c or ex9.c.
+*/
+/*
+PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **H, Mat jac, Mat jacpre, AppCtx *user) {
+  PetscErrorCode ierr;
+  const PetscReal dx = user->dx,
+                  dy = dx;
+  PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
+
+  PetscInt        j, k;
+  PetscReal       **ab, ***aq, He[4];
+  Grad            gH[4], gb[4];
+  Vec             bloc;
+
+  MatStencil     col[5],row;
+  PetscReal      v[5];
+
+  PetscFunctionBeginUser;
+  MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
+
+  for (j=info->ys; j<info->ys+info->ym; j++) {
+    for (i=info->xs; i<info->xs+info->xm; i++) {
+      row.j = j; row.i = i;
+      if (i == 0 || j == 0 || i == info->mx-1 || j == info->my-1) { // boundary
+        v[0] = 4.0;
+        ierr = MatSetValuesStencil(jac,1,&row,1,&row,v,INSERT_VALUES);CHKERRQ(ierr);
+      } else { // interior grid points
+        v[0] = -oyy;                 col[0].j = j - 1;  col[0].i = i;
+        v[1] = -oxx;                 col[1].j = j;      col[1].i = i - 1;
+        v[2] = 2.0 * (oxx + oyy);    col[2].j = j;      col[2].i = i;
+        v[3] = -oxx;                 col[3].j = j;      col[3].i = i + 1;
+        v[4] = -oyy;                 col[4].j = j + 1;  col[4].i = i;
+        ierr = MatSetValuesStencil(jac,1,&row,5,col,v,INSERT_VALUES);CHKERRQ(ierr);
+      }
+    }
+  }
+
+  // Assemble matrix, using the 2-step process:
+  ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  ierr = MatAssemblyEnd(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  if (A != jac) {
+    ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  }
+
+  PetscFunctionReturn(0);
+}
+*/
 
 
 PetscErrorCode ExplicitStepSmoother(Vec H, AppCtx *user) {

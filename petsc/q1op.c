@@ -3,8 +3,8 @@
 #include "q1op.h"
 
 
-int weights(PetscReal dx, PetscReal dy, PetscReal locx, PetscReal locy,
-            PetscReal (*x)[4], PetscReal (*y)[4], PetscReal (*gx)[4], PetscReal (*gy)[4]) {
+void weights(PetscReal dx, PetscReal dy, PetscReal locx, PetscReal locy,
+             PetscReal (*x)[4], PetscReal (*y)[4], PetscReal (*gx)[4], PetscReal (*gy)[4]) {
   const PetscReal xi  = locx / dx,
                   eta = locy / dy;
   if (x) {
@@ -19,7 +19,6 @@ int weights(PetscReal dx, PetscReal dy, PetscReal locx, PetscReal locy,
   if (gy) {
     (*gy)[0] = - 1.0 / dy; (*gy)[1] = - 1.0 / dy; (*gy)[2] = 1.0 / dy; (*gy)[3] = 1.0 / dy;
   }
-  return 0;
 }
 
 PetscReal fieldatpt(PetscInt u, PetscInt v,         // (j,k) is the element (by lower-left corner)
