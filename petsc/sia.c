@@ -14,14 +14,33 @@ PetscReal getdelta(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
     return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
-/*
-int ddeltadgH(Grad gH, Grad gb, PetscReal Gamma, PetscReal n, PetscReal *ddeltadH1, PetscReal *ddeltadH2) {
-FIXME
+
+Grad ddeltadgH(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
     const PetscReal sx  = gH.x + gb.x,
-                    sy  = gH.y + gb.y;
-    return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
+                    sy  = gH.y + gb.y,
+                    tmp = Gamma * (n-1) * PetscPowReal(sx*sx + sy*sy,(n-3.0)/2);
+    Grad ddH;
+    ddH.x = tmp * sx;
+    ddH.y = tmp * sy;
+    return ddH;
 }
+
+// from above:
+//   d delta / dl = ddH.x * (d gH.x / dl) + ddH.y * (d gH.y / dl)
+
+/* FIXME
+PetscErrorCode ddeltadl(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                         PetscReal **f, const AppCtx *user, PetscReal *f_atpt);
 */
+
+// and since  D = delta H^{n+2}:
+//   d D / dl = (d delta / dl) H^{n+2} + delta (n+2) H^{n+1} (d H / dl)
+// and since  W = - delta * grad b:
+//   d W.x / dl = - (d delta / dl) * b.x
+//   d W.y / dl = - (d delta / dl) * b.y
+
+// since  q.x = - D gH.x + W.x Hup^{n+2}  we have:
+//   d q.x / dl = - (d D / dl) Hx - D (d gH.x / dl) + (d W.x / dl) Hup^{n+2} + W.x (n+2) Hup^{n+1} (d Hup / dl)
 
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
