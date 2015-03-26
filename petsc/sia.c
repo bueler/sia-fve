@@ -14,8 +14,18 @@ PetscReal getdelta(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
     return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
 }
 
+/* In continuation scheme, n(1)=1.0 and n(0)=n. */
+PetscReal ncont(const AppCtx *user) {
+  return (1.0 - user->eps) * user->n + user->eps * 1.0;
+}
 
-Grad ddeltadgH(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
+/* In continuation scheme, D(1)=D_0 and D(0)=D. */
+PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
+  const PetscReal n = ncont(user);
+  return (1.0-user->eps) * delta * PetscPowReal(H,n+2.0) + user->eps * user->D0;
+}
+
+Grad DdeltaDgH(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
     const PetscReal sx  = gH.x + gb.x,
                     sy  = gH.y + gb.y,
                     tmp = Gamma * (n-1) * PetscPowReal(sx*sx + sy*sy,(n-3.0)/2);
@@ -27,10 +37,15 @@ Grad ddeltadgH(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
 
 // from above:
 //   d delta / dl = ddH.x * (d gH.x / dl) + ddH.y * (d gH.y / dl)
-
-/* FIXME
-PetscErrorCode ddeltadl(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
-                         PetscReal **f, const AppCtx *user, PetscReal *f_atpt);
+/*
+PetscReal DdeltaDl(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
+                   PetscReal **H, PetscReal **b, const AppCtx *user) {
+    const Grad dgHdl = dgradfatpt(l,u,v,locx,locy,user),
+               gH = gradfatpt(u,v,locx,locy,H,user),
+               gb = gradfatpt(u,v,locx,locy,b,user),
+               ddH = DdeltaDgH(gH,gb,user->Gamma,n);
+    return 
+}
 */
 
 // and since  D = delta H^{n+2}:
@@ -44,10 +59,9 @@ PetscErrorCode ddeltadl(PetscInt u, PetscInt v, PetscReal locx, PetscReal locy,
 
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
-  const PetscReal eps   = user->eps,
-                  n     = (1.0 - eps) * user->n + eps * 1.0,
+  const PetscReal n     = ncont(user),
                   delta = getdelta(gH,gb,user->Gamma,n),
-                  D     = (1.0-eps) * delta * PetscPowReal(H,n+2.0) + eps * user->D0;
+                  D     = Dcont(delta,H,user);
   user->maxD = PetscMax(user->maxD, D);
   if (xdir == PETSC_TRUE) {
       const PetscReal  Wx = - delta * gb.x;
