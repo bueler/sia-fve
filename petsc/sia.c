@@ -95,15 +95,6 @@ Grad DWDl(PetscReal ddeltadl, Grad gb) {
 }
 
 /* See sia.h for doc. */
-/* Caller computes (see q1op.h):
-    const Grad      gH       = gradfatpt(u,v,locx,locy,HH,user),
-                    gb       = gradfatpt(u,v,locx,locy,bb,user),
-                    dgHdl    = dgradfatpt(l,u,v,locx,locy,user);
-    const PetscReal H        = fieldatpt(u,v,locx,locy,HH,user),
-                    dHdl     = dfieldatpt(l,u,v,locx,locy,user),
-                    Hup      = fieldatpt(u,v,locxup,locyup,HH,user),
-                    dHupdl   = dfieldatpt(l,u,v,locxup,locyup,user);
-*/
 PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl,
                   PetscReal Hup, PetscReal dHupdl,

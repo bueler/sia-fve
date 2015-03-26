@@ -40,7 +40,16 @@ we have:
                 + (d W.x / dl) Hup^{n+2} + W.x (n+2) Hup^{n+1} (d Hup / dl),
 where D = Dcont and n = ncont, and similar for d q.y / dl.
 
-Calls hidden methods to compute  D,  W,  d D / dl,  d W / dl.
+Calls internal methods to compute  D,  W,  d D / dl,  d W / dl.
+
+Caller must compute (see q1op.h):
+    Grad      gH       = gradfatpt(u,v,locx,locy,HH,user),
+              gb       = gradfatpt(u,v,locx,locy,bb,user),
+              dgHdl    = dgradfatpt(l,u,v,locx,locy,user);
+    PetscReal H        = fieldatpt(u,v,locx,locy,HH,user),
+              dHdl     = dfieldatpt(l,u,v,locx,locy,user),
+              Hup      = fieldatpt(u,v,locxup,locyup,HH,user),
+              dHupdl   = dfieldatpt(l,u,v,locxup,locyup,user);
 */
 PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl,
