@@ -77,7 +77,7 @@ Generate .png figs:
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
-// extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar*,Mat,Mat,AppCtx*); //see layer.c
+// extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*); // see SNES ex9.c
 
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
@@ -342,7 +342,7 @@ where V_{j,k} is the control volume centered at (x_j,y_k).
 
 Regarding indexing the location along the boundary of the control volume where
 flux is evaluated, this shows four elements and one control volume centered
-at (x_j,y_k).  The boundary of the control volume has 8 points, numbered 0,...,7:
+at (x_j,y_k).  The boundary of the control volume has 8 points, numbered s=0,...,7:
    -------------------
   |         |         |
   |    ..2..|..1..    |
@@ -386,7 +386,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                   locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
   const PetscInt  jnbr[4] = { 0,  1,  0, -1},
                   knbr[4] = {-1,  0,  1,  0};
-  PetscInt        j, k, s;
+  PetscInt        j, k;
   PetscReal       **am, **ab, ***aq, He[4];
   Grad            gH[4], gb[4];
   Vec             bloc, qloc;
@@ -420,56 +420,58 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
-  // loop over locally-owned elements, including ghosts, to get fluxes
-  // note start at (xs-1,ys-1)
+  // loop over locally-owned elements, including ghosts, to get fluxes at
+  // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
+          PetscInt c;
           // evaluate gradients and (non-upwinded) thicknesses
           if (user->mtrue == PETSC_TRUE) {  // true Mahaffy method
               // this implementation is at least a factor of two inefficient
               Grad gH_nbr[4], gb_nbr[4];
-              for (s=0; s<4; s++) {
-                  He[s] = fieldatpt(j,k,locxtrue[s],locytrue[s],H, user);
-                  gH[s] = gradfatpt(j,k,locxtrue[s],locytrue[s],H, user);
-                  gb[s] = gradfatpt(j,k,locxtrue[s],locytrue[s],ab,user);
-                  gH_nbr[s] = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],H, user);
-                  gb_nbr[s] = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user);
-                  gH[s] = gradav(gH[s],gH_nbr[s]);
-                  gb[s] = gradav(gb[s],gb_nbr[s]);
+              for (c=0; c<4; c++) {
+                  He[c] = fieldatpt(j,k,locxtrue[c],locytrue[c],H, user);
+                  gH[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],H, user);
+                  gb[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],ab,user);
+                  gH_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],H, user);
+                  gb_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],ab,user);
+                  gH[c] = gradav(gH[c],gH_nbr[c]);
+                  gb[c] = gradav(gb[c],gb_nbr[c]);
               }
           } else {  // M* method, with or without upwind
-              for (s=0; s<4; s++) {
-                  He[s] = fieldatpt(j,k,locx[s],locy[s],H, user);
-                  gH[s] = gradfatpt(j,k,locx[s],locy[s],H, user);
-                  gb[s] = gradfatpt(j,k,locx[s],locy[s],ab,user);
+              for (c=0; c<4; c++) {
+                  He[c] = fieldatpt(j,k,locx[c],locy[c],H, user);
+                  gH[c] = gradfatpt(j,k,locx[c],locy[c],H, user);
+                  gb[c] = gradfatpt(j,k,locx[c],locy[c],ab,user);
               }
           }
           // evaluate fluxes
           if (user->noupwind == PETSC_TRUE) {  // non-upwinding methods
-              for (s=0; s<4; s++)
-                  aq[k][j][s] = getflux(gH[s],gb[s],He[s],He[s],xdire[s],user);
+              for (c=0; c<4; c++)
+                  aq[k][j][c] = getflux(gH[c],gb[c],He[c],He[c],xdire[c],user);
           } else {  // M* method including first-order upwinding on grad b part
               PetscReal Hup, locxup[4], locyup[4];
-              for (s=0; s<4; s++) {  locxup[s] = locx[s];  locyup[s] = locy[s];  }  // copy
+              for (c=0; c<4; c++) {  locxup[c] = locx[c];  locyup[c] = locy[c];  }  // copy
               locxup[0] = (gb[0].x <= 0.0) ? upmin*dx : upmax*dx;
               locyup[1] = (gb[1].y <= 0.0) ? upmin*dy : upmax*dy;
               locxup[2] = (gb[2].x <= 0.0) ? upmin*dx : upmax*dx;
               locyup[3] = (gb[3].y <= 0.0) ? upmin*dy : upmax*dy;
-              for (s=0; s<4; s++) {
-                  Hup = fieldatpt(j,k,locxup[s],locyup[s],H,user);
-                  aq[k][j][s] = getflux(gH[s],gb[s],He[s],Hup,xdire[s],user);
+              for (c=0; c<4; c++) {
+                  Hup = fieldatpt(j,k,locxup[c],locyup[c],H,user);
+                  aq[k][j][c] = getflux(gH[c],gb[c],He[c],Hup,xdire[c],user);
               }
           }
       }
   }
-  // loop over nodes, not including ghosts, to get residual
+  // loop over nodes, not including ghosts, to get residual from quadature over
+  // s = 0,1,...,7 points on boundary of control volume (rectangle) around node
   for (k=info->ys; k<info->ys+info->ym; k++) {
       for (j=info->xs; j<info->xs+info->xm; j++) {
-          // This is the integral over control volume boundary using two quadrature
-          // points on each side of control volume.  For M* it is two instances of
-          // midpoint rule on each side, and the two values of aq[][] per side are
-          // in fact different.  For true Mahaffy the two gradient values are
-          // already averaged, so the two values of aq[][] are actually the same.
+          PetscInt s;
+          // This is the integral over the control volume boundary using two quadrature
+          // points on each side of of the four sides of the rectangular control volume.
+          // For M*: two instances of midpoint rule on each side, with two different values of aq[][] per side
+          // For true Mahaffy: ditto, but the two values of aq[][] per side are actually the same.
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
             FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
