@@ -178,7 +178,7 @@ int main(int argc,char **argv) {
       "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
       user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,dx/1000.0); CHKERRQ(ierr);
 
-  // this DMDA is used for evaluating flux components at quad points on elements
+  // this DMDA is used for evaluating flux components at 4 quadrature points on elements
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
@@ -186,6 +186,15 @@ int main(int argc,char **argv) {
                       4, (user.mtrue==PETSC_TRUE) ? 2 : 1,  // dof=1,  stencilwidth=1
                       NULL,NULL,&user.quadda);
   ierr = DMSetApplicationContext(user.quadda, &user);CHKERRQ(ierr);
+
+  // this DMDA is used for evaluating DfluxDl at 4 quadrature points on elements, w.r.t. 4 nodal values
+  ierr = DMDACreate2d(PETSC_COMM_WORLD,
+                      DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
+                      DMDA_STENCIL_BOX,
+                      info.mx,info.my,PETSC_DECIDE,PETSC_DECIDE,
+                      16, 1,  // dof=1,  stencilwidth=1 ... SETERRQ() in Jacobian protects from use in mtrue=TRUE case
+                      NULL,NULL,&user.sixteenda);
+  ierr = DMSetApplicationContext(user.sixteenda, &user);CHKERRQ(ierr);
 
   ierr = DMCreateGlobalVector(user.da,&H);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
@@ -307,6 +316,7 @@ int main(int argc,char **argv) {
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
   ierr = DMDestroy(&user.quadda);CHKERRQ(ierr);
+  ierr = DMDestroy(&user.sixteenda);CHKERRQ(ierr);
   ierr = DMDestroy(&user.da);CHKERRQ(ierr);
 
   PetscFinalize();
@@ -524,8 +534,8 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   const PetscReal dx = user->dx, dy = dx;
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
   PetscInt        j, k;
-  PetscReal       **ab;
-  Vec             bloc;
+  PetscReal       **ab, ***adQ;
+  Vec             bloc, dQloc;
   MyStencil       col[32],row;
   PetscReal       val[32];
 
@@ -537,66 +547,74 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   ierr = MatZeroEntries(jac); CHKERRQ(ierr);  // because using ADD_VALUES below
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
-  // need stencil width on b and locally-computed q
+  // need stencil width on b and locally-computed dQdl
   ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+  ierr = DMCreateLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
 
   ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
+  // loop over locally-owned elements, including ghosts, to get DfluxDl for
+  // l=0,1,2,3 at c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
+  for (k = info->ys-1; k < info->ys + info->ym; k++) {
+      for (j = info->xs-1; j < info->xs + info->xm; j++) {
+          PetscInt  c, l;
+          PetscReal lxup, lyup;
+          Grad      gH, gb;
+          PetscReal H, Hup;
+          for (c=0; c<4; c++) {
+              gH = gradfatpt(j,k,locx[c],locy[c],aH,user);
+              gb = gradfatpt(j,k,locx[c],locy[c],ab,user);
+              H  = fieldatpt(j,k,locx[c],locy[c],aH,user);
+              if (user->noupwind == PETSC_FALSE) {
+                  lxup = locx[c];
+                  lyup = locy[c];
+                  if (xdire[c] == PETSC_TRUE)
+                      lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
+                  if (xdire[c] == PETSC_FALSE)
+                      lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
+                  Hup = fieldatpt(j,k,lxup,lyup,aH,user);
+              } else
+                  Hup = H;
+              for (l=0; l<4; l++) {
+                  Grad      dgHdl;
+                  PetscReal dHdl, dHupdl;
+                  dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],user);
+                  dHdl   = dfieldatpt(l,j,k,locx[c],locy[c],user);
+                  if (user->noupwind == PETSC_FALSE)
+                      dHupdl = dfieldatpt(l,j,k,lxup,lyup,user);
+                  else
+                      dHupdl = dHdl;
+                  adQ[k][j][4*c+l] = DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
+              }
+          }
+      }
+  }
   // loop over nodes, not including ghosts, to get derivative of residual with respect to nodal value
   for (k=info->ys; k<info->ys+info->ym; k++) {
       row.k = k;
       for (j=info->xs; j<info->xs+info->xm; j++) {
           row.j = j;
-          // direction of flux at 8 pts along control volume
-          const PetscBool xdircv[8] = {PETSC_TRUE, PETSC_FALSE, PETSC_FALSE, PETSC_TRUE,
-                                       PETSC_TRUE, PETSC_FALSE, PETSC_FALSE, PETSC_TRUE};
-          PetscInt s;
+          PetscInt s, u, v, l;
           for (s=0; s<8; s++) {
-              PetscInt  u, v, l;
-              PetscReal lx, ly, lxup, lyup;
-              PetscBool xdir;
-              Grad      gH, gb;
-              PetscReal H, Hup;
-              u   = j + je[s];
-              v   = k + ke[s];
-              lx  = locx[ce[s]];
-              ly  = locy[ce[s]];
-              xdir = xdircv[s];
-              gH = gradfatpt(u,v,lx,ly,aH,user);
-              gb = gradfatpt(u,v,lx,ly,ab,user);
-              H  = fieldatpt(u,v,lx,ly,aH,user);
-              if (user->noupwind == PETSC_FALSE) {
-                  lxup = lx;
-                  lyup = ly;
-                  if (xdir == PETSC_TRUE)
-                      lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
-                  if (xdir == PETSC_FALSE)
-                      lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
-                  Hup = fieldatpt(u,v,lxup,lyup,aH,user);
-              } else
-                  Hup = H;
+              u = j + je[s];
+              v = k + ke[s];
               for (l=0; l<4; l++) {
                   const PetscInt djfroml[4] = { 0,  1,  1,  0},
                                  dkfroml[4] = { 0,  0,  1,  1};
-                  Grad      dgHdl;
-                  PetscReal dHdl, dHupdl;
-                  dgHdl  = dgradfatpt(l,u,v,lx,ly,user);
-                  dHdl   = dfieldatpt(l,u,v,lx,ly,user);
-                  if (user->noupwind == PETSC_FALSE)
-                      dHupdl = dfieldatpt(l,u,v,lxup,lyup,user);
-                  else
-                      dHupdl = dHdl;
                   col[4*s+l].j = u + djfroml[l];
                   col[4*s+l].k = v + dkfroml[l];
-                  val[4*s+l] = coeff[s] * DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdir,user);
+                  val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
           ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
       }
   }
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
   ierr = VecDestroy(&bloc); CHKERRQ(ierr);
+  ierr = VecDestroy(&dQloc); CHKERRQ(ierr);
 
   // Assemble matrix, using the 2-step process:
   ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);

@@ -14,7 +14,7 @@ typedef struct {
 } Grad;
 
 typedef struct {
-  DM        da, quadda;
+  DM        da, quadda, sixteenda;
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
             Hexact; // the exact thickness (either in verification or data sense)
