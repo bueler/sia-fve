@@ -419,7 +419,7 @@ at "%":
   @-------------------
 (j,k)
 */
-PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScalar **FF, AppCtx *user) {
+PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
@@ -431,7 +431,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
   PetscFunctionBeginUser;
   user->maxD = 0.0;
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
-  ierr = checkforceadmissible(info,H,user); CHKERRQ(ierr);
+  ierr = checkforceadmissible(info,aH,user); CHKERRQ(ierr);
 
   // need stencil width on b and locally-computed q
   ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
@@ -459,18 +459,18 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
                               knbr[4] = {-1,  0,  1,  0};
               Grad gH_nbr[4], gb_nbr[4];
               for (c=0; c<4; c++) {
-                  He[c] = fieldatpt(j,k,locxtrue[c],locytrue[c],H, user);
-                  gH[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],H, user);
+                  He[c] = fieldatpt(j,k,locxtrue[c],locytrue[c],aH,user);
+                  gH[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],aH,user);
                   gb[c] = gradfatpt(j,k,locxtrue[c],locytrue[c],ab,user);
-                  gH_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],H, user);
+                  gH_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],aH,user);
                   gb_nbr[c] = gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],ab,user);
                   gH[c] = gradav(gH[c],gH_nbr[c]);
                   gb[c] = gradav(gb[c],gb_nbr[c]);
               }
           } else {  // M* method, with or without upwind
               for (c=0; c<4; c++) {
-                  He[c] = fieldatpt(j,k,locx[c],locy[c],H, user);
-                  gH[c] = gradfatpt(j,k,locx[c],locy[c],H, user);
+                  He[c] = fieldatpt(j,k,locx[c],locy[c],aH,user);
+                  gH[c] = gradfatpt(j,k,locx[c],locy[c],aH,user);
                   gb[c] = gradfatpt(j,k,locx[c],locy[c],ab,user);
               }
           }
@@ -486,7 +486,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
               locxup[2] = (gb[2].x <= 0.0) ? upmin*dx : upmax*dx;
               locyup[3] = (gb[3].y <= 0.0) ? upmin*dy : upmax*dy;
               for (c=0; c<4; c++) {
-                  Hup = fieldatpt(j,k,locxup[c],locyup[c],H,user);
+                  Hup = fieldatpt(j,k,locxup[c],locyup[c],aH,user);
                   aq[k][j][c] = getflux(gH[c],gb[c],He[c],Hup,xdire[c],user);
               }
           }
