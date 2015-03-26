@@ -442,10 +442,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   ierr = checkforceadmissible(info,aH,user); CHKERRQ(ierr);
 
   // need stencil width on b and locally-computed q
-  ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
+  ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
-  ierr = DMCreateLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
+  ierr = DMGetLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
 
   ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
@@ -505,8 +505,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
 
-  ierr = VecDestroy(&bloc); CHKERRQ(ierr);
-  ierr = VecDestroy(&qloc); CHKERRQ(ierr);
+  ierr = DMRestoreLocalVector(user->da,&bloc);CHKERRQ(ierr);
+  ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -541,10 +541,10 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
   // need stencil width on b and locally-computed dQdl
-  ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
+  ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
   ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
-  ierr = DMCreateLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
+  ierr = DMGetLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
 
   ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
@@ -601,8 +601,9 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   }
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
-  ierr = VecDestroy(&bloc); CHKERRQ(ierr);
-  ierr = VecDestroy(&dQloc); CHKERRQ(ierr);
+
+  ierr = DMRestoreLocalVector(user->da,&bloc);CHKERRQ(ierr);
+  ierr = DMRestoreLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
 
   // Assemble matrix, using the 2-step process:
   ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
