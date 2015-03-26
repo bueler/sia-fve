@@ -387,8 +387,7 @@ at "%":
 */
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
-  const PetscReal dx = user->dx,
-                  dy = dx;
+  const PetscReal dx = user->dx, dy = dx;
   // these are used in standard M*, thus in Jacobian also
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
   // these only appear in this residual routine, not Jacobian
@@ -499,6 +498,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **H, PetscScal
   PetscFunctionReturn(0);
 }
 
+typedef struct {
+  PetscInt foo,k,j,bar;
+} MyStencil;
 
 /* For call-back by SNES using DMDA info.
 
@@ -506,52 +508,84 @@ Evaluates Jacobian matrix on local process patch.
 
 For examples see $PETSC_DIR/src/snes/examples/tutorials/ex5.c or ex9.c.
 */
-/*
-PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **H, Mat jac, Mat jacpre, AppCtx *user) {
-  PetscErrorCode ierr;
-  const PetscReal dx = user->dx,
-                  dy = dx;
+PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user) {
+  PetscErrorCode  ierr;
+  const PetscReal dx = user->dx, dy = dx;
   PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
-
   PetscInt        j, k;
-  PetscReal       **ab, ***aq, He[4];
-  Grad            gH[4], gb[4];
+  PetscReal       **ab;
   Vec             bloc;
-
-  MatStencil     col[5],row;
-  PetscReal      v[5];
+  MyStencil       col[32],row;
+  PetscReal       val[32];
 
   PetscFunctionBeginUser;
+
+  if ((user->mtrue == PETSC_TRUE) || (user->noupwind == PETSC_TRUE)) {
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: not clear analytical jacobian ready in these cases ...\n");
+  }
+
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
-  for (j=info->ys; j<info->ys+info->ym; j++) {
-    for (i=info->xs; i<info->xs+info->xm; i++) {
-      row.j = j; row.i = i;
-      if (i == 0 || j == 0 || i == info->mx-1 || j == info->my-1) { // boundary
-        v[0] = 4.0;
-        ierr = MatSetValuesStencil(jac,1,&row,1,&row,v,INSERT_VALUES);CHKERRQ(ierr);
-      } else { // interior grid points
-        v[0] = -oyy;                 col[0].j = j - 1;  col[0].i = i;
-        v[1] = -oxx;                 col[1].j = j;      col[1].i = i - 1;
-        v[2] = 2.0 * (oxx + oyy);    col[2].j = j;      col[2].i = i;
-        v[3] = -oxx;                 col[3].j = j;      col[3].i = i + 1;
-        v[4] = -oyy;                 col[4].j = j + 1;  col[4].i = i;
-        ierr = MatSetValuesStencil(jac,1,&row,5,col,v,INSERT_VALUES);CHKERRQ(ierr);
+  // need stencil width on b and locally-computed q
+  ierr = DMCreateLocalVector(user->da,&bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+
+  ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  // loop over nodes, not including ghosts, to get derivative of residual with respect to nodal value
+  for (k=info->ys; k<info->ys+info->ym; k++) {
+      row.k = k;
+      for (j=info->xs; j<info->xs+info->xm; j++) {
+          row.j = j;
+          // direction of flux at 8 pts along control volume
+          const PetscBool xdircv[8] = {PETSC_TRUE, PETSC_FALSE, PETSC_FALSE, PETSC_TRUE,
+                                       PETSC_TRUE, PETSC_FALSE, PETSC_FALSE, PETSC_TRUE};
+          PetscInt s;
+          for (s=0; s<8; s++) {
+              PetscInt  u, v, l;
+              PetscReal lx, ly;
+              PetscBool xdir;
+              Grad      gH, gb;
+              PetscReal H, Hup;
+              u   = j + je[s];
+              v   = k + ke[s];
+              lx  = locx[ce[s]];
+              ly  = locy[ce[s]];
+              xdir = xdircv[s];
+              gH  = gradfatpt(u,v,lx,ly,aH,user);
+              gb  = gradfatpt(u,v,lx,ly,ab,user);
+              H   = fieldatpt(u,v,lx,ly,aH,user);
+              Hup = fieldatpt(u,v,lxup,lyup,aH,user);
+              for (l=0; l<4; l++) {
+                  const PetscInt jfroml[4] = { 0,  1,  1,  0},
+                                 kfroml[4] = { 0,  0,  1,  1};
+                  Grad      dgHdl;
+                  PetscReal dHdl, dHupdl;
+                  dgHdl    = dgradfatpt(l,u,v,lx,ly,user);
+                  dHdl     = dfieldatpt(l,u,v,lx,ly,user);
+                  dHupdl   = dfieldatpt(l,u,v,lxup,lyup,user);
+                  col[4*s+l].j = u + jfroml[l];
+                  col[4*s+l].k = v + kfroml[l];
+                  val[4*s+l] = coeff[s] * DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdir,user);
+              }
+          }
+          ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
       }
-    }
   }
+  ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+
+  ierr = VecDestroy(&bloc); CHKERRQ(ierr);
 
   // Assemble matrix, using the 2-step process:
   ierr = MatAssemblyBegin(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   ierr = MatAssemblyEnd(jac,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-  if (A != jac) {
-    ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-    ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+  if (jacpre != jac) {
+    ierr = MatAssemblyBegin(jacpre,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    ierr = MatAssemblyEnd(jacpre,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   }
 
   PetscFunctionReturn(0);
 }
-*/
 
 
 PetscErrorCode ExplicitStepSmoother(Vec H, AppCtx *user) {
