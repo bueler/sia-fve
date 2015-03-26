@@ -424,14 +424,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
   // note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
-          // get gradients and (non-upwinded) thicknesses
-          if (user->mtrue == PETSC_FALSE) {  // M* method, with or without upwind
-              for (s=0; s<4; s++) {
-                  He[s] = fieldatpt(j,k,locx[s],locy[s],H, user);
-                  gH[s] = gradfatpt(j,k,locx[s],locy[s],H, user);
-                  gb[s] = gradfatpt(j,k,locx[s],locy[s],ab,user);
-              }
-          } else {  // true Mahaffy method; this implementation is at least a factor of two inefficient
+          // evaluate gradients and (non-upwinded) thicknesses
+          if (user->mtrue == PETSC_TRUE) {  // true Mahaffy method
+              // this implementation is at least a factor of two inefficient
               Grad gH_nbr[4], gb_nbr[4];
               for (s=0; s<4; s++) {
                   He[s] = fieldatpt(j,k,locxtrue[s],locytrue[s],H, user);
@@ -441,6 +436,12 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,PetscScalar **H,PetscScalar
                   gb_nbr[s] = gradfatpt(j+jnbr[s],k+knbr[s],locxnbr[s],locynbr[s],ab,user);
                   gH[s] = gradav(gH[s],gH_nbr[s]);
                   gb[s] = gradav(gb[s],gb_nbr[s]);
+              }
+          } else {  // M* method, with or without upwind
+              for (s=0; s<4; s++) {
+                  He[s] = fieldatpt(j,k,locx[s],locy[s],H, user);
+                  gH[s] = gradfatpt(j,k,locx[s],locy[s],H, user);
+                  gb[s] = gradfatpt(j,k,locx[s],locy[s],ab,user);
               }
           }
           // evaluate fluxes
