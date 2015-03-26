@@ -519,11 +519,11 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   PetscReal       val[32];
 
   PetscFunctionBeginUser;
-
   if ((user->mtrue == PETSC_TRUE) || (user->noupwind == PETSC_TRUE)) {
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR: not clear analytical jacobian ready in these cases ...\n");
   }
 
+  ierr = MatZeroEntries(jac); CHKERRQ(ierr);  // because using ADD_VALUES below
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
   // need stencil width on b and locally-computed q
@@ -543,7 +543,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
           PetscInt s;
           for (s=0; s<8; s++) {
               PetscInt  u, v, l;
-              PetscReal lx, ly;
+              PetscReal lx, ly, lxup, lyup;
               PetscBool xdir;
               Grad      gH, gb;
               PetscReal H, Hup;
@@ -552,20 +552,28 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
               lx  = locx[ce[s]];
               ly  = locy[ce[s]];
               xdir = xdircv[s];
-              gH  = gradfatpt(u,v,lx,ly,aH,user);
-              gb  = gradfatpt(u,v,lx,ly,ab,user);
-              H   = fieldatpt(u,v,lx,ly,aH,user);
+              gH = gradfatpt(u,v,lx,ly,aH,user);
+              gb = gradfatpt(u,v,lx,ly,ab,user);
+              H  = fieldatpt(u,v,lx,ly,aH,user);
+              lxup = lx;
+              if (xdir == PETSC_TRUE) {
+                  lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
+              }
+              lyup = ly;
+              if (xdir == PETSC_FALSE) {
+                  lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
+              }
               Hup = fieldatpt(u,v,lxup,lyup,aH,user);
               for (l=0; l<4; l++) {
-                  const PetscInt jfroml[4] = { 0,  1,  1,  0},
-                                 kfroml[4] = { 0,  0,  1,  1};
+                  const PetscInt djfroml[4] = { 0,  1,  1,  0},
+                                 dkfroml[4] = { 0,  0,  1,  1};
                   Grad      dgHdl;
                   PetscReal dHdl, dHupdl;
-                  dgHdl    = dgradfatpt(l,u,v,lx,ly,user);
-                  dHdl     = dfieldatpt(l,u,v,lx,ly,user);
-                  dHupdl   = dfieldatpt(l,u,v,lxup,lyup,user);
-                  col[4*s+l].j = u + jfroml[l];
-                  col[4*s+l].k = v + kfroml[l];
+                  dgHdl  = dgradfatpt(l,u,v,lx,ly,user);
+                  dHdl   = dfieldatpt(l,u,v,lx,ly,user);
+                  dHupdl = dfieldatpt(l,u,v,lxup,lyup,user);
+                  col[4*s+l].j = u + djfroml[l];
+                  col[4*s+l].k = v + dkfroml[l];
                   val[4*s+l] = coeff[s] * DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdir,user);
               }
           }
@@ -573,7 +581,6 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
       }
   }
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
-
   ierr = VecDestroy(&bloc); CHKERRQ(ierr);
 
   // Assemble matrix, using the 2-step process:
@@ -725,7 +732,13 @@ PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
   ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
   ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
   ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
-              (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
+              (DMDASNESFunction)FormFunctionLocal,
+              user); CHKERRQ(ierr);
+/*
+  ierr = DMDASNESSetJacobianLocal(user->da,
+              (PetscErrorCode (*)(DMDALocalInfo*,void*,Mat,Mat,void*))FormJacobianLocal,
+              user); CHKERRQ(ierr);
+*/
   ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
