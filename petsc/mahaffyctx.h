@@ -27,9 +27,12 @@ typedef struct {
             secpera,// number of seconds in a year
             A,      // ice softness
             Gamma,  // coefficient for SIA flux term
-            eps,    // dimensionless regularization
+            eps,    // current dimensionless regularization for n and D
+            slopeeps,// current dimensionless regularization for slope in DdeltaDl()
             maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
-            D0;     // representative value of diffusivity (in regularization)
+            D0,     // representative value of diffusivity (in regularization)
+            eps_sched[13],
+            slopeeps_sched[13];
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
             Neps;   // number of levels in regularization/continuation

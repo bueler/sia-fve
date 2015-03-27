@@ -66,8 +66,7 @@ PetscReal DdeltaDl(Grad gH, Grad gb, Grad dgHdl, const AppCtx *user) {
     const PetscReal sx  = gH.x + gb.x,
                     sy  = gH.y + gb.y,
                     n   = ncont(user),
-                    slopeeps = 1.0e-4, // slope of 1 m in 10 km
-                    slopesqr = sx*sx + sy*sy + slopeeps*slopeeps,
+                    slopesqr = sx * sx + sy * sy + user->slopeeps * user->slopeeps,
                     tmp = user->Gamma * (n-1) * PetscPowReal(slopesqr,(n-3.0)/2);
     return tmp * sx * dgHdl.x + tmp * sy * dgHdl.y;
 }

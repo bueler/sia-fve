@@ -85,6 +85,7 @@ extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
 extern PetscErrorCode ExplicitStepSmoother(Vec,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
+extern void fillscheds(AppCtx*);
 
 // indexing of the 8 points along the boundary of the control volume
 // point s=0,...,7 is in element (j,k) = (j+je[s],k+ke[s])
@@ -178,21 +179,23 @@ int main(int argc,char **argv) {
       "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
       user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,dx/1000.0); CHKERRQ(ierr);
 
-  // this DMDA is used for evaluating flux components at 4 quadrature points on elements
+  // this DMDA is used for evaluating fluxes at 4 quadrature points on each element
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
                       info.mx,info.my,PETSC_DECIDE,PETSC_DECIDE,
-                      4, (user.mtrue==PETSC_TRUE) ? 2 : 1,  // dof=1,  stencilwidth=1
+                      4, (user.mtrue==PETSC_TRUE) ? 2 : 1,  // dof=4,  stencilwidth=1 or 2
                       NULL,NULL,&user.quadda);
   ierr = DMSetApplicationContext(user.quadda, &user);CHKERRQ(ierr);
 
-  // this DMDA is used for evaluating DfluxDl at 4 quadrature points on elements, w.r.t. 4 nodal values
+  // this DMDA is used for evaluating DfluxDl at 4 quadrature points on each
+  // elements but with respect to 4 nodal values
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
                       info.mx,info.my,PETSC_DECIDE,PETSC_DECIDE,
-                      16, 1,  // dof=1,  stencilwidth=1 ... SETERRQ() in Jacobian protects from use in mtrue=TRUE case
+                      16, 1,  // dof=16,  stencilwidth=1 ALWAYS
+                              // SETERRQ() in Jacobian protects from use in mtrue=TRUE case
                       NULL,NULL,&user.sixteenda);
   ierr = DMSetApplicationContext(user.sixteenda, &user);CHKERRQ(ierr);
 
@@ -239,30 +242,29 @@ int main(int argc,char **argv) {
   ierr = VecCopy(user.m,H); CHKERRQ(ierr);
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,1000.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
-  // alternatives:
-  //ierr = [VERIF]ExactThickness(H,&user);CHKERRQ(ierr);
-  //ierr = VecSet(H,0.0); CHKERRQ(ierr);
 
   if (user.mtrue == PETSC_TRUE) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,    "solving by true Mahaffy method ...\n"); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,
+                         "solving by true Mahaffy method ...\n"); CHKERRQ(ierr);
   } else {
       if (user.noupwind == PETSC_TRUE) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by M* method _without_ upwinding ...\n"); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,
+                         "solving by M* method _without_ upwinding ...\n"); CHKERRQ(ierr);
       } else {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"solving by M* method ...\n"); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,
+                         "solving by M* method ...\n"); CHKERRQ(ierr);
       }
   }
 
   KSP        ksp;
   PetscInt   its, kspits, m;
-  PetscReal  eps_sched[13] = {1.0,    0.5,    0.2,     0.1,     0.05,
-                              0.02,   0.01,   0.005,   0.002,   0.001,
-                              0.0005, 0.0002, 0.0000};
   SNESConvergedReason reason;
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
   gettimeofday(&user.starttime, NULL);
+  fillscheds(&user);
   for (m = 0; m<user.Neps; m++) {
-      user.eps = eps_sched[m];
+      user.eps      = user.eps_sched[m];
+      user.slopeeps = user.slopeeps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
@@ -276,7 +278,7 @@ int main(int argc,char **argv) {
                          "         ... try again w eps *= 1.5\n");CHKERRQ(ierr);
               //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
               //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
-              user.eps = 1.5 * eps_sched[m];
+              user.eps = 1.5 * user.eps_sched[m];
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               //ierr = ExplicitStepSmoother(Htry,&user); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
@@ -287,7 +289,8 @@ int main(int argc,char **argv) {
                      SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
           }
           if (reason < 0) {
-              user.eps = (m>0 ? eps_sched[m-1] : eps_sched[0]); // record last successful eps
+              // record last successful eps
+              user.eps = (m>0 ? user.eps_sched[m-1] : user.eps_sched[0]);
               break;
           }
       }
@@ -747,6 +750,21 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscFunctionReturn(0);
 }
 
+
+void fillscheds(AppCtx* user) {
+   const PetscReal
+       eps[13]   = {1.0,    0.5,    0.2,    0.1,    0.05,
+                    0.02,   0.01,   0.005,  0.002,  0.001,
+                    0.0005, 0.0002, 0.0000},
+       slope[13] = {1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3,
+                    1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4,
+                    1.0e-5, 1.0e-5, 1.0e-6};
+   PetscInt i;
+   for (i=0; i<13; i++) {
+       user->eps_sched[i]      = eps[i];
+       user->slopeeps_sched[i] = slope[i];
+   }
+}
 
 // start a SNESVI
 PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
