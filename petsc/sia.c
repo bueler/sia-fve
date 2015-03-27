@@ -4,16 +4,23 @@
 
 // ******** FUNCTIONS ********
 
+/* In continuation scheme, n(1)=1.0 and n(0)=n. */
+PetscReal ncont(const AppCtx *user) {
+  return (1.0 - user->eps) * user->n + user->eps * 1.0;
+}
+
 /*
 Compute delta, a factor of both the diffusivity D and the pseudo-velocity W,
 from values of thickness and surface gradient:
    delta = Gamma |grad H + grad b|^{n-1}
 Also applies power-regularization part of continuation scheme.
 */
-PetscReal getdelta(Grad gH, Grad gb, PetscReal Gamma, PetscReal n) {
+PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user) {
     const PetscReal sx  = gH.x + gb.x,
-                    sy  = gH.y + gb.y;
-    return Gamma * PetscPowReal(sx*sx + sy*sy,(n-1.0)/2);
+                    sy  = gH.y + gb.y,
+                    n   = ncont(user),
+                    slopesqr = sx * sx + sy * sy + user->slopeeps * user->slopeeps;
+    return user->Gamma * PetscPowReal(slopesqr,(n-1.0)/2);
 }
 
 Grad getW(PetscReal delta, Grad gb) {
@@ -21,11 +28,6 @@ Grad getW(PetscReal delta, Grad gb) {
     W.x = - delta * gb.x;
     W.y = - delta * gb.y;
     return W;
-}
-
-/* In continuation scheme, n(1)=1.0 and n(0)=n. */
-PetscReal ncont(const AppCtx *user) {
-  return (1.0 - user->eps) * user->n + user->eps * 1.0;
 }
 
 /* In continuation scheme, D(1)=D_0 and D(0)=D. */
@@ -38,7 +40,7 @@ PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
   const PetscReal n     = ncont(user),
-                  delta = getdelta(gH,gb,user->Gamma,n),
+                  delta = getdelta(gH,gb,user),
                   D     = Dcont(delta,H,user);
   const Grad      W     = getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
@@ -101,15 +103,15 @@ PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user) {
     const PetscReal n        = ncont(user),
-                    delta    = getdelta(gH,gb,user->Gamma,n),
-                    ddeltadl = DdeltaDl(gH,gb,dgHdl,user);
-    const Grad      W        = getW(delta,gb),
-                    dWdl     = DWDl(ddeltadl,gb);
-    const PetscReal D        = Dcont(delta,H,user),
+                    delta    = getdelta(gH,gb,user),
+                    D        = Dcont(delta,H,user);
+    const Grad      W        = getW(delta,gb);
+    const PetscReal ddeltadl = DdeltaDl(gH,gb,dgHdl,user),
                     dDdl     = DDcontDl(delta,ddeltadl,H,dHdl,user),
                     Huppow   = PetscPowReal(Hup,n+1.0),
                     Huppow2  = Huppow * Hup,
                     dHuppow  = (n+2.0) * Huppow * dHupdl;
+    const Grad      dWdl     = DWDl(ddeltadl,gb);
     if (xdir)
         return - dDdl * gH.x - D * dgHdl.x + dWdl.x * Huppow2 + W.x * dHuppow;
     else

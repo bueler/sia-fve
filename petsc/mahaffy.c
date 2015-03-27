@@ -44,6 +44,8 @@ Feedback on solution process:
 
 Successes:
    mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor  # DIVERGED_LINE_SEARCH at 12
+   # FULLY CONVERGES for LEV = 0 1 2 3 4
+   mpiexec -n 6 ./mahaffy -da_refine LEV -snes_type vinewtonssls -mah_forceadmissible -snes_max_it 200 -pc_type asm -sub_pc_type lu
    mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
 
 Divergence:
@@ -273,12 +275,13 @@ int main(int argc,char **argv) {
                  "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
                  m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
       if (reason < 0) {
-          if ((user.divergetryagain == PETSC_TRUE) && (user.eps > 0.0)) {
+          if (user.divergetryagain) {
               ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "         ... try again w eps *= 1.5\n");CHKERRQ(ierr);
+                         "         ... try again w eps *= 1.5 and slopeeps *= 5\n");CHKERRQ(ierr);
               //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
               //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
-              user.eps = 1.5 * user.eps_sched[m];
+              user.eps      = 1.5 * user.eps;
+              user.slopeeps = 5.0 * user.slopeeps;
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               //ierr = ExplicitStepSmoother(Htry,&user); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
@@ -289,8 +292,11 @@ int main(int argc,char **argv) {
                      SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
           }
           if (reason < 0) {
-              // record last successful eps
-              user.eps = (m>0 ? user.eps_sched[m-1] : user.eps_sched[0]);
+              // record last successful eps, slopeeps
+              if (m>0) {
+                  user.eps = user.eps_sched[m-1];
+                  user.slopeeps = user.slopeeps_sched[m-1];
+              }
               break;
           }
       }
@@ -344,14 +350,14 @@ PetscErrorCode checkforceadmissible(DMDALocalInfo *info, PetscScalar **H, const 
   PetscInt        j, k;
   PetscFunctionBeginUser;
   if (user->forceadmissible == PETSC_TRUE) {
-      for (k = info->ys-1; k < info->ys + info->ym; k++) {
-          for (j = info->xs-1; j < info->xs + info->xm; j++) {
+      for (k = info->ys-1; k < info->ys + info->ym + 1; k++) {
+          for (j = info->xs-1; j < info->xs + info->xm + 1; j++) {
               H[k][j] = PetscAbsReal(H[k][j]);
           }
       }
   } else if (user->checkadmissible == PETSC_TRUE) {
-      for (k = info->ys-1; k < info->ys + info->ym; k++) {
-          for (j = info->xs-1; j < info->xs + info->xm; j++) {
+      for (k = info->ys-1; k < info->ys + info->ym + 1; k++) {
+          for (j = info->xs-1; j < info->xs + info->xm + 1; j++) {
               if (H[k][j] < 0.0)
                   SETERRQ3(PETSC_COMM_WORLD,1,"ERROR: inadmissible H[%d][%d] = %.3e < 0\n",k,j,H[k][j]);
           }
@@ -758,7 +764,7 @@ void fillscheds(AppCtx* user) {
                     0.0005, 0.0002, 0.0000},
        slope[13] = {1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3,
                     1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4,
-                    1.0e-5, 1.0e-5, 1.0e-6};
+                    1.0e-4, 1.0e-4, 1.0e-4};
    PetscInt i;
    for (i=0; i<13; i++) {
        user->eps_sched[i]      = eps[i];

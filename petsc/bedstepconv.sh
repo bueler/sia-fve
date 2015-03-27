@@ -14,7 +14,7 @@ done
 rm -f $1
 echo $(($lev+1)) > $1
 cat lev?history.txt | grep "spacing in x"        | sed 's/.* //g' >> $1
-cat lev?history.txt | grep "last successful"     | sed 's/.* //g' >> $1
+cat lev?history.txt | grep "last successful value of eps"     | sed 's/.* //g' >> $1
 cat lev?history.txt | grep "max thickness error" | sed 's/.* //g' >> $1
 cat lev?history.txt | grep "av thickness error"  | sed 's/.* //g' >> $1
 cat lev?history.txt | grep "solution ice volume" | sed 's/.* //g' >> $1
