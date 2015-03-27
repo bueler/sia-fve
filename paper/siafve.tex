@@ -145,6 +145,8 @@ The vector field $\bW$ can again be thought of as a ``velocity'' which transport
 
 In numerical schemes the advantage of form \eqref{eq:fluxform} over any of \eqref{eq:siafluxdiffusion}, \eqref{eq:siafluxvelocity}, or \eqref{eq:siafluxjsa} is that we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while preserving accuracy by applying a centered scheme to the diffusive term ``$-D \grad H$''.  The presence of the (often-dominant) leading-order diffusion is also a motivation to use implicit time-stepping, but such implicit schemes also need to determine the location of the free boundary at each time step.
 
+FIXME: point out that $\bq$ is not a differentiable function of the components of $\grad H$ if $n<3$, which means that problem requires regularization
+
 In fact we will only solve the steady-state form of \eqref{eq:siaevolution}, namely
 \begin{equation}
 \Div \bq = m.  \label{eq:siasteady}
@@ -419,11 +421,18 @@ Thus we start by solving \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints
 
 In the flat bed case the $\eps=1$ problem is actually a Laplacian obstacle problem, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  This relatively well-understood free-boundary problem \citep{KinderlehrerStampacchia1980} allows the Newton solver to generate a first estimate of the ice-covered domain, so that the free boundary (ice margin) is in the ablation zone as expected.
 
-Now, before giving computed examples which justify our claim of practical, not just theoretical, stability, we explain the relationship between our steady-state computations and fully-implicit time-stepping methods for the SIA evolution equation \eqref{eq:siaevolution}.  Here we effectively take infinite time steps.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
+
+\section{On time-stepping and sliding}
+
+Before giving computed examples which justify our claim of practical, not just theoretical, stability, we explain the relationship between our steady-state computations and fully-implicit time-stepping methods for equation \eqref{eq:siaevolution}.  Furthermore we suggest how to modify our methods to include sliding and flow models based on membrane stress balances.
+
+By solving for steady state we effectively take infinite time steps.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
 \begin{equation}
 \frac{H^\ell - H^{\ell-1}}{\Delta t} + \Div \bq^\ell = m \label{eq:backwardeuler}
 \end{equation}
 where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value, or the solution at the previous time step, and the continuation sequence can be avoided or truncated to only include the smallest $\eps$ value.  If $\Delta t$ is not too large then \eqref{eq:backwardeuler} is easier to solve than the steady state limit equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  Solving the steady state problem is thus harder than any single fully-implicit time-step of finite duration.
+
+FIXME: we have been basically flux-agnostic, and the same basic FVE works as long as there is a way of computing $\bq^h(x_j^s,y_k^s)$ from the current $\bH$.  main issue is extending velocity, thus flux, to cover area that might be new support of $H^h$
 
 
 \section{Results}
@@ -499,26 +508,23 @@ Velocities and fluxes are calculated on the midpoint of Voronoi cell edges.  The
 Looking at this, and their code, I don't think they think of it as Petrov-Galerkin
 \end{comment}
 
-\section{Appendix B. Analytical Jacobi- an for \Mstar}  \label{sec:appB}
+\section{Appendix B. Jacobian computation}  \label{sec:appB}
 
-Though finite differencing can be used to approximate the Jacobian \eqref{eq:nonlinjacobian} of the nonlinear algebraic system \eqref{eq:nonlinsystem}, convergence is\footnote{should be} better with a highly-accurate Jacobian, especially for those rows that correspond to near-margin locations.  To describe the calculation of the exact Jacobian, for the \Mstar method without upwinding only, we start by recalling that each equation $F_{j,k}(\bH)=0$ in the system comes from equation \eqref{eq:siamstar}, that is,
+Though finite differencing can be used to approximate the Jacobian \eqref{eq:nonlinjacobian} of the nonlinear algebraic system \eqref{eq:nonlinsystem}, convergence of the Newton iteration is\footnote{should be} better with a highly-accurate Jacobian, especially for those rows that correspond to near-margin locations.  To describe the calculation of the exact Jacobian for the \Mstar method, we start by recalling that each equation $F_{j,k}(\bH)=0$ in the system comes from equation \eqref{eq:siamstar}, so that
 \begin{equation}
-  F_{j,k}(\bH) = \sum_{s=0}^7 Q(s,j,k,\bH) - m_{j,k}\,\Delta x\,\Delta y\label{eq:jacfirst}
+  F_{j,k}(\bH) = \sum_{s=0}^7 \bc_s\cdot \bq^h(x_j^s,y_k^s) - m_{j,k}\,\Delta x\,\Delta y.  \label{eq:jacfirst}
 \end{equation}
-where we denote a single quadrature-evaluation term by
-\begin{equation}
-Q_s(j,k,\bH) = \bc_s\cdot \bq^h(x_j^s,y_k^s). \label{eq:jacQterm}
-\end{equation}
-We compute the derivative with respect to a thickness $H_{p,q}$,
-\begin{equation}
-\frac{\partial F_{j,k}}{\partial H_{p,q}} = \sum_{s=0}^7 \frac{\partial Q_s}{\partial H_{p,q}} \label{eq:jacQsum}
-\end{equation}
-where it is understood from now on that $Q_s$ depends on $j,k$ and (potentially) all elements of the discrete thickness vector $\bH$.  In fact, $\partial Q_s/\partial H_{p,q} \ne 0$ only if $p \in \{j,j+\sigma(x_j^s-x_j)\}$ and $q \in \{k,k+\sigma(y_k^s-y_k)\}$.
+As the stencil of the \Mstar scheme is the nine-node box shown in Figure \ref{fig:fdfemgrids}b, each row of the Jacobian, corresponding to location $j,k$ in the grid, has nine nonzero entries, corresponding to locations $p,q$ where $F_{j,k}$ depends on $H_{p,q}$, and thus where $\partial F_{j,k}/\partial H_{p,q}$ is nonzero.
 
-FIXME: recall criteria so $x_j^s,y_k^s$ is in $\square_{u,v}$ and then write $Q$ in local coords $(\xi,\nu)$, and then compute deriv of $Q$ on element $u,v$ w.r.t.~thickness at corner $\ell$ of element:
+So we compute the derivative with respect to any nodal thickness $H_{p,q}$,
 \begin{equation}
-\frac{\partial Q_s}{\partial \ell} = FIXME
+\frac{\partial F_{j,k}}{\partial H_{p,q}} = \sum_{s=0}^7 \bc_s\cdot \frac{\partial \bq^h(x_j^s,y_k^s)}{\partial H_{p,q}}. \label{eq:jacQsum}
 \end{equation}
+The discrete flux value $\bq^h(x_j^s,y_k^s)$ depends on the discrete thickness vector $\bH$, but in fact $\partial \bq^h(x_j^s,y_k^s)/\partial H_{p,q}$ is nonzero only if $H_{p,q}$ is one of the four corner nodal values corresponding to the element containing the quadrature point $(x_j^s,y_k^s)$.  So suppose $\square_{u,v}$ is that one of the four elements touching the node $(x_j,y_k)$ which contains $(x_j^s,y_k^s)$.  Recalling that we index the four corners of $\square_{u,v}$ by $\ell=0,1,2,3$ (Figure \ref{fig:fdfemgrids}b), we need to write code to compute
+\begin{equation}
+\frac{\partial \bq^h(x_j^s,y_k^s)}{\partial H_\ell}.
+\end{equation}
+FIXME: because $\bq$ in terms of $D$ and $\bW$, we compute those derivs\dots see sia.c
 
 
 
