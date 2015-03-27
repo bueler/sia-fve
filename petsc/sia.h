@@ -26,9 +26,7 @@ continuation scheme.
 
 Side effect: we update maximum of diffusivity (user->maxD).
 */
-PetscReal getflux(Grad gH, Grad gb,
-                  PetscReal H,
-                  PetscReal Hup,
+PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user);
 
 /*
@@ -52,8 +50,7 @@ Caller must compute (see q1op.h):
               dHupdl   = dfieldatpt(l,u,v,locxup,locyup,user);
 */
 PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
-                  PetscReal H, PetscReal dHdl,
-                  PetscReal Hup, PetscReal dHupdl,
+                  PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user);
 
 #endif // SIA_H_

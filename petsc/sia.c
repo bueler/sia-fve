@@ -42,11 +42,10 @@ PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   D     = Dcont(delta,H,user);
   const Grad      W     = getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
-  if (xdir == PETSC_TRUE) {
+  if (xdir)
       return - D * gH.x + W.x * PetscPowReal(Hup,n+2.0);
-  } else {
+  else
       return - D * gH.y + W.y * PetscPowReal(Hup,n+2.0);
-  }
 }
 
 
@@ -99,8 +98,7 @@ Grad DWDl(PetscReal ddeltadl, Grad gb) {
 
 /* See sia.h for doc. */
 PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
-                  PetscReal H, PetscReal dHdl,
-                  PetscReal Hup, PetscReal dHupdl,
+                  PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user) {
     const PetscReal n        = ncont(user),
                     delta    = getdelta(gH,gb,user->Gamma,n),
@@ -112,11 +110,9 @@ PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
                     Huppow   = PetscPowReal(Hup,n+1.0),
                     Huppow2  = Huppow * Hup,
                     dHuppow  = (n+2.0) * Huppow * dHupdl;
-    if (xdir == PETSC_TRUE) {
+    if (xdir)
         return - dDdl * gH.x - D * dgHdl.x + dWdl.x * Huppow2 + W.x * dHuppow;
-    } else {
+    else
         return - dDdl * gH.y - D * dgHdl.y + dWdl.y * Huppow2 + W.y * dHuppow;
-    }
-
 }
 
