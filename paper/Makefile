@@ -29,7 +29,7 @@ bedsteptable.tex: convfigs.py ../petsc/bedstep.verif
 domeprofile.pdf: ../petsc/mahaffy ../petsc/figsmahaffy.py
 	rm -rf tmpdome/
 	mkdir tmpdome/
-	../petsc/mahaffy -mah_dump tmpdome/ -da_refine 2
+	../petsc/mahaffy -mah_dump tmpdome/ -da_refine 2 -mah_forceadmissible -snes_type vinewtonssls
 	(cd tmpdome/ && ../../petsc/figsmahaffy.py --profile --half)
 	cp tmpdome/HHexact1d.pdf domeprofile.pdf
 	rm -rf tmpdome/
