@@ -17,6 +17,9 @@ _status_message = {'success': 'Optimization terminated successfully.',
                    'maxiter': 'Maximum number of iterations has been '
                               'exceeded.'}
 
+# FIXME: add this
+#def gridsearch(func, sim0, nx=3, ny=3, disp=False):
+
 # following is modified _minimize_neldermead() from
 #   https://github.com/scipy/scipy/blob/v0.14.0/scipy/optimize/optimize.py
 def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
