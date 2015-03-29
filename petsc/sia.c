@@ -33,7 +33,7 @@ Grad getW(PetscReal delta, Grad gb) {
 /* In continuation scheme, D(1)=D_0 and D(0)=D. */
 PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
   const PetscReal n = ncont(user);
-  return (1.0-user->eps) * delta * PetscPowReal(H,n+2.0) + user->eps * user->D0;
+  return (1.0-user->eps) * delta * PetscPowReal(PetscAbsReal(H),n+2.0) + user->eps * user->D0;
 }
 
 /* See sia.h for doc. */
@@ -45,9 +45,9 @@ PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
   const Grad      W     = getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
   if (xdir)
-      return - D * gH.x + W.x * PetscPowReal(Hup,n+2.0);
+      return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
   else
-      return - D * gH.y + W.y * PetscPowReal(Hup,n+2.0);
+      return - D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
 }
 
 
@@ -81,7 +81,7 @@ point (x,y) on element u,v.  Since  Dcont = (1-eps) delta H^{n+2} + eps D0:
 PetscReal DDcontDl(PetscReal delta, PetscReal ddeltadl, PetscReal H, PetscReal dHdl,
                    const AppCtx *user) {
     const PetscReal n = ncont(user);
-    const PetscReal Hpow = PetscPowReal(H,n+1.0);
+    const PetscReal Hpow = PetscPowReal(PetscAbsReal(H),n+1.0);
     return (1.0-user->eps) * Hpow * ( ddeltadl * H + delta * (n+2.0) * dHdl );
 }
 
@@ -108,7 +108,7 @@ PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
     const Grad      W        = getW(delta,gb);
     const PetscReal ddeltadl = DdeltaDl(gH,gb,dgHdl,user),
                     dDdl     = DDcontDl(delta,ddeltadl,H,dHdl,user),
-                    Huppow   = PetscPowReal(Hup,n+1.0),
+                    Huppow   = PetscPowReal(PetscAbsReal(Hup),n+1.0),
                     Huppow2  = Huppow * Hup,
                     dHuppow  = (n+2.0) * Huppow * dHupdl;
     const Grad      dWdl     = DWDl(ddeltadl,gb);
