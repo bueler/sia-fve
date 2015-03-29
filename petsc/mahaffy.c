@@ -35,17 +35,18 @@ Solution options:
    ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
 
 PETSc solver variations:
-   ./mahaffy -mah_forceadmissible -snes_type vinewtonssls
+   ./mahaffy -snes_type vinewtonssls
 
 Feedback on solution process:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
    mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_monitor_solution -draw_pause 0
    mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_vi_monitor_residual -draw_pause 0
 
+Fully converges for these levels:
+   for LEV in 0 1 2 3 4; do  mpiexec -n 6 ./mahaffy -da_refine $LEV -snes_type vinewtonssls -snes_max_it 200 -pc_type asm -sub_pc_type lu; done
+
 Successes:
    mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor  # DIVERGED_LINE_SEARCH at 12
-   # FULLY CONVERGES for LEV = 0 1 2 3 4
-   mpiexec -n 6 ./mahaffy -da_refine LEV -snes_type vinewtonssls -mah_forceadmissible -snes_max_it 200 -pc_type asm -sub_pc_type lu
    mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
 
 Divergence:
@@ -84,7 +85,6 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
-extern PetscErrorCode ExplicitStepSmoother(Vec,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -113,10 +113,11 @@ int main(int argc,char **argv) {
   user.rho    = 910.0;      // kg/m^3
   user.secpera= 31556926.0;
   user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
-  user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
+
+  user.D0     = 1.0;        // m^2 / s
+  user.initmagic = 1000.0;  // a
 
   user.eps    = 0.0;
-  user.D0     = 1.0;        // m^2 / s
   user.Neps   = 13;
 
   user.mtrue      = PETSC_FALSE;
@@ -128,7 +129,6 @@ int main(int argc,char **argv) {
   user.swapxy     = PETSC_FALSE;
   user.divergetryagain = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
-  user.forceadmissible = PETSC_FALSE;
 
   user.read       = PETSC_FALSE;
   user.showdata   = PETSC_FALSE;
@@ -139,6 +139,9 @@ int main(int argc,char **argv) {
   strcpy(user.readname,"FILENAME");
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
+
+  // derived constant computed after n,A get set
+  user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
 
   if (user.read == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
@@ -243,7 +246,7 @@ int main(int argc,char **argv) {
   // initialize by chop & scale SMB
   ierr = VecCopy(user.m,H); CHKERRQ(ierr);
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
-  ierr = VecScale(H,1000.0*user.secpera); CHKERRQ(ierr);  // FIXME make user.initializemagic
+  ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
 
   if (user.mtrue == PETSC_TRUE) {
       ierr = PetscPrintf(PETSC_COMM_WORLD,
@@ -283,7 +286,6 @@ int main(int argc,char **argv) {
               user.eps      = 1.5 * user.eps;
               user.slopeeps = 5.0 * user.slopeeps;
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-              //ierr = ExplicitStepSmoother(Htry,&user); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
               ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
@@ -344,23 +346,15 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 }
 
 
-/* Loop over locally-owned elements, including ghosts, checking or forcing
-   nonnegativity of thickness. */
-PetscErrorCode checkforceadmissible(DMDALocalInfo *info, PetscScalar **H, const AppCtx *user) {
+/* Loop over locally-owned elements, including ghosts, checking
+   nonnegativity of thickness.  Stops with error if not.  */
+PetscErrorCode checkadmissible(DMDALocalInfo *info, PetscScalar **H) {
   PetscInt        j, k;
   PetscFunctionBeginUser;
-  if (user->forceadmissible == PETSC_TRUE) {
-      for (k = info->ys-1; k < info->ys + info->ym + 1; k++) {
-          for (j = info->xs-1; j < info->xs + info->xm + 1; j++) {
-              H[k][j] = PetscAbsReal(H[k][j]);
-          }
-      }
-  } else if (user->checkadmissible == PETSC_TRUE) {
-      for (k = info->ys-1; k < info->ys + info->ym + 1; k++) {
-          for (j = info->xs-1; j < info->xs + info->xm + 1; j++) {
-              if (H[k][j] < 0.0)
-                  SETERRQ3(PETSC_COMM_WORLD,1,"ERROR: inadmissible H[%d][%d] = %.3e < 0\n",k,j,H[k][j]);
-          }
+  for (k = info->ys-1; k < info->ys + info->ym + 1; k++) {
+      for (j = info->xs-1; j < info->xs + info->xm + 1; j++) {
+          if (H[k][j] < 0.0)
+              SETERRQ3(PETSC_COMM_WORLD,1,"ERROR: inadmissible H[%d][%d] = %.3e < 0\n",k,j,H[k][j]);
       }
   }
   PetscFunctionReturn(0);
@@ -446,9 +440,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   knbr[4] = {-1,  0,  1,  0};
 
   PetscFunctionBeginUser;
+  if (user->checkadmissible) {
+      ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
+
   user->maxD = 0.0;
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
-  ierr = checkforceadmissible(info,aH,user); CHKERRQ(ierr);
 
   // need stencil width on b and locally-computed q
   ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
@@ -545,7 +541,9 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   if (user->mtrue) {
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR: analytical jacobian not ready in this cases ...\n"); }
   //ierr = PetscPrintf(PETSC_COMM_WORLD,"[inside FormJacobianLocal()]\n"); CHKERRQ(ierr);
-  ierr = checkforceadmissible(info,aH,user); CHKERRQ(ierr);
+  if (user->checkadmissible) {
+      ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
+
   ierr = MatZeroEntries(jac); CHKERRQ(ierr);  // because using ADD_VALUES below
   MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
@@ -626,62 +624,15 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
 }
 
 
-PetscErrorCode ExplicitStepSmoother(Vec H, AppCtx *user) {
-    PetscErrorCode  ierr;
-    DMDALocalInfo   info;
-    PetscReal       **aHloc, **aR, **aH, maxD, tmpeps, deltat, mu;
-    PetscInt        j, k;
-    Vec             Hloc, R;
-
-    PetscFunctionBeginUser;
-    // generate ghosted version of thickness H
-    ierr = DMCreateLocalVector(user->da, &Hloc); CHKERRQ(ierr);
-    ierr = DMGlobalToLocalBegin(user->da,H,INSERT_VALUES,Hloc); CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(user->da,H,INSERT_VALUES,Hloc); CHKERRQ(ierr);
-
-    // prepare to get residual from FormFunctionLocal()
-    ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(user->da, &R); CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(user->da, Hloc, &aHloc);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(user->da, H, &aH);CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(user->da, R, &aR);CHKERRQ(ierr);
-
-    // get eps=0 residual corresponding to H
-    //user->eps = 0.0;
-    tmpeps = user->eps; // set aside current value of eps
-    ierr = FormFunctionLocal(&info,aHloc,aR,user);CHKERRQ(ierr); // computes aR and user->maxD
-    user->eps = tmpeps; // restore it
-
-    // based on maxD we can take a max-principle stable explicit step
-    //dxinvsum = 1.0 / ((1.0 / user->dx) + (1.0 / user->dy));  <- replaces dx/2
-    ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-    deltat = (user->dx / 2.0) / (2.0 * maxD);
-
-    // take step aH, which is in-place since we have residual
-    // mu = deltat / (user->dx * user->dy);
-    mu = deltat / (user->dx * user->dx);
-    for (k=info.ys; k<info.ys+info.ym; k++) {
-        for (j=info.xs; j<info.xs+info.xm; j++) {
-            aH[k][j] = PetscMax(0.0, aH[k][j] - mu * aR[k][j]);
-        }
-    }
-
-    // clean up
-    ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(user->da, R, &aR);CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(user->da, Hloc, &aHloc);CHKERRQ(ierr);
-    ierr = VecDestroy(&Hloc); CHKERRQ(ierr);
-    ierr = VecDestroy(&R); CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
-
 PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
   PetscBool      domechosen;
   char           histprefix[512];
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-A", "set value of ice softness A in units Pa-3 s-1",
+      NULL,user->A,&user->A,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-bedstep", "use bedrock step exact solution by Jarosh, Schoof, Anslow (2013)",
       NULL,user->bedstep,&user->bedstep,NULL);CHKERRQ(ierr);
@@ -700,13 +651,18 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsReal(
       "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-forceadmissible", "in FormFunctionLocal(), set H = abs(H)",
-      NULL,user->forceadmissible,&user->forceadmissible,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-initmagic", "constant, in years, used to multiply SMB to get initial iterate for thickness",
+      NULL,user->initmagic,&user->initmagic,NULL);CHKERRQ(ierr);
   strcpy(histprefix,"PREFIX/");
   ierr = PetscOptionsString(
       "-history", "write history.txt file with this prefix (also written under -mah_dump)",
       NULL,histprefix,histprefix,512,&user->history); CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-n", "set value of Glen exponent n",
+      NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
+  if (user->n <= 1.0) {
+      SETERRQ1(PETSC_COMM_WORLD,11,"ERROR: n = %f not allowed ... n > 1 is required\n",user->n); }
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);

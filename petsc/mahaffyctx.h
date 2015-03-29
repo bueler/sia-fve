@@ -31,6 +31,7 @@ typedef struct {
             slopeeps,// current dimensionless regularization for slope in DdeltaDl()
             maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
             D0,     // representative value of diffusivity (in regularization)
+            initmagic,// constant, in years, used to multiply SMB to get initial iterate for thickness
             eps_sched[13],
             slopeeps_sched[13];
   PetscInt  Nx,     // grid has Nx x Ny nodes
@@ -45,7 +46,6 @@ typedef struct {
             swapxy, // swap x and y axes in building exact solution
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
-            forceadmissible,// in FormFunctionLocal(), set H = abs(H)
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
             dump,   // dump fields into individual PETSc binary files
             history;// write ASCII history file
