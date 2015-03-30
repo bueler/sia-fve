@@ -92,13 +92,32 @@ extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
 
-// indexing of the 8 points along the boundary of the control volume
+
+// indexing of the 8 quadrature points along the boundary of the control volume in M*
 // point s=0,...,7 is in element (j,k) = (j+je[s],k+ke[s])
 static const PetscInt  je[8] = {0,  0, -1, -1, -1, -1,  0,  0},
                        ke[8] = {0,  0,  0,  0, -1, -1, -1, -1},
                        ce[8] = {0,  3,  1,  0,  2,  1,  3,  2};
+// coefficients of quadrature evaluations along the boundary of the control volume in M*
+#define FLUXINTCOEFFS \
+const PetscReal coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2};
+// according to user option, the quadrature point moves in upwinding:
+#define UPWINDPTS \
+const PetscReal upmin = (user->upwindfull) ? 0.0 : 1.0/4.0, \
+                upmax = (user->upwindfull) ? 1.0 : 3.0/4.0;
 // direction of flux at 4 points in each element
 static const PetscBool xdire[4] = {PETSC_TRUE, PETSC_FALSE, PETSC_TRUE, PETSC_FALSE};
+// local (element-wise) coords of quadrature points for M*
+static const PetscReal locx[4] = {  0.5, 0.75,  0.5, 0.25},
+                       locy[4] = { 0.25,  0.5, 0.75,  0.5};
+// quadrature points for classical (true) Mahaffy; these are not used in Jacobian
+static const PetscReal locxtrue[4] = { 0.5, 1.0, 0.5, 0.0},
+                       locytrue[4] = { 0.0, 0.5, 1.0, 0.5},
+                       locxnbr[4]  = { 0.5, 0.0, 0.5, 1.0},
+                       locynbr[4]  = { 1.0, 0.5, 0.0, 0.5};
+static const PetscInt  jnbr[4] = { 0,  1,  0, -1},
+                       knbr[4] = {-1,  0,  1,  0};
+
 
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
@@ -366,6 +385,7 @@ PetscErrorCode checkadmissible(DMDALocalInfo *info, PetscScalar **H) {
   PetscFunctionReturn(0);
 }
 
+
 // averages two gradients; only used in true Mahaffy
 Grad gradav(Grad g1, Grad g2) {
   Grad gav;
@@ -374,25 +394,6 @@ Grad gradav(Grad g1, Grad g2) {
   return gav;
 }
 
-void MstarArrays(PetscReal dx, PetscReal dy,
-                 PetscReal (*coeff)[8], PetscReal (*locx)[4], PetscReal (*locy)[4],
-                 PetscReal *upmin, PetscReal *upmax,
-                 const AppCtx *user) {
-    *upmin = (user->upwindfull == PETSC_TRUE) ? 0.0 : 1.0/4.0;
-    *upmax = (user->upwindfull == PETSC_TRUE) ? 1.0 : 3.0/4.0;
-    // lengths & dirs of segments on bdry of control vol:
-    if (coeff) {
-        (*coeff)[0] = dy/2;  (*coeff)[1] = dx/2;  (*coeff)[2] = dx/2;  (*coeff)[3] = -dy/2;
-        (*coeff)[4] = -dy/2; (*coeff)[5] = -dx/2; (*coeff)[6] = -dx/2; (*coeff)[7] = dy/2;
-    }
-    // local (element-wise) coords of quadrature points for M*
-    if (locx) {
-        (*locx)[0] = dx/2.0;  (*locx)[1] = 3.0*dx/4.0;  (*locx)[2] = dx/2.0;      (*locx)[3] = dx/4.0;
-    }
-    if (locy) {
-        (*locy)[0] = dy/4.0;  (*locy)[1] = dy/2.0;      (*locy)[2] = 3.0*dy/4.0;  (*locy)[3] = dy/2.0;
-    }
-}
 
 /* For call-back by SNES using DMDA info.
 
@@ -431,26 +432,19 @@ at "%":
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
+  FLUXINTCOEFFS
+  UPWINDPTS
   const PetscBool upwind = (!user->noupwind);
-  PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
   PetscInt        j, k;
   PetscReal       **am, **ab, ***aq;
   Vec             bloc, qloc;
 
-  // these are for classical (true) Mahaffy, and do not appear in Jacobian
-  const PetscReal locxtrue[4] = { dx/2.0,         dx,     dx/2.0,    0.0},
-                  locytrue[4] = {    0.0,     dy/2.0,         dy, dy/2.0},
-                  locxnbr[4]  = { dx/2.0,        0.0,     dx/2.0,     dx},
-                  locynbr[4]  = {     dy,     dy/2.0,        0.0, dy/2.0};
-  const PetscInt  jnbr[4] = { 0,  1,  0, -1},
-                  knbr[4] = {-1,  0,  1,  0};
 
   PetscFunctionBeginUser;
   if (user->checkadmissible) {
       ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
 
   user->maxD = 0.0;
-  MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
   // need stencil width on b and locally-computed q
   ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
@@ -471,24 +465,24 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           for (c=0; c<4; c++) {
               if (user->mtrue) {  // true Mahaffy method
                   // this implementation is at least a factor of two inefficient
-                  H = fieldatpt(j,k,locxtrue[c],locytrue[c],aH,user);
-                  gH = gradfatpt(j,k,locxtrue[c],locytrue[c],aH,user);
-                  gb = gradfatpt(j,k,locxtrue[c],locytrue[c],ab,user);
-                  gH = gradav(gH,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],aH,user));
-                  gb = gradav(gb,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],ab,user));
+                  H = fieldatpt(j,k,locxtrue[c],locytrue[c],aH);
+                  gH = gradfatpt(j,k,locxtrue[c],locytrue[c],dx,dy,aH);
+                  gb = gradfatpt(j,k,locxtrue[c],locytrue[c],dx,dy,ab);
+                  gH = gradav(gH,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],dx,dy,aH));
+                  gb = gradav(gb,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],dx,dy,ab));
                   Hup = H; // no upwinding allowed in true Mahaffy
               } else {
-                  H  = fieldatpt(j,k,locx[c],locy[c],aH,user);
-                  gH = gradfatpt(j,k,locx[c],locy[c],aH,user);
-                  gb = gradfatpt(j,k,locx[c],locy[c],ab,user);
+                  H  = fieldatpt(j,k,locx[c],locy[c],aH);
+                  gH = gradfatpt(j,k,locx[c],locy[c],dx,dy,aH);
+                  gb = gradfatpt(j,k,locx[c],locy[c],dx,dy,ab);
                   Hup = H;
                   if (upwind) {
                       PetscReal lxup = locx[c], lyup = locy[c];
                       if (xdire[c] == PETSC_TRUE)
-                          lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
+                          lxup = (gb.x <= 0.0) ? upmin : upmax;
                       else
-                          lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
-                      Hup = fieldatpt(j,k,lxup,lyup,aH,user);
+                          lyup = (gb.y <= 0.0) ? upmin : upmax;
+                      Hup = fieldatpt(j,k,lxup,lyup,aH);
                   }
               }
               aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
@@ -522,6 +516,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
 }
 
 
+// allows consistent use of "j" and "k" for x,y directions, both in loops and MatSetValuesStencil
 typedef struct {
   PetscInt foo,k,j,bar;
 } MyStencil;
@@ -535,8 +530,9 @@ For examples see $PETSC_DIR/src/snes/examples/tutorials/ex5.c or ex9.c.
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user) {
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
+  FLUXINTCOEFFS
+  UPWINDPTS
   const PetscBool upwind = (user->noupwind == PETSC_FALSE);
-  PetscReal       upmin, upmax, coeff[8], locx[4], locy[4];
   PetscInt        j, k;
   PetscReal       **ab, ***adQ;
   Vec             bloc, dQloc;
@@ -551,7 +547,6 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
       ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
 
   ierr = MatZeroEntries(jac); CHKERRQ(ierr);  // because using ADD_VALUES below
-  MstarArrays(dx,dy,&coeff,&locx,&locy,&upmin,&upmax,user);
 
   // need stencil width on b and locally-computed dQdl
   ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
@@ -570,23 +565,23 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
           PetscReal H, Hup;
           for (c=0; c<4; c++) {
               PetscReal lxup = locx[c], lyup = locy[c];
-              H  = fieldatpt(j,k,locx[c],locy[c],aH,user);
-              gH = gradfatpt(j,k,locx[c],locy[c],aH,user);
-              gb = gradfatpt(j,k,locx[c],locy[c],ab,user);
+              H  = fieldatpt(j,k,locx[c],locy[c],aH);
+              gH = gradfatpt(j,k,locx[c],locy[c],dx,dy,aH);
+              gb = gradfatpt(j,k,locx[c],locy[c],dx,dy,ab);
               Hup = H;
               if (upwind) {
                   if (xdire[c])
-                      lxup = (gb.x <= 0.0) ? upmin*dx : upmax*dx;
+                      lxup = (gb.x <= 0.0) ? upmin : upmax;
                   else
-                      lyup = (gb.y <= 0.0) ? upmin*dy : upmax*dy;
-                  Hup = fieldatpt(j,k,lxup,lyup,aH,user);
+                      lyup = (gb.y <= 0.0) ? upmin : upmax;
+                  Hup = fieldatpt(j,k,lxup,lyup,aH);
               }
               for (l=0; l<4; l++) {
                   Grad      dgHdl;
                   PetscReal dHdl, dHupdl;
-                  dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],user);
-                  dHdl   = dfieldatpt(l,j,k,locx[c],locy[c],user);
-                  dHupdl = (upwind) ? dfieldatpt(l,j,k,lxup,lyup,user) : dHdl;
+                  dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],dx,dy);
+                  dHdl   = dfieldatpt(l,j,k,locx[c],locy[c]);
+                  dHupdl = (upwind) ? dfieldatpt(l,j,k,lxup,lyup) : dHdl;
                   adQ[k][j][4*c+l] = DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
               }
           }

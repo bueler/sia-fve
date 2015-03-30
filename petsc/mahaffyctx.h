@@ -9,6 +9,7 @@
 #include <petscdmda.h>
 #include <petscvec.h>
 
+// holds value of gradient or vector at point
 typedef struct {
     PetscReal x,y;
 } Grad;
