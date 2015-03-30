@@ -6,7 +6,9 @@
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Optimize two-parameter functions by Nelder-Mead.')
+parser = argparse.ArgumentParser(description='Optimize two-parameter functions by grid search or Nelder-Mead.')
+parser.add_argument("--fprint", action="store_true", help="function will print at each evaluation")
+parser.add_argument("--nm", action="store_true", help="use Nelder-Mead method")
 parser.add_argument("--rosen", action="store_true", help="use rosen example")
 args = parser.parse_args()
 
@@ -17,8 +19,28 @@ _status_message = {'success': 'Optimization terminated successfully.',
                    'maxiter': 'Maximum number of iterations has been '
                               'exceeded.'}
 
-# FIXME: add this
-#def gridsearch(func, sim0, nx=3, ny=3, disp=False):
+def gridsearch(func, sim0, nx=3, ny=3, disp=False):
+    Np1 = sim0.shape[0]
+    N = sim0.shape[1]
+    if not N+1==Np1:
+        raise ValueError("Initial simplex must have N+1 rows and N columns.")
+    if not N==2:
+        raise ValueError("Only works for N==2.")
+
+    # assume "simplex" set up a certain way: [[x,y], [x+dx,y], [x,y+dy]]
+    dx = sim0[1,0] - sim0[0,0]
+    dy = sim0[2,1] - sim0[0,1]
+
+    # run grid search
+    ff = numpy.zeros((2*nx+1,2*ny+1))
+    for j in range(2*nx+1):
+        x = sim0[0,0] + dx * (j - nx)
+        for k in range(2*ny+1):
+            y = sim0[0,1] + dy * (k - ny)
+            ff[j,k] = func(numpy.array([x,y]))
+
+    #print ff
+    return ff.min()
 
 # following is modified _minimize_neldermead() from
 #   https://github.com/scipy/scipy/blob/v0.14.0/scipy/optimize/optimize.py
@@ -147,17 +169,20 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
 
     return x
 
-
 if args.rosen:
     def rosen(x):
         """The Rosenbrock function"""
         f = sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)
-        print "  f([%12.9f %12.9f]) = %8e" % (x[0],x[1],f)
+        if args.fprint:
+            print "  f([%12.9f %12.9f]) = %8e" % (x[0],x[1],f)
         return f
     sim0 = numpy.array([[1.3, 0.7],
                         [1.4, 0.7],
                         [1.3, 0.8]])
-    res = neldermead(rosen, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+    if args.nm:
+        res = neldermead(rosen, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+    else:
+        res = gridsearch(rosen, sim0, nx=3, ny=2)
 
 else:
     secpera = 31556926.0
