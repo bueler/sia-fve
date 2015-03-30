@@ -151,9 +151,21 @@ However, implicit schemes also need to determine the location of the free bounda
 \end{equation}
 This equation is a boundary-value problem in which the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}.  The ice-covered domain where \eqref{eq:siasteady} applies, and the location of the boundary where $H=0$ and $\bq=0$, cannot be treated as a small modification of a known boundary, though that is the standard approach of explicit time-stepping schemes for equation \eqref{eq:siaevolution} \citep{Bueleretal2005,Huybrechtsetal1996}.
 
-To be somewhat more precise about boundary conditions, if $m$ is sufficiently-negative near the boundary of $\Omega$ then $H$ reaches zero inside the domain at the free boundary.  At this free boundary, $H\to 0$ and $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  The problem also has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
+To be precise about boundary conditions, if the surface mass balance $m$ is sufficiently-negative near the boundary of the domain $\Omega$ on which \eqref{eq:siasteady} is intended to be solved then $H\to 0$ at points inside $\Omega$.  These points define the free boundary, at which $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  Because of the factor $H^{n+2}$ in formula \eqref{eq:siafluxdiffusion} for the diffusivity $D$, the problem also has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
 
-The problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these fields are defined on some larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by a free boundary.  (Alternatively, as in our practical computations, $\Omega$ has no boundary because it is periodic.)  The solution is the nonnegative thickness function $H(x,y)$, and corresponding surface elevation $s(x,y)$.
+The problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on some larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by a free boundary.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice, and corresponding surface elevation $s(x,y)=H(x,y)+b(x,y)$.
+
+FIXME Before proceeding with numerics, however, we need to observe that, depending on the exponent $n$, the flux $\bq$ is not always continuously-differentiable as a function of the unknown thickness solution $H$.  More precisely, if $\grad H=(H_1,H_2)$ in components, and using similar notation for the components of the vectors $\bq$ and $\grad b$, then by \eqref{eq:siaflux} we can consider the flux components as functions of scalar unknowns:
+\begin{align}
+q_\alpha(H,H_1,H_2) &= - \Gamma H^{n+2} \left(\sum_\gamma (H_\gamma+b_\gamma)^2\right)^{(n-1)/2} \notag \\
+&\qquad\qquad \cdot \left(H_\alpha + b_\alpha\right) \label{eq:siafluxdependence}
+\end{align}
+for $\alpha=1,2$ and where the sum is over $\gamma=1,2$ also.  But then the derivative of $\bq$ can be singular:
+\begin{align}
+\frac{\partial q_\alpha}{\partial H_\beta} &= - \Gamma H^{n+2} \left(\sum_\gamma (H_\gamma+b_\gamma)^2\right)^{(n-3)/2} \label{eq:siafluxderiv} \\
+&\quad \cdot \left[(n-1) H_\beta(H_\beta + b_\beta) + \sum_\gamma (H_\gamma+b_\gamma)^2\right]. \notag
+\end{align}
+Specifically, if $n\ge 3$ then $\partial q_\alpha/\partial H_\beta$ is finite for any value of the surface gradient $|\grad s|=\left(\sum_\gamma (H_\gamma+b_\gamma)^2\right)^{1/2}$.  For $1<n<3$, however, FIXME: not actually singular!  WHY IS REGULARIZATION NEEDED?  BECAUSE second derivatives $\partial^2 q_\alpha/\partial H_\beta\partial H_\gamma$ are singular?
 
 
 \section{The classical Mahaffy scheme}   \label{sec:mahaffyfd}
@@ -434,6 +446,8 @@ FIXME: we have been basically flux-agnostic, and the same basic FVE works as lon
 
 
 \section{Results}
+
+FIXME: show evidence of quadratic convergence
 
 Verification is the process of ensuring that our numerical scheme approximately solves the intended continuum equations in a measurably-convergent manner.  In the flat bed steady state case the angularly-symmetric exact solution constructed by \cite{Bueler2003}, which we call the ``dome'' exact solution, is suitable; see also subsection FIXME of \cite{vanderVeen2013}.  In a case with parameters suitable for a medium-sized ice sheet, this exact solution and a relatively coarse-grid application of the \Mstar method are compared in Figure \ref{fig:domeprofile}.  Under grid refinement we can measure the maximum and average thickness error both for the classical Mahaffy method and for the \Mstar method.  FIXME ADD CLASSICAL RESULTS; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
 
