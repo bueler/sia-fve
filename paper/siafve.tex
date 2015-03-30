@@ -223,8 +223,8 @@ Again consider the structured grid of rectangular elements shown in Figure \ref{
 \end{equation}
 for $\ell=0,1,2,3$, where
 \begin{align*}
-\chi_0(\xi,\nu) &= \left(1-\xi\right) \left(1-\nu\right), & \chi_1(\xi,\nu) &= \xi \left(1-\nu\right), \\
-\chi_2(\xi,\nu) &= \xi \nu, & \chi_3(\xi,\nu) &= \left(1-\xi\right) \nu.
+\chi_0(\xi,\eta) &= \left(1-\xi\right) \left(1-\eta\right), & \chi_1(\xi,\eta) &= \xi \left(1-\eta\right), \\
+\chi_2(\xi,\eta) &= \xi \eta, & \chi_3(\xi,\eta) &= \left(1-\xi\right) \eta.
 \end{align*}
 With this order, $\chi_\ell=1$ on element corners traversed in counter-clockwise order (Figure \ref{fig:fdfemgrids}b).  Now let
 \begin{equation}
@@ -522,21 +522,42 @@ Looking at this, and their code, I don't think they think of it as Petrov-Galerk
 
 \section{Appendix B. Jacobian computation}  \label{sec:appB}
 
-Though finite differencing can be used to approximate the Jacobian \eqref{eq:nonlinjacobian} of the nonlinear algebraic system \eqref{eq:nonlinsystem}, convergence of the Newton iteration is\footnote{should be} better with a highly-accurate Jacobian, especially for those rows that correspond to near-margin locations.  To describe the calculation of the exact Jacobian for the \Mstar method, we start by recalling that each equation $F_{j,k}(\bH)=0$ in the system comes from equation \eqref{eq:siamstar}, so that
+Though finite differencing can be used to approximate the Jacobian \eqref{eq:nonlinjacobian} of the nonlinear algebraic system \eqref{eq:nonlinsystem}, convergence of the Newton iteration is accelerated by analytical evaluation.  To sketch the calculation of the Jacobian for the \Mstar method, we recall that each equation $F_{j,k}(\bH)=0$ in the system comes from equation \eqref{eq:siamstar},
 \begin{equation}
-  F_{j,k}(\bH) = \sum_{s=0}^7 \bc_s\cdot \bq^h(x_j^s,y_k^s) - m_{j,k}\,\Delta x\,\Delta y.  \label{eq:jacfirst}
+  F_{j,k} = \sum_{s=0}^7 \bc_s\cdot \bq^h(x_j^s,y_k^s) - m_{j,k}\,\Delta x\,\Delta y.  \label{eq:res}
 \end{equation}
-As the stencil of the \Mstar scheme is the nine-node box shown in Figure \ref{fig:fdfemgrids}b, each row of the Jacobian, corresponding to location $j,k$ in the grid, has nine nonzero entries, corresponding to locations $p,q$ where $F_{j,k}$ depends on $H_{p,q}$, and thus where $\partial F_{j,k}/\partial H_{p,q}$ is nonzero.
-
-So we compute the derivative with respect to any nodal thickness $H_{p,q}$,
+As the stencil of the \Mstar scheme is the nine-node box shown in Figure \ref{fig:fdfemgrids}b, each row of the Jacobian, corresponding to location $j,k$ in the grid, has nine nonzero entries, corresponding to locations $p,q$ where $F_{j,k}$ depends on $H_{p,q}$, and thus where $\partial F_{j,k}/\partial H_{p,q}$ is nonzero.  We compute
 \begin{equation}
 \frac{\partial F_{j,k}}{\partial H_{p,q}} = \sum_{s=0}^7 \bc_s\cdot \frac{\partial \bq^h(x_j^s,y_k^s)}{\partial H_{p,q}}. \label{eq:jacQsum}
 \end{equation}
-The discrete flux value $\bq^h(x_j^s,y_k^s)$ depends on the discrete thickness vector $\bH$, but in fact $\partial \bq^h(x_j^s,y_k^s)/\partial H_{p,q}$ is nonzero only if $H_{p,q}$ is one of the four corner nodal values corresponding to the element containing the quadrature point $(x_j^s,y_k^s)$.  So suppose $\square_{u,v}$ is that one of the four elements touching the node $(x_j,y_k)$ which contains $(x_j^s,y_k^s)$.  Recalling that we index the four corners of $\square_{u,v}$ by $\ell=0,1,2,3$ (Figure \ref{fig:fdfemgrids}b), we need to write code to compute
+In fact $\partial \bq^h(x_j^s,y_k^s)/\partial H_{p,q}$ is nonzero only if $H_{p,q}$ is one of the four nodal values on the element $\square_{u,v}$ containing the quadrature point $(x_j^s,y_k^s)$.  Recalling that we index the four corners of $\square_{u,v}$ by $\ell=0,1,2,3$---see Figure \ref{fig:fdfemgrids}b---we need to write code to compute
 \begin{equation}
-\frac{\partial \bq^h(x_j^s,y_k^s)}{\partial H_\ell}.
+\bQ_\ell^s = \frac{\partial \bq^h(x_j^s,y_k^s)}{\partial H_\ell} \label{eq:jacthegoal}
 \end{equation}
-FIXME: because $\bq$ in terms of $D$ and $\bW$, we compute those derivs\dots see sia.c
+when $(x_j^s,y_k^s)$ is in $\square_{u,v}$.
+
+Having made the goal clear, we recall the quantities which are easiest to compute in a $Q^1$ FE method.  If $\xi=(x-x_u)/\Delta x$ and $\eta=(y-y_v)/\Delta y$ are local coordinates on $\square_{u,v}$, so that $0\le \xi,\eta \le 1$, then bilinear interpolation defines a function $H_{u,v}=H_{u,v}(\xi,\eta)$ on $\square_{u,v}$ from interpolation of the four nodal values $H_\ell$---see the bilinear basis functions in equation \eqref{eq:elementbasis}.  The bed elevation function $b_{u,v}$ is similarly defined.
+
+Differentiation with respect to $\xi$ and $\eta$ gives vector-valued function $(\grad H)_{u,v}$ and $(\grad b)_{u,v}$.  Differentiation with respect to $H_\ell$ gives the scalar function $\partial H_{u,v}/\partial H_\ell$ and the vector-valued function $\partial (\grad H)_{u,v}/\partial H_\ell$.  We write code for each of these functions, which use local coordinates $\xi,\eta$ on $\square_{u,v}$.
+
+Now recall $D$ is defined in \eqref{eq:siafluxdiffusion} and $\bW$ is defined in \eqref{eq:siaWdefine}.  Therefore we next write code to compute element-wise function $D_{u,v}$, $\partial D_{u,v}/\partial H_\ell$, $\bW_{u,v}$, and $\partial \bW_{u,v}/\partial H_\ell$, again all in local coordinates $\xi,\eta$ on $\square_{u,v}$.
+
+\newcommand{\uppoint}{(\xi_{\text{up}}^s,\eta_{\text{up}}^s)}
+Denote the local coordinates of the quadrature point $(x_j^s,y_k^s)$ on the element $\square_{u,v}$ by $\xi^s = (x_j^s-x_u)/\Delta x$ and $\eta^s = (y_k^s-y_v)/\Delta y$.  Note that upwinding determines an additional evaluation point, whose local coordinates are denoted $\uppoint$, for each quadrature point---see Figure \ref{fig:upwindterm}.  
+
+In these terms, from \eqref{eq:fluxform}, for the evaluation of the residual, i.e.~\eqref{eq:res}, we write code to compute
+\begin{align}
+\bq^h(x_j^s,y_k^s) &= - D_{u,v}(\xi^s,\eta^s)\, (\grad H)_{u,v}(\xi^s,\eta^s) \label{eq:resfinalformula} \\
+   &\quad + \bW_{u,v}(\xi^s,\eta^s) \, H_{u,v}\uppoint^{n+2}. \notag
+\end{align}
+For the evaluation of the Jacobian, i.e.~\eqref{eq:jacthegoal}, we write code to compute
+\begin{align}
+\bQ_\ell^s &= - \frac{\partial D_{u,v}}{\partial H_\ell}(\xi^s,\eta^s)\, (\grad H)_{u,v}(\xi^s,\eta^s) \label{eq:jacfinalformula} \\
+   &\quad - D_{u,v}(\xi^s,\eta^s)\, \frac{\partial (\grad H)_{u,v}}{\partial H_\ell}(\xi^s,\eta^s) \notag \\
+   &\quad + \frac{\partial \bW_{u,v}}{\partial H_\ell}(\xi^s,\eta^s) \, H_{u,v}\uppoint^{n+2} \notag \\
+   &\quad + (n+2) \bW_{u,v}(\xi^s,\eta^s)\, H_{u,v}\uppoint^{n+1} \notag \\
+   &\qquad\quad \cdot \frac{\partial (\grad H)_{u,v}}{\partial H_\ell}\uppoint. \notag
+\end{align}
 
 
 
