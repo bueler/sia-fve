@@ -42,6 +42,9 @@ Feedback on solution process:
    mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_monitor_solution -draw_pause 0
    mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_vi_monitor_residual -draw_pause 0
 
+Run to show quadratic convergence at full-SIA stage (i.e. stage 13):
+   mpiexec -n 4 ./mahaffy -snes_monitor -da_refine 4 -snes_type vinewtonssls -snes_rtol 1.0e-9 -pc_type asm -sub_pc_type lu -snes_max_it 1000
+
 Fully converges for these levels:
    for LEV in 0 1 2 3 4; do  mpiexec -n 6 ./mahaffy -da_refine $LEV -snes_type vinewtonssls -snes_max_it 200 -pc_type asm -sub_pc_type lu; done
 
