@@ -310,13 +310,17 @@ int main(int argc,char **argv) {
 
 
   if ((user.averr) || (user.maxerr)) {
-      const PetscInt NN = info.mx * info.my;
-      PetscReal enorminf, enorm1;
-      ierr = GetErrors(H, &user, &enorminf, &enorm1); CHKERRQ(ierr);
-      if (user.averr)
-          PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorm1 / NN);
-      if (user.maxerr)
-          PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorminf);
+      if (reason < 0)
+          PetscPrintf(PETSC_COMM_WORLD,"%s\n",SNESConvergedReasons[reason]);
+      else {
+          const PetscInt NN = info.mx * info.my;
+          PetscReal enorminf, enorm1;
+          ierr = GetErrors(H, &user, &enorminf, &enorm1); CHKERRQ(ierr);
+          if (user.averr)
+              PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorm1 / NN);
+          if (user.maxerr)
+              PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorminf);
+      }
   }
 
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);

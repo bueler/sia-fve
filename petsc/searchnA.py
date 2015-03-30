@@ -10,16 +10,17 @@ parser = argparse.ArgumentParser(description='Optimize two-parameter functions b
 parser.add_argument("--fprint", action="store_true", help="function will print at each evaluation")
 parser.add_argument("--nm", action="store_true", help="use Nelder-Mead method")
 parser.add_argument("--rosen", action="store_true", help="use rosen example")
+parser.add_argument("--show", action="store_true", help="in grid search, plot surface")
 args = parser.parse_args()
 
-import sys
-import numpy
+import numpy as np
+import matplotlib.pyplot as plt
 
 _status_message = {'success': 'Optimization terminated successfully.',
                    'maxiter': 'Maximum number of iterations has been '
                               'exceeded.'}
 
-def gridsearch(func, sim0, nx=3, ny=3, disp=False):
+def gridsearch(func, sim0, nx=3, ny=3):
     Np1 = sim0.shape[0]
     N = sim0.shape[1]
     if not N+1==Np1:
@@ -32,15 +33,31 @@ def gridsearch(func, sim0, nx=3, ny=3, disp=False):
     dy = sim0[2,1] - sim0[0,1]
 
     # run grid search
-    ff = numpy.zeros((2*nx+1,2*ny+1))
+    iterations = (2*nx+1) * (2*ny+1)
+    ff = np.zeros((2*nx+1,2*ny+1))
+    xx = np.linspace(sim0[0,0] - dx * nx, sim0[0,0] + dx * nx, 2*nx+1)
+    yy = np.linspace(sim0[0,1] - dy * ny, sim0[0,1] + dy * ny, 2*ny+1)
+    funcmin = np.inf
+    xymin = [np.nan,np.nan]
     for j in range(2*nx+1):
-        x = sim0[0,0] + dx * (j - nx)
         for k in range(2*ny+1):
-            y = sim0[0,1] + dy * (k - ny)
-            ff[j,k] = func(numpy.array([x,y]))
+            xy = np.array([xx[j],yy[k]])
+            ff[j,k] = func(xy)
+            if ff[j,k] <= funcmin:
+                funcmin, xymin = ff[j,k], xy
 
-    #print ff
-    return ff.min()
+    if args.show:
+        #plt.pcolor(yy,xx[::-1],ff)
+        plt.imshow(ff, interpolation='nearest', origin='lower',
+                   extent=[yy.min()-dy/2,yy.max()+dy/2,xx.min()-dx/2,xx.max()+dx/2])
+        plt.xlabel('ice softness A')
+        plt.ylabel('Glen exponent n')
+        plt.colorbar()
+        plt.axis('tight')
+        plt.show()
+
+    # report results like neldermead()
+    return xymin, iterations, funcmin, 0
 
 # following is modified _minimize_neldermead() from
 #   https://github.com/scipy/scipy/blob/v0.14.0/scipy/optimize/optimize.py
@@ -70,15 +87,12 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
 
     # evaluate f at pts of initial simplex
     sim = sim0.copy()
-    fsim = numpy.zeros((N + 1,))
+    fsim = np.zeros((N + 1,))
     for k in range(0, N+1):
-        y = numpy.array(sim[k,:], copy=True)
+        y = np.array(sim[k,:], copy=True)
         fsim[k] = func(y)
 
-    fnorminit = numpy.max(numpy.abs(fsim))
-
-    #print sim
-    #print fsim
+    fnorminit = np.max(np.abs(fsim))
 
     rho = 1.0
     chi = 2.0
@@ -87,20 +101,20 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
     one2np1 = list(range(1, N + 1))
 
     # sort so sim[0,:] has the lowest function value
-    ind = numpy.argsort(fsim)
-    fsim = numpy.take(fsim, ind, 0)
-    sim = numpy.take(sim, ind, 0)
+    ind = np.argsort(fsim)
+    fsim = np.take(fsim, ind, 0)
+    sim = np.take(sim, ind, 0)
 
     iterations = 1
 
     while (iterations < maxiter):
-        simsize = numpy.max(numpy.ravel(numpy.abs(sim[1:] - sim[0])))
-        fnorm = numpy.max(numpy.abs(fsim))
+        simsize = np.max(np.ravel(np.abs(sim[1:] - sim[0])))
+        fnorm = np.max(np.abs(fsim))
         #print simsize, fnorm
         if (simsize <= xtol and fnorm/fnorminit <= ftol):
             break
 
-        xbar = numpy.add.reduce(sim[:-1], 0) / N
+        xbar = np.add.reduce(sim[:-1], 0) / N
         xr = (1 + rho) * xbar - rho * sim[-1]
         fxr = func(xr)
         doshrink = 0
@@ -146,13 +160,13 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
                         sim[j] = sim[0] + sigma * (sim[j] - sim[0])
                         fsim[j] = func(sim[j])
 
-        ind = numpy.argsort(fsim)
-        sim = numpy.take(sim, ind, 0)
-        fsim = numpy.take(fsim, ind, 0)
+        ind = np.argsort(fsim)
+        sim = np.take(sim, ind, 0)
+        fsim = np.take(fsim, ind, 0)
         iterations += 1
 
     x = sim[0]
-    fval = numpy.min(fsim)
+    fval = np.min(fsim)
     warnflag = 0
 
     if iterations >= maxiter:
@@ -160,14 +174,9 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
         msg = _status_message['maxiter']
         if disp:
             print('Warning: ' + msg)
-    else:
-        if disp:
-            print(_status_message['success'])
-            print("         Current function value: %f" % fval)
-            print("         Iterations: %d" % iterations)
-            print sim
 
-    return x
+    return x, iterations, fval, warnflag
+
 
 if args.rosen:
     def rosen(x):
@@ -176,32 +185,41 @@ if args.rosen:
         if args.fprint:
             print "  f([%12.9f %12.9f]) = %8e" % (x[0],x[1],f)
         return f
-    sim0 = numpy.array([[1.3, 0.7],
-                        [1.4, 0.7],
-                        [1.3, 0.8]])
+    sim0 = np.array([[1.3, 0.7],
+                     [1.4, 0.7],
+                     [1.3, 0.8]])
     if args.nm:
-        res = neldermead(rosen, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+        res, _, _, _ = neldermead(rosen, sim0, xtol=1e-1, ftol=1e-3, disp=True)
     else:
-        res = gridsearch(rosen, sim0, nx=3, ny=2)
+        res, _, _, _ = gridsearch(rosen, sim0, nx=3, ny=3)
 
 else:
+    import subprocess
+
     secpera = 31556926.0
     A0      = 1.0e-16/secpera
 
-    raise NotImplementedError("Mahaffy case not implemented.")
-
-    # FIXME: build function by calling mahaffy with options
-    #   -mah_n n -mah_A A
-    # and returning L^1 error norm as function value
     def mahaffy(x):
-        #sys.system("./mahaffy -mah_n ?? -mah_A ?? ...")
-        # FIXME extract L^1 norm as f
-        print "  f([%12.9f, %12.9f A0]) = %8e" % (x[0],x[1]/A0,f)
+        #cmd = "./mahaffy -mah_averr -mah_n %.4f -mah_A %.4e -mah_D0 10.0" % (x[0],x[1])
+        cmd = "../mahaffy -mah_read grn10km.dat -mah_D0 40 -mah_Neps 10 -mah_averr -snes_type vinewtonssls -mah_n %.4f -mah_A %.4e" % (x[0],x[1])
+        mahout = subprocess.check_output(cmd.split())
+        if "DIV" in mahout:
+            f = np.inf
+            cmd = mahout + cmd
+        else:
+            f = float(mahout)
+        if args.fprint:
+            print "  f([%.4f %.4e]) = %.10f  from %s" % (x[0],x[1],f,cmd)
         return f
-    sim0 = numpy.array([[3.0,A0],
-                        [3.5,A0],
-                        [3.0,2.0*A0]])
-    res = neldermead(mahaffy, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+
+    sim0 = np.array([[3.0,A0],
+                     [3.05,A0],
+                     [3.0,1.15*A0]])
+
+    if args.nm:
+        res, _, _, _ = neldermead(mahaffy, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+    else:
+        res, _, _, _ = gridsearch(mahaffy, sim0, nx=5, ny=5)
 
 print res
 
