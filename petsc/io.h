@@ -9,6 +9,12 @@ Also utilities for computing stats, viewing at stdout, and viewing with X. */
 #include <petscvec.h>
 #include "mahaffyctx.h"  // for AppCtx
 
+// print according to AppCtx.silent
+void myPrintf(const AppCtx*, const char[], ...);
+
+// print a report to stdout
+PetscErrorCode StdoutReport(Vec,AppCtx*);
+
 // read special format PETSc binary .dat input file
 PetscErrorCode ReadDimensions(AppCtx*);
 PetscErrorCode ReadAndReshape2DVec(Vec,PetscViewer,AppCtx*);
@@ -21,9 +27,6 @@ PetscErrorCode DumpToFiles(Vec,AppCtx*);
 // utilities to compute quantities in reports and history files
 PetscErrorCode GetVolumes(Vec,AppCtx*,PetscReal*,PetscReal*);
 PetscErrorCode GetErrors(Vec,AppCtx*,PetscReal*,PetscReal*);
-
-// print a report to stdout
-PetscErrorCode StdoutReport(Vec,AppCtx*);
 
 // write a text history file, including command line
 PetscErrorCode WriteHistoryFile(Vec,const char[],int,char**,AppCtx*);

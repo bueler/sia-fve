@@ -48,6 +48,9 @@ typedef struct {
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
             dump,   // dump fields into individual PETSc binary files
+            silent, // run silent
+            averr,  // only display average error at end
+            maxerr, // only display maximum error at end
             history;// write ASCII history file
   char      figsprefix[512],
             readname[512];

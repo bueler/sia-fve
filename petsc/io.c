@@ -1,7 +1,19 @@
 /* (C) 2015 Ed Bueler */
 
+#include <stdarg.h>
 #include <sys/time.h>
 #include "io.h"
+
+void myPrintf(const AppCtx *user, const char format[], ...) {
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if ((!user->silent) && (rank==0)) {
+        va_list Argp;
+        va_start(Argp, format);
+        PetscVFPrintf(PETSC_STDOUT, format, Argp);
+        va_end(Argp);
+    }
+}
 
 PetscErrorCode ReadDimensions(AppCtx *user) {
     PetscErrorCode ierr;
@@ -198,17 +210,15 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
 
   ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
   ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
-             (double)volH / 1.0e9, (double)maxD); CHKERRQ(ierr);
+  myPrintf(user,"        state:  vol = %8.4e km^3,  max D = %8.4f m^2 s-1\n",
+                (double)volH / 1.0e9, (double)maxD);
 
   ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
   NN = info.mx * info.my;
   ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
   voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
-             (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel); CHKERRQ(ierr);
+  myPrintf(user,"       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
+                (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel);
   PetscFunctionReturn(0);
 }
 

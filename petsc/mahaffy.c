@@ -135,6 +135,10 @@ int main(int argc,char **argv) {
   user.history    = PETSC_FALSE;
   user.dump       = PETSC_FALSE;
 
+  user.silent     = PETSC_FALSE;
+  user.averr      = PETSC_FALSE;
+  user.maxerr     = PETSC_FALSE;
+
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
 
@@ -144,8 +148,8 @@ int main(int argc,char **argv) {
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
 
   if (user.read == PETSC_TRUE) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "reading dimensions and grid spacing from %s ...\n",user.readname); CHKERRQ(ierr);
+      myPrintf(&user,
+          "reading dimensions and grid spacing from %s ...\n",user.readname);
       ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
   } else {
       if (user.dome == PETSC_TRUE) {
@@ -179,10 +183,9 @@ int main(int argc,char **argv) {
   dy = user.dx; // square elements
   ierr = DMDASetUniformCoordinates(user.da, -user.Lx+dx/2, user.Lx+dx/2, -user.Ly+dy/2, user.Ly+dy/2,
                                    0.0,1.0); CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,
-      "solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
-      "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
-      user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,dx/1000.0); CHKERRQ(ierr);
+  myPrintf(&user,"solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
+                 "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
+           user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,dx/1000.0);
 
   // this DMDA is used for evaluating fluxes at 4 quadrature points on each element
   ierr = DMDACreate2d(PETSC_COMM_WORLD,
@@ -218,19 +221,16 @@ int main(int argc,char **argv) {
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "reading b, m, Hexact from %s ...\n", user.readname); CHKERRQ(ierr);
+      myPrintf(&user,"reading b, m, Hexact from %s ...\n", user.readname);
       ierr = ReadDataVecs(&user); CHKERRQ(ierr);
   } else {
       if (user.dome == PETSC_TRUE) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "generating b, m, Hexact from dome formulas in Bueler (2003) ...\n"); CHKERRQ(ierr);
+          myPrintf(&user,"generating b, m, Hexact from dome formulas in Bueler (2003) ...\n");
           ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
           ierr = DomeCMB(user.m,&user); CHKERRQ(ierr);
           ierr = DomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
       } else if (user.bedstep == PETSC_TRUE) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,
-             "generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n"); CHKERRQ(ierr);
+          myPrintf(&user,"generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n");
           ierr = BedStepBed(user.b,&user); CHKERRQ(ierr);
           ierr = BedStepCMB(user.m,&user); CHKERRQ(ierr);
           ierr = BedStepExactThickness(user.Hexact,&user); CHKERRQ(ierr);
@@ -248,18 +248,13 @@ int main(int argc,char **argv) {
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
 
-  if (user.mtrue == PETSC_TRUE) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "solving by true Mahaffy method ...\n"); CHKERRQ(ierr);
-  } else {
-      if (user.noupwind == PETSC_TRUE) {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "solving by M* method _without_ upwinding ...\n"); CHKERRQ(ierr);
-      } else {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "solving by M* method ...\n"); CHKERRQ(ierr);
-      }
-  }
+  if (user.mtrue)
+      myPrintf(&user,    "solving by true Mahaffy method ...\n");
+  else
+      if (user.noupwind)
+          myPrintf(&user,"solving by M* method _without_ upwinding ...\n");
+      else
+          myPrintf(&user,"solving by M* method ...\n");
 
   KSP        ksp;
   PetscInt   its, kspits, m;
@@ -274,13 +269,11 @@ int main(int argc,char **argv) {
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-                 "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                 m+1,SNESConvergedReasons[reason],kspits,its,user.eps);CHKERRQ(ierr);
+      myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+               m+1,SNESConvergedReasons[reason],kspits,its,user.eps);
       if (reason < 0) {
           if (user.divergetryagain) {
-              ierr = PetscPrintf(PETSC_COMM_WORLD,
-                         "         ... try again w eps *= 1.5 and slopeeps *= 5\n");CHKERRQ(ierr);
+              myPrintf(&user,"         ... try again w eps *= 1.5 and slopeeps *= 5\n");
               //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
               //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
               user.eps      = 1.5 * user.eps;
@@ -289,13 +282,11 @@ int main(int argc,char **argv) {
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
               ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
-              ierr = PetscPrintf(PETSC_COMM_WORLD,
-                     "     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                     SNESConvergedReasons[reason],user.eps,kspits,its);CHKERRQ(ierr);
+              myPrintf(&user,"     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                       SNESConvergedReasons[reason],user.eps,kspits,its);
           }
           if (reason < 0) {
-              // record last successful eps, slopeeps
-              if (m>0) {
+              if (m>0) { // record last successful eps, slopeeps
                   user.eps = user.eps_sched[m-1];
                   user.slopeeps = user.slopeeps_sched[m-1];
               }
@@ -308,16 +299,24 @@ int main(int argc,char **argv) {
   gettimeofday(&user.endtime, NULL);
 
   if (user.history == PETSC_TRUE) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "writing history.txt to %s ...\n", user.figsprefix); CHKERRQ(ierr);
+      myPrintf(&user,"writing history.txt to %s ...\n",user.figsprefix);
       ierr = WriteHistoryFile(H,"history.txt",argc,argv,&user); CHKERRQ(ierr);
   }
 
   if (user.dump == PETSC_TRUE) {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,
-          "writing x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",
-          user.figsprefix); CHKERRQ(ierr);
+      myPrintf(&user,"writing x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",user.figsprefix);
       ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
+  }
+
+
+  if ((user.averr) || (user.maxerr)) {
+      const PetscInt NN = info.mx * info.my;
+      PetscReal enorminf, enorm1;
+      ierr = GetErrors(H, &user, &enorminf, &enorm1); CHKERRQ(ierr);
+      if (user.averr)
+          PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorm1 / NN);
+      if (user.maxerr)
+          PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorminf);
   }
 
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
@@ -634,6 +633,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-A", "set value of ice softness A in units Pa-3 s-1",
       NULL,user->A,&user->A,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
+      "-averr", "print final average error only, and otherwise run silent",
+      NULL,user->averr,&user->averr,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
       "-bedstep", "use bedrock step exact solution by Jarosh, Schoof, Anslow (2013)",
       NULL,user->bedstep,&user->bedstep,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
@@ -658,6 +660,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsString(
       "-history", "write history.txt file with this prefix (also written under -mah_dump)",
       NULL,histprefix,histprefix,512,&user->history); CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-maxerr", "print final maximum error, and otherwise run silent",
+      NULL,user->maxerr,&user->maxerr,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-n", "set value of Glen exponent n",
       NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
@@ -676,6 +681,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-showdata", "use PETSc X viewers to show b, m, and exact/observed H",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
+      "-silent", "run silent (print nothing)",
+      NULL,user->silent,&user->silent,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
@@ -686,29 +694,29 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->upwindfull,&user->upwindfull,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if (user->read == PETSC_TRUE) {
-      if (domechosen == PETSC_TRUE) {
+  if ((user->averr) || (user->maxerr))
+      user->silent = PETSC_TRUE;
+  if (user->read) {
+      if (domechosen) {
         SETERRQ(PETSC_COMM_WORLD,1,"ERROR option conflict: both -mah_dome and -mah_read not allowed\n");
       } else
         user->dome = PETSC_FALSE;    // here user has chosen -mah_read and not -mah_dome
   }
-  if (user->bedstep == PETSC_TRUE) {
-      if (domechosen == PETSC_TRUE) {
+  if (user->bedstep) {
+      if (domechosen) {
         SETERRQ(PETSC_COMM_WORLD,2,"ERROR option conflict: both -mah_dome and -mah_bedstep not allowed\n");
       } else
         user->dome = PETSC_FALSE;    // here user has chosen -mah_bedstep and not -mah_dome
   }
-  if ((user->read == PETSC_TRUE) && (user->bedstep == PETSC_TRUE)) {
+  if ((user->read) && (user->bedstep)) {
       SETERRQ(PETSC_COMM_WORLD,3,"ERROR option conflict: both -mah_bedstep and -mah_read not allowed\n");
   }
-  if (user->mtrue == PETSC_TRUE) {
+  if (user->mtrue)
       user->noupwind = PETSC_TRUE;
-  }
-  if (user->dump == PETSC_TRUE) {
+  if (user->dump)
       user->history = PETSC_TRUE;
-  } else if (user->history == PETSC_TRUE) {
+  else if (user->history)
       strcpy(user->figsprefix,histprefix);
-  }
   PetscFunctionReturn(0);
 }
 
