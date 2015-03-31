@@ -141,13 +141,13 @@ int main(int argc,char **argv) {
   user.secpera= 31556926.0;
   user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
 
-  user.D0     = 1.0;        // m^2 / s
   user.initmagic = 1000.0;  // a
 
-  user.eps    = 0.0;
-  user.slopeeps = 1.0e-4;
+  user.delta  = 1.0e-4;
   user.Neps   = 13;
-  for (i=0; i<13; i++)  user.eps_sched[i] = eps[i];
+  for (i=0; i<user.Neps; i++)  user.eps_sched[i] = eps[i];
+  user.D0     = 1.0;        // m^2 / s
+  user.eps    = 0.0;
 
   user.mtrue      = PETSC_FALSE;
   user.noupwind   = PETSC_FALSE;
@@ -644,12 +644,15 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-checkadmissible", "in FormFunctionLocal(), stop if H < 0.0",
       NULL,user->checkadmissible,&user->checkadmissible,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-dome", "use dome exact solution by Bueler (2003) [default]",
-      NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-delta", "dimensionless regularization for slope in SIA formulas",
+      NULL,user->delta,&user->delta,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-divergetryagain", "on SNES diverge, try again with eps *= 1.5",
       NULL,user->divergetryagain,&user->divergetryagain,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-dome", "use dome exact solution by Bueler (2003) [default]",
+      NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
@@ -686,9 +689,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-silent", "run silent (print nothing)",
       NULL,user->silent,&user->silent,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
-      "-slopeeps", "dimensionless regularization for slope in SIA formulas",
-      NULL,user->slopeeps,&user->slopeeps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);

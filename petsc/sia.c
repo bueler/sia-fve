@@ -19,7 +19,7 @@ PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user) {
     const PetscReal sx  = gH.x + gb.x,
                     sy  = gH.y + gb.y,
                     n   = ncont(user),
-                    slopesqr = sx * sx + sy * sy + user->slopeeps * user->slopeeps;
+                    slopesqr = sx * sx + sy * sy + user->delta * user->delta;
     return user->Gamma * PetscPowReal(slopesqr,(n-1.0)/2);
 }
 
@@ -67,7 +67,7 @@ PetscReal DdeltaDl(Grad gH, Grad gb, Grad dgHdl, const AppCtx *user) {
     const PetscReal sx  = gH.x + gb.x,
                     sy  = gH.y + gb.y,
                     n   = ncont(user),
-                    slopesqr = sx * sx + sy * sy + user->slopeeps * user->slopeeps,
+                    slopesqr = sx * sx + sy * sy + user->delta * user->delta,
                     tmp = user->Gamma * (n-1) * PetscPowReal(slopesqr,(n-3.0)/2);
     return tmp * sx * dgHdl.x + tmp * sy * dgHdl.y;
 }
