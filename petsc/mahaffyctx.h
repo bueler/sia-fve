@@ -29,12 +29,11 @@ typedef struct {
             A,      // ice softness
             Gamma,  // coefficient for SIA flux term
             eps,    // current dimensionless regularization for n and D
-            slopeeps,// current dimensionless regularization for slope in DdeltaDl()
+            slopeeps,// current dimensionless regularization for slope in SIA formulas
             maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
             D0,     // representative value of diffusivity (in regularization)
             initmagic,// constant, in years, used to multiply SMB to get initial iterate for thickness
-            eps_sched[13],
-            slopeeps_sched[13];
+            eps_sched[13];
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
             Neps;   // number of levels in regularization/continuation

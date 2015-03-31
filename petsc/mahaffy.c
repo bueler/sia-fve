@@ -92,6 +92,10 @@ extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
 
+// continuation parameter
+static const PetscReal eps[13] = {1.0,    0.5,    0.2,    0.1,    0.05,
+                                  0.02,   0.01,   0.005,  0.002,  0.001,
+                                  0.0005, 0.0002, 0.0000};
 
 // indexing of the 8 quadrature points along the boundary of the control volume in M*
 // point s=0,...,7 is in element (j,k) = (j+je[s],k+ke[s])
@@ -126,6 +130,7 @@ int main(int argc,char **argv) {
   AppCtx              user;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
+  PetscInt            i;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -140,7 +145,9 @@ int main(int argc,char **argv) {
   user.initmagic = 1000.0;  // a
 
   user.eps    = 0.0;
+  user.slopeeps = 1.0e-4;
   user.Neps   = 13;
+  for (i=0; i<13; i++)  user.eps_sched[i] = eps[i];
 
   user.mtrue      = PETSC_FALSE;
   user.noupwind   = PETSC_FALSE;
@@ -283,10 +290,8 @@ int main(int argc,char **argv) {
   SNESConvergedReason reason;
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
   gettimeofday(&user.starttime, NULL);
-  fillscheds(&user);
   for (m = 0; m<user.Neps; m++) {
       user.eps      = user.eps_sched[m];
-      user.slopeeps = user.slopeeps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
@@ -294,12 +299,9 @@ int main(int argc,char **argv) {
       myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
                m+1,SNESConvergedReasons[reason],kspits,its,user.eps);
       if (reason < 0) {
-          if (user.divergetryagain) {
-              myPrintf(&user,"         ... try again w eps *= 1.5 and slopeeps *= 5\n");
-              //ierr = SNESDestroy(&snes); CHKERRQ(ierr);
-              //ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
-              user.eps      = 1.5 * user.eps;
-              user.slopeeps = 5.0 * user.slopeeps;
+          if ((user.divergetryagain) && (user.eps > 0)) {
+              myPrintf(&user,"         ... try again w eps *= 1.5\n");
+              user.eps = 1.5 * user.eps;
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
@@ -308,9 +310,8 @@ int main(int argc,char **argv) {
                        SNESConvergedReasons[reason],user.eps,kspits,its);
           }
           if (reason < 0) {
-              if (m>0) { // record last successful eps, slopeeps
+              if (m>0) { // record last successful eps
                   user.eps = user.eps_sched[m-1];
-                  user.slopeeps = user.slopeeps_sched[m-1];
               }
               break;
           }
@@ -685,6 +686,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-silent", "run silent (print nothing)",
       NULL,user->silent,&user->silent,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-slopeeps", "dimensionless regularization for slope in SIA formulas",
+      NULL,user->slopeeps,&user->slopeeps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
@@ -720,22 +724,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   else if (user->history)
       strcpy(user->figsprefix,histprefix);
   PetscFunctionReturn(0);
-}
-
-
-void fillscheds(AppCtx* user) {
-   const PetscReal
-       eps[13]   = {1.0,    0.5,    0.2,    0.1,    0.05,
-                    0.02,   0.01,   0.005,  0.002,  0.001,
-                    0.0005, 0.0002, 0.0000},
-       slope[13] = {1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3,
-                    1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4,
-                    1.0e-4, 1.0e-4, 1.0e-4};
-   PetscInt i;
-   for (i=0; i<13; i++) {
-       user->eps_sched[i]      = eps[i];
-       user->slopeeps_sched[i] = slope[i];
-   }
 }
 
 // start a SNESVI
