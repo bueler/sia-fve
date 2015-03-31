@@ -1,24 +1,50 @@
 #!/usr/bin/env python
 #
 # (C) 2015 Ed Bueler
-#
-# Example of usage: FIXME
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Optimize two-parameter functions by grid search or Nelder-Mead.')
+parser = argparse.ArgumentParser(description='Optimize two-parameter functions of n and A by grid search (default) or Nelder-Mead.')
+parser.add_argument("file", metavar='FILE', help="input file to -mah_read")
+parser.add_argument("--disp", action="store_true", help="optimization method prints messages")
 parser.add_argument("--fprint", action="store_true", help="function will print at each evaluation")
+parser.add_argument("--mah", default="-mah_D0 40 -mah_Neps 10 -snes_type vinewtonssls",
+                    help="arguments to mahaffy (default: '%(default)s')")
+parser.add_argument("--maxerr", action="store_true", help="use -mah_maxerr instead of -mah_averr")
+parser.add_argument("--more", default="", help="arguments to mahaffy to add")
 parser.add_argument("--nm", action="store_true", help="use Nelder-Mead method")
-parser.add_argument("--rosen", action="store_true", help="use rosen example")
+parser.add_argument("--nx", type=int, default=3,
+                    help="use  2 nx + 1  points in N direction in grid search (default: %(default)d)")
+parser.add_argument("--ny", type=int, default=3,
+                    help="use  2 ny + 1  points in A direction in grid search (default: %(default)d)")
+parser.add_argument("--rosen", action="store_true", help="use Rosenbrock example objective function (for testing)")
 parser.add_argument("--show", action="store_true", help="in grid search, plot surface")
 args = parser.parse_args()
 
 import numpy as np
 import matplotlib.pyplot as plt
 
+if args.nm:
+    method = "Nelder-Mead"
+else:
+    method = "grid search"
+mahargs = args.mah + args.more
+if args.maxerr:
+    maherr = "-mah_maxerr"
+else:
+    maherr = "-mah_averr"
+cmdroot = "./mahaffy -mah_read %s %s %s " % (args.file, maherr, mahargs)
+cmdfmt = cmdroot + "-mah_n N -mah_A A"
+
+print "using %s to optimize output from" % method,
+if args.rosen:
+    print "Rosenbrock function ..."
+else:
+    print "command:"
+    print "    f([N A]) = " + cmdfmt
+
 _status_message = {'success': 'Optimization terminated successfully.',
-                   'maxiter': 'Maximum number of iterations has been '
-                              'exceeded.'}
+                   'maxiter': 'Maximum number of iterations has been exceeded.'}
 
 def gridsearch(func, sim0, nx=3, ny=3):
     Np1 = sim0.shape[0]
@@ -47,7 +73,6 @@ def gridsearch(func, sim0, nx=3, ny=3):
                 funcmin, xymin = ff[j,k], xy
 
     if args.show:
-        #plt.pcolor(yy,xx[::-1],ff)
         plt.imshow(ff, interpolation='nearest', origin='lower',
                    extent=[yy.min()-dy/2,yy.max()+dy/2,xx.min()-dx/2,xx.max()+dx/2])
         plt.xlabel('ice softness A')
@@ -61,29 +86,23 @@ def gridsearch(func, sim0, nx=3, ny=3):
 
 # following is modified _minimize_neldermead() from
 #   https://github.com/scipy/scipy/blob/v0.14.0/scipy/optimize/optimize.py
-def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
+def neldermead2(func, sim0, xtol=[1e-4,1e-4], ftol=1e-4, maxiter=np.inf):
     """
-    Minimization of scalar function of one or more variables using the
-    Nelder-Mead algorithm.
+    Minimization of scalar function of TWO variables using the Nelder-Mead algorithm.
 
     Options for the Nelder-Mead algorithm are:
-        xtol : float
-            Relative error in solution `xopt` acceptable for convergence.
-        ftol : float
-            Relative error in ``fun(xopt)`` acceptable for convergence.
+        xtol : array
+            Simplex dimensions (differences of x values) acceptable for convergence.
+        rtol : float
+            Relative reduction in func(x) acceptable for convergence.
         maxiter : int
             Maximum number of iterations to perform.
-        disp : bool
-            Set to True to print convergence messages.
     """
 
     Np1 = sim0.shape[0]
     N = sim0.shape[1]
     if not N+1==Np1:
         raise ValueError("Initial simplex must have N+1 rows and N columns.")
-
-    if maxiter is None:
-        maxiter = N * 200
 
     # evaluate f at pts of initial simplex
     sim = sim0.copy()
@@ -108,10 +127,12 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
     iterations = 1
 
     while (iterations < maxiter):
-        simsize = np.max(np.ravel(np.abs(sim[1:] - sim[0])))
+        simdiffmax = np.abs(sim[1:,:] - sim[0,:]).max(0)
         fnorm = np.max(np.abs(fsim))
-        #print simsize, fnorm
-        if (simsize <= xtol and fnorm/fnorminit <= ftol):
+        if args.disp:
+            print sim
+            print "  ?: ", simdiffmax, " <= ", xtol, " AND ", fnorm/fnorminit, " <= ", ftol
+        if (np.all(simdiffmax <= xtol) and fnorm/fnorminit <= ftol):
             break
 
         xbar = np.add.reduce(sim[:-1], 0) / N
@@ -172,54 +193,53 @@ def neldermead(func, sim0, xtol=1e-4, ftol=1e-4, maxiter=None, disp=False):
     if iterations >= maxiter:
         warnflag = 2
         msg = _status_message['maxiter']
-        if disp:
-            print('Warning: ' + msg)
+        print('Warning: ' + msg)
 
     return x, iterations, fval, warnflag
 
 
 if args.rosen:
+
     def rosen(x):
         """The Rosenbrock function"""
         f = sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)
         if args.fprint:
             print "  f([%12.9f %12.9f]) = %8e" % (x[0],x[1],f)
         return f
+
     sim0 = np.array([[1.3, 0.7],
                      [1.4, 0.7],
                      [1.3, 0.8]])
     if args.nm:
-        res, _, _, _ = neldermead(rosen, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+        res, _, _, _ = neldermead2(rosen, sim0, xtol=[1e-1,1e-1], ftol=1e-2)
     else:
         res, _, _, _ = gridsearch(rosen, sim0, nx=3, ny=3)
 
 else:
     import subprocess
-
     secpera = 31556926.0
     A0      = 1.0e-16/secpera
 
     def mahaffy(x):
-        #cmd = "./mahaffy -mah_averr -mah_n %.4f -mah_A %.4e -mah_D0 10.0" % (x[0],x[1])
-        cmd = "../mahaffy -mah_read grn10km.dat -mah_D0 40 -mah_Neps 10 -mah_averr -snes_type vinewtonssls -mah_n %.4f -mah_A %.4e" % (x[0],x[1])
+        cmd = cmdroot + "-mah_n %.4f -mah_A %.4e" % (x[0], x[1])
         mahout = subprocess.check_output(cmd.split())
         if "DIV" in mahout:
             f = np.inf
-            cmd = mahout + cmd
+            if args.fprint:
+                print "f([%.4f %.4e]) = inf  ... because returned %s" % (x[0],x[1],mahout)
         else:
             f = float(mahout)
-        if args.fprint:
-            print "  f([%.4f %.4e]) = %.10f  from %s" % (x[0],x[1],f,cmd)
+            if args.fprint:
+                print "f([%.4f %.4e]) = %.10f" % (x[0],x[1],f)
         return f
 
     sim0 = np.array([[3.0,A0],
                      [3.05,A0],
                      [3.0,1.15*A0]])
-
     if args.nm:
-        res, _, _, _ = neldermead(mahaffy, sim0, xtol=1e-1, ftol=1e-3, disp=True)
+        res, _, _, _ = neldermead2(mahaffy, sim0, xtol=[0.1, 0.1e-24], ftol=np.inf)
     else:
-        res, _, _, _ = gridsearch(mahaffy, sim0, nx=5, ny=5)
+        res, _, _, _ = gridsearch(mahaffy, sim0, nx=args.nx, ny=args.ny)
 
 print res
 
