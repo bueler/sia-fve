@@ -417,26 +417,26 @@ with $\delta = 10^{-4}$, from now on when we compute the flux $\bq$ and its deri
 
 A Newton solver requires an initial iterate $H^{(0)}$.  We generate it by a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
-H_{j,k}^{(0)} = \big(1000.0\,m_{j,k}\big)_+  \label{eq:nonlininitialheuristic}
+H_{j,k}^{(0)} = \max\left\{0,1000\,m_{j,k}\right\}  \label{eq:nonlininitialheuristic}
 \end{equation}
-where $x_+ = \max\{0,x\}$.  In other words, we build the initial ice sheet thickness iterate by simply piling up one thousand years of accumulation, without flow.
+In other words, we build the initial ice sheet thickness simply by piling up one thousand years of accumulation, without flow.
 
-Additionally we apply a simple ``parameter continuation'' scheme, to aid in the convergence of the Newton iteration on our degenerate and nonlinear diffusion problem.  We first apply the Newton method to an easier free-boundary problem, one with constant diffusivity.  Then we adjust parameters toward the full SIA equations.  Specifically, from this list of thirteen parameter values
-\begin{align}
-\eps &= 1,\, 0.5,\, 0.2,\, 0.1,\, 0.05, \label{eq:continuationseq} \\
-     &\qquad 0.02,\, 0.01,\, 0.005,\, 0.002,\, 0.001, \notag \\
-     &\qquad 0.0005,\, 0.0002,\, 0 \notag
-\end{align}
-we define
-\begin{align}
-n(\eps) &= (1-\eps) n + \eps\, n_0,  \label{eq:continuationn} \\
-D(\eps) &= (1-\eps) D + \eps D_0,  \label{eq:continuationD}
-\end{align}
-where $n$ is the original Glen exponent in \eqref{eq:siaflux}, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.
+Additionally we apply a simple ``parameter continuation'' scheme, to aid in the convergence of the Newton iteration on our degenerate, nonlinear free-boundary problem.  We first apply the Newton method to an easier free-boundary problem, one with constant diffusivity.  Then we adjust a continuation parameter $\eps$ until we are solving the full SIA free-boundary problem.  Specifically, for $0 \le \eps \le 1$ we define
+\begin{equation}
+n(\eps) = (1\!-\eps) n + \eps n_0 \text{ and } D(\eps) = (1\!-\eps) D + \eps D_0  \label{eq:continuationND}
+\end{equation}
+where $n$ is the original exponent, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.  We then consecutively solve free-boundary problems corresponding to thirteen values of $\eps$:
+\begin{equation}
+\eps_i = \begin{cases}
+           (0.1)^{i/3}, & \text{for } i=0,\dots,11, \\
+           0, & i=12,
+         \end{cases}  \label{eq:continuationseq}
+\end{equation}
+so that, until the last stage $\eps_{12}=0$, the parameter $\eps_i$ is reduce by an order of magnitude when $i$ increases by three.
 
-Thus we start by solving \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} with values $n(1)$ and $D(1)$ from \eqref{eq:continuationn} and \eqref{eq:continuationD}, and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} but using the second value $\eps=0.5$ in \eqref{eq:continuationn} and \eqref{eq:continuationD}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
+Thus we start by solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ from \eqref{eq:continuationND}, and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlincomplementarity} but using the second value $\eps=0.5$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
 
-In the flat bed case the $\eps=1$ problem is actually a Laplacian obstacle problem, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  This relatively well-understood free-boundary problem \citep{KinderlehrerStampacchia1980} allows the Newton solver to generate a first estimate of the ice-covered domain, so that the free boundary (ice margin) is in the ablation zone as expected.
+In the flat bed case the first ($\eps_0=1$) problem is actually a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  Even in the non-flat bed case this relatively well-understood free-boundary problem allows the Newton solver to generate a first estimate of the ice-covered domain.  In particular, at the end of the first stage the free boundary (ice margin) is in the ablation zone as expected.
 
 
 \section{On time-stepping and sliding}
@@ -550,7 +550,7 @@ Differentiation with respect to $\xi$ and $\eta$ gives vector-valued function $(
 Now recall $D$ is defined in \eqref{eq:siafluxdiffusion} and $\bW$ is defined in \eqref{eq:siaWdefine}.  Therefore we next write code to compute element-wise function $D_{u,v}$, $\partial D_{u,v}/\partial H_\ell$, $\bW_{u,v}$, and $\partial \bW_{u,v}/\partial H_\ell$, again all in local coordinates $\xi,\eta$ on $\square_{u,v}$.
 
 \newcommand{\uppoint}{(\xi_{\text{up}}^s,\eta_{\text{up}}^s)}
-Denote the local coordinates of the quadrature point $(x_j^s,y_k^s)$ on the element $\square_{u,v}$ by $\xi^s = (x_j^s-x_u)/\Delta x$ and $\eta^s = (y_k^s-y_v)/\Delta y$.  Note that upwinding determines an additional evaluation point, whose local coordinates are denoted $\uppoint$, for each quadrature point---see Figure \ref{fig:upwindterm}.  
+Denote the local coordinates of the quadrature point $(x_j^s,y_k^s)$ on the element $\square_{u,v}$ by $\xi^s = (x_j^s-x_u)/\Delta x$ and $\eta^s = (y_k^s-y_v)/\Delta y$.  Note that for each quadrature point, as in Figure \ref{fig:upwindterm}, upwinding determines an additional evaluation point, whose local coordinates are denoted $\uppoint$.
 
 In these terms, from \eqref{eq:fluxform}, for the evaluation of the residual, i.e.~\eqref{eq:res}, we write code to compute
 \begin{align}
