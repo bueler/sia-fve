@@ -67,7 +67,7 @@ def figsave(name):
         print '  showing %s ... close window to proceed ...' % name
         plt.show()  # debug
     else:
-        plt.savefig(name,bbox_inches='tight')
+        plt.savefig(name,dpi=200,bbox_inches='tight')
         print '  figure file %s generated ...' % name
 
 x = x/1000.0
