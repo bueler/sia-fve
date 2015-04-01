@@ -92,11 +92,6 @@ extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
 
-// continuation parameter
-static const PetscReal eps[13] = {1.0,    0.5,    0.2,    0.1,    0.05,
-                                  0.02,   0.01,   0.005,  0.002,  0.001,
-                                  0.0005, 0.0002, 0.0000};
-
 // indexing of the 8 quadrature points along the boundary of the control volume in M*
 // point s=0,...,7 is in element (j,k) = (j+je[s],k+ke[s])
 static const PetscInt  je[8] = {0,  0, -1, -1, -1, -1,  0,  0},
@@ -145,7 +140,8 @@ int main(int argc,char **argv) {
 
   user.delta  = 1.0e-4;
   user.Neps   = 13;
-  for (i=0; i<user.Neps; i++)  user.eps_sched[i] = eps[i];
+  for (i=0; i<user.Neps-1; i++)  user.eps_sched[i] = PetscPowReal(0.1,((double)i) / 3.0);
+  user.eps_sched[user.Neps-1] = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.eps    = 0.0;
 
@@ -297,7 +293,7 @@ int main(int argc,char **argv) {
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
       myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-               m+1,SNESConvergedReasons[reason],kspits,its,user.eps);
+               m,SNESConvergedReasons[reason],kspits,its,user.eps);
       if (reason < 0) {
           if ((user.divergetryagain) && (user.eps > 0)) {
               myPrintf(&user,"         ... try again w eps *= 1.5\n");
