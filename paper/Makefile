@@ -23,10 +23,7 @@ bedstepverif.pdf: convfigs.py ../petsc/bedstep.verif
 bedsteptable.tex: convfigs.py ../petsc/bedstep.verif
 	./convfigs.py --bedsteptable ../petsc/bedstep.verif > bedsteptable.tex
 
-../petsc/mahaffy: ../petsc/mahaffy.c
-	(cd ../petsc/ && make mahaffy)
-
-domeprofile.pdf: ../petsc/mahaffy ../petsc/figsmahaffy.py
+domeprofile.pdf:
 	rm -rf tmpdome/
 	mkdir tmpdome/
 	../petsc/mahaffy -mah_dump tmpdome/ -da_refine 2 -snes_type vinewtonssls
@@ -34,10 +31,10 @@ domeprofile.pdf: ../petsc/mahaffy ../petsc/figsmahaffy.py
 	cp tmpdome/HHexact1d.pdf domeprofile.pdf
 	rm -rf tmpdome/
 
-bedstepprofile.pdf: ../petsc/mahaffy ../petsc/figsmahaffy.py
+bedstepprofile.pdf:
 	rm -rf tmpbs/
 	mkdir tmpbs/
-	../petsc/mahaffy -mah_dump tmpbs/ -da_refine 2 -mah_bedstep -mah_D0 0.01
+	mpiexec -n 4 ../petsc/mahaffy -mah_dump tmpbs/ -mah_bedstep -mah_D0 0.001 -da_refine 2 -snes_max_it 400 -snes_type vinewtonrsls -pc_type asm -sub_pc_type lu
 	(cd tmpbs/ && ../../petsc/figsmahaffy.py --profile --half --sharpbed)
 	cp tmpbs/HHexact1d.pdf bedstepprofile.pdf
 	rm -rf tmpbs/
