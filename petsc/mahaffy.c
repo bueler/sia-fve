@@ -287,7 +287,7 @@ int main(int argc,char **argv) {
   ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
   gettimeofday(&user.starttime, NULL);
   for (m = 0; m<user.Neps; m++) {
-      user.eps      = user.eps_sched[m];
+      user.eps = user.eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);

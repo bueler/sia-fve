@@ -15,7 +15,7 @@ mahaffy: mahaffy.o exactsia.o io.o q1op.o sia.o chkopts
 dome.verif: mahaffy domeconv.sh
 	./domeconv.sh dome.verif 6 6
 bedstep.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstep.verif 4 6
+	./bedstepconv.sh bedstep.verif 5 6
 
 # these targets are just for regression testing
 regress/dome.short: mahaffy domeconv.sh
