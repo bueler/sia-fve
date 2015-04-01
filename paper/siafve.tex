@@ -115,7 +115,7 @@ The shallow ice approximation (SIA) is the simplest such model in common use in 
 \begin{equation}
 \bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
 \end{equation}
-where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the Glen power $n$, ice softness $A$, ice density $\rho$, and gravity $g$.
+where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the power $n\ge 1$, ice softness $A$, ice density $\rho$, and gravity $g$.
 
 The flux $\bq$ has multiple functional forms which are equivalent to \eqref{eq:siaflux}.  Because equations \eqref{eq:siaevolution} and \eqref{eq:siaflux} are often interpreted as a single nonlinear diffusion equation \citep{Huybrechtsetal1996}, it is common to write
 \begin{equation}
@@ -154,18 +154,6 @@ This equation is a boundary-value problem in which the location where the bounda
 To be precise about boundary conditions, if the surface mass balance $m$ is sufficiently-negative near the boundary of the domain $\Omega$ on which \eqref{eq:siasteady} is intended to be solved then $H\to 0$ at points inside $\Omega$.  These points define the free boundary, at which $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  Because of the factor $H^{n+2}$ in formula \eqref{eq:siafluxdiffusion} for the diffusivity $D$, the problem also has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
 
 The problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on some larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by a free boundary.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice, and corresponding surface elevation $s(x,y)=H(x,y)+b(x,y)$.
-
-FIXME Before proceeding with numerics, however, we need to observe that, depending on the exponent $n$, the flux $\bq$ is not always continuously-differentiable as a function of the unknown thickness solution $H$.  More precisely, if $\grad H=(H_1,H_2)$ in components, and using similar notation for the components of the vectors $\bq$ and $\grad b$, then by \eqref{eq:siaflux} we can consider the flux components as functions of scalar unknowns:
-\begin{align}
-q_\alpha(H,H_1,H_2) &= - \Gamma H^{n+2} \left(\sum_\gamma (H_\gamma+b_\gamma)^2\right)^{(n-1)/2} \notag \\
-&\qquad\qquad \cdot \left(H_\alpha + b_\alpha\right) \label{eq:siafluxdependence}
-\end{align}
-for $\alpha=1,2$ and where the sum is over $\gamma=1,2$ also.  But then the derivative of $\bq$ can be singular:
-\begin{align}
-\frac{\partial q_\alpha}{\partial H_\beta} &= - \Gamma H^{n+2} \left(\sum_\gamma (H_\gamma+b_\gamma)^2\right)^{(n-3)/2} \label{eq:siafluxderiv} \\
-&\quad \cdot \left[(n-1) H_\beta(H_\beta + b_\beta) + \sum_\gamma (H_\gamma+b_\gamma)^2\right]. \notag
-\end{align}
-Specifically, if $n\ge 3$ then $\partial q_\alpha/\partial H_\beta$ is finite for any value of the surface gradient $|\grad s|=\left(\sum_\gamma (H_\gamma+b_\gamma)^2\right)^{1/2}$.  For $1<n<3$, however, FIXME: not actually singular!  WHY IS REGULARIZATION NEEDED?  BECAUSE second derivatives $\partial^2 q_\alpha/\partial H_\beta\partial H_\gamma$ are singular?
 
 
 \section{The classical Mahaffy scheme}   \label{sec:mahaffyfd}
@@ -385,30 +373,49 @@ We call the method which combines both improvements (quadrature and upwinding) t
 
 \section{Solution of the equations} \label{sec:solution}
 
-We are ready to write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because we solve for steady state directly, and because numerically-locating the free boundary (ice sheet margin) is an integral part of the problem.  We suppose from now on that the structured grid has periodic boundary conditions (b.c.s), as appropriate to a whole ice sheet model.
+We are ready to write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because locating the free boundary (ice sheet margin) is an integral part of the problem of solving for steady state.
 
-Each equation in the \Mstar scheme is simply \eqref{eq:siamstar}, with upwind modification like \eqref{eq:upwindschemex} when evaluating the flux.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
+Each equation in the \Mstar scheme is simply \eqref{eq:siamstar} with upwind modification \eqref{eq:upwindschemex}.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
 \begin{equation}
 F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
 \end{equation}
-is supposed to determine $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note ``$H^h(x,y)$'' and ``$\bH$'' are two notations for the same discrete thickness representation.  However, system \eqref{eq:nonlinsystem} is not, by itself, an adequate description because each unknown thickness $H_{j,k}$ is constrained to be a nonnegative number.  We write
+determines $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note ``$H^h(x,y)$'' and ``$\bH$'' are two notations for the same discrete thickness representation.  Actually, system \eqref{eq:nonlinsystem} is not adequate by itself because each unknown thickness $H_{j,k}$ is constrained to be a nonnegative number,
 \begin{equation}
 \bH \ge 0.  \label{eq:nonlinconstraints}
 \end{equation}
+
 Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be combined into a variational inequality \citep{JouvetBueler2012,KinderlehrerStampacchia1980}.  Equivalently, we can write them as a complementarity problem \citep{BensonMunson2006}:
 \begin{equation}
 \bH \ge 0, \quad \bF(\bH) \ge 0, \quad \bH \cdot \bF(\bH) = 0.  \label{eq:nonlincomplementarity}
 \end{equation}
 
-We solve \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} by a ``constrained'' Newton solver, specifically by the reduced-set method \citep{BensonMunson2006} as implemented in PETSc \citep{Balayetal2014}.  The open-source C code used here \footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve} and then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is surprisingly brief because its only non-trivial part is a ``residual'' subroutine which records the equations \eqref{eq:nonlinsystem} themselves.
+We solve problem \eqref{eq:nonlincomplementarity} by a ``constrained'' Newton solver, specifically by either the semi-smooth or the reduced-set method \citep{BensonMunson2006}, as implemented in PETSc \citep{Balayetal2014}.  Our open-source C code\footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve} and then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is therefore brief.  It essentially contains just residual and Jacobian (below) subroutines, with parallel structured-grid management, nonlinear solver, iterative linear solver, and linear preconditioning all consigned to PETSc.
+
+The choice of linear solver and preconditioner is made only at runtime.  Both multigrid \citep{Briggsetal2000} and additive-Schwarz-type domain decomposition \citep{Smithetal1996} preconditioning is found to allow convergence, but the latter is noticably more robust, and is used in the Results section.
 
 The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
 J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right), \label{eq:nonlinjacobian}
 \end{equation}
-can be computed on of two ways in our code.  First, it can be computed numerically within PETSc by finite-differencing \citep{Kelley2003}.  Numerical Jacobian evaluation is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974}; in this case only ten residual evaluations are needed to approximate $J$.  Because of periodicity and coloring, however, the grid dimensions $N_x$ and $N_y$ must each be divisible by three.  Second, it can be computed by a method that evaluates derivatives calculated by hand.  This latter case, covered in Appendix B, gives the best performance for small $\eps$ values. % FIXME  I hope!
+is computed in one of two ways.  First, it can be computed numerically within PETSc by finite-differencing \citep{Kelley2003}.  This is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974} so that, because of the nine-point stencil, only ten residual evaluations are needed to approximate $J$.  Because the grid is logically periodic, however, the coloring method requires the grid dimensions $N_x$,$N_y$ to each be divisible by three.  Second, the Jacobian \eqref{eq:nonlinjacobian} can be computed via hand-calculated derivatives.  This calculation (Appendix B) allows a speed-up by a rough factor of two over the finite-difference method, and it avoids the divisibility restriction.
 
-A Newton solver requires an initial iterate $H^{(0)}$.  We give a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
+The standard theory of convergence of Newton's method shows that quadratic convergence occurs if $J$ is Lipshitz-continuous as a function of the unknowns \citep[and references therein]{Kelley2003}.  However, the flux $\bq$ is generally not smooth as a function of $\grad H$.  In particular, for $1<n<3$ the flux has a second derivative which is not Lipshitz-continuous with respect to changes in $\grad H$.  Because our Jacobian is the derivative of equations \eqref{eq:siamstar}, which already involves differentiating $\bq$ in the limit where the control volume shrinks to zero, the behavior of second derivatives of $\bq$ determines the convergence of the solver.  Nonsmoothness of the flux is easiest to see in one dimension where equation \eqref{eq:siaflux} is
+\begin{equation}
+q(H,H') = - \Gamma H^{n+2} \left|H'+b'\right|^{n-1} (H'+b'). \label{eq:flux1d}
+\end{equation}
+When $n>1$,
+\begin{equation}
+\frac{\partial^2 q}{\partial H'^2} = - C H^{n+2} \left|H'+b'\right|^{n-3} (H'+b') \label{eq:ddflux1d}
+\end{equation}
+for $C>0$.  When $n=2$, for example, this function undergoes a step at $H'=-b'$, and thus is not Lipshitz.  When $1< n < 2$ the second derivative \eqref{eq:ddflux1d} is discontinuous and unbounded.  For $2<n<3$ it is continuous but with unbounded derivative.  Thus \eqref{eq:ddflux1d} is not Lipshitz-continuous for $1<n<3$.
+
+Because we want methods that work for all exponents $n\ge 1$, we regularize by replacing
+\begin{equation}
+|\grad s| \to \left(|\grad s|^2 + \delta^2\right)^{1/2},
+\end{equation}
+with $\delta = 10^{-4}$, from now on when we compute the flux $\bq$ and its derivatives.  This regularization, which makes little difference when the surface slope is of order $10^{-3}$ or larger, is not surprising because it is similar to that used in regularizing the viscosity in the Stokes equations \citep{GreveBlatter2009}, and other distributed stress balance models \citep[for example]{BuelerBrown2009}, so as to avoid infinite viscosity at zero deviatoric stress.  Not only does it allow convergence when $1<n<3$, it also reduces error relative to exact solutions of the unregularized continuum equations (see Results section).
+
+A Newton solver requires an initial iterate $H^{(0)}$.  We generate it by a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
 H_{j,k}^{(0)} = \big(1000.0\,m_{j,k}\big)_+  \label{eq:nonlininitialheuristic}
 \end{equation}
