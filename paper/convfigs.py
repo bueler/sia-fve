@@ -25,7 +25,6 @@ parser.add_argument('-true', metavar='FILENAME', default='',
                     help="add results from dome verification using true Mahaffy; plotted on top of M* results")
 
 args = parser.parse_args()
-print args
 
 def readveriffile(filename):
     try:
@@ -76,33 +75,45 @@ if args.bedsteptable:
     sys.exit(0)
 
 def extract(A):
-    return A[:,0], A[:,2], A[:,3]
+    return A[:,0], A[:,2], A[:,3], A[:,1]
 
 # generate verification plots as image
 for infile in infilelist:
     if len(infile)==0:
         continue
-    dx, maxerr, averr = extract(readveriffile(infile))
-
+    dx, maxerr, averr, lasteps = extract(readveriffile(infile))
+    notconv = (lasteps > 0.0)
     plt.figure(figsize=(7,5))
-    plt.loglog(dx,maxerr,'ok',label='maximum error',markersize=10.0,
-               markerfacecolor='w',markeredgewidth=1.0)
     plt.hold(True)
-    plt.loglog(dx,averr,'*k',label='average error',markersize=10.0)
+    plt.loglog(dx[notconv],maxerr[notconv],'ok',markersize=16.0,
+               markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
+    plt.loglog(dx,maxerr,'*k',label=r'maximum error M$^\bigstar$',markersize=10.0,
+               markerfacecolor='w',markeredgewidth=1.0)
+    plt.loglog(dx[notconv],averr[notconv],'ok',markersize=16.0,
+               markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
+    plt.loglog(dx,averr,'*k',label=r'average error M$^\bigstar$',markersize=8.0)
     if args.dome:
         cav = np.polyfit(np.log(dx[:5]),np.log(averr[:5]),1)
         pav = np.poly1d(cav)
-        plt.loglog(dx,np.exp(pav(np.log(dx))),'--k',label=r'$O(\Delta x^{%.3f})$' % cav[0])
+        plt.loglog(dx[:5],np.exp(pav(np.log(dx[:5]))),':k')
+        ratelabel=r'$O(\Delta x^{%.2f})$' % cav[0]
+        plt.text(dx[2],0.5*averr[2],ratelabel,fontsize=16.0)
 
     if len(args.true)>0:
-        dx, maxerr, averr = extract(readveriffile(args.true))
-        plt.loglog(dx,maxerr,'sk',label='maximum error',markersize=10.0,
+        dx, maxerr, averr, lasteps = extract(readveriffile(args.true))
+        notconv = (lasteps > 0.0)
+        plt.loglog(dx[notconv],maxerr[notconv],'ok',markersize=16.0,
+                   markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
+        plt.loglog(dx,maxerr,'sk',label='maximum error Mahaffy',markersize=7.0,
                    markerfacecolor='w',markeredgewidth=1.0)
-        plt.hold(True)
-        plt.loglog(dx,averr,'dk',label='average error',markersize=10.0)
+        plt.loglog(dx[notconv],averr[notconv],'ok',markersize=16.0,
+                   markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
+        plt.loglog(dx,averr,'sk',label='average error Mahaffy',markersize=7.0)
         cav = np.polyfit(np.log(dx[:5]),np.log(averr[:5]),1)
         pav = np.poly1d(cav)
-        plt.loglog(dx,np.exp(pav(np.log(dx))),'--k',label=r'$O(\Delta x^{%.3f})$' % cav[0])
+        plt.loglog(dx[:5],np.exp(pav(np.log(dx[:5]))),':k')
+        ratelabel=r'$O(\Delta x^{%.2f})$' % cav[0]
+        plt.text(dx[3],3.0*averr[3],ratelabel,fontsize=16.0)
 
     plt.hold(False)
     plt.grid(True)
@@ -113,7 +124,7 @@ for infile in infilelist:
         plt.xlabel(r'$\Delta x$  (m)',fontsize=12.0)
         plt.legend(fontsize=12.0,loc='upper right')
     else:
-        plt.axis([1.0e3, 150.0e3, 0.15, 2000.0])
+        plt.axis([1.0e3, 150.0e3, 0.075, 2000.0])
         plt.xticks(np.array([2.0e3, 5.0e3, 10.0e3, 25.0e3, 50.0e3, 100.0e3]), ('2','5','10','25','50','100'))
         plt.xlabel(r'$\Delta x$  (km)',fontsize=12.0)
         plt.legend(fontsize=12.0,loc='lower right')

@@ -21,7 +21,7 @@ bedstepverif.pdf: convfigs.py ../petsc/bedstep.verif
 	./convfigs.py --showdata -bedstep ../petsc/bedstep.verif -o bedstepverif.pdf
 
 bedsteptable.tex: convfigs.py ../petsc/bedstep.verif
-	./convfigs.py --showdata --bedsteptable -bedstep ../petsc/bedstep.verif../petsc/bedstep.verif > bedsteptable.tex
+	./convfigs.py --bedsteptable -bedstep ../petsc/bedstep.verif > bedsteptable.tex
 
 domeprofile.pdf:
 	rm -rf tmpdome/

@@ -436,7 +436,7 @@ so that, until the last stage $\eps_{12}=0$, the parameter $\eps_i$ is reduce by
 
 Thus we start by solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ from \eqref{eq:continuationND}, and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlincomplementarity} but using the second value $\eps=0.5$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
 
-In the flat bed case the first ($\eps_0=1$) problem is actually a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad H) = m$ subject to the constraint $H\ge 0$.  Even in the non-flat bed case this relatively well-understood free-boundary problem allows the Newton solver to generate a first estimate of the ice-covered domain.  In particular, at the end of the first stage the free boundary (ice margin) is in the ablation zone as expected.
+The first problem in the continuation sequence, i.e.~for $\eps_0=1$, is a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad s) = m$ subject to the constraint $s\ge b$.  Starting with this well-behaved free-boundary problem, which nonetheless uses the data $b,m$ of the problem, allows the Newton solver to generate a first estimate of the ice-covered domain.  In particular, at the end of the first stage the free boundary (ice margin) is in the ablation zone as expected.
 
 
 \section{On time-stepping and sliding}
@@ -456,7 +456,7 @@ FIXME: we have been basically flux-agnostic, and the same basic FVE works as lon
 
 FIXME: show evidence of quadratic convergence
 
-Verification is the process of ensuring that our numerical scheme approximately solves the intended continuum equations in a measurably-convergent manner.  In the flat bed steady state case the angularly-symmetric exact solution constructed by \cite{Bueler2003}, which we call the ``dome'' exact solution, is suitable; see also subsection FIXME of \cite{vanderVeen2013}.  In a case with parameters suitable for a medium-sized ice sheet, this exact solution and a relatively coarse-grid application of the \Mstar method are compared in Figure \ref{fig:domeprofile}.  Under grid refinement we can measure the maximum and average thickness error both for the classical Mahaffy method and for the \Mstar method.  FIXME ADD CLASSICAL RESULTS; at low res we see \Mstar is more accurate at points along margin; at high res \Mstar is slightly better for convergence
+Verification is the process of ensuring that our numerical scheme correctly solves the intended continuum equations, that is, in a measurably-convergent manner.  In the flat bed steady state case the angularly-symmetric exact solution constructed by \cite{Bueler2003}, which we call the ``dome'' exact solution, is suitable; see also subsection FIXME of \cite{vanderVeen2013}.  In a case with parameters suitable for a medium-sized ice sheet, this exact solution and a relatively coarse-grid application of the \Mstar method are compared in Figure \ref{fig:domeprofile}.
 
 \begin{figure}[ht]
 \onecol{domeprofile.pdf}
@@ -464,13 +464,15 @@ Verification is the process of ensuring that our numerical scheme approximately 
 \label{fig:domeprofile}
 \end{figure}
 
+Under grid refinement we can measure the maximum and average thickness error both for the classical Mahaffy method and for the \Mstar method (Figure \ref{fig:domeverif}).  The rate of convergence (dotted lines) is better for \Mstar, but also the Newton method fails to converge for all Mahaffy runs except the coarsest; gray circles indicate runs where the Newton method diverged before the last $\eps=0$ stage of the continuation.
+
 \begin{figure}[ht]
 \onecol{domeverif.pdf}
-\caption{Average and maximum error under grid refinement using the dome exact solution.}
+\caption{Average and maximum error under grid refinement using the dome exact solution, for the \Mstar (stars) and classical Mahaffy (squares) methods.}
 \label{fig:domeverif}
 \end{figure}
 
-FIXME: verification on bedrock step solution from \cite{JaroschSchoofAnslow2013}
+FIXME: we try bedrock step solution from \cite{JaroschSchoofAnslow2013}, with result in Figure \ref{fig:bedstepprofile}
 
 \begin{figure}[ht]
 \onecol{bedstepprofile.pdf}
@@ -478,14 +480,10 @@ FIXME: verification on bedrock step solution from \cite{JaroschSchoofAnslow2013}
 \label{fig:bedstepprofile}
 \end{figure}
 
-\begin{figure}[ht]
-\onecol{bedstepverif.pdf}
-\caption{Average and maximum error under grid refinement using the bedrock-step exact solution.}
-\label{fig:bedstepverif}
-\end{figure}
+FIXME: verification on bedrock step solution shows no convergence at all in maximum and average errors, but like \cite{JaroschSchoofAnslow2013} we can show relative volume error; Table \ref{tab:bedstepvol} shows $100 (V_{\text{numerical}} - V_{\text{exact}}) / V_{\text{exact}}$; \cite{JaroschSchoofAnslow2013} have explicit implementations which may be more important than their use of true Mahaffy
 
 \begin{table}[ht]
-  \caption{Relative volume $(V_{\text{numerical}} - V_{\text{exact}}) / V_{\text{exact}}$ for \Mstar implicit scheme on steady state problem, and as reported by \cite{JaroschSchoofAnslow2013} for explicit implementations of their best ``Superbee''-limited MUSCL scheme, and for the Mahaffy scheme.}
+  \caption{Relative volume difference, as percentage, for \Mstar implicit scheme on steady state problem, and as reported by \cite{JaroschSchoofAnslow2013} for their ``Superbee''-limited MUSCL scheme and their implementation of the Mahaffy scheme.}
   \vskip4mm \centering
   \begin{tabular}{lccc}
     $\Delta x$ & \Mstar & Superbee & M2 \\  \hline
