@@ -16,6 +16,8 @@ dome.verif: mahaffy domeconv.sh
 	./domeconv.sh dome.verif 6 6
 bedstep.verif: mahaffy bedstepconv.sh
 	./bedstepconv.sh bedstep.verif 5 6
+true.verif: mahaffy domeconv.sh
+	./domeconv.sh true.verif 4 6 "-mah_true -snes_fd_color -da_grid_x 20 -da_grid_y 20 -mah_D0 10.0"
 
 # these targets are just for regression testing
 regress/dome.short: mahaffy domeconv.sh

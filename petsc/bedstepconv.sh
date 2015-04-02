@@ -8,7 +8,9 @@
 
 for lev in `seq 0 $2`; do
    rm -f lev${lev}history.txt
-   mpiexec -n $3 ./mahaffy -mah_bedstep -mah_D0 0.001 -da_refine $lev -snes_max_it 400 -mah_history lev${lev} -pc_type asm -sub_pc_type lu -snes_type vinewtonrsls -mah_Neps 11
+   cmd="mpiexec -n $3 ./mahaffy -mah_bedstep -mah_D0 0.001 -da_refine $lev -snes_max_it 400 -mah_history lev${lev} -pc_type asm -sub_pc_type lu -snes_type vinewtonrsls -mah_Neps 11"
+   echo $cmd
+   $cmd
 done
 
 rm -f $1
