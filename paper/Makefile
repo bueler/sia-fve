@@ -14,14 +14,14 @@ siafve.aux: siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
 siafve.bbl: siafve.aux ../paper/lc.bib
 	bibtex siafve
 
-domeverif.pdf: convfigs.py ../petsc/dome.verif
-	./convfigs.py -o domeverif.pdf ../petsc/dome.verif
+domeverif.pdf: convfigs.py ../petsc/dome.verif ../petsc/true.verif
+	./convfigs.py --showdata -dome ../petsc/dome.verif -true ../petsc/true.verif -o domeverif.pdf
 
 bedstepverif.pdf: convfigs.py ../petsc/bedstep.verif
-	./convfigs.py --bedstep -o bedstepverif.pdf ../petsc/bedstep.verif
+	./convfigs.py --showdata -bedstep ../petsc/bedstep.verif -o bedstepverif.pdf
 
 bedsteptable.tex: convfigs.py ../petsc/bedstep.verif
-	./convfigs.py --bedsteptable ../petsc/bedstep.verif > bedsteptable.tex
+	./convfigs.py --showdata --bedsteptable -bedstep ../petsc/bedstep.verif../petsc/bedstep.verif > bedsteptable.tex
 
 domeprofile.pdf:
 	rm -rf tmpdome/
