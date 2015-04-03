@@ -62,12 +62,22 @@ print bedtarg.shape
 # NOTE  nctarg.proj4 = +init=espg:3413 is misspelled
 projtarg = Proj('+init=epsg:3413')
 
-# show where four corners of source go
-ix = [0, 0, 300, 300]
-iy = [0, 560, 0, 560]
-for k in range(4):
-    xout, yout = transform(projsrc, projtarg, x1src[ix[k]], y1src[iy[k]])
-    print "(%f,%f) --> (%f,%f)   versus  (%f,%f)" % (x1src[ix[k]], y1src[iy[k]], xout, yout, xtarg[ix[k]], ytarg[iy[k]])
+def insrc(x,y):
+    return (x >= x1src.min()) & (x <= x1src.max()) & (y >= y1src.min()) & (y <= y1src.max())
+
+def instr(flg):
+    if flg:
+        return "in source grid"
+    else:
+        return "outside"
+
+# show where four corners and middle and more points of target will go in src region
+ix = [  0,   0, 333, 333, 166,  50,  50, 300, 300]
+iy = [  0, 598,   0, 598, 298,  50, 550,  50, 550]
+for k in range(len(ix)):
+    xout, yout = transform(projtarg, projsrc, xtarg[ix[k]], ytarg[iy[k]])
+    print "(%11.2f,%11.2f) --> (%11.2f,%11.2f)  ... %s" % \
+          (xtarg[ix[k]], ytarg[iy[k]], xout, yout, instr(insrc(xout, yout)))
 
 ncsrc.close()
 nctarg.close()
