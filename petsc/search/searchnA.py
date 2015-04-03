@@ -74,10 +74,10 @@ else:
         mahmpistr = "mpiexec -n %d " % args.mpi
     else:
         mahmpistr = ""
-    cmdroot = "%s./mahaffy -mah_read %s %s %s " % (mahmpistr, args.read, maherr, mahargs)
+    cmdroot = "%s../mahaffy -mah_read %s %s %s " % (mahmpistr, args.read, maherr, mahargs)
     cmdfmt = cmdroot + "-mah_n N -mah_A A"
     print "mahaffy command:"
-    print "    f([N A]) = " + cmdfmt
+    print "    f([N A]) = {" + cmdfmt + "}"
 
 if args.rosen:
     def rosen(x):
