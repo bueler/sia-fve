@@ -442,6 +442,10 @@ Thus we start by solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ an
 
 FIXME: explain that the first 12 stages are just to generate an initial iterate for the full SIA calc at stage 12
 
+FIXME: don't lose bright idea that Newton method should converge if either $\|\bF(\bH^{(m)})\|_2$ or
+  $$\|(\bH^{(m)})^{8/3} - (\bH^{(m-1)})^{8/3}\|_2$$
+is small
+
 The first problem in the continuation sequence, i.e.~for $\eps_0=1$, is a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad s) = m$ subject to the constraint $s\ge b$.  Starting with this well-behaved free-boundary problem, which nonetheless uses the data $b,m$ of the problem, allows the Newton solver to generate a first estimate of the ice-covered domain.  In particular, at the end of the first stage the free boundary (ice margin) is in the ablation zone as expected.
 
 
