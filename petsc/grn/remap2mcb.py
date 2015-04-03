@@ -38,7 +38,7 @@ except:
     sys.exit(11)
 
 try:
-    nctarg = NC(args.outname, 'r')
+    nctarg = NC(args.outname, 'a')
 except:
     print "ERROR: can't read from file %s ..." % args.outname
     sys.exit(12)
@@ -46,16 +46,28 @@ except:
 # read from source file
 x1src = ncsrc.variables['x1'][:]
 y1src = ncsrc.variables['y1'][:]
+y1src = y1src[::-1]  #  FIXME presumably this means y dim in cmb should change too
 cmbsrc = np.squeeze(ncsrc.variables['climatic_mass_balance'][:])
-
-print ncsrc.proj4
 print cmbsrc.shape
+
+# NOTE  ncsrc.proj4 is type 'unicode'
+projsrc = Proj(ncsrc.proj4.encode('ascii','ignore')) # type 'str'
 
 # read from target file
 xtarg = nctarg.variables['x'][:]
 ytarg = nctarg.variables['y'][:]
 bedtarg = np.squeeze(nctarg.variables['bed'][:])
-
-print nctarg.proj4
 print bedtarg.shape
 
+# NOTE  nctarg.proj4 = +init=espg:3413 is misspelled
+projtarg = Proj('+init=epsg:3413')
+
+# show where four corners of source go
+ix = [0, 0, 300, 300]
+iy = [0, 560, 0, 560]
+for k in range(4):
+    xout, yout = transform(projsrc, projtarg, x1src[ix[k]], y1src[iy[k]])
+    print "(%f,%f) --> (%f,%f)   versus  (%f,%f)" % (x1src[ix[k]], y1src[iy[k]], xout, yout, xtarg[ix[k]], ytarg[iy[k]])
+
+ncsrc.close()
+nctarg.close()
