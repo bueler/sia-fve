@@ -1,8 +1,8 @@
 petsc/grn/mcb
 =============
 
-The SeaRISE data for bed is not very good.  The "mass-conserving beds" from
-the U Irvine group is an improvement:
+The SeaRISE data for bed is not very good.  The "mass-conserving beds" (MCB)
+from the U Irvine group is an improvement:
 
 M. Morlighem, E. Rignot, J. Mouginot, H. Seroussi and E. Larour,
 [_Deeply incised submarine glacial valleys beneath the Greenland Ice Sheet_](http://www.nature.com/ngeo/journal/vaop/ncurrent/full/ngeo2167.html),
@@ -14,12 +14,21 @@ deal with that.
 
 Warning: These scripts are not finished!
 
-Do this as preprocessing:
+The first step of preprocessing is to download a 1.7Gb file `MCdataset-2014-11-19.nc`
+from NSIDC site and generate a coarser version with a stride.  A stride of 30
+gives 30*150m = 4500m, thus `mcb4500.nc`:
 
-    $ ./getmcb.sh  # downloads 1.7Gb file from NSIDC site and generates `mcb4500.nc`
+    $ ./getmcb.sh 30 mcb4500m.nc
+
+Now do rest of preprocessing at the NetCDF level, with a merge of SeaRISE and
+MCB data:
+
     $ cp ../pism_Greenland_5km_v1.1.nc searise5km.nc
     $ ~/pism/util/nc2cdo.py searise5km.nc
     $ ./remap2mcb.py searise5km.nc mcb4500m.nc fix4500m.nc
+
+View and do final conversion to PETSc binary:
+
     $ ncview -minmax all fix4500m.nc
     $ ../grn2petsc.py fix4500m.nc fix4500m.dat
 
@@ -32,4 +41,14 @@ Now run:
 Generate figures:
 
     $ ../../../figsmahaffy.py --profile --map
+
+Higher resolution
+-----------------
+
+Redo the above, starting with
+
+    $ ./getmcb.sh 10 mcb1500m.nc
+
+for example.  (Note that if the big file `MCdataset-2014-11-19.nc` is already
+present, it will not be downloaded again.)  Continue with all remaining steps.
 
