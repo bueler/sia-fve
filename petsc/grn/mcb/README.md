@@ -19,14 +19,17 @@ Do this as preprocessing:
     $ ./getmcb.sh  # downloads 1.7Gb file from NSIDC site and generates `mcb4500.nc`
     $ cp ../pism_Greenland_5km_v1.1.nc searise5km.nc
     $ ~/pism/util/nc2cdo.py searise5km.nc
-    $ ./remap2mcb.py searise5km.nc mcb4500m.nc
-    $ ../grn2petsc.py mcb4500m.nc mcb4500m.dat
+    $ ./remap2mcb.py searise5km.nc mcb4500m.nc fix4500m.nc
+    $ ncview -minmax all fix4500m.nc
+    $ ../grn2petsc.py fix4500m.nc fix4500m.dat
 
 Now run:
 
     $ (cd ../../ && make mahaffy)
     $ mkdir test/
-    $ ../../mahaffy -mah_read mcb4500m.dat -mah_D0 20.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test/
+    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -mah_D0 20.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test/
 
-Yes, it comes out upside down ...
+Generate figures:
+
+    $ ../../../figsmahaffy.py --profile --map
 

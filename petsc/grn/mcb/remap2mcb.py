@@ -31,8 +31,11 @@ parser = argparse.ArgumentParser(description='Bilinearly-remap fields from SeaRI
 parser.add_argument('inname', metavar='INNAME',
                     help='input NetCDF file (SeaRISE-type grid)',
                     default='')
+parser.add_argument('targetname', metavar='TARGET',
+                    help='NetCDF file with target grid (e.g. mcb4500m.nc)',
+                    default='')
 parser.add_argument('outname', metavar='OUTNAME',
-                    help='output NetCDF file to modify by adding remapped fields from input (e.g. mcb4500m.nc)',
+                    help='output NetCDF file to create (e.g. fix4500m.nc)',
                     default='')
 args = parser.parse_args()
 
@@ -43,10 +46,16 @@ except:
     sys.exit(11)
 
 try:
-    nctarg = NC(args.outname, 'a')
+    nctarg = NC(args.targetname, 'r')
+except:
+    print "ERROR: can't read from file %s ..." % args.targetname
+    sys.exit(12)
+
+try:
+    ncout = NC(args.outname, 'w', format='NETCDF3_CLASSIC')
 except:
     print "ERROR: can't read from file %s ..." % args.outname
-    sys.exit(12)
+    sys.exit(13)
 
 # read from source file
 x1src = ncsrc.variables['x1'][:].astype(np.float64)  # is increasing
@@ -62,7 +71,7 @@ projsrc = Proj(ncsrc.proj4.encode('ascii','ignore'))
 # read from target file
 xtarg = nctarg.variables['x1'][:].astype(np.float64)  # is increasing
 ytarg = nctarg.variables['y1'][:].astype(np.float64)  # is *decreasing*
-print "target grid from %s has dimensions (y,x)=(%d,%d)" % (args.outname,len(ytarg),len(xtarg))
+print "target grid from %s has dimensions (y,x)=(%d,%d)" % (args.targetname,len(ytarg),len(xtarg))
 print "    ... reading thk and topg_nobathy"
 thktarg = np.squeeze(nctarg.variables['thk'][:].astype(np.float64))
 # for topg, DON'T read as masked array, DO use _FillValue where it is already there
@@ -154,23 +163,46 @@ for k in range(len(ytarg)):
     sys.stdout.flush()
 print " "
 
+ncsrc.close()
+nctarg.close()
+
 def deftargvar(nc, name, units):
-    var = nc.createVariable(name, 'f', dimensions=("y1", "x1"))
+    var = nc.createVariable(name, 'f4', dimensions=("y1", "x1"))
     var.units = units
     return var
+
+print "creating dimensions and variable x,y in %s ..." % args.outname
+ncout.createDimension("x1", size=len(xtarg))
+ncout.createDimension("y1", size=len(ytarg))
+x_var = ncout.createVariable("x1", 'f4', dimensions=("x1",))
+x_var.units = "m"
+x_var.long_name = "easting"
+x_var.standard_name = "projection_x_coordinate"
+x_var[:] = xtarg
+y_var = ncout.createVariable("y1", 'f4', dimensions=("y1",))
+y_var.units = "m"
+y_var.long_name = "northing"
+y_var.standard_name = "projection_y_coordinate"
+y_var[:] = ytarg[::-1]
+
+print "copying thk variable into %s ..." % args.outname
+thk_var = deftargvar(ncout, "thk", "")
+thk_var.standard_name = "land_ice_thickness"
+thk_var.units = "meters"
+thk_var[:] = np.flipud(thktarg)
 
 print "putting new cmb variable in %s ..." % args.outname
 # convert  kg m-2 year-1  to  m s-1  for ice of 910.0 kg m-3
 conversion = 3.48228182586954e-11
-cmb_var = deftargvar(nctarg, "cmb", "")
+cmb_var = deftargvar(ncout, "cmb", "")
 cmb_var.units = "meters second-1"
-cmb_var[:] = conversion * cmbtarg
+cmb_var[:] = conversion * np.flipud(cmbtarg)
 
 print "putting new topg variable in %s ..." % args.outname
-topg_var = deftargvar(nctarg, "topg", "")
+topg_var = deftargvar(ncout, "topg", "")
 topg_var.standard_name = "bedrock_altitude"
 topg_var.units = "meters"
-topg_var[:] = topgtarg
+topg_var[:] = np.flipud(topgtarg)
 
-ncsrc.close()
-nctarg.close()
+ncout.close()
+
