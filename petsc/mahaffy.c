@@ -87,7 +87,7 @@ extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESboot(SNES*,AppCtx*);
-extern PetscErrorCode SNESAttempt(SNES,Vec,PetscInt*,SNESConvergedReason*);
+extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscInt*,SNESConvergedReason*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -289,7 +289,7 @@ int main(int argc,char **argv) {
   for (m = 0; m<user.Neps; m++) {
       user.eps = user.eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-      ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+      ierr = SNESAttempt(&snes,Htry,&its,&reason);CHKERRQ(ierr);
       ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
       myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
@@ -299,7 +299,7 @@ int main(int argc,char **argv) {
               myPrintf(&user,"         ... try again w eps *= 1.5\n");
               user.eps = 1.5 * user.eps;
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-              ierr = SNESAttempt(snes,Htry,&its,&reason);CHKERRQ(ierr);
+              ierr = SNESAttempt(&snes,Htry,&its,&reason);CHKERRQ(ierr);
               ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
               ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
               myPrintf(&user,"     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
@@ -605,7 +605,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
       }
   }
   ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
 
   ierr = DMRestoreLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMRestoreLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
@@ -725,30 +725,25 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
 // start a SNESVI
 PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
   PetscErrorCode ierr;
-  PetscBool      flg = PETSC_FALSE;
   ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
   ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
   ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
                 (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
-  ierr = PetscOptionsGetBool(NULL,"-snes_fd_color",&flg,NULL);CHKERRQ(ierr);
-  if (!flg) {
-      ierr = DMDASNESSetJacobianLocal(user->da,
+  ierr = DMDASNESSetJacobianLocal(user->da,
                 (DMDASNESJacobian)FormJacobianLocal,user); CHKERRQ(ierr);
-  }
   ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
-
 // try a SNES solve; H is modified
-PetscErrorCode SNESAttempt(SNES snes, Vec H, PetscInt *its, SNESConvergedReason *reason) {
+PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt *its, SNESConvergedReason *reason) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
-  ierr = SNESSolve(snes, NULL, H); CHKERRQ(ierr);
-  ierr = SNESGetIterationNumber(snes,its);CHKERRQ(ierr);
-  ierr = SNESGetConvergedReason(snes,reason);CHKERRQ(ierr);
+  ierr = SNESSolve(*s, NULL, H); CHKERRQ(ierr);
+  ierr = SNESGetIterationNumber(*s,its);CHKERRQ(ierr);
+  ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
