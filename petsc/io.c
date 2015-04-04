@@ -33,8 +33,8 @@ PetscErrorCode ReadDimensions(AppCtx *user) {
         SETERRQ(PETSC_COMM_WORLD,1,"read Vec x has size too small\n");
     }
     ierr = VecGetArray(x, &ax);CHKERRQ(ierr);
-    user->dx = ax[1] - ax[0];
-    fulllengthx = ax[user->Nx-1] - ax[0] + user->dx;
+    user->dx = PetscAbsReal(ax[1] - ax[0]);
+    fulllengthx = PetscAbsReal(ax[user->Nx-1] - ax[0]) + user->dx;
     user->Lx = fulllengthx / 2.0;
     ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
@@ -48,7 +48,7 @@ PetscErrorCode ReadDimensions(AppCtx *user) {
         SETERRQ(PETSC_COMM_WORLD,2,"read Vec y has size too small\n");
     }
     ierr = VecGetArray(y, &ay);CHKERRQ(ierr);
-    fulllengthy = ay[user->Ny-1] - ay[0] + user->dx;
+    fulllengthy = PetscAbsReal(ay[user->Ny-1] - ay[0]) + user->dx;
     user->Ly = fulllengthy / 2.0;
     ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
