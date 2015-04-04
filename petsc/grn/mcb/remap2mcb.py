@@ -2,7 +2,12 @@
 #
 # (C) 2015 Ed Bueler
 #
-# Bilinearly-remap fields from pism_Greenland_5km_v1.1.nc to grid used in MCdataset-2014-11-19.nc.
+# Bilinearly-remap fields from SeaRISE file to grid used in mcbRES.nc (derived
+# from MCdataset-2014-11-19.nc by running getmcb.sh):
+# Specifically, remap:
+#    in SeaRISE projection:                        in MCB projection:
+#    climatic_mass_balance       --> remap -->     cmb
+#    topg<0 (bathymetry)         --> merge -->     topg
 
 import argparse
 import sys
@@ -22,9 +27,9 @@ except:
     print "pyproj is not installed? ... see http://jswhit.github.io/pyproj/"
     sys.exit(2)
 
-parser = argparse.ArgumentParser(description='FIXME')
+parser = argparse.ArgumentParser(description='Bilinearly-remap fields from SeaRISE file to grid used in MCdataset-2014-11-19.nc.')
 parser.add_argument('inname', metavar='INNAME',
-                    help='input NetCDF file (e.g. pism_Greenland_5km_v1.1.nc)',
+                    help='input NetCDF file (SeaRISE-type grid)',
                     default='')
 parser.add_argument('outname', metavar='OUTNAME',
                     help='output NetCDF file to modify by adding remapped fields from input (e.g. mcb4500m.nc)',
@@ -44,24 +49,26 @@ except:
     sys.exit(12)
 
 # read from source file
-x1src = ncsrc.variables['x1'][:]  # is increasing
-y1src = ncsrc.variables['y1'][:]
-y1src = y1src[::-1]  #  is now decreasing  FIXME presumably this means y dim in cmb should change too
-cmbsrc = np.squeeze(ncsrc.variables['climatic_mass_balance'][:])
-#print len(x1src), len(y1src)
-print "source grid from %s has dimensions (y,x)=(%d,%d)" % (args.inname,cmbsrc.shape[0],cmbsrc.shape[1])
+x1src = ncsrc.variables['x1'][:].astype(np.float64)  # is increasing
+y1src = ncsrc.variables['y1'][:].astype(np.float64)  # is increasing
+print "source grid from %s has dimensions (y,x)=(%d,%d)" % (args.inname,len(y1src),len(x1src))
+print "    ... reading climatic_mass_balance and topg"
+cmbsrc = np.squeeze(ncsrc.variables['climatic_mass_balance'][:].astype(np.float64))
+topgsrc = np.squeeze(ncsrc.variables['topg'][:].astype(np.float64))
 
-# NOTE  ncsrc.proj4 is type 'unicode'
-projsrc = Proj(ncsrc.proj4.encode('ascii','ignore')) # type 'str'
+# NOTE  ncsrc.proj4 is type 'unicode', so convert to type 'str'
+projsrc = Proj(ncsrc.proj4.encode('ascii','ignore'))
 
 # read from target file
-xtarg = nctarg.variables['x'][:]  # is increasing
-ytarg = nctarg.variables['y'][:]  # is decreasing
-bedtarg = np.squeeze(nctarg.variables['bed'][:])
-#print len(xtarg), len(ytarg)
-print "target grid from %s has dimensions (y,x)=(%d,%d)" % (args.outname,bedtarg.shape[0],bedtarg.shape[1])
+xtarg = nctarg.variables['x1'][:].astype(np.float64)  # is increasing
+ytarg = nctarg.variables['y1'][:].astype(np.float64)  # is *decreasing*
+print "target grid from %s has dimensions (y,x)=(%d,%d)" % (args.outname,len(ytarg),len(xtarg))
+print "    ... reading thk and topg_nobathy"
+thktarg = np.squeeze(nctarg.variables['thk'][:].astype(np.float64))
+# for topg, DON'T read as masked array, DO use _FillValue where it is already there
+topgnobathtarg = np.squeeze(nctarg.variables['topg_nobathy'][:].filled().astype(np.float64))
 
-# NOTE  nctarg.proj4 = +init=espg:3413 is misspelled
+# NOTE  nctarg.proj4 = +init=espg:3413 is misspelled, so replace it with string literal
 projtarg = Proj('+init=epsg:3413')
 
 def insrc(x,y):
@@ -84,11 +91,11 @@ def demoremap():
               (xtarg[ix[k]], ytarg[iy[k]], x, y, instr(flg))
         if flg:
             iix = ml.find(x1src <= x).max()
-            iiy = ml.find(y1src <= y).min()
+            iiy = ml.find(y1src <= y).max()
             print "    box is [%11.2f,%11.2f] x [%11.2f,%11.2f]" % \
-                  (x1src[iix],x1src[iix+1],y1src[iiy],y1src[iiy-1])
+                  (x1src[iix],x1src[iix+1],y1src[iiy],y1src[iiy+1])
 
-demoremap()
+#demoremap()
 
 # fbox variable is traversed in counterclockwise order from lower left:
 #     fbox[3]           fbox[2]
@@ -102,8 +109,8 @@ demoremap()
 def bilin(x,y,xx,yy,fbox):
     if (xx[0]>=xx[1]) or (yy[0]>=yy[1]):
         raise ValueError("bilin has xx or yy which is not increasing")
-    if (x<xx[0]-1.0) or (x>xx[1]+1.0) or (y<yy[0]-1.0) or (y>yy[1]+1.0):
-        print xx, yy
+    if (x<xx[0]) or (x>xx[1]) or (y<yy[0]) or (y>yy[1]):
+        print "DEBUG: rectangle xx and yy are: ", xx, yy
         raise ValueError("bilin has (x,y)=(%f,%f) outside of rectangle" % (x,y))
     xi   = (x - xx[0]) / (xx[1] - xx[0])
     eta  = (y - yy[0]) / (yy[1] - yy[0])
@@ -111,33 +118,59 @@ def bilin(x,y,xx,yy,fbox):
     ceta = 1.0 - eta
     return (fbox[0] * cxi + fbox[1] * xi) * ceta + (fbox[2] * xi + fbox[3] * cxi) * eta
 
-cmbtarg = np.zeros(bedtarg.shape)
+def evalfbox(var,iix,iiy):
+    return np.array([var[iiy][iix], var[iiy][iix+1], var[iiy+1][iix+1], var[iiy+1][iix]])
+
+print "bilinearly remapping cmb and merging topg with bathymetry ..."
+cmbtarg = np.zeros((len(ytarg),len(xtarg)))
+topgtarg = np.zeros((len(ytarg),len(xtarg)))
+cmb_fill = -1000.0  # kg m-2 year-1
+topg_fill = -300.0  # m a.s.l.
 for k in range(len(ytarg)):
     for j in range(len(xtarg)):
         x, y = transform(projtarg, projsrc, xtarg[j], ytarg[k])
         flg = insrc(x, y)
         if flg:
             iix = ml.find(x1src <= x).max()
-            iiy = ml.find(y1src <= y).min()
+            iiy = ml.find(y1src <= y).max()
             if (iix+1 < len(x1src)) and (iiy-1 >= 0):
                 xx = x1src[iix:iix+2]
-                yy = np.array([y1src[iiy],y1src[iiy-1]])
-                fbox = np.array([cmbsrc[iiy][iix], cmbsrc[iiy][iix+1], cmbsrc[iiy-1][iix+1], cmbsrc[iiy-1][iix]])
-                cmbtarg[k][j] = bilin(x,y,xx,yy,fbox)
+                yy = y1src[iiy:iiy+2]
             else:
-                cmbtarg[k][j] = -9.999e20
+                flg = False
+        if flg:
+            cmbtarg[k][j]  = bilin(x,y,xx,yy,evalfbox(cmbsrc,iix,iiy))
+            if topgnobathtarg[k][j] < -9900.0:
+                topgtarg[k][j] = bilin(x,y,xx,yy,evalfbox(topgsrc,iix,iiy))
+            else:
+                topgtarg[k][j] = topgnobathtarg[k][j]
         else:
-            cmbtarg[k][j] = -9.999e20
+            cmbtarg[k][j]  = cmb_fill
+            topgtarg[k][j] = topg_fill
+    if (k>0) and (np.mod(k,100)==0):
+        print k,
+    elif (k>0) and (np.mod(k,10)==0):
+        print ".",
+    sys.stdout.flush()
+print " "
 
-def deftargvar(nc, name, units, fillvalue):
-    # dimension transpose is standard: "float thk(y, x)" in NetCDF file
-    var = nc.createVariable(name, 'f', dimensions=("y", "x"), fill_value=fillvalue)
+def deftargvar(nc, name, units):
+    var = nc.createVariable(name, 'f', dimensions=("y1", "x1"))
     var.units = units
     return var
 
-cmbtarg_var = deftargvar(nctarg, "climatic_mass_balance", "kg m-2 s-1", -9.999e20)
-cmbtarg_var.standard_name = "land_ice_surface_specific_mass_balance_flux"
-cmbtarg_var[:] = cmbtarg
+print "putting new cmb variable in %s ..." % args.outname
+# convert  kg m-2 year-1  to  m s-1  for ice of 910.0 kg m-3
+conversion = 3.48228182586954e-11
+cmb_var = deftargvar(nctarg, "cmb", "")
+cmb_var.units = "meters second-1"
+cmb_var[:] = conversion * cmbtarg
+
+print "putting new topg variable in %s ..." % args.outname
+topg_var = deftargvar(nctarg, "topg", "")
+topg_var.standard_name = "bedrock_altitude"
+topg_var.units = "meters"
+topg_var[:] = topgtarg
 
 ncsrc.close()
 nctarg.close()

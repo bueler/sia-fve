@@ -14,10 +14,19 @@ deal with that.
 
 Warning: These scripts are not finished!
 
-Do this:
+Do this as preprocessing:
 
     $ ./getmcb.sh  # downloads 1.7Gb file from NSIDC site and generates `mcb4500.nc`
-    $ ~/pism/util/nc2cdo.py pism_Greenland_5km_v1.1.nc
-    $ ./remap2mcb.py FIXME
+    $ cp ../pism_Greenland_5km_v1.1.nc searise5km.nc
+    $ ~/pism/util/nc2cdo.py searise5km.nc
+    $ ./remap2mcb.py searise5km.nc mcb4500m.nc
+    $ ../grn2petsc.py mcb4500m.nc mcb4500m.dat
 
+Now run:
+
+    $ (cd ../../ && make mahaffy)
+    $ mkdir test/
+    $ ../../mahaffy -mah_read mcb4500m.dat -mah_D0 20.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test/
+
+Yes, it comes out upside down ...
 
