@@ -12,11 +12,12 @@ But the data, which is available in NetCDF from NSIDC, has neither bathymetry
 nor surface mass balance, and is on a different projection.  So scripts here
 deal with that.
 
-Warning: These scripts are not finished!
+Coarse resolution example
+-------------------------
 
 The first step of preprocessing is to download a 1.7Gb file `MCdataset-2014-11-19.nc`
 from NSIDC site and generate a coarser version with a stride.  A stride of 30
-gives 30*150m = 4500m, thus `mcb4500.nc`:
+gives 30*150m = 4500m resolution:
 
     $ ./getmcb.sh 30 mcb4500m.nc
 
@@ -32,7 +33,7 @@ View and do final conversion to PETSc binary:
     $ ncview -minmax all fix4500m.nc
     $ ../grn2petsc.py fix4500m.nc fix4500m.dat
 
-Now run:
+Now run `mahaffy` on it:
 
     $ (cd ../../ && make mahaffy)
     $ mkdir test/
