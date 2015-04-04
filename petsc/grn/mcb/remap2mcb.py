@@ -2,8 +2,7 @@
 #
 # (C) 2015 Ed Bueler
 #
-# FIXME will attempt to remap fields from pism_Greenland_5km_v1.1.nc (or
-# similar) to grid used in MCdataset-2014-11-19.nc (or similar)
+# Bilinearly-remap fields from pism_Greenland_5km_v1.1.nc to grid used in MCdataset-2014-11-19.nc.
 
 import argparse
 import sys
@@ -25,10 +24,10 @@ except:
 
 parser = argparse.ArgumentParser(description='FIXME')
 parser.add_argument('inname', metavar='INNAME',
-                    help='input file (e.g. pism_Greenland_5km_v1.1.nc)',
+                    help='input NetCDF file (e.g. pism_Greenland_5km_v1.1.nc)',
                     default='')
 parser.add_argument('outname', metavar='OUTNAME',
-                    help='output file to modify by adding remapped fields from input (e.g. mcb4500m.nc)',
+                    help='output NetCDF file to modify by adding remapped fields from input (e.g. mcb4500m.nc)',
                     default='')
 args = parser.parse_args()
 

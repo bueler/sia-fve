@@ -1,5 +1,5 @@
 petsc/grn/
-==============
+==========
 
 The main script `grn2petsc.py` here reads SeaRISE data from NetCDF format and
 converts it to PETSc binary format.  It requires the
