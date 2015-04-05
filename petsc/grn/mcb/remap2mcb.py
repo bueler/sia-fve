@@ -42,19 +42,19 @@ args = parser.parse_args()
 try:
     ncsrc = NC(args.inname, 'r')
 except:
-    print "ERROR: can't read from file %s ..." % args.inname
+    print "ERROR: can't open file %s for reading ..." % args.inname
     sys.exit(11)
 
 try:
     nctarg = NC(args.targetname, 'r')
 except:
-    print "ERROR: can't read from file %s ..." % args.targetname
+    print "ERROR: can't open file %s for reading ..." % args.targetname
     sys.exit(12)
 
 try:
     ncout = NC(args.outname, 'w', format='NETCDF3_CLASSIC')
 except:
-    print "ERROR: can't read from file %s ..." % args.outname
+    print "ERROR: can't open file %s for writing ..." % args.outname
     sys.exit(13)
 
 # read from source file
@@ -74,8 +74,7 @@ ytarg = nctarg.variables['y1'][:].astype(np.float64)  # is *decreasing*
 print "target grid from %s has dimensions (y,x)=(%d,%d)" % (args.targetname,len(ytarg),len(xtarg))
 print "    ... reading thk and topg_nobathy"
 thktarg = np.squeeze(nctarg.variables['thk'][:].astype(np.float64))
-# for topg, DON'T read as masked array, DO use _FillValue where it is already there
-topgnobathtarg = np.squeeze(nctarg.variables['topg_nobathy'][:].filled().astype(np.float64))
+topgnobathtarg = np.squeeze(nctarg.variables['topg_nobathy'][:].astype(np.float64))
 
 # NOTE  nctarg.proj4 = +init=espg:3413 is misspelled, so replace it with string literal
 projtarg = Proj('+init=epsg:3413')
@@ -186,22 +185,19 @@ y_var.standard_name = "projection_y_coordinate"
 y_var[:] = ytarg[::-1]
 
 print "copying thk variable into %s ..." % args.outname
-thk_var = deftargvar(ncout, "thk", "")
+thk_var = deftargvar(ncout, "thk", "m")
 thk_var.standard_name = "land_ice_thickness"
-thk_var.units = "meters"
 thk_var[:] = np.flipud(thktarg)
 
 print "putting new cmb variable in %s ..." % args.outname
 # convert  kg m-2 year-1  to  m s-1  for ice of 910.0 kg m-3
 conversion = 3.48228182586954e-11
-cmb_var = deftargvar(ncout, "cmb", "")
-cmb_var.units = "meters second-1"
+cmb_var = deftargvar(ncout, "cmb", "m s-1")
 cmb_var[:] = conversion * np.flipud(cmbtarg)
 
 print "putting new topg variable in %s ..." % args.outname
-topg_var = deftargvar(ncout, "topg", "")
+topg_var = deftargvar(ncout, "topg", "m")
 topg_var.standard_name = "bedrock_altitude"
-topg_var.units = "meters"
 topg_var[:] = np.flipud(topgtarg)
 
 ncout.close()
