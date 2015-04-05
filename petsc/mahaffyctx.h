@@ -18,7 +18,8 @@ typedef struct {
   DM        da, quadda, sixteenda;
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
-            Hexact; // the exact thickness (either in verification or data sense)
+            Hexact, // the exact or observed thickness (verification or data, resp.)
+            Hprev;  // only used when doing backward Euler time step as recovery
   Vec       bloc;   // copy of bed elevation with ghosts
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
@@ -31,6 +32,7 @@ typedef struct {
             Gamma,  // coefficient for SIA flux term
             eps,    // current dimensionless regularization for n and D
             delta,  // current dimensionless regularization for slope in SIA formulas
+            dtBE,   // time step for backward Euler, used in recovery
             maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
             D0,     // representative value of diffusivity (in regularization)
             initmagic,// constant, in years, used to multiply SMB to get initial iterate for thickness
@@ -48,6 +50,7 @@ typedef struct {
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
+            doBErecovery,// on SNES diverge, set this to TRUE so F(H) and J(H) are backward Euler; for recovery
             dump,   // dump fields into individual PETSc binary files
             silent, // run silent
             averr,  // only display average error at end

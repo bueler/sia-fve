@@ -86,7 +86,7 @@ Generate .png figs:
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
-extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscInt*,SNESConvergedReason*,PetscInt*);
+extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,const AppCtx*);
 extern PetscErrorCode BedAverager(Vec,Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
@@ -121,12 +121,11 @@ static const PetscInt  jnbr[4] = { 0,  1,  0, -1},
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
   SNES                snes;
-  const PetscInt      Nsmoother = 4;
-  Vec                 H, Htry, blocsmooth[Nsmoother];
+  Vec                 H, Htry, bloc, blocsmooth;
   AppCtx              user;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
-  PetscInt            i;
+  PetscInt            i, m;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -145,6 +144,7 @@ int main(int argc,char **argv) {
   user.eps_sched[user.Neps-1] = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.eps    = 0.0;
+  user.dtBE   = 1.0 * user.secpera;  // 1 year time step for Backward Euler; used only in recovery
 
   user.mtrue      = PETSC_FALSE;
   user.noupwind   = PETSC_FALSE;
@@ -154,6 +154,7 @@ int main(int argc,char **argv) {
   user.bedstep    = PETSC_FALSE;
   user.swapxy     = PETSC_FALSE;
   user.divergetryagain = PETSC_FALSE;
+  user.doBErecovery    = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
 
   user.read       = PETSC_FALSE;
@@ -237,6 +238,7 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
 
   ierr = VecDuplicate(H,&Htry); CHKERRQ(ierr);
+  ierr = VecDuplicate(H,&user.Hprev); CHKERRQ(ierr);  // user.Hprev is used only in recovery
 
   ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.b),"bed elevation b"); CHKERRQ(ierr);
@@ -274,17 +276,15 @@ int main(int argc,char **argv) {
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
 
-  // setup local copies of bed and three smoothed versions used in recovery
-  PetscInt m;
-  for (m = 0; m<Nsmoother; m++) {
-      ierr = DMCreateLocalVector(user.da,&blocsmooth[m]);CHKERRQ(ierr);
-  }
-  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,blocsmooth[0]);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,blocsmooth[0]);CHKERRQ(ierr);
-  for (m = 1; m<Nsmoother; m++) {
-      ierr = BedAverager(blocsmooth[m-1],blocsmooth[m],&user);CHKERRQ(ierr);
-  }
-  user.bloc = blocsmooth[0];
+  // setup local copy of bed
+  ierr = DMCreateLocalVector(user.da,&bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+  user.bloc = bloc;
+
+  // setup smoothed local bed used in recovery
+  ierr = DMCreateLocalVector(user.da,&blocsmooth);CHKERRQ(ierr);
+  ierr = BedAverager(bloc,blocsmooth,&user);CHKERRQ(ierr);
 
   // initialize the SNESVI
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
@@ -305,36 +305,37 @@ int main(int argc,char **argv) {
       else
           myPrintf(&user,"solving by M* method ...\n");
 
-  PetscInt            its, kspits;
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
   for (m = 0; m<user.Neps; m++) {
       user.eps = user.eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-      ierr = SNESAttempt(&snes,Htry,&its,&reason,&kspits);CHKERRQ(ierr);
-      myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-               m,SNESConvergedReasons[reason],kspits,its,user.eps);
+      ierr = VecCopy(H,user.Hprev); CHKERRQ(ierr);  // only in case we need to recover
+      ierr = SNESAttempt(&snes,Htry,PETSC_FALSE,m,&reason,&user);CHKERRQ(ierr);
       if (reason < 0) {
           if (user.divergetryagain) {
-              PetscInt q;
-              for (q = 1; q<Nsmoother; q++) {
-                  myPrintf(&user,"         ... try again w eps *= 1.5 and smoother bed\n");
+              if (user.eps > 0) {
                   user.eps = 1.5 * user.eps;
-                  user.bloc = blocsmooth[q];
-                  ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-                  ierr = SNESAttempt(&snes,Htry,&its,&reason,&kspits);CHKERRQ(ierr);
-                  myPrintf(&user,"     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                           SNESConvergedReasons[reason],user.eps,kspits,its);
-                  if (reason >= 0) {
-                      user.bloc = blocsmooth[0];
-                      break;
-                  }
+                  myPrintf(&user,"         ... trying again with eps *= 1.5 so eps = %.2e\n",user.eps);
+              } else if ((user.eps == 0) && (!user.doBErecovery)) {
+                  myPrintf(&user,"         ... trying again with eps = 0.0 and turning on recovery mode\n");
+              } else {
+                  myPrintf(&user,"         ... nothing else to try because eps = 0.0 and recovery mode is on\n");
+                  break;
               }
+              if (!user.doBErecovery) {
+                  myPrintf(&user,
+                      "         turning on recovery mode (backward Euler step of %.2f a and smoother bed)\n",
+                      user.dtBE/user.secpera);
+                  user.doBErecovery = PETSC_TRUE;
+                  user.bloc = blocsmooth;
+              }
+              ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+              ierr = SNESAttempt(&snes,Htry,PETSC_TRUE,m,&reason,&user);CHKERRQ(ierr);
           }
           if (reason < 0) {
-              if (m>0) { // record last successful eps
+              if (m>0) // record last successful eps
                   user.eps = user.eps_sched[m-1];
-              }
               break;
           }
       }
@@ -368,12 +369,12 @@ int main(int argc,char **argv) {
       }
   }
 
-  for (m = 0; m<Nsmoother; m++) {
-      ierr = VecDestroy(&blocsmooth[m]);CHKERRQ(ierr);
-  }
+  ierr = VecDestroy(&bloc);CHKERRQ(ierr);
+  ierr = VecDestroy(&blocsmooth);CHKERRQ(ierr);
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.Hprev);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
@@ -462,9 +463,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   UPWINDPTS
   const PetscBool upwind = (!user->noupwind);
   PetscInt        j, k;
-  PetscReal       **am, **ab, ***aq;
+  PetscReal       **am, **ab, ***aq, **aHprev;
   Vec             qloc;
-
 
   PetscFunctionBeginUser;
   if (user->checkadmissible) {
@@ -477,6 +477,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
 
   ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes at
   // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
@@ -527,9 +528,12 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
             FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
+          if (user->doBErecovery)
+            FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
 
@@ -558,8 +562,8 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   PetscInt        j, k;
   PetscReal       **ab, ***adQ;
   Vec             dQloc;
-  MyStencil       col[32],row;
-  PetscReal       val[32];
+  MyStencil       col[33],row;
+  PetscReal       val[33];
 
   PetscFunctionBeginUser;
   if (user->mtrue) {
@@ -622,7 +626,15 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
-          ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
+          if (user->doBErecovery) {
+              // add another stencil for diagonal
+              col[32].j = j;
+              col[32].k = k;
+              val[32]   = dx * dy / user->dtBE;
+              ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,33,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
+          } else {
+              ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
+          }
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
@@ -644,7 +656,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
 
 PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
-  PetscBool      domechosen;
+  PetscBool      domechosen, dtBEset;
   char           histprefix[512];
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
@@ -669,6 +681,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-dome", "use dome exact solution by Bueler (2003) [default]",
       NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-dtBE", "duration in years of time step used in Backward Euler recovery; only active if -mah_divergetryagain",
+      NULL,user->dtBE/user->secpera,&user->dtBE,&dtBEset);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
@@ -716,6 +731,8 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->upwindfull,&user->upwindfull,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
+  if (dtBEset)
+      user->dtBE *= user->secpera;
   if ((user->averr) || (user->maxerr))
       user->silent = PETSC_TRUE;
   if (user->read) {
@@ -742,16 +759,24 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscFunctionReturn(0);
 }
 
-// try a SNES solve; H is modified
-PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt *its, SNESConvergedReason *reason, PetscInt *kspits) {
+// try a SNES solve and report on the result; H is modified
+PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
+                           SNESConvergedReason *reason, const AppCtx *user) {
   PetscErrorCode ierr;
-  KSP ksp;
+  KSP            ksp;
+  PetscInt       its, kspits;
   PetscFunctionBeginUser;
   ierr = SNESSolve(*s, NULL, H); CHKERRQ(ierr);
-  ierr = SNESGetIterationNumber(*s,its);CHKERRQ(ierr);
+  ierr = SNESGetIterationNumber(*s,&its);CHKERRQ(ierr);
   ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
-  ierr = KSPGetIterationNumber(ksp,kspits); CHKERRQ(ierr);
+  ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
+  if (again)
+      myPrintf(user,"     %s again w. ",SNESConvergedReasons[*reason]);
+  else
+      myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
+  myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters%s\n",
+           user->eps,kspits,its,(user->doBErecovery) ? " (recovery mode)" : "");
   PetscFunctionReturn(0);
 }
 
