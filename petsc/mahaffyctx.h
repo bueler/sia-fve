@@ -18,8 +18,8 @@ typedef struct {
   DM        da, quadda, sixteenda;
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
-            Hexact, // the exact thickness (either in verification or data sense)
-            bloc;   // a copy of the bed elevation with ghosts
+            Hexact; // the exact thickness (either in verification or data sense)
+  Vec       bloc;   // copy of bed elevation with ghosts
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,

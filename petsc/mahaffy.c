@@ -87,6 +87,7 @@ extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscInt*,SNESConvergedReason*,PetscInt*);
+extern PetscErrorCode BedAverager(Vec,Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -120,7 +121,8 @@ static const PetscInt  jnbr[4] = { 0,  1,  0, -1},
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
   SNES                snes;
-  Vec                 H, Htry;
+  const PetscInt      Nsmoother = 4;
+  Vec                 H, Htry, blocsmooth[Nsmoother];
   AppCtx              user;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
@@ -242,8 +244,6 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
   ierr = VecDuplicate(H,&user.Hexact); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"exact/observed thickness H"); CHKERRQ(ierr);
-  ierr = DMCreateLocalVector(user.da,&user.bloc);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)(user.bloc),"bed elevation b (with ghosts)"); CHKERRQ(ierr);
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
@@ -264,8 +264,6 @@ int main(int argc,char **argv) {
           SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,bedstep] must be TRUE since user.read is FALSE...\n");
       }
   }
-  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,user.bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,user.bloc);CHKERRQ(ierr);
 
   if (user.showdata == PETSC_TRUE) {
       ierr = ShowFields(&user); CHKERRQ(ierr);
@@ -275,6 +273,18 @@ int main(int argc,char **argv) {
   ierr = VecCopy(user.m,H); CHKERRQ(ierr);
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
+
+  // setup local copies of bed and three smoothed versions used in recovery
+  PetscInt m;
+  for (m = 0; m<Nsmoother; m++) {
+      ierr = DMCreateLocalVector(user.da,&blocsmooth[m]);CHKERRQ(ierr);
+  }
+  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,blocsmooth[0]);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,blocsmooth[0]);CHKERRQ(ierr);
+  for (m = 1; m<Nsmoother; m++) {
+      ierr = BedAverager(blocsmooth[m-1],blocsmooth[m],&user);CHKERRQ(ierr);
+  }
+  user.bloc = blocsmooth[0];
 
   // initialize the SNESVI
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
@@ -295,7 +305,7 @@ int main(int argc,char **argv) {
       else
           myPrintf(&user,"solving by M* method ...\n");
 
-  PetscInt            its, kspits, m;
+  PetscInt            its, kspits;
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
   for (m = 0; m<user.Neps; m++) {
@@ -305,13 +315,21 @@ int main(int argc,char **argv) {
       myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
                m,SNESConvergedReasons[reason],kspits,its,user.eps);
       if (reason < 0) {
-          if ((user.divergetryagain) && (user.eps > 0)) {
-              myPrintf(&user,"         ... try again w eps *= 1.5\n");
-              user.eps = 1.5 * user.eps;
-              ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-              ierr = SNESAttempt(&snes,Htry,&its,&reason,&kspits);CHKERRQ(ierr);
-              myPrintf(&user,"     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
-                       SNESConvergedReasons[reason],user.eps,kspits,its);
+          if (user.divergetryagain) {
+              PetscInt q;
+              for (q = 1; q<Nsmoother; q++) {
+                  myPrintf(&user,"         ... try again w eps *= 1.5 and smoother bed\n");
+                  user.eps = 1.5 * user.eps;
+                  user.bloc = blocsmooth[q];
+                  ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+                  ierr = SNESAttempt(&snes,Htry,&its,&reason,&kspits);CHKERRQ(ierr);
+                  myPrintf(&user,"     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+                           SNESConvergedReasons[reason],user.eps,kspits,its);
+                  if (reason >= 0) {
+                      user.bloc = blocsmooth[0];
+                      break;
+                  }
+              }
           }
           if (reason < 0) {
               if (m>0) { // record last successful eps
@@ -350,10 +368,12 @@ int main(int argc,char **argv) {
       }
   }
 
+  for (m = 0; m<Nsmoother; m++) {
+      ierr = VecDestroy(&blocsmooth[m]);CHKERRQ(ierr);
+  }
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
-  ierr = VecDestroy(&user.bloc);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
@@ -735,3 +755,29 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt *its, SNESConvergedReason *r
   PetscFunctionReturn(0);
 }
 
+
+PetscErrorCode BedAverager(Vec bloc, Vec smoothbloc, const AppCtx *user) {
+  PetscErrorCode ierr;
+  DMDALocalInfo  info;
+  PetscReal      **ab, **smoothb, tmp;
+  PetscInt       j, k;
+
+  PetscFunctionBeginUser;
+  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, smoothbloc, &smoothb);CHKERRQ(ierr);
+  for (k=info.ys; k<info.ys+info.ym; k++) {
+      for (j=info.xs; j<info.xs+info.xm; j++) {
+         tmp =   1.0 * ab[k-1][j-1] + 2.0 * ab[k-1][j] + 1.0 * ab[k-1][j+1]
+               + 2.0 * ab[k][j-1]   + 4.0 * ab[k][j]   + 2.0 * ab[k][j+1]
+               + 1.0 * ab[k+1][j-1] + 2.0 * ab[k+1][j] + 1.0 * ab[k+1][j+1];
+         smoothb[k][j] = tmp / 16.0;
+      }
+  }
+  ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, smoothbloc, &smoothb);CHKERRQ(ierr);
+
+  ierr = DMLocalToLocalBegin(user->da,smoothbloc,INSERT_VALUES,smoothbloc);CHKERRQ(ierr);
+  ierr = DMLocalToLocalEnd(user->da,smoothbloc,INSERT_VALUES,smoothbloc);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
