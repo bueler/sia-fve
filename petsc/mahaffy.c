@@ -8,9 +8,9 @@ static const char help[] =
 "and  s(x,y) = H(x,y) + b(x,y)  is surface elevation.\n"
 "Note  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
 "Domain is  -Lx < x < Lx,  -Ly < y < Ly,  with periodic boundary conditions.\n\n"
-"Computed by Q1 FVE method with FD evaluation of Jacobian (i.e. no analytical yet).\n"
+"Computed by Q1 FVE method with either analytical or FD evaluation of Jacobian.\n"
 "Compares M* improved scheme (default) and true Mahaffy schemes.\n"
-"Uses SNESVI (-snes_type vinewtonrsls) with constraint  H(x,y) >= 0.\n\n"
+"Uses SNESVI with constraint  H(x,y) >= 0.\n\n"
 "Three problem cases:\n"
 "  (1) flat bed case where analytical solution is known\n"
 "  (2) bedrock-step case where analytical solution is known\n"
@@ -35,7 +35,7 @@ Solution options:
    ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
 
 PETSc solver variations:
-   ./mahaffy -snes_type vinewtonssls
+   ./mahaffy -snes_type vinewtonssls  # vinewtonrsls is default
 
 Feedback on solution process:
    ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
@@ -86,8 +86,7 @@ Generate .png figs:
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
-extern PetscErrorCode SNESboot(SNES*,AppCtx*);
-extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscInt*,SNESConvergedReason*);
+extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscInt*,SNESConvergedReason*,PetscInt*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -243,6 +242,8 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
   ierr = VecDuplicate(H,&user.Hexact); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"exact/observed thickness H"); CHKERRQ(ierr);
+  ierr = DMCreateLocalVector(user.da,&user.bloc);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.bloc),"bed elevation b (with ghosts)"); CHKERRQ(ierr);
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
@@ -263,6 +264,8 @@ int main(int argc,char **argv) {
           SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,bedstep] must be TRUE since user.read is FALSE...\n");
       }
   }
+  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,user.bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,user.bloc);CHKERRQ(ierr);
 
   if (user.showdata == PETSC_TRUE) {
       ierr = ShowFields(&user); CHKERRQ(ierr);
@@ -273,6 +276,17 @@ int main(int argc,char **argv) {
   ierr = VecChop(H,0.0); CHKERRQ(ierr);
   ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
 
+  // initialize the SNESVI
+  ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
+  ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
+  ierr = DMDASNESSetFunctionLocal(user.da,INSERT_VALUES,
+                (DMDASNESFunction)FormFunctionLocal,&user); CHKERRQ(ierr);
+  ierr = DMDASNESSetJacobianLocal(user.da,
+                (DMDASNESJacobian)FormJacobianLocal,&user); CHKERRQ(ierr);
+  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
+  ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
+  ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
+
   if (user.mtrue)
       myPrintf(&user,    "solving by true Mahaffy method ...\n");
   else
@@ -281,17 +295,13 @@ int main(int argc,char **argv) {
       else
           myPrintf(&user,"solving by M* method ...\n");
 
-  KSP        ksp;
-  PetscInt   its, kspits, m;
+  PetscInt            its, kspits, m;
   SNESConvergedReason reason;
-  ierr = SNESboot(&snes,&user); CHKERRQ(ierr);
   gettimeofday(&user.starttime, NULL);
   for (m = 0; m<user.Neps; m++) {
       user.eps = user.eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-      ierr = SNESAttempt(&snes,Htry,&its,&reason);CHKERRQ(ierr);
-      ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
-      ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
+      ierr = SNESAttempt(&snes,Htry,&its,&reason,&kspits);CHKERRQ(ierr);
       myPrintf(&user,        "%3d. %s   with eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
                m,SNESConvergedReasons[reason],kspits,its,user.eps);
       if (reason < 0) {
@@ -299,9 +309,7 @@ int main(int argc,char **argv) {
               myPrintf(&user,"         ... try again w eps *= 1.5\n");
               user.eps = 1.5 * user.eps;
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-              ierr = SNESAttempt(&snes,Htry,&its,&reason);CHKERRQ(ierr);
-              ierr = SNESGetKSP(snes,&ksp); CHKERRQ(ierr);
-              ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
+              ierr = SNESAttempt(&snes,Htry,&its,&reason,&kspits);CHKERRQ(ierr);
               myPrintf(&user,"     %s AGAIN  eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
                        SNESConvergedReasons[reason],user.eps,kspits,its);
           }
@@ -345,6 +353,7 @@ int main(int argc,char **argv) {
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.bloc);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
@@ -434,7 +443,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   const PetscBool upwind = (!user->noupwind);
   PetscInt        j, k;
   PetscReal       **am, **ab, ***aq;
-  Vec             bloc, qloc;
+  Vec             qloc;
 
 
   PetscFunctionBeginUser;
@@ -443,13 +452,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
 
   user->maxD = 0.0;
 
-  // need stencil width on b and locally-computed q
-  ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
+  // need stencil width on locally-computed q
   ierr = DMGetLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
 
-  ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes at
@@ -468,11 +474,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   gH = gradav(gH,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],dx,dy,aH));
                   gb = gradav(gb,gradfatpt(j+jnbr[c],k+knbr[c],locxnbr[c],locynbr[c],dx,dy,ab));
                   Hup = H; // no upwinding allowed in true Mahaffy
-              } else {
+              } else { // default M* method
                   H  = fieldatpt(j,k,locx[c],locy[c],aH);
                   gH = gradfatpt(j,k,locx[c],locy[c],dx,dy,aH);
                   gb = gradfatpt(j,k,locx[c],locy[c],dx,dy,ab);
-                  Hup = H;
                   if (upwind) {
                       PetscReal lxup = locx[c], lyup = locy[c];
                       if (xdire[c] == PETSC_TRUE)
@@ -480,7 +485,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                       else
                           lyup = (gb.y <= 0.0) ? upmin : upmax;
                       Hup = fieldatpt(j,k,lxup,lyup,aH);
-                  }
+                  } else
+                      Hup = H;
               }
               aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
           }
@@ -504,10 +510,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
 
-  ierr = DMRestoreLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -532,7 +537,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   const PetscBool upwind = (user->noupwind == PETSC_FALSE);
   PetscInt        j, k;
   PetscReal       **ab, ***adQ;
-  Vec             bloc, dQloc;
+  Vec             dQloc;
   MyStencil       col[32],row;
   PetscReal       val[32];
 
@@ -545,13 +550,9 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
 
   ierr = MatZeroEntries(jac); CHKERRQ(ierr);  // because using ADD_VALUES below
 
-  // need stencil width on b and locally-computed dQdl
-  ierr = DMGetLocalVector(user->da,&bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalBegin(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalEnd(user->da,user->b,INSERT_VALUES,bloc);CHKERRQ(ierr);
   ierr = DMGetLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
 
-  ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get DfluxDl for
   // l=0,1,2,3 at c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
@@ -604,10 +605,9 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
           ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
       }
   }
-  ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
 
-  ierr = DMRestoreLocalVector(user->da,&bloc);CHKERRQ(ierr);
   ierr = DMRestoreLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
 
   // Assemble matrix, using the 2-step process:
@@ -722,28 +722,16 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscFunctionReturn(0);
 }
 
-// start a SNESVI
-PetscErrorCode SNESboot(SNES *s, AppCtx* user) {
-  PetscErrorCode ierr;
-  ierr = SNESCreate(PETSC_COMM_WORLD,s);CHKERRQ(ierr);
-  ierr = SNESSetDM(*s,user->da);CHKERRQ(ierr);
-  ierr = DMDASNESSetFunctionLocal(user->da,INSERT_VALUES,
-                (DMDASNESFunction)FormFunctionLocal,user); CHKERRQ(ierr);
-  ierr = DMDASNESSetJacobianLocal(user->da,
-                (DMDASNESJacobian)FormJacobianLocal,user); CHKERRQ(ierr);
-  ierr = SNESVISetComputeVariableBounds(*s,&FormBounds);CHKERRQ(ierr);
-  ierr = SNESSetType(*s,SNESVINEWTONRSLS);CHKERRQ(ierr);
-  ierr = SNESSetFromOptions(*s);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
 // try a SNES solve; H is modified
-PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt *its, SNESConvergedReason *reason) {
+PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt *its, SNESConvergedReason *reason, PetscInt *kspits) {
   PetscErrorCode ierr;
+  KSP ksp;
   PetscFunctionBeginUser;
   ierr = SNESSolve(*s, NULL, H); CHKERRQ(ierr);
   ierr = SNESGetIterationNumber(*s,its);CHKERRQ(ierr);
   ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
+  ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
+  ierr = KSPGetIterationNumber(ksp,kspits); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
