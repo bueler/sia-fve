@@ -54,35 +54,13 @@ diffusivity:
 
 This run only takes a few minutes and uses the data as is.
 
-On viewing the solution process
--------------------------------
-
-A helpful view of the solution process comes from adding one of
-
-    -snes_monitor_solution -snes_monitor_residual -snes_monitor_solution_update
-
-to the options.  With `-snes_monitor_solution` you see that the solution `H`
-starts out too diffuse because the continuation method over-regularizes at the
-beginning.
-
-However, recall we are solving the variational inequality version of equations
-`F(H)=0`, with constraint `H>=0`.  With `-snes_monitor_residual` you see that
-in the ice-covered area the residual goes to zero as each Newton (SNES)
-iteration completes, but that in the _ice-free_ area (i.e. where `H=0`) the
-residual `F(H)` is large and positive even when the SNES converges.  This
-reflects the complementarity interpretation of the variational inequality, i.e.
-
-    H >= 0  and  F(H) >= 0  and  H F(H) = 0.
-
-Thus the new `-snes_vi_monitor_residual` option is helpful.
-
 Generating final figures:
 -------------------------
 
 Generate `.pdf` and `.png` figures:
 
     $ cd test/
-    $ ../../figsmahaffy.py --profile --observed --map
+    $ ../../figsmahaffy.py --observed
 
 Higher/lower resolution
 -----------------------

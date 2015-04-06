@@ -42,7 +42,7 @@ Now run `mahaffy` on it:
 
 Generate figures:
 
-    $ ../../../figsmahaffy.py --profile --map
+    $ ../../../figsmahaffy.py --observed
 
 Higher resolution
 -----------------

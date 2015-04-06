@@ -6,13 +6,17 @@
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Generate .png figures from PETSc binary files written by mahaffy.c.')
-parser.add_argument("--profile", action="store_true", help="generate profile figure")
-parser.add_argument("--half", action="store_true", help="if generating profile, make it half-width")
+parser = argparse.ArgumentParser(description='Generate figures from PETSc binary files written by mahaffy.c.  Default is to generate both .pdf profile and .png map-plane figures.')
+parser.add_argument("--profile", action="store_true", help="generate profile figure only")
+parser.add_argument("--half", action="store_true", help="make half-width profile")
 parser.add_argument("--observed", action="store_true", help="label Hexact as observed in profile")
 parser.add_argument("--sharpbed", action="store_true", help="use 'exact' bed from Jarosch et al")
-parser.add_argument("--map", action="store_true", help="generate map-plane figures")
+parser.add_argument("--map", action="store_true", help="generate map-plane figures only")
 args = parser.parse_args()
+
+if (not args.profile) & (not args.map):
+    args.profile = True
+    args.map = True
 
 import sys
 import numpy as np
@@ -84,11 +88,6 @@ def gets(H,b):
     icebase = np.maximum(b,Hdraft)
     s = H + icebase
     return s
-
-if (not args.profile) & (not args.map):
-    print 'generating no figures ... use --profile or --map options'
-    print 'ending ...'
-    sys.exit(0)
 
 if args.observed:
     Hexlabel = 'observed'
