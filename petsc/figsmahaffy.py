@@ -147,7 +147,7 @@ if args.profile:
     if extraH:
         tmplabel = Hlabels[0]
     else:
-        tmplabel = 'numerical solution'
+        tmplabel = 'M*'
     plt.plot(x,gets(Hn,bn),'ok',label=tmplabel,markersize=4.0)
     if extraH:
         stylelist = ['+k', 'xk', 'sk', 'dk']
