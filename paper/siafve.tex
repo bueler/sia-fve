@@ -137,7 +137,7 @@ The diffusion interpretation \eqref{eq:siafluxdiffusion} is appropriate in the f
 \end{equation}
 The vector field $\boldsymbol{\omega}$ can be thought of as a ``velocity'' which transports $H^{n+2}$, and in this thinking the combination of \eqref{eq:siaevolution} and \eqref{eq:siafluxjsa} becomes a kind of nonlinear hyperbolic equation, but again with a ``velocity'' $\boldsymbol{\omega}$ that actually depends on the gradient of the transported quantity $H$.
 
-In this paper we modify forms \eqref{eq:siafluxdiffusion} and \eqref{eq:siafluxjsa} to a split form
+We modify forms \eqref{eq:siafluxdiffusion} and \eqref{eq:siafluxjsa} to a split form
 \begin{equation}
 \bq = - D \grad H + \bW H^{n+2},\label{eq:fluxform}
 \end{equation}
@@ -147,39 +147,49 @@ where $D$ is the same as in \eqref{eq:siafluxdiffusion} and where
 \end{equation}
 The vector field $\bW$ again transports $H^{n+2}$, but in this case it is proportional to $\grad b$ so only its magnitude is related to $\grad H$.  Note that $\bW=0$ in the case of flat beds, while $\boldsymbol{\omega}$ is both nonzero and diffusive in that case.
 
-The combination of \eqref{eq:siaevolution} with any of the above forms for the flux $\bq$ defines a highly-nonlinear diffusion-advection equation.  In numerical schemes form \eqref{eq:fluxform} has the advantage that we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while also preserving accuracy by applying a centered scheme to the diffusive term ``$-D \grad H$''.  The presence of the often-dominant leading-order diffusion is also a motivation to use implicit time-stepping.
+The combination of \eqref{eq:siaevolution} with any of the above forms for the flux $\bq$ defines a highly-nonlinear diffusion-advection equation.  In numerical schemes form \eqref{eq:fluxform} has the advantage that we can apply a non-oscillatory transport scheme to the ``$\bW H^{n+2}$'' term while also preserving accuracy by applying a centered scheme to the diffusive term ``$-D \grad H$''.  The presence of the often-dominant leading-order diffusion is also a motivation to use implicit time-stepping.  However, implicit schemes for \eqref{eq:siaevolution} also need to determine the location of the free boundary at each time step.
 
-However, implicit schemes also need to determine the location of the free boundary at each time step.  In this paper we will only solve the steady-state form of \eqref{eq:siaevolution}, namely
+In this paper we will only solve the steady-state form of \eqref{eq:siaevolution}, namely
 \begin{equation}
 \Div \bq = m.  \label{eq:siasteady}
 \end{equation}
-This equation is a boundary-value problem in which the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}.  The ice-covered domain where \eqref{eq:siasteady} applies, and the location of the boundary where $H=0$ and $\bq=0$, cannot be treated as a small modification of a known boundary, though that is the standard approach of explicit time-stepping schemes for equation \eqref{eq:siaevolution} \citep{Bueleretal2005,Huybrechtsetal1996}.
+Equivalently, by the divergence theorem applied to any subregion $V$ of $\Omega$ we get the flux-integral form of the steady-state SIA,
+\begin{equation}
+  \int_{\partial V} \bq \cdot \bn\,ds = \int_V m\, dx\,dy. \label{eq:siaasconservation}
+\end{equation}
+Here $\partial V$ denotes the boundary of $V$, $\bn$ is the outward normal unit vector, and $ds$ is the length element on the closed curve $\partial V$.
 
-To be precise about boundary conditions, if the surface mass balance $m$ is sufficiently-negative near the boundary of the domain $\Omega$ on which \eqref{eq:siasteady} is intended to be solved then $H\to 0$ at points inside $\Omega$.  These points define the free boundary, at which $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  Because of the factor $H^{n+2}$ in formula \eqref{eq:siafluxdiffusion} for the diffusivity $D$, the problem also has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
+Equation \eqref{eq:siasteady}, or \eqref{eq:siaasconservation}, is a boundary-value problem in which the location where the boundary conditions should be applied is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}.  The ice-covered domain where \eqref{eq:siasteady} applies, and the location of the boundary where $H=0$ and $\bq=0$, cannot be treated as a small modification of a known boundary, though that is the standard approach of explicit time-stepping schemes for equation \eqref{eq:siaevolution} \citep{Bueleretal2005,Huybrechtsetal1996}.
+
+To be more precise about boundary conditions, if the surface mass balance $m$ is sufficiently-negative near the boundary of the domain $\Omega$ on which \eqref{eq:siasteady} is intended to be solved then $H\to 0$ at points inside $\Omega$.  These points define the free boundary, at which $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  Because of the factor $H^{n+2}$ in formula \eqref{eq:siafluxdiffusion} for the diffusivity $D$, the problem also has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
 
 The problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siasteady}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on some larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by a free boundary.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice, and corresponding surface elevation $s(x,y)=H(x,y)+b(x,y)$.
 
 
 \section{The classical Mahaffy scheme}   \label{sec:mahaffyfd}
 
-Consider the rectangular structured FD grid, with spacing $\Delta x,\Delta y$, in Figure \ref{fig:fdfemgrids}a.  The \cite{Mahaffy1976} scheme calculates one of the flux components $\bq=(q^x,q^y)$ at the staggered grid points marked by triangles in the Figure.  For these points we introduce notation
+Consider the rectangular structured FD grid, with spacing $\Delta x,\Delta y$, shown in Figure \ref{fig:fdfemgrids}a.  The \cite{Mahaffy1976} scheme calculates one flux component at each of the staggered grid points marked by triangles.  For these points we introduce notation
 \begin{equation}
 x_j^\pm = x_j \pm \dxtwo, \qquad y_k^\pm = y_k \pm \dytwo. \label{eq:definexypm}
 \end{equation}
-At staggered point $(x_j^+,y_k)$ the scheme computes the $x$-component of the flux by
+At $(x_j^+,y_k)$ the scheme computes the $x$-component of the flux by
 \begin{equation}
 q^x_{j+\half,k} = - \Gamma (\hat H_{j+\half,k})^{\,n+2} \alpharight^{\,n-1} \frac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyqx}
 \end{equation}
-where $s_{j,k} = H_{j,k} + b_{j,k}$ and
+where $s_{j,k} = H_{j,k} + b_{j,k}$,
 \begin{equation}
-  \hat H_{j+\half,k} = \frac{H_{j,k} + H_{j+1,k}}{2}.  \label{eq:mahaffyHav}
+  \hat H_{j+\half,k} = \frac{H_{j,k} + H_{j+1,k}}{2},  \label{eq:mahaffyHav}
 \end{equation}
-The quantity ``$\alpharight$\!'' is an estimate of $|\grad s|$:
+and ``$\alpharight$\!'' is an estimate of $|\grad s|$:
 \begin{align}
 \alpharight^{\,2} &= \left(\frac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2  \label{eq:mahaffyalphax} \\
   &\quad + \left(\frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2. \notag
 \end{align}
-The formula for the flux $q^y_{j,k+\half}$ at staggered location $(x_j,y_k^+)$, which uses thickness average $\hat H_{j,k+\half}$ and slope estimate $\alphaup$, follows by swapping the roles of $j$ and $k$, and $\Delta x$ and $\Delta y$, in the above equations.
+At $(x_j,y_k^+)$ the scheme computes
+\begin{equation}
+q^y_{j,k+\half} = - \Gamma (\hat H_{j,k+\half})^{\,n+2} \alphaup^{\,n-1} \frac{s_{j,k+1} - s_{j,k}}{\Delta y}  \label{eq:mahaffyqy}
+\end{equation}
+where $\hat H_{j,k+\half}$ and $\alphaup$ are defined by swapping the roles of $j$ and $k$, and $\Delta x$ and $\Delta y$, in equations \eqref{eq:mahaffyHav} and \eqref{eq:mahaffyalphax}, respectively.  The slope approximation in \eqref{eq:mahaffyalphax}, and the corresponding formula for $\alphaup$, is perhaps the least-obvious aspect of the Mahaffy scheme, but it is easy to check that these FD formulas are consistent \citep{MortonMayers2005}.
 
 \begin{figure}[ht]
 \begin{center}
@@ -189,27 +199,19 @@ The formula for the flux $q^y_{j,k+\half}$ at staggered location $(x_j,y_k^+)$, 
 \label{fig:fdfemgrids}
 \end{figure}
 
-Slope approximation \eqref{eq:mahaffyalphax} is the least-obvious aspect of the Mahaffy scheme, but the discretization of the mass conservation equation itself is straightforward.  In the steady case the scheme applies centered-difference formulas \citep{MortonMayers2005} to \eqref{eq:siasteady}:
+The discretization of mass conservation equation \eqref{eq:siasteady} itself is straightforward.  In the steady case the scheme uses centered-differences \citep{MortonMayers2005}:
 \begin{equation}
 \frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}.  \label{eq:siasteadyfd}
 \end{equation}
 
-Equation \eqref{eq:siasteadyfd}, combined with equations like \eqref{eq:mahaffyqx} for the staggered-grid fluxes, gives one equation in an algebraic system which determines all values $H_{j,k}$ simultaneously.  The algebraic equation coming from \eqref{eq:siasteadyfd} involves the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a.  We call this pattern of dependence the ``stencil'' of the scheme \citep{MortonMayers2005}.
+Equation \eqref{eq:siasteadyfd}, combined with equations \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy}, gives one equation in an algebraic system which determines all values $H_{j,k}$ simultaneously.  Equation \eqref{eq:siasteadyfd} relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil''  \citep{MortonMayers2005} of the scheme.
 
 
 \section{An FVE re-interpretation} \label{sec:fveinterpretation}
 
-The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  As Figure \ref{fig:fdfemgrids} suggests, our re-interpretation uses the same structured grid, but the regular grid points $(x_j,y_k)$ are now nodes (degrees of freedom) for a continuous space of trial functions.  The same nodes are also used as centered degrees of freedom for (discontinuous) piecewise-constant test functions, or equivalently as the centers of control volumes over which we compute flux integrals.  The test functions are discontinuous at the FD method's staggered grid points; equivalently the flux integral is over a curve (i.e.~rectangle) which passes through the staggered grid points.  As a ``finite volume element'' (FVE) method we have see discrete conservation, and the construction of upwind-type flux components, just in the standard FV understanding.  However, the FE character remains in that we evaluate an interpolating trial function when computing the flux integral.
+The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  As Figure \ref{fig:fdfemgrids} suggests, our re-interpretation uses the same structured grid, but the regular grid points are now nodes (degrees of freedom) for a continuous space of trial functions.  In fact, an FVE method supposes that the approximation $H^h$ of the solution lies in a finite-dimensional space of continuous functions which are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere and can be integrated along $\partial V$ in \eqref{eq:siaasconservation}.  However, as in an FV method, integral equation \eqref{eq:siaasconservation} is only required to hold for a finite set of node-centered control volumes $V$ which together tile $\Omega$.  This generates a finite system of nonlinear algebraic equations.
 
-We suppose \eqref{eq:siasteady} holds.  By the divergence theorem applied to a subregion $V$ of $\Omega$ we get the flux-integral form of \eqref{eq:siasteady}
-\begin{equation}
-  \int_{\partial V} \bq \cdot \bn\,ds = \int_V m\, dx\,dy. \label{eq:siaasconservation}
-\end{equation}
-Here $\partial V$ denotes the boundary of $V$, $\bn$ is the outward normal unit vector, and $ds$ the length element on the closed curve $\partial V$.
-
-An FVE method supposes that the approximation $H^h$ of the thickness solution lies in a finite-dimensional space of continuous functions which are differentiable almost everywhere.  These functions are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere and can be integrated along $\partial V$ in \eqref{eq:siaasconservation}.  But integral equation \eqref{eq:siaasconservation} is only required to hold for a finite set of volumes $V$ which together tile $\Omega$.  This generates a finite system of nonlinear algebraic equations.
-
-Again consider the structured grid of rectangular elements shown in Figure \ref{fig:fdfemgrids}b.  Denote the element with lower-left corner at $(x_j,y_k)$ by $\square_{j,k}$.  When associated with bilinear functions these rectangles are $Q^1$ finite elements \citep{Elmanetal2005}.  A basis for such functions on $\square_{j,k}$ is the set
+In Figure \ref{fig:fdfemgrids}b, element $\square_{j,k}$ is the rectangle with lower-left corner at $(x_j,y_k)$.  When associated with bilinear functions this rectangle is a $Q^1$ finite element \citep{Elmanetal2005}.  A basis for bilinear functions on $\square_{j,k}$ is the set
 \begin{equation}
 \chi_\ell \left(\frac{x-x_j}{\Delta x},\frac{y-y_k}{\Delta y}\right), \label{eq:elementbasis}
 \end{equation}
@@ -218,17 +220,15 @@ for $\ell=0,1,2,3$, where
 \chi_0(\xi,\eta) &= \left(1-\xi\right) \left(1-\eta\right), & \chi_1(\xi,\eta) &= \xi \left(1-\eta\right), \\
 \chi_2(\xi,\eta) &= \xi \eta, & \chi_3(\xi,\eta) &= \left(1-\xi\right) \eta.
 \end{align*}
-With this order, $\chi_\ell=1$ on element corners traversed in counter-clockwise order (Figure \ref{fig:fdfemgrids}b).  Now let
+With this order, $\chi_\ell=1$ on element corners traversed in counter-clockwise order (Figure \ref{fig:fdfemgrids}b).  
+
+Let
 \begin{equation}
 S_h = \{u \text{ is bilinear on each $\square_{j,k}$}\}
 \end{equation}
-be the trial space of continuous functions.  Functions in $S_h$ have a gradient which is defined almost everywhere, but the gradient is discontinuous along the element edges (solid lines in Figure \ref{fig:fdfemgrids}b).
+be the trial space.  Functions in $S_h$ have a gradient which is defined almost everywhere, but the gradient is discontinuous along the element edges (solid lines in Figure \ref{fig:fdfemgrids}b).  We seek an approximate solution $H^h$ from $S_h$.  Also let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b$, and let $s^h=H^h+b^h$, so both $b^h$ and $s^h$ are in $S_h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} or \eqref{eq:fluxform} using $H^h$ and $b^h$, so $\bq^h$ is well-defined on the interior of each element.
 
-Let $V_{j,k}$ be the control volume with center at $(x_j,y_j)$ (Figure \ref{fig:fdfemgrids}b).  Let
-\begin{equation}
-S_h^* = \{u \text{ is constant on each $V_{j,k}$}\}
-\end{equation}
-be the test space of functions which are piecewise constant and discontinuous along the control volume edges (dashed lines in Figure \ref{fig:fdfemgrids}b).
+Let $V_{j,k}$ be the control volume with center at $(x_j,y_j)$ (Figure \ref{fig:fdfemgrids}b).  In the FVE method we require \eqref{eq:siaasconservation} to hold for $\bq=\bq^h$ and $V$ equal to each $V_{j,j}$.  We will use a periodic grid with $N_x$ rectangles in the $x$-direction and $N_y$ in the $y$ direction, so there are $N=N_xN_y$ distinct control volumes  and thus $N$ equations in the resulting algebraic system.
 
 \begin{figure}[ht]
 \begin{center}
@@ -238,15 +238,17 @@ be the test space of functions which are piecewise constant and discontinuous al
 \label{fig:fembases}
 \end{figure}
 
-Bases of $S_h$ and $S_h^*$ are formed by those functions which take value one at a single node, and zero at all other nodes.  By definition, $\psi_{j,k}(x,y)$ is the unique function in $S_h$ so that $\psi_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$, while $\omega_{j,k}(x,y)$ is the unique function in $S_h^*$ so that $\omega_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$; see Figure \ref{fig:fembases}.  We will use a periodic grid with $N_x$ rectangles in the $x$-direction and $N_y$ in the $y$ direction, so there are $N=N_xN_y$ distinct nodes and $\dim S_h = \dim S_h^* = N$.  
+Instead of control volumes we could introduce test functions.  Let
+\begin{equation}
+S_h^* = \{u \text{ is constant on each $V_{j,k}$}\}
+\end{equation}
+be functions which are piecewise-constant and discontinuous only along the control volume edges (dashed lines in Figure \ref{fig:fdfemgrids}b).  Note that bases of $S_h$ and $S_h^*$ are formed by those functions which take value one at a single node, and zero at all other nodes.  We write $\psi_{j,k}(x,y)$ for the unique function in $S_h$ so that $\psi_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$, while $\omega_{j,k}(x,y)$ is the unique function in $S_h^*$ so that $\omega_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$; see Figure \ref{fig:fembases}.  Requiring \eqref{eq:siaasconservation} to hold for each control volume, as in the FVE method, is equivalent to multiplying \eqref{eq:siasteady} by $\omega_{j,k}$ and then integrating-by-parts.  Such a calculation requires the generalized-function idea that the derivative of a step function is a Dirac delta function.  From now on, however, we will use the FVE interpretation, and thus not need test functions or $S_h^*$.
 
-We seek an approximate solution $H^h$ from $S_h$.  Let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b$, and let $s^h=H^h+b^h$; both are in $S_h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} using $H^h$ and $b^h$, so $\bq^h$ is well-defined on the interior of each element.  We require \eqref{eq:siaasconservation} to hold for this $\bq^h$ and all volumes $V_{j,k}$.  This is, however, equivalent to multiplying \eqref{eq:siasteady} by $\omega_{j,k}$ and then integrating by parts, though such a calculation requires the generalized-function idea that the derivative of a step function is a Dirac delta function.
-
-Both the classical Mahaffy scheme, and our improved scheme below, assume midpoint quadrature on the right-hand integral in \eqref{eq:siaasconservation}.  Thus we seek $H^h$ in $S_h$ satisfying
+Both the classical Mahaffy scheme, and our improved scheme below, assume midpoint quadrature on the right-hand integral in \eqref{eq:siaasconservation}.  Thus the FVE method is this: we seek $H^h$ in $S_h$ satisfying
 \begin{equation}
   \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
 \end{equation}
-for all $j,k$.  This will give a finite algebraic system once we choose a quadrature rule on the left.
+for all $j,k$.  It remains to choose a quadrature rule on the left, however.
 
 We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$:
 \begin{align}
@@ -255,9 +257,9 @@ We decompose the integral in \eqref{eq:siafve} into the four edges which form $\
 &\quad - \int_{y_k^-}^{y_k^+} q^x(x_j^-,y)\,dy \notag \\
 &\quad - \int_{x_j^-}^{x_j^+} q^y(x,y_k^-)\,dx. \notag
 \end{align}
-Though $\bq^h$ is a well-defined, bounded function, it is discontinuous across element boundaries.  For example, in the first integral on the right in \eqref{eq:fluxintdecomp} the integrand $f(y) = q^x(x_j^+,y)$ has a jump discontinuity at the midpoint $y=y_k$ of the interval of integration because $s^h_y$ is discontinuous there.  On the other hand, formula \eqref{eq:mahaffyqx} in the Mahaffy FD scheme computes the normal component of $\bq^h$ at the center of the right edge of the control volume shown in Figure \ref{fig:fdfemgrids}b, that is, at $y=y_k$.
+Though $\bq^h$ is a well-defined, bounded function, it is discontinuous across element boundaries.  For example, in the first integral on the right in \eqref{eq:fluxintdecomp} the integrand $f(y) = q^x(x_j^+,y)$ has a jump discontinuity at the midpoint $y=y_k$ of the interval of integration because $s^h_y$ is discontinuous there.  On the other hand, formula \eqref{eq:mahaffyqx} in the Mahaffy FD scheme computes the normal component of $\bq^h$ exactly at $y=y_k$.
 
-In fact the Mahaffy scheme computes each integral in \eqref{eq:fluxintdecomp} by the midpoint method, but by \emph{averaging the discontinuous component of the surface gradient across its jump discontinuity}.  Thus Mahaffy does not use a true quadrature, because the integrand $\bq^h\cdot \bn$ does not have a value at the quadrature point.
+The key to the Mahaffy scheme is that it computes each integral in \eqref{eq:fluxintdecomp} by the midpoint method, but by \emph{averaging the discontinuous component of the surface gradient across its jump discontinuity}.  Mahaffy does not use a true quadrature because the integrand $\bq^h\cdot \bn$ does not have a value at the quadrature point.
 
 To turn this idea into formulas, observe that the thickness $H^h$ and the $x$-derivative $\partial s^h/\partial x = s^h_x$ are continuous along the edge between elements $\square_{j,k}$ and $\square_{j,k-1}$.  Indeed, using the element basis \eqref{eq:elementbasis} the surface gradient on $\square_{j,k}$ has components
 \begin{align}
@@ -283,7 +285,7 @@ The average of these values is not a value of $s_y^h$, but a re-construction the
 \begin{equation}
 \widehat{s^h_y}(x_j^+,y_k) = \frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4\Delta y}. \label{eq:femsystagcrime}
 \end{equation}
-Formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in FD formula \eqref{eq:mahaffyalphax}.
+Formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in Mahaffy's FD formula \eqref{eq:mahaffyalphax}.
 
 In our FVE interpretation, the Mahaffy scheme uses \eqref{eq:femsxstag}, \eqref{eq:femHstag}, and \eqref{eq:femsystagcrime} in the midpoint rule:
 \begin{align}
@@ -296,12 +298,12 @@ where
 \end{equation}
 is the same as in \eqref{eq:mahaffyalphax}.
 
-Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Equation \eqref{eq:femmahaffyfirstint}, and the corresponding approximations of the other integrals in \eqref{eq:fluxintdecomp}, gives the same approximations of the fluxes as \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyalphax} at staggered points $(x_j^\pm,y_k)$ and $(x_j,y_k^\pm)$.  By using these approximate fluxes to compute the integrals in equation \eqref{eq:fluxintdecomp}, and dividing equation \eqref{eq:siafve} by control volume area $\Delta x\,\Delta y$, we get FD equation \eqref{eq:siasteadyfd}.
+Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Recognizing the Mahaffy choice as quadrature-like in this FVE context allows us to do it better.
 
 
 \section{An improved scheme}  \label{sec:star}
 
-We now return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique, and we do so.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on $\bW H^{n+2}$, because $\bW$ is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme.
+So we return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique, and we do so.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on $\bW H^{n+2}$, because $\bW$ is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme.
 
 Because $H^h$ and $b^h$ live in the space of continuous piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined and smooth on the interior of each element, but $\bq^h$ is discontinuous across the element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts and use the midpoint rule, the optimal one-point rule, on each half.  For example, we break the first integral at $y=y_k$:
 \begin{align}
