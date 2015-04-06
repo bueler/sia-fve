@@ -7,16 +7,38 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='Generate figures from PETSc binary files written by mahaffy.c.  Default is to generate both .pdf profile and .png map-plane figures.')
-parser.add_argument("--profile", action="store_true", help="generate profile figure only")
-parser.add_argument("--half", action="store_true", help="make half-width profile")
-parser.add_argument("--observed", action="store_true", help="label Hexact as observed in profile")
-parser.add_argument("--sharpbed", action="store_true", help="use 'exact' bed from Jarosch et al")
-parser.add_argument("--map", action="store_true", help="generate map-plane figures only")
+parser.add_argument("--profile", action="store_true",
+                    help="generate profile figure only")
+parser.add_argument("--half", action="store_true",
+                    help="make half-width profile")
+parser.add_argument("--observed", action="store_true",
+                    help="label Hexact as observed in profile")
+parser.add_argument("--sharpbed", action="store_true",
+                    help="plot 'exact' bed from Jarosch et al")
+parser.add_argument("--map", action="store_true",
+                    help="generate map-plane figures only")
+parser.add_argument('-extra_H', default='', metavar='A,B', type=str,
+                    help='comma-delimited list of files from which to ADDITIONALLY read thickness H, for combined profile')
+parser.add_argument('-extra_H_labels', default='', metavar='"0","A","B"', type=str,
+                    help='comma-delimited list of ALL labels for combined profile; length must be one more than -extra_H list')
 args = parser.parse_args()
 
 if (not args.profile) & (not args.map):
     args.profile = True
     args.map = True
+
+extraH = (len(args.extra_H) > 0)
+if extraH:
+    if args.map:
+        print "option -extra_H only allowed for profile plot"
+        sys.exit(3)
+    Hlist = args.extra_H.split(',')
+    Hlabels = args.extra_H_labels.split(',')
+    print Hlist
+    print Hlabels
+    if len(Hlist)+1 != len(Hlabels):
+        print "length of labels list must be one more than -extra_H list"
+        sys.exit(4)
 
 import sys
 import numpy as np
@@ -94,29 +116,46 @@ if args.observed:
 else:
     Hexlabel = 'exact solution'
 
+half = (x > 0)
+def extracthalf(f):
+    if args.half:
+        fn = f[n][half]
+    else:
+        fn = f[n][:]
+    return fn
+
 if args.profile:
     plt.figure(figsize=(7,5))
     n = len(y) / 2    # FIXME: make adjustable?
+    xoriginal = x.copy()
     if args.half:
-        half = (x>0)
         x = x[half]
-        bn = b[n][half]
-        Hn = H[n][half]
-        Hexactn = Hexact[n][half]
-    else:
-        bn = b[n][:]
-        Hn = H[n][:]
-        Hexactn = Hexact[n][:]
-    plt.plot(x,gets(Hn,bn),'ok',label='numerical solution',markersize=4.0)
+    bn = extracthalf(b)
+    Hexactn = extracthalf(Hexact)
     plt.hold(True)
+    # first plot bed and exact H
     if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
-        plt.plot(x,gets(Hexactn,bn),'--k',label=Hexlabel)
-        if args.sharpbed:  # only works well with --half
-           plt.plot([0.0,7.0,7.0,x.max()],[500.0,500.0,0.0,0.0],'k',label='bed',lw=1.5)
+        plt.plot(x,gets(Hexactn,bn),'-k',label=Hexlabel,lw=0.8)
+        if args.sharpbed:  # only works with --half
+           plt.plot([0.0,7.0,7.0,x.max()],[500.0,500.0,0.0,0.0],'k',label='bed',lw=2.5)
         else:
            plt.plot(x,bn,'k',label='bed',lw=1.5)
     else:
         plt.plot(x,gets(Hexactn,bn),'k',label=Hexlabel)
+    # now plot H and extras
+    Hn = extracthalf(H)
+    if extraH:
+        tmplabel = Hlabels[0]
+    else:
+        tmplabel = 'numerical solution'
+    plt.plot(x,gets(Hn,bn),'ok',label=tmplabel,markersize=4.0)
+    if extraH:
+        stylelist = ['+k', 'xk', 'sk', 'dk']
+        for j in range(len(Hlist)):
+            nextH = readvec(Hlist[j],shape=(len(y),len(xoriginal)))
+            nextHn = extracthalf(nextH)
+            plt.plot(x,gets(nextHn,bn),stylelist[j],label=Hlabels[j+1],markersize=8.0)
+    # finish up with labels etc.
     plt.hold(False)
     plt.xlabel('x  (km)')
     plt.ylabel('z  (m)')

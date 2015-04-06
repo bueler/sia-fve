@@ -11,7 +11,7 @@ mahaffy: mahaffy.o exactsia.o io.o q1op.o sia.o chkopts
 	-${CLINKER} -o mahaffy mahaffy.o exactsia.o io.o q1op.o sia.o  ${PETSC_SNES_LIB}
 	${RM} mahaffy.o exactsia.o io.o q1op.o sia.o
 
-# these targets are used for generating verification figures in ../../mahaffypaper/
+# these targets are used for generating verification figures in ../paper/
 dome.verif: mahaffy domeconv.sh
 	./domeconv.sh dome.verif 6 6
 bedstep.verif: mahaffy bedstepconv.sh
