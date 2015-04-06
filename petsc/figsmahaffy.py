@@ -60,6 +60,7 @@ b = readvec('b.dat',shape=(len(y),len(x)))
 m = readvec('m.dat',shape=(len(y),len(x)))
 Hexact = readvec('Hexact.dat',shape=(len(y),len(x)))
 H = readvec('H.dat',shape=(len(y),len(x)))
+residual = readvec('residual.dat',shape=(len(y),len(x)))
 
 figdebug = False
 def figsave(name):
@@ -163,4 +164,12 @@ if args.map:
     plt.colorbar()
     plt.title('thickness error H-Hexact (m) with min=%.2f, max=%.2f' % (Herror.min(),Herror.max()))
     figsave('Herror.png')
+
+    plt.figure(figsize=fsize)
+    plt.pcolormesh(x,y,np.minimum(residual,0.0))
+    plt.axis('tight')
+    plt.colorbar()
+    plt.title('VI-chopped residual r with min=%.2e so only %.2e <= r <= 0 shown' % \
+              (residual.min(),residual.min()))
+    figsave('residual.png')
 
