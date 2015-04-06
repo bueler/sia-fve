@@ -11,13 +11,19 @@ mahaffy: mahaffy.o exactsia.o io.o q1op.o sia.o chkopts
 	-${CLINKER} -o mahaffy mahaffy.o exactsia.o io.o q1op.o sia.o  ${PETSC_SNES_LIB}
 	${RM} mahaffy.o exactsia.o io.o q1op.o sia.o
 
-# these targets are used for generating verification figures in ../paper/
+# for generating dome verification convergence figure in ../paper/
 dome.verif: mahaffy domeconv.sh
 	./domeconv.sh dome.verif 6 6
-bedstep.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstep.verif 5 6
 true.verif: mahaffy domeconv.sh
 	./domeconv.sh true.verif 4 6 "-mah_true -snes_fd_color -da_grid_x 20 -da_grid_y 20"
+
+# for generating bedstep verification table in ../paper/
+bedstep.verif: mahaffy bedstepconv.sh
+	./bedstepconv.sh bedstep.verif 4 6
+bedstepnoup.verif: mahaffy bedstepconv.sh
+	./bedstepconv.sh bedstepnoup.verif 4 6 "-mah_noupwind"
+bedstepfullup.verif: mahaffy bedstepconv.sh
+	./bedstepconv.sh bedstepfullup.verif 4 6 "-mah_upwindfull"
 
 # these targets are just for regression testing
 regress/dome.short: mahaffy domeconv.sh

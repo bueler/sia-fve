@@ -20,8 +20,8 @@ domeverif.pdf: convfigs.py ../petsc/dome.verif ../petsc/true.verif
 bedstepverif.pdf: convfigs.py ../petsc/bedstep.verif
 	./convfigs.py --showdata -bedstep ../petsc/bedstep.verif -o bedstepverif.pdf
 
-bedsteptable.tex: convfigs.py ../petsc/bedstep.verif
-	./convfigs.py --bedsteptable -bedstep ../petsc/bedstep.verif > bedsteptable.tex
+bedsteptable.tex: convfigs.py ../petsc/bedstep.verif ../petsc/bedstepnoup.verif ../petsc/bedstepfullup.verif
+	./convfigs.py --bedsteptable -tablefiles ../petsc/bedstep.verif,../petsc/bedstepnoup.verif,../petsc/bedstepfullup.verif > bedsteptable.tex
 
 domeprofile.pdf:
 	rm -rf tmpdome/

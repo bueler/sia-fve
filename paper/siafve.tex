@@ -55,6 +55,8 @@
 \newcommand\vf{\varphi}
 
 \newcommand{\Mstar}{$\text{M}^{\bigstar}$\xspace}
+\newcommand{\Mstarnoup}{$\text{M}^{\bigstar}_{\text{no}}$\xspace}
+\newcommand{\Mstarfullup}{$\text{M}^{\bigstar}_{\text{full}}$\xspace}
 
 \newcommand\alpharight{\alpha_{{}_{\blacktriangleright}}}
 \newcommand\alphaup{\alpha_{{\!}_{\blacktriangle}}}
@@ -494,11 +496,19 @@ FIXME: we try bedrock step solution from \cite{JaroschSchoofAnslow2013}, with re
 
 FIXME: verification on bedrock step solution shows no convergence at all in maximum and average errors, but like \cite{JaroschSchoofAnslow2013} we can show relative volume error; Table \ref{tab:bedstepvol} shows $100 (V_{\text{numerical}} - V_{\text{exact}}) / V_{\text{exact}}$; \cite{JaroschSchoofAnslow2013} have explicit implementations which may be more important than their use of true Mahaffy
 
+FIXME: second column is \Mstar implicit scheme
+
+third column is \Mstar without upwinding ($\lambda=0$)
+
+fourth column is \Mstar with full upwinding ($\lambda=1$)
+
+fifth and sixth column as reported by \cite{JaroschSchoofAnslow2013} for their ``Superbee''-limited MUSCL scheme and their implementation ``M2'' of the Mahaffy scheme.
+
 \begin{table}[ht]
-  \caption{Relative volume difference, as percentage, for \Mstar implicit scheme on steady state problem, and as reported by \cite{JaroschSchoofAnslow2013} for their ``Superbee''-limited MUSCL scheme and their implementation of the Mahaffy scheme.}
+  \caption{Relative volume differences, as percentage, for results on the bedrock step exact solution.  ``\Mstar'' columns show three upwinding variations (see text).  ``NC'' indicates a Newton method convergence failure.  ``Superbee'' and ``M2'' are results from \cite{JaroschSchoofAnslow2013} (see text).}
   \vskip4mm \centering
-  \begin{tabular}{lccc}
-    $\Delta x$ & \Mstar & Superbee & M2 \\  \hline
+  \begin{tabular}{lccccc}
+    $\Delta x$ & \Mstar & \Mstarnoup & \Mstarfullup & Superbee & M2 \\  \hline
 \input{bedsteptable.tex}
   \end{tabular}
   \label{tab:bedstepvol}

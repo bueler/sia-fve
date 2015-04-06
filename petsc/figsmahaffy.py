@@ -135,11 +135,11 @@ if args.profile:
     plt.hold(True)
     # first plot bed and exact H
     if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
-        plt.plot(x,gets(Hexactn,bn),'-k',label=Hexlabel,lw=0.8)
         if args.sharpbed:  # only works with --half
-           plt.plot([0.0,7.0,7.0,x.max()],[500.0,500.0,0.0,0.0],'k',label='bed',lw=2.5)
+           plt.plot([0.0,7.0,7.0,x.max()],[500.0,500.0,0.0,0.0],'k',lw=2.5)
         else:
-           plt.plot(x,bn,'k',label='bed',lw=1.5)
+           plt.plot(x,bn,'k',lw=1.5)
+        plt.plot(x,gets(Hexactn,bn),'-k',label=Hexlabel,lw=0.8)
     else:
         plt.plot(x,gets(Hexactn,bn),'k',label=Hexlabel)
     # now plot H and extras

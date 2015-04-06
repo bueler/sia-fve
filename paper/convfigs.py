@@ -17,6 +17,8 @@ parser.add_argument('-bedstep', metavar='FILENAME', default='',
                     help="text file with results from bedrock step verification")
 parser.add_argument('--bedsteptable', action="store_true",
                     help="generate relative volume table w Jarosch et al bedrock step results")
+parser.add_argument('-tablefiles', default='', metavar='A,B', type=str,
+                    help='comma-delimited list of files from which to get bedrock step results FOR TABLE')
 parser.add_argument('-dome', metavar='FILENAME', default='',
                     help="text file with results from bedrock step verification")
 parser.add_argument("--showdata", action="store_true",
@@ -48,31 +50,38 @@ def readveriffile(filename):
         print A
     return A
 
-infilelist = [args.bedstep, args.dome]
-if (sum(map(len,infilelist)) == 0) or (np.prod(map(len,infilelist)) > 0):
-    print "ERROR: exactly one of options -dome or -bedstep must be given with a file name"
-    sys.exit(1)
-
 # if want table, just do that and exit
 if args.bedsteptable:
-    if len(args.bedstep) == 0:
-        print "ERROR: --bedsteptable is set but there is no -bedstep input file name"
+    tabfiles = args.tablefiles.split(',')
+    if len(tabfiles) != 3:
+        print "ERROR: --bedsteptable is set but there is no LENGTH 3 -tablefiles filename list"
         sys.exit(2)
-    A = readveriffile(args.bedstep)
+    epss = []
+    relvols = []
+    for j in range(len(tabfiles)):
+        A = readveriffile(tabfiles[j])
+        epss.append( A[:,1] )
+        relvols.append( 100.0 * (A[:,4] - A[:,5]) / A[:,5] )
     dx = A[:,0]
-    relvol = (A[:,4] - A[:,5]) / A[:,5]
     JSA = { 1000.0 : (-7.588, 116.912),
              500.0 : (-5.075, 132.095),
              250.0 : (-3.401, 139.384),
              125.0 : (-2.579, 142.997) }
     for j in range(len(dx)):
         if dx[j] in [1000.0, 500.0, 250.0, 125.0]:
-            print "%4d & %6.3f & %6.3f & %6.3f \\\\" \
-                % (dx[j],100.0*relvol[j],JSA[dx[j]][0],JSA[dx[j]][1])
-        elif dx[j] < 125.0:
-            print "%6.1f & %6.3f &  &  \\\\" \
-                % (dx[j],100.0*relvol[j])
+            print "%4d & " % dx[j],
+            for k in range(3):
+                if epss[k][j] > 1.0e-3:
+                    print "NC & ",   # not converged case
+                else:
+                    print "%6.3f & " % relvols[k][j],
+            print "%6.3f & %6.3f \\\\" % (JSA[dx[j]][0],JSA[dx[j]][1])
     sys.exit(0)
+
+infilelist = [args.bedstep, args.dome]
+if (sum(map(len,infilelist)) == 0) or (np.prod(map(len,infilelist)) > 0):
+    print "ERROR: exactly one of options -dome or -bedstep must be given with a file name"
+    sys.exit(1)
 
 def extract(A):
     return A[:,0], A[:,2], A[:,3], A[:,1]
