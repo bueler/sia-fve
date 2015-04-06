@@ -32,6 +32,7 @@ typedef struct {
             Gamma,  // coefficient for SIA flux term
             eps,    // current dimensionless regularization for n and D
             delta,  // current dimensionless regularization for slope in SIA formulas
+            lambda, // amount of upwinding; lambda=0 is none and lambda=1 is "full"
             dtBE,   // time step for backward Euler, used in recovery
             maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
             D0,     // representative value of diffusivity (in regularization)
@@ -41,8 +42,6 @@ typedef struct {
             Ny,
             Neps;   // number of levels in regularization/continuation
   PetscBool mtrue,  // use true Mahaffy method instead of M*
-            noupwind,// do not upwind "W H^{n+2}" term in flux formula  q = - D grad H + W H^{n+2}
-            upwindfull,// when upwinding "W H^{n+2}" term, go all the way to element edge
             read,   // read grid and data from special-format PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)

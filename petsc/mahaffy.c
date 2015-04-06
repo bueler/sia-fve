@@ -27,7 +27,7 @@ Use one of these problem cases:
 Solution options:
    ./mahaffy -mah_true -da_grid_x 15 -da_grid_y 15
                                # use true Mahaffy (sans quadrature & upwind improvements), but with 5|mx and 5|my
-   ./mahaffy -mah_bedstep -mah_noupwind
+   ./mahaffy -mah_bedstep -mah_lambda 0.0
                                # do not use upwinding on  grad b  part of flux
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
    ./mahaffy -mah_D0 10.0      # change constant diffusivity, used in continuation, to other value than
@@ -97,18 +97,18 @@ extern void fillscheds(AppCtx*);
 static const PetscInt  je[8] = {0,  0, -1, -1, -1, -1,  0,  0},
                        ke[8] = {0,  0,  0,  0, -1, -1, -1, -1},
                        ce[8] = {0,  3,  1,  0,  2,  1,  3,  2};
+
 // coefficients of quadrature evaluations along the boundary of the control volume in M*
 #define FLUXINTCOEFFS \
 const PetscReal coeff[8] = {dy/2, dx/2, dx/2, -dy/2, -dy/2, -dx/2, -dx/2, dy/2};
-// according to user option, the quadrature point moves in upwinding:
-#define UPWINDPTS \
-const PetscReal upmin = (user->upwindfull) ? 0.0 : 1.0/4.0, \
-                upmax = (user->upwindfull) ? 1.0 : 3.0/4.0;
+
 // direction of flux at 4 points in each element
 static const PetscBool xdire[4] = {PETSC_TRUE, PETSC_FALSE, PETSC_TRUE, PETSC_FALSE};
+
 // local (element-wise) coords of quadrature points for M*
 static const PetscReal locx[4] = {  0.5, 0.75,  0.5, 0.25},
                        locy[4] = { 0.25,  0.5, 0.75,  0.5};
+
 // quadrature points for classical (true) Mahaffy; these are not used in Jacobian
 static const PetscReal locxtrue[4] = { 0.5, 1.0, 0.5, 0.0},
                        locytrue[4] = { 0.0, 0.5, 1.0, 0.5},
@@ -144,11 +144,10 @@ int main(int argc,char **argv) {
   user.eps_sched[user.Neps-1] = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.eps    = 0.0;
+  user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence problem on refined grid (=125m) but this does not; earlier M* was 0.5 here
   user.dtBE   = 100.0 * user.secpera;  // (FIXME: make option controllable) 100 year time step for Backward Euler; used only in recovery
 
   user.mtrue      = PETSC_FALSE;
-  user.noupwind   = PETSC_FALSE;
-  user.upwindfull = PETSC_FALSE;
 
   user.dome       = PETSC_TRUE;  // defaults to this case
   user.bedstep    = PETSC_FALSE;
@@ -300,7 +299,7 @@ int main(int argc,char **argv) {
   if (user.mtrue)
       myPrintf(&user,    "solving by true Mahaffy method ...\n");
   else
-      if (user.noupwind)
+      if (user.lambda == 0.0)
           myPrintf(&user,"solving by M* method _without_ upwinding ...\n");
       else
           myPrintf(&user,"solving by M* method ...\n");
@@ -460,8 +459,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
   FLUXINTCOEFFS
-  UPWINDPTS
-  const PetscBool upwind = (!user->noupwind);
+  const PetscBool upwind = (user->lambda > 0.0);
+  const PetscReal upmin = (1.0 - user->lambda) * 0.5,
+                  upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k;
   PetscReal       **am, **ab, ***aq, **aHprev;
   Vec             qloc;
@@ -557,8 +557,9 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   PetscErrorCode  ierr;
   const PetscReal dx = user->dx, dy = dx;
   FLUXINTCOEFFS
-  UPWINDPTS
-  const PetscBool upwind = (user->noupwind == PETSC_FALSE);
+  const PetscBool upwind = (user->lambda > 0.0);
+  const PetscReal upmin = (1.0 - user->lambda) * 0.5,
+                  upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k;
   PetscReal       **ab, ***adQ;
   Vec             dQloc;
@@ -697,6 +698,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsString(
       "-history", "write history.txt file with this prefix (also written under -mah_dump)",
       NULL,histprefix,histprefix,512,&user->history); CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-lambda", "amount of upwinding; lambda=0 is none and lambda=1 is full",
+      NULL,user->lambda,&user->lambda,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-maxerr", "print final maximum error, and otherwise run silent",
       NULL,user->maxerr,&user->maxerr,NULL);CHKERRQ(ierr);
@@ -708,9 +712,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-noupwind", "do not upwind ''W H^{n+2}'' term in flux formula  q = - D grad H + W H^{n+2}",
-      NULL,user->noupwind,&user->noupwind,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
@@ -726,9 +727,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default M*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-upwindfull", "when upwinding ''W H^{n+2}'' term, go all the way to element edge",
-      NULL,user->upwindfull,&user->upwindfull,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
   if (dtBEset)
@@ -751,7 +749,7 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       SETERRQ(PETSC_COMM_WORLD,3,"ERROR option conflict: both -mah_bedstep and -mah_read not allowed\n");
   }
   if (user->mtrue)
-      user->noupwind = PETSC_TRUE;
+      user->lambda = 0.0;
   if (user->dump)
       user->history = PETSC_TRUE;
   else if (user->history)

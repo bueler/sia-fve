@@ -21,9 +21,9 @@ true.verif: mahaffy domeconv.sh
 bedstep.verif: mahaffy bedstepconv.sh
 	./bedstepconv.sh bedstep.verif 4 6
 bedstepnoup.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstepnoup.verif 4 6 "-mah_noupwind"
+	./bedstepconv.sh bedstepnoup.verif 4 6 "-mah_lambda 0.0"
 bedstepfullup.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstepfullup.verif 4 6 "-mah_upwindfull"
+	./bedstepconv.sh bedstepfullup.verif 4 6 "-mah_lambda 1.0"
 
 # these targets are just for regression testing
 regress/dome.short: mahaffy domeconv.sh
@@ -33,7 +33,7 @@ regress/bedstep.short: mahaffy bedstepconv.sh
 regress/true.short: mahaffy domeconv.sh
 	./domeconv.sh regress/true.short 1 6 "-mah_true -snes_fd_color -da_grid_x 15 -da_grid_y 15"
 regress/noupwind.short: mahaffy domeconv.sh
-	./domeconv.sh regress/noupwind.short 0 6 -mah_noupwind
+	./domeconv.sh regress/noupwind.short 0 6 "-mah_lambda 0.0"
 test: regress/dome.short regress/bedstep.short regress/true.short regress/noupwind.short
 	git diff regress/
 
