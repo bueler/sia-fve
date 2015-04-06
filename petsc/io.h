@@ -22,7 +22,7 @@ PetscErrorCode ReadDataVecs(AppCtx*);
 
 // write PETSc binary .dat files, one per var
 PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
-PetscErrorCode DumpToFiles(Vec,AppCtx*);
+PetscErrorCode DumpToFiles(Vec,Vec,AppCtx*);
 
 // utilities to compute quantities in reports and history files
 PetscErrorCode GetVolumes(Vec,AppCtx*,PetscReal*,PetscReal*);

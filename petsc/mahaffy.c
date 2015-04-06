@@ -293,8 +293,8 @@ int main(int argc,char **argv) {
                 (DMDASNESFunction)FormFunctionLocal,&user); CHKERRQ(ierr);
   ierr = DMDASNESSetJacobianLocal(user.da,
                 (DMDASNESJacobian)FormJacobianLocal,&user); CHKERRQ(ierr);
-  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetType(snes,SNESVINEWTONRSLS);CHKERRQ(ierr);
+  ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
 
   if (user.mtrue)
@@ -350,20 +350,20 @@ int main(int argc,char **argv) {
   }
 
   if (user.dump == PETSC_TRUE) {
-      myPrintf(&user,"writing x.dat,y.dat,b.dat,m.dat,Hexact.dat,H.dat to %s ...\n",user.figsprefix);
-      ierr = DumpToFiles(H,&user); CHKERRQ(ierr);
+      Vec r;
+      ierr = SNESGetFunction(snes,&r,NULL,NULL); CHKERRQ(ierr);
+      myPrintf(&user,"writing {x,y,H,b,m,Hexact,residual}.dat to %s ...\n",user.figsprefix);
+      ierr = DumpToFiles(H,r,&user); CHKERRQ(ierr);
   }
-
 
   if ((user.averr) || (user.maxerr)) {
       if (reason < 0)
           PetscPrintf(PETSC_COMM_WORLD,"%s\n",SNESConvergedReasons[reason]);
       else {
-          const PetscInt NN = info.mx * info.my;
           PetscReal enorminf, enorm1;
           ierr = GetErrors(H, &user, &enorminf, &enorm1); CHKERRQ(ierr);
           if (user.averr)
-              PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorm1 / NN);
+              PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorm1 / (info.mx * info.my));
           if (user.maxerr)
               PetscPrintf(PETSC_COMM_WORLD,"%.14e\n",(double)enorminf);
       }
