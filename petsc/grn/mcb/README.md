@@ -20,7 +20,7 @@ from NSIDC site and generate a coarser version by averaging over blocks of a
 certain size.  Blocks of 30 x 30 gives 30*150m = 4500m resolution:
 
     $ ./getmcb.sh
-    $ ./average --block 30 mcb4500.nc
+    $ ./average.py --block 30 mcb4500m.nc
 
 The next preprocessing step, still at the NetCDF level, with a merge of SeaRISE
 and MCB data:
@@ -47,10 +47,15 @@ Generate figures:
 Higher resolution
 -----------------
 
-Redo the above, starting with
+Redo the above:
 
-    $ ./getmcb.sh 10 mcb1500m.nc
+    $ ./getmcb.sh
+    $ ./average.py --block 10 mcb1500m.nc
+    $ ./remap2mcb.py searise5km.nc mcb1500m.nc fix1500m.nc
+    $ ../grn2petsc.py fix1500m.nc fix1500m.dat
+    $ mkdir test1500m/
+    $ mpiexec -n 6 ../../mahaffy -mah_read fix1500m.dat -mah_D0 20.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test1500m/
 
-for example.  (Note that if the big file `MCdataset-2014-11-19.nc` is already
-present, it will not be downloaded again.)  Continue with all remaining steps.
+for example.  Note that if the big file `MCdataset-2014-11-19.nc` is already
+present, it will not be downloaded again.  Continue with all remaining steps.
 

@@ -144,7 +144,7 @@ int main(int argc,char **argv) {
   user.eps_sched[user.Neps-1] = 0.0;
   user.D0     = 1.0;        // m^2 / s
   user.eps    = 0.0;
-  user.dtBE   = 1.0 * user.secpera;  // 1 year time step for Backward Euler; used only in recovery
+  user.dtBE   = 100.0 * user.secpera;  // (FIXME: make option controllable) 100 year time step for Backward Euler; used only in recovery
 
   user.mtrue      = PETSC_FALSE;
   user.noupwind   = PETSC_FALSE;
@@ -153,7 +153,7 @@ int main(int argc,char **argv) {
   user.dome       = PETSC_TRUE;  // defaults to this case
   user.bedstep    = PETSC_FALSE;
   user.swapxy     = PETSC_FALSE;
-  user.divergetryagain = PETSC_FALSE;
+  user.divergetryagain = PETSC_FALSE; // FIXME: switch default?
   user.doBErecovery    = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
 
