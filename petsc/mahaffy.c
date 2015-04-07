@@ -87,7 +87,6 @@ extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,const AppCtx*);
-extern PetscErrorCode BedAverager(Vec,Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -121,7 +120,7 @@ static const PetscInt  jnbr[4] = { 0,  1,  0, -1},
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
   SNES                snes;
-  Vec                 H, Htry, bloc, blocsmooth;
+  Vec                 H, Htry;
   AppCtx              user;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
@@ -153,7 +152,7 @@ int main(int argc,char **argv) {
   user.bedstep    = PETSC_FALSE;
   user.swapxy     = PETSC_FALSE;
   user.divergetryagain = PETSC_FALSE; // FIXME: switch default?
-  user.doBErecovery    = PETSC_FALSE;
+  user.dorecovery      = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
 
   user.read       = PETSC_FALSE;
@@ -276,14 +275,9 @@ int main(int argc,char **argv) {
   ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
 
   // setup local copy of bed
-  ierr = DMCreateLocalVector(user.da,&bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,bloc);CHKERRQ(ierr);
-  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,bloc);CHKERRQ(ierr);
-  user.bloc = bloc;
-
-  // setup smoothed local bed used in recovery
-  ierr = DMCreateLocalVector(user.da,&blocsmooth);CHKERRQ(ierr);
-  ierr = BedAverager(bloc,blocsmooth,&user);CHKERRQ(ierr);
+  ierr = DMCreateLocalVector(user.da,&user.bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalBegin(user.da,user.b,INSERT_VALUES,user.bloc);CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user.da,user.b,INSERT_VALUES,user.bloc);CHKERRQ(ierr);
 
   // initialize the SNESVI
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
@@ -312,23 +306,11 @@ int main(int argc,char **argv) {
       ierr = VecCopy(H,user.Hprev); CHKERRQ(ierr);  // only in case we need to recover
       ierr = SNESAttempt(&snes,Htry,PETSC_FALSE,m,&reason,&user);CHKERRQ(ierr);
       if (reason < 0) {
-          if (user.divergetryagain) {
-              if (user.eps > 0) {
-                  user.eps = 1.5 * user.eps;
-                  myPrintf(&user,"         ... trying again with eps *= 1.5 so eps = %.2e\n",user.eps);
-              } else if ((user.eps == 0) && (!user.doBErecovery)) {
-                  myPrintf(&user,"         ... trying again with eps = 0.0 and turning on recovery mode\n");
-              } else {
-                  myPrintf(&user,"         ... nothing else to try because eps = 0.0 and recovery mode is on\n");
-                  break;
-              }
-              if (!user.doBErecovery) {
-                  myPrintf(&user,
-                      "         turning on recovery mode (backward Euler step of %.2f a and smoother bed)\n",
-                      user.dtBE/user.secpera);
-                  user.doBErecovery = PETSC_TRUE;
-                  user.bloc = blocsmooth;
-              }
+          if ((user.divergetryagain) && (!user.dorecovery)) {
+              myPrintf(&user,
+                  "         turning on recovery mode (backward Euler step of %.2f a) and trying again ...\n",
+                  user.dtBE/user.secpera);
+              user.dorecovery = PETSC_TRUE;
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(&snes,Htry,PETSC_TRUE,m,&reason,&user);CHKERRQ(ierr);
           }
@@ -368,8 +350,7 @@ int main(int argc,char **argv) {
       }
   }
 
-  ierr = VecDestroy(&bloc);CHKERRQ(ierr);
-  ierr = VecDestroy(&blocsmooth);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.bloc);CHKERRQ(ierr);
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
@@ -528,7 +509,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
             FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
-          if (user->doBErecovery)
+          if (user->dorecovery)
             FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
       }
   }
@@ -627,7 +608,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
-          if (user->doBErecovery) {
+          if (user->dorecovery) {
               // add another stencil for diagonal
               col[32].j = j;
               col[32].k = k;
@@ -774,33 +755,7 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
   else
       myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters%s\n",
-           user->eps,kspits,its,(user->doBErecovery) ? " (recovery mode)" : "");
+           user->eps,kspits,its,(user->dorecovery) ? " (recovery mode)" : "");
   PetscFunctionReturn(0);
 }
 
-
-PetscErrorCode BedAverager(Vec bloc, Vec smoothbloc, const AppCtx *user) {
-  PetscErrorCode ierr;
-  DMDALocalInfo  info;
-  PetscReal      **ab, **smoothb, tmp;
-  PetscInt       j, k;
-
-  PetscFunctionBeginUser;
-  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, bloc, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, smoothbloc, &smoothb);CHKERRQ(ierr);
-  for (k=info.ys; k<info.ys+info.ym; k++) {
-      for (j=info.xs; j<info.xs+info.xm; j++) {
-         tmp =   1.0 * ab[k-1][j-1] + 2.0 * ab[k-1][j] + 1.0 * ab[k-1][j+1]
-               + 2.0 * ab[k][j-1]   + 4.0 * ab[k][j]   + 2.0 * ab[k][j+1]
-               + 1.0 * ab[k+1][j-1] + 2.0 * ab[k+1][j] + 1.0 * ab[k+1][j+1];
-         smoothb[k][j] = tmp / 16.0;
-      }
-  }
-  ierr = DMDAVecRestoreArray(user->da, bloc, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(user->da, smoothbloc, &smoothb);CHKERRQ(ierr);
-
-  ierr = DMLocalToLocalBegin(user->da,smoothbloc,INSERT_VALUES,smoothbloc);CHKERRQ(ierr);
-  ierr = DMLocalToLocalEnd(user->da,smoothbloc,INSERT_VALUES,smoothbloc);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}

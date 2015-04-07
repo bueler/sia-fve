@@ -49,7 +49,7 @@ typedef struct {
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
-            doBErecovery,// on SNES diverge, set this to TRUE so F(H) and J(H) are backward Euler; for recovery
+            dorecovery,// on SNES diverge, set this to TRUE for recovery attempt (by whatever mechanism)
             dump,   // dump fields into individual PETSc binary files
             silent, // run silent
             averr,  // only display average error at end

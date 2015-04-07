@@ -50,7 +50,7 @@ diffusivity:
 
     $ (cd ../ && make mahaffy)
     $ mkdir test/
-    $ ../mahaffy -mah_read grn5km.dat -mah_D0 20.0 -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
+    $ mpiexec -n 6 ../mahaffy -mah_read grn5km.dat -mah_showdata -draw_pause 2 -mah_D0 10.0 -snes_monitor -mah_divergetryagain -mah_dump test/
 
 This run only takes a few minutes and uses the data as is.
 
