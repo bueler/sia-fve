@@ -25,7 +25,7 @@ Do:
 
     $ cd ~/pism/examples/std-greenland/
     $ ./preprocess.sh                       # downloads Greenland_5km_v1.1.nc with wget if not present
-    $ cd ~/sia-fve/petsc/grn/    # back to this dir
+    $ cd ~/sia-fve/petsc/grn/               # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
     $ ./cleangrn.sh
 
@@ -36,7 +36,7 @@ Stage 2
 
 Convert `grn.nc` to PETSc binary `grn5km.dat` using PETSc scripts:
 
-    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py  # or similar for maint/3.5
+    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py    # or similar for maint/3.5
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
     $ python grn2petsc.py grn.nc grn5km.dat    # defaults to 5km
 
@@ -54,8 +54,8 @@ diffusivity:
 
 This run only takes a few minutes and uses the data as is.
 
-Generating final figures:
--------------------------
+Generating figures:
+-------------------
 
 Generate `.pdf` and `.png` figures:
 
