@@ -165,7 +165,10 @@ int main(int argc,char **argv) {
   user.silent     = PETSC_FALSE;
   user.averr      = PETSC_FALSE;
   user.maxerr     = PETSC_FALSE;
+
+  user.actnowtofreezeW = PETSC_FALSE;
   user.freezeW    = PETSC_FALSE;
+  user.Warray     = NULL;
 
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
@@ -287,7 +290,7 @@ int main(int argc,char **argv) {
   ierr = DMCreateLocalVector(user.da,&blocsmooth);CHKERRQ(ierr);
   ierr = BedAverager(bloc,blocsmooth,&user);CHKERRQ(ierr);
 
-  // setup local W component array for freeze-W recovery
+  // setup local W component Vec for freeze-W recovery
   ierr = DMCreateGlobalVector(user.quadda,&user.Wfrozen);CHKERRQ(ierr);
 
   // initialize the SNESVI
@@ -519,7 +522,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aq[k][j][c] = getflux(user->freezeW,j,k,c,gH,gb,H,Hup,xdire[c],user);
+              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
           }
       }
   }
@@ -615,7 +618,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],dx,dy);
                   dHdl   = dfieldatpt(l,j,k,locx[c],locy[c]);
                   dHupdl = (upwind) ? dfieldatpt(l,j,k,lxup,lyup) : dHdl;
-                  adQ[k][j][4*c+l] = DfluxDl(user->freezeW,j,k,c,gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
+                  adQ[k][j][4*c+l] = DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
               }
           }
       }

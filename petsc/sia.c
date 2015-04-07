@@ -37,7 +37,7 @@ PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
 }
 
 /* See sia.h for doc. */
-PetscReal getflux(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
+PetscReal getfluxFreeze(PetscBool freezeW, PetscReal usethisW,
                   Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
   const PetscReal n     = ncont(user),
@@ -45,18 +45,22 @@ PetscReal getflux(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
                   D     = Dcont(delta,H,user);
   const Grad      W     = getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
-  if (user->freezeW) {
-      const PetscReal Wc = user->Warray[k][j][c];
+  if (freezeW) {
       if (xdir)
-          return - D * gH.x + Wc * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+          return - D * gH.x + usethisW * PetscPowReal(PetscAbsReal(Hup),n+2.0);
       else
-          return - D * gH.y + Wc * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+          return - D * gH.y + usethisW * PetscPowReal(PetscAbsReal(Hup),n+2.0);
   } else {
       if (xdir)
           return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
       else
           return - D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
   }
+}
+
+PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+                  PetscBool xdir, AppCtx *user) {
+    return getfluxFreeze(PETSC_FALSE,0.0,gH,gb,H,Hup,xdir,user);
 }
 
 
@@ -108,7 +112,7 @@ Grad DWDl(PetscReal ddeltadl, Grad gb) {
 }
 
 /* See sia.h for doc. */
-PetscReal DfluxDl(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
+PetscReal DfluxDlFreeze(PetscBool freezeW, PetscReal usethisW,
                   Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user) {
@@ -122,17 +126,22 @@ PetscReal DfluxDl(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
                     Huppow2  = Huppow * Hup,
                     dHuppow  = (n+2.0) * Huppow * dHupdl;
     const Grad      dWdl     = DWDl(ddeltadl,gb);
-    if (user->freezeW) {
-        const PetscReal Wc = user->Warray[k][j][c];
+    if (freezeW) {
         if (xdir)
-            return - dDdl * gH.x - D * dgHdl.x + Wc * dHuppow;
+            return - dDdl * gH.x - D * dgHdl.x + usethisW * dHuppow;
         else
-            return - dDdl * gH.y - D * dgHdl.y + Wc * dHuppow;
+            return - dDdl * gH.y - D * dgHdl.y + usethisW * dHuppow;
     } else {
         if (xdir)
             return - dDdl * gH.x - D * dgHdl.x + dWdl.x * Huppow2 + W.x * dHuppow;
         else
             return - dDdl * gH.y - D * dgHdl.y + dWdl.y * Huppow2 + W.y * dHuppow;
     }
+}
+
+PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
+                  PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
+                  PetscBool xdir, const AppCtx *user) {
+    return DfluxDlFreeze(PETSC_FALSE,0.0,gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdir,user);
 }
 

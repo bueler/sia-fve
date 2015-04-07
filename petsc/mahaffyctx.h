@@ -20,9 +20,7 @@ typedef struct {
             m,      // the (steady) surface mass balance
             Hexact, // the exact or observed thickness (verification or data, resp.)
             Hprev;  // only used when doing backward Euler time step as recovery
-  Vec       bloc,   // copy of bed elevation with ghosts
-            Wfrozen;// only used in freeze-W recovery
-  PetscReal ***Warray;// only used in freeze-W recovery
+  Vec       bloc;   // copy of bed elevation with ghosts
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,
@@ -52,7 +50,6 @@ typedef struct {
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
             doBErecovery,// on SNES diverge, set this to TRUE so F(H) and J(H) are backward Euler; for recovery
-            freezeW,// freeze-W recovery mode is on
             dump,   // dump fields into individual PETSc binary files
             silent, // run silent
             averr,  // only display average error at end
@@ -62,6 +59,11 @@ typedef struct {
             readname[512];
   struct timeval starttime,
                  endtime;
+  // following stuff is only used in freeze-W recovery
+  PetscBool freezeW,  // mode is on
+            actnowtofreezeW;// FormFunctionLocal() will have side effect of filling Wfrozen
+  Vec       Wfrozen;
+  PetscReal ***Warray;// must be valid, with ghosts, when freezeW==TRUE
 } AppCtx;
 
 #endif // MAHAFFYCTX_H_

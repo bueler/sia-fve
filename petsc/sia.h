@@ -26,8 +26,7 @@ continuation scheme.
 
 Side effect: we update maximum of diffusivity (user->maxD).
 */
-PetscReal getflux(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
-                  Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user);
 
 /*
@@ -50,9 +49,19 @@ Caller must compute (see q1op.h):
               Hup      = fieldatpt(u,v,locxup,locyup,HH,user),
               dHupdl   = dfieldatpt(l,u,v,locxup,locyup,user);
 */
-PetscReal DfluxDl(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
+PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
+                  PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
+                  PetscBool xdir, const AppCtx *user);
+
+/* The following methods are exposed only so that freeze-W mechanism can work. */
+PetscReal getfluxFreeze(PetscBool freezeW, PetscReal usethisW,
+                  Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+                  PetscBool xdir, AppCtx *user);
+PetscReal DfluxDlFreeze(PetscBool freezeW, PetscReal usethisW,
                   Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user);
+PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user);
+Grad      getW(PetscReal delta, Grad gb);
 
 #endif // SIA_H_
