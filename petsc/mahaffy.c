@@ -88,7 +88,7 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,const AppCtx*);
 extern PetscErrorCode BedAverager(Vec,Vec,const AppCtx*);
-extern PetscErrorCode FreezeCurrentW(Vec,const AppCtx*);
+extern PetscErrorCode FreezeCurrentW(Vec,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -818,12 +818,27 @@ PetscErrorCode BedAverager(Vec bloc, Vec smoothbloc, const AppCtx *user) {
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode FreezeCurrentW(Vec H, const AppCtx *user) {
+PetscErrorCode FreezeCurrentW(Vec H, AppCtx *user) {
   PetscErrorCode ierr;
+  DMDALocalInfo  info;
+  Vec            tmpF;
+  PetscReal      **aH, **atmpF;
 
   PetscFunctionBeginUser;
-  //FIXME: call FormFunctionLocal() which is set-up to have side-effect of filling local Vec user->Wfrozen
-  //then do
+  ierr = DMGetGlobalVector(user->da, &tmpF); CHKERRQ(ierr);
+  ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, H, &aH);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, tmpF, &atmpF);CHKERRQ(ierr);
+
+  // this call is only for the side-effect of filling local Vec user->Wfrozen
+  user->actnowtofreezeW = PETSC_TRUE;
+  ierr = FormFunctionLocal(&info,aH,atmpF,user); CHKERRQ(ierr);
+  user->actnowtofreezeW = PETSC_FALSE;
+
+  ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, tmpF, &atmpF);CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(user->da, &tmpF); CHKERRQ(ierr);
+
   ierr = DMLocalToLocalBegin(user->quadda,user->Wfrozen,INSERT_VALUES,user->Wfrozen);CHKERRQ(ierr);
   ierr = DMLocalToLocalEnd(user->quadda,user->Wfrozen,INSERT_VALUES,user->Wfrozen);CHKERRQ(ierr);
   PetscFunctionReturn(0);
