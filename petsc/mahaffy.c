@@ -164,7 +164,7 @@ int main(int argc,char **argv) {
   user.silent     = PETSC_FALSE;
   user.averr      = PETSC_FALSE;
   user.maxerr     = PETSC_FALSE;
-  user.freeze     = PETSC_FALSE;
+  user.freezeW    = PETSC_FALSE;
 
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
@@ -510,7 +510,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aq[k][j][c] = getflux(user->freeze,j,k,gH,gb,H,Hup,xdire[c],user);
+              aq[k][j][c] = getflux(user->freezeW,j,k,c,gH,gb,H,Hup,xdire[c],user);
           }
       }
   }
@@ -606,7 +606,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],dx,dy);
                   dHdl   = dfieldatpt(l,j,k,locx[c],locy[c]);
                   dHupdl = (upwind) ? dfieldatpt(l,j,k,lxup,lyup) : dHdl;
-                  adQ[k][j][4*c+l] = DfluxDl(user->freeze,j,k,gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
+                  adQ[k][j][4*c+l] = DfluxDl(user->freezeW,j,k,c,gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
               }
           }
       }

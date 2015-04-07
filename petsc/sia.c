@@ -37,18 +37,26 @@ PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
 }
 
 /* See sia.h for doc. */
-PetscReal getflux(PetscBool freeze, PetscInt j, PetscInt k,
+PetscReal getflux(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
                   Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
   const PetscReal n     = ncont(user),
                   delta = getdelta(gH,gb,user),
-                  D     = (freeze) ? user->Darray[k][j] : Dcont(delta,H,user);
-  const Grad      W     = (freeze) ? user->Warray[k][j] : getW(delta,gb);
+                  D     = Dcont(delta,H,user);
+  const Grad      W     = getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
-  if (xdir)
-      return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
-  else
-      return - D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+  if (user->freezeW) {
+      const PetscReal Wc = user->Warray[k][j][c];
+      if (xdir)
+          return - D * gH.x + Wc * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+      else
+          return - D * gH.y + Wc * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+  } else {
+      if (xdir)
+          return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+      else
+          return - D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+  }
 }
 
 
@@ -100,25 +108,26 @@ Grad DWDl(PetscReal ddeltadl, Grad gb) {
 }
 
 /* See sia.h for doc. */
-PetscReal DfluxDl(PetscBool freeze, PetscInt j, PetscInt k,
+PetscReal DfluxDl(PetscBool freezeW, PetscInt j, PetscInt k, PetscInt c,
                   Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user) {
     const PetscReal n        = ncont(user),
                     delta    = getdelta(gH,gb,user),
-                    D        = (freeze) ? user->Darray[k][j] : Dcont(delta,H,user);
-    const Grad      W        = (freeze) ? user->Warray[k][j] : getW(delta,gb);
+                    D        = Dcont(delta,H,user);
+    const Grad      W        = getW(delta,gb);
     const PetscReal ddeltadl = DdeltaDl(gH,gb,dgHdl,user),
                     dDdl     = DDcontDl(delta,ddeltadl,H,dHdl,user),
                     Huppow   = PetscPowReal(PetscAbsReal(Hup),n+1.0),
                     Huppow2  = Huppow * Hup,
                     dHuppow  = (n+2.0) * Huppow * dHupdl;
     const Grad      dWdl     = DWDl(ddeltadl,gb);
-    if (freeze) {
+    if (user->freezeW) {
+        const PetscReal Wc = user->Warray[k][j][c];
         if (xdir)
-            return - D * dgHdl.x + W.x * dHuppow;
+            return - dDdl * gH.x - D * dgHdl.x + Wc * dHuppow;
         else
-            return - D * dgHdl.y + W.y * dHuppow;
+            return - dDdl * gH.y - D * dgHdl.y + Wc * dHuppow;
     } else {
         if (xdir)
             return - dDdl * gH.x - D * dgHdl.x + dWdl.x * Huppow2 + W.x * dHuppow;
