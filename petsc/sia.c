@@ -37,12 +37,13 @@ PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
 }
 
 /* See sia.h for doc. */
-PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+PetscReal getflux(PetscBool freeze, PetscInt j, PetscInt k,
+                  Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user) {
   const PetscReal n     = ncont(user),
                   delta = getdelta(gH,gb,user),
-                  D     = Dcont(delta,H,user);
-  const Grad      W     = getW(delta,gb);
+                  D     = (freeze) ? user->Darray[k][j] : Dcont(delta,H,user);
+  const Grad      W     = (freeze) ? user->Warray[k][j] : getW(delta,gb);
   user->maxD = PetscMax(user->maxD, D);
   if (xdir)
       return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
@@ -99,22 +100,30 @@ Grad DWDl(PetscReal ddeltadl, Grad gb) {
 }
 
 /* See sia.h for doc. */
-PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
+PetscReal DfluxDl(PetscBool freeze, PetscInt j, PetscInt k,
+                  Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user) {
     const PetscReal n        = ncont(user),
                     delta    = getdelta(gH,gb,user),
-                    D        = Dcont(delta,H,user);
-    const Grad      W        = getW(delta,gb);
+                    D        = (freeze) ? user->Darray[k][j] : Dcont(delta,H,user);
+    const Grad      W        = (freeze) ? user->Warray[k][j] : getW(delta,gb);
     const PetscReal ddeltadl = DdeltaDl(gH,gb,dgHdl,user),
                     dDdl     = DDcontDl(delta,ddeltadl,H,dHdl,user),
                     Huppow   = PetscPowReal(PetscAbsReal(Hup),n+1.0),
                     Huppow2  = Huppow * Hup,
                     dHuppow  = (n+2.0) * Huppow * dHupdl;
     const Grad      dWdl     = DWDl(ddeltadl,gb);
-    if (xdir)
-        return - dDdl * gH.x - D * dgHdl.x + dWdl.x * Huppow2 + W.x * dHuppow;
-    else
-        return - dDdl * gH.y - D * dgHdl.y + dWdl.y * Huppow2 + W.y * dHuppow;
+    if (freeze) {
+        if (xdir)
+            return - D * dgHdl.x + W.x * dHuppow;
+        else
+            return - D * dgHdl.y + W.y * dHuppow;
+    } else {
+        if (xdir)
+            return - dDdl * gH.x - D * dgHdl.x + dWdl.x * Huppow2 + W.x * dHuppow;
+        else
+            return - dDdl * gH.y - D * dgHdl.y + dWdl.y * Huppow2 + W.y * dHuppow;
+    }
 }
 
