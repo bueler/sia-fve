@@ -153,8 +153,9 @@ int main(int argc,char **argv) {
   user.dome       = PETSC_TRUE;  // defaults to this case
   user.bedstep    = PETSC_FALSE;
   user.swapxy     = PETSC_FALSE;
+
   user.divergetryagain = PETSC_FALSE; // FIXME: switch default?
-  user.doBErecovery    = PETSC_FALSE;
+  user.dorecovery      = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
 
   user.read       = PETSC_FALSE;
@@ -167,8 +168,7 @@ int main(int argc,char **argv) {
   user.maxerr     = PETSC_FALSE;
 
   user.actnowtofreezeW = PETSC_FALSE;
-  user.freezeW    = PETSC_FALSE;
-  user.Warray     = NULL;
+  user.usefrozenW      = PETSC_FALSE;
 
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
@@ -291,7 +291,7 @@ int main(int argc,char **argv) {
   ierr = BedAverager(bloc,blocsmooth,&user);CHKERRQ(ierr);
 
   // setup local W component Vec for freeze-W recovery
-  ierr = DMCreateGlobalVector(user.quadda,&user.Wfrozen);CHKERRQ(ierr);
+  ierr = DMCreateLocalVector(user.quadda,&user.Wfrozen);CHKERRQ(ierr);
 
   // initialize the SNESVI
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
@@ -324,21 +324,25 @@ int main(int argc,char **argv) {
               if (user.eps > 0) {
                   user.eps = 1.5 * user.eps;
                   myPrintf(&user,"         ... trying again with eps *= 1.5 so eps = %.2e\n",user.eps);
-              } else if ((user.eps == 0) && (!user.doBErecovery)) {
+              } else if ((user.eps == 0) && (!user.dorecovery)) {
                   myPrintf(&user,"         ... trying again with eps = 0.0 and turning on recovery mode\n");
               } else {
-                  myPrintf(&user,"         ... nothing else to try because eps = 0.0 and recovery mode is on\n");
+                  myPrintf(&user,"         ... nothing else to try because eps = 0.0 and recovery mode is already on\n");
                   break;
               }
-              if (!user.doBErecovery) {
+              if (!user.dorecovery) {
                   myPrintf(&user,
-                      "         turning on recovery mode (freeze W and smoother bed)\n");
+                      "         turning on recovery mode (freezing W and switching to smoother bed)\n");
                   //myPrintf(&user,
                   //    "         turning on recovery mode (backward Euler step of %.2f a and smoother bed)\n",
                   //    user.dtBE/user.secpera);
-                  //user.doBErecovery = PETSC_TRUE;
-                  user.freezeW = PETSC_TRUE;
+                  user.usefrozenW      = PETSC_FALSE;
+                  user.actnowtofreezeW = PETSC_TRUE;
                   ierr = FreezeCurrentW(H,&user); CHKERRQ(ierr);
+                  user.actnowtofreezeW = PETSC_FALSE;
+
+                  user.dorecovery = PETSC_TRUE;
+                  user.usefrozenW = PETSC_TRUE;
                   user.bloc = blocsmooth;
               }
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
@@ -476,7 +480,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
                   upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k;
-  PetscReal       **am, **ab, ***aq, **aHprev;
+  PetscReal       **am, **ab, ***aq, **aHprev, ***afrozenW;
   Vec             qloc;
 
   PetscFunctionBeginUser;
@@ -492,6 +496,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->quadda, user->Wfrozen, &afrozenW);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes at
   // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
@@ -522,7 +527,15 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
+              if (user->usefrozenW)
+                  aq[k][j][c] = getfluxFreeze(PETSC_TRUE,afrozenW[k][j][c],gH,gb,H,Hup,xdire[c],user);
+              else
+                  aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
+              if (user->actnowtofreezeW) {
+                  Grad W;
+                  W = getW(getdelta(gH,gb,user),gb);
+                  afrozenW[k][j][c] = (xdire[c]) ? W.x : W.y;
+              }
           }
       }
   }
@@ -541,14 +554,15 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
             FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
-          if (user->doBErecovery)
-            FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
+          //if (user->doBErecovery)
+          //  FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->quadda, user->Wfrozen, &afrozenW);CHKERRQ(ierr);
 
   ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -574,10 +588,12 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
                   upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k;
-  PetscReal       **ab, ***adQ;
+  PetscReal       **ab, ***adQ, ***afrozenW;
   Vec             dQloc;
-  MyStencil       col[33],row;
-  PetscReal       val[33];
+//  MyStencil       col[33],row;
+//  PetscReal       val[33];
+  MyStencil       col[32],row;
+  PetscReal       val[32];
 
   PetscFunctionBeginUser;
   if (user->mtrue) {
@@ -592,6 +608,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
 
   ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->quadda, user->Wfrozen, &afrozenW);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get DfluxDl for
   // l=0,1,2,3 at c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
@@ -618,7 +635,10 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   dgHdl  = dgradfatpt(l,j,k,locx[c],locy[c],dx,dy);
                   dHdl   = dfieldatpt(l,j,k,locx[c],locy[c]);
                   dHupdl = (upwind) ? dfieldatpt(l,j,k,lxup,lyup) : dHdl;
-                  adQ[k][j][4*c+l] = DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
+                  if (user->usefrozenW)
+                      adQ[k][j][4*c+l] = DfluxDlFreeze(PETSC_TRUE,afrozenW[k][j][c],gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
+                  else
+                      adQ[k][j][4*c+l] = DfluxDl(gH,gb,dgHdl,H,dHdl,Hup,dHupdl,xdire[c],user);
               }
           }
       }
@@ -640,6 +660,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
+#if 0
           if (user->doBErecovery) {
               // add another stencil for diagonal
               col[32].j = j;
@@ -647,12 +668,14 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
               val[32]   = dx * dy / user->dtBE;
               ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,33,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
           } else {
+#endif
               ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
-          }
+//          }
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->sixteenda, dQloc, &adQ);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->quadda, user->Wfrozen, &afrozenW);CHKERRQ(ierr);
 
   ierr = DMRestoreLocalVector(user->sixteenda,&dQloc);CHKERRQ(ierr);
 
@@ -787,7 +810,7 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
   else
       myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters%s\n",
-           user->eps,kspits,its,(user->doBErecovery) ? " (recovery mode)" : "");
+           user->eps,kspits,its,(user->dorecovery) ? " (recovery mode)" : "");
   PetscFunctionReturn(0);
 }
 
@@ -821,23 +844,29 @@ PetscErrorCode BedAverager(Vec bloc, Vec smoothbloc, const AppCtx *user) {
 PetscErrorCode FreezeCurrentW(Vec H, AppCtx *user) {
   PetscErrorCode ierr;
   DMDALocalInfo  info;
-  Vec            tmpF;
+  Vec            Hloc, tmpF;
   PetscReal      **aH, **atmpF;
 
   PetscFunctionBeginUser;
-  ierr = DMGetGlobalVector(user->da, &tmpF); CHKERRQ(ierr);
   ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, H, &aH);CHKERRQ(ierr);
+
+  ierr = DMGetLocalVector(user->da, &Hloc); CHKERRQ(ierr);
+  ierr = DMGlobalToLocalBegin(user->da,H,INSERT_VALUES,Hloc); CHKERRQ(ierr);
+  ierr = DMGlobalToLocalEnd(user->da,H,INSERT_VALUES,Hloc); CHKERRQ(ierr);
+
+  ierr = DMGetGlobalVector(user->da, &tmpF); CHKERRQ(ierr);
+
+  ierr = DMDAVecGetArray(user->da, Hloc, &aH);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, tmpF, &atmpF);CHKERRQ(ierr);
 
-  // this call is only for the side-effect of filling local Vec user->Wfrozen
-  user->actnowtofreezeW = PETSC_TRUE;
+  // this call is only for the SIDE-EFFECT of filling local Vec user->Wfrozen
   ierr = FormFunctionLocal(&info,aH,atmpF,user); CHKERRQ(ierr);
-  user->actnowtofreezeW = PETSC_FALSE;
 
-  ierr = DMDAVecRestoreArray(user->da, H, &aH);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, Hloc, &aH);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, tmpF, &atmpF);CHKERRQ(ierr);
+
   ierr = DMRestoreGlobalVector(user->da, &tmpF); CHKERRQ(ierr);
+  ierr = DMRestoreLocalVector(user->da, &Hloc); CHKERRQ(ierr);
 
   ierr = DMLocalToLocalBegin(user->quadda,user->Wfrozen,INSERT_VALUES,user->Wfrozen);CHKERRQ(ierr);
   ierr = DMLocalToLocalEnd(user->quadda,user->Wfrozen,INSERT_VALUES,user->Wfrozen);CHKERRQ(ierr);

@@ -49,7 +49,7 @@ typedef struct {
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
-            doBErecovery,// on SNES diverge, set this to TRUE so F(H) and J(H) are backward Euler; for recovery
+            dorecovery,// on SNES diverge, set this to TRUE for recovery
             dump,   // dump fields into individual PETSc binary files
             silent, // run silent
             averr,  // only display average error at end
@@ -60,10 +60,9 @@ typedef struct {
   struct timeval starttime,
                  endtime;
   // following stuff is only used in freeze-W recovery
-  PetscBool freezeW,  // mode is on
+  PetscBool usefrozenW,     // mode is on
             actnowtofreezeW;// FormFunctionLocal() will have side effect of filling Wfrozen
-  Vec       Wfrozen;
-  PetscReal ***Warray;// must be valid, with ghosts, when freezeW==TRUE
+  Vec       Wfrozen;        // local Vec with frozen values
 } AppCtx;
 
 #endif // MAHAFFYCTX_H_
