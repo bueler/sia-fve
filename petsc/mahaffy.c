@@ -88,6 +88,7 @@ extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
 extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,const AppCtx*);
 extern PetscErrorCode BedAverager(Vec,Vec,const AppCtx*);
+extern PetscErrorCode FreezeCurrentW(Vec,const AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -286,6 +287,9 @@ int main(int argc,char **argv) {
   ierr = DMCreateLocalVector(user.da,&blocsmooth);CHKERRQ(ierr);
   ierr = BedAverager(bloc,blocsmooth,&user);CHKERRQ(ierr);
 
+  // setup local W component array for freeze-W recovery
+  ierr = DMCreateGlobalVector(user.quadda,&user.Wfrozen);CHKERRQ(ierr);
+
   // initialize the SNESVI
   ierr = SNESCreate(PETSC_COMM_WORLD,&snes);CHKERRQ(ierr);
   ierr = SNESSetDM(snes,user.da);CHKERRQ(ierr);
@@ -325,9 +329,13 @@ int main(int argc,char **argv) {
               }
               if (!user.doBErecovery) {
                   myPrintf(&user,
-                      "         turning on recovery mode (backward Euler step of %.2f a and smoother bed)\n",
-                      user.dtBE/user.secpera);
-                  user.doBErecovery = PETSC_TRUE;
+                      "         turning on recovery mode (freeze W and smoother bed)\n");
+                  //myPrintf(&user,
+                  //    "         turning on recovery mode (backward Euler step of %.2f a and smoother bed)\n",
+                  //    user.dtBE/user.secpera);
+                  //user.doBErecovery = PETSC_TRUE;
+                  user.freezeW = PETSC_TRUE;
+                  ierr = FreezeCurrentW(H,&user); CHKERRQ(ierr);
                   user.bloc = blocsmooth;
               }
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
@@ -369,6 +377,7 @@ int main(int argc,char **argv) {
       }
   }
 
+  ierr = VecDestroy(&user.Wfrozen);CHKERRQ(ierr);
   ierr = VecDestroy(&bloc);CHKERRQ(ierr);
   ierr = VecDestroy(&blocsmooth);CHKERRQ(ierr);
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
@@ -803,5 +812,16 @@ PetscErrorCode BedAverager(Vec bloc, Vec smoothbloc, const AppCtx *user) {
 
   ierr = DMLocalToLocalBegin(user->da,smoothbloc,INSERT_VALUES,smoothbloc);CHKERRQ(ierr);
   ierr = DMLocalToLocalEnd(user->da,smoothbloc,INSERT_VALUES,smoothbloc);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode FreezeCurrentW(Vec H, const AppCtx *user) {
+  PetscErrorCode ierr;
+
+  PetscFunctionBeginUser;
+  //FIXME: call FormFunctionLocal() which is set-up to have side-effect of filling local Vec user->Wfrozen
+  //then do
+  ierr = DMLocalToLocalBegin(user->quadda,user->Wfrozen,INSERT_VALUES,user->Wfrozen);CHKERRQ(ierr);
+  ierr = DMLocalToLocalEnd(user->quadda,user->Wfrozen,INSERT_VALUES,user->Wfrozen);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }

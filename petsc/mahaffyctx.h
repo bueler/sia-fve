@@ -20,8 +20,9 @@ typedef struct {
             m,      // the (steady) surface mass balance
             Hexact, // the exact or observed thickness (verification or data, resp.)
             Hprev;  // only used when doing backward Euler time step as recovery
-  Vec       bloc;   // copy of bed elevation with ghosts
-  PetscReal ***Warray; // only used in freeze-W recovery
+  Vec       bloc,   // copy of bed elevation with ghosts
+            Wfrozen;// only used in freeze-W recovery
+  PetscReal ***Warray;// only used in freeze-W recovery
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,
