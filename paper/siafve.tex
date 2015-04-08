@@ -197,7 +197,7 @@ where $\hat H_{j,k+\half}$ and $\alphaup$ are defined by swapping the roles of $
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{\textbf{a.}~A structured FD grid with regular points (dots) and staggered points (triangles).  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and flux-evaluation locations (circles).  Corners $\ell=0,1,2,3$ of the element are where each basis function $\chi_\ell$ equals one.}
+\caption{\textbf{a.}~A structured FD grid with regular points (dots) and staggered points (triangles).  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and Mahaffy-scheme flux-evaluation locations (circles).  Corners $\ell=0,1,2,3$ of the element are where each basis function $\chi_\ell$ equals one.}
 \label{fig:fdfemgrids}
 \end{figure}
 
@@ -348,23 +348,23 @@ The number of flux-evaluations for the improved method is twice that for the cla
 
 Eight half-edges make up $\partial V_{j,k}$, with each half-edge inside an element.  Thus one could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, even in the flat bed case the largest numerical SIA errors occur near the free boundary (margin) where the exact solution $H$ has low regularity \citep{Bueleretal2005}.  Thus higher-order quadrature and interpolation degree will probably not give much advantage.  Our improved method represents a measurable accuracy and Newton-method-convergence improvement over the classical Mahaffy method---see Results section---primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed in the classical scheme.
 
-\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation, even away from the free boundary.  (I.e.~even with positive thickness at all involved grid points.)  In such cases, when the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They implement a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}, and they show it reduces error such mass conservation errors, in the sense of giving numerical results which are close in volume to an exact solution (see Results section).  Their upwinding scheme expands the stencil, however, so that computing $\bq$ at point $(x_j,y_k)$ involves thickness $H_{j+2,k}$, two cells away, and they use explicit time-stepping.  Compare to theirs, we propose an implicit (see next section), first-order form of upwinding, and we use their bedrock-step exact solution for testing our scheme (Results section).  For our implicit solution method, upwinding is not required for stability or non-oscillation.
+\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation.  In such cases, wherein the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They implement a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}.  They show reduced mass conservation errors in the sense of giving numerical solutions which are closer in volume to an exact solution.  Their scheme expands the stencil, with equation \eqref{eq:siasteadyfd} at point $(x_j,y_k)$ involving thickness $H_{j+2,k}$, two cells away.  Note they solve the time-dependent problem, using explicit time-stepping.
 
-Form \eqref{eq:fluxform} decomposes the flux $\bq$ into a diffusion part and a transport part.  We denote the transport part by $\tilde \bq = \bW H^{n+2}$, where $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but we propose to upwind $\tilde \bq$ by changing the location where $H^{n+2}$ is evaluated according to the direction of $\bW$.  Evaluation of $D\grad H$ and $\bW$ is unchanged.
+By comparison, we now propose a minimal amount of first-order upwinding based on form \eqref{eq:fluxform} of the flux, but we do use their bedrock-step exact solution for accuracy-testing our implicit scheme.  Note that upwinding is not required for linear stability or non-oscillation of an implicit scheme, in the senses that apply to an explicit scheme \citep{MortonMayers2005}.  In \eqref{eq:fluxform} we denote the transport part by $\tilde \bq = \bW H^{n+2}$, where $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but to upwind we change the location where $H^{n+2}$ is evaluated according to the direction of $\bW$; evaluation of $D\grad H$ and $\bW$ at quadrature points is unchanged.
 
-For example, the upwind modification at $(x_j^0,y_k^0)$ uses the sign of
+To be specific, let $0\le \lambda \le 1$.  Our upwind modification at $(x_j^0,y_k^0)$ uses the sign of
 \begin{equation}
 W^x_* = W^x(x_j^0,y_k^0),
 \end{equation}
-where $\bW=(W^x,W^y)$.  Based on this value we shift the evaluation of $H$ in $\tilde \bq$ upwind by a quarter of an element width:
+where $\bW=(W^x,W^y)$.  Note that the sign of $W_x^*$ is opposite that of the $x$-component of the bed gradient.  We shift the evaluation of $H$ in $\tilde \bq$ upwind by a quarter of an element width:
 \begin{align}
 &\tilde \bq^x(x_j^0,y_k^0)  \label{eq:upwindschemex} \\
 &\quad = W^x_* \begin{cases}
-                 H(x_j+\tfrac{\Delta x}{4},y_k^0)^{n+2}, & W^x_* \ge 0, \\
-                 H(x_j+\tfrac{3\Delta x}{4},y_k^0)^{n+2}, & W^x_* < 0.
+                 H(x_j-\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* \ge 0, \\
+                 H(x_j+\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* < 0.
              \end{cases} \notag
 \end{align}
-Note $\operatorname{sgn}\, W^x_*=-\operatorname{sgn} b^x(x_j^0,y_k^0)$, where $\grad b = (b^x,b^y)$.  These upwind modifications are shown by horizontal arrows in Figure \ref{fig:upwindterm}.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.
+Noting that $\lambda=0$ corresponds to no upwinding and $\lambda=1$ is the maximum amount of upwinding that does not expand the stencil, after experimentation we chose $\lambda=1/4$; see Figure \ref{fig:upwindterm}.  This value of $\lambda$ is seen to be large enough to improve the convergence of the Newton solver but also to be small enough to generate substantial improvements in solution accuracy in the bedrock-step exact solution (Results section).  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.
 
 \begin{figure}[ht]
 \begin{center}
@@ -374,9 +374,9 @@ Note $\operatorname{sgn}\, W^x_*=-\operatorname{sgn} b^x(x_j^0,y_k^0)$, where $\
 \label{fig:upwindterm}
 \end{figure}
 
-This form of upwinding, which does not expand the stencil, is most important at locations of low regularity of the solution, and we will see in verification that it achieves higher accuracy than both the apparently second-order Mahaffy scheme and the reported results for the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.
+This form of upwinding does not expand the stencil.  It is most important at locations of low regularity of the solution.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the reported results for the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.
 
-We call the method which combines both improvements (quadrature and upwinding) the ``\Mstar'' method.  The convergence of the Newton method for solving the system of constrained nonlinear algebraic equations is greatly improved for real ice sheet geometries over the classical Mahaffy scheme.
+We call the method which combines both improve-ments---i.e.~more quadrature points and a bit of upwinding---the ``\Mstar'' scheme.  The convergence of the Newton method for solving the equations from this scheme is greatly improved in both verification cases and for real ice sheet geometries, compared to the classical Mahaffy scheme (Results section).
 
 
 \section{Solution of the equations} \label{sec:solution}
