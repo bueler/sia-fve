@@ -30,7 +30,7 @@ Solution options:
                                # default = 10.0;  big may be good for convergence, esp. w upwinding
    ./mahaffy -mah_bedstep -mah_lambda 0.0  # NO upwinding on  grad b  part of flux
    ./mahaffy -mah_bedstep -mah_lambda 1.0  # FULL upwinding
-FIXME implement   ./mahaffy -mah_notry        # on SNES diverge, do not try again in recovery mode
+   ./mahaffy -mah_notry        # on SNES diverge, do not try again in recovery mode
    ./mahaffy -snes_fd_color    # Jacobian by FD coloring; for M* requires 3|mx and 3|my
    ./mahaffy -mah_true -snes_fd_color -da_grid_x 15 -da_grid_y 15
                                # use true Mahaffy (sans quadrature & upwind improvements)
@@ -153,7 +153,7 @@ int main(int argc,char **argv) {
   user.dome       = PETSC_TRUE;  // defaults to this case
   user.bedstep    = PETSC_FALSE;
   user.swapxy     = PETSC_FALSE;
-  user.divergetryagain = PETSC_FALSE; // FIXME: switch default?
+  user.divergetryagain = PETSC_TRUE;
   user.dorecovery      = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
 
@@ -640,7 +640,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
 
 PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
-  PetscBool      domechosen, dtBEset;
+  PetscBool      domechosen, dtBEset, notryset;
   char           histprefix[512];
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
@@ -660,13 +660,10 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-delta", "dimensionless regularization for slope in SIA formulas",
       NULL,user->delta,&user->delta,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-divergetryagain", "on SNES diverge, try again with eps *= 1.5",
-      NULL,user->divergetryagain,&user->divergetryagain,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
       "-dome", "use dome exact solution by Bueler (2003) [default]",
       NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-dtBE", "duration in years of time step used in Backward Euler recovery; only active if -mah_divergetryagain",
+      "-dtBE", "duration in years of time step used in Backward Euler recovery",
       NULL,user->dtBE/user->secpera,&user->dtBE,&dtBEset);CHKERRQ(ierr);
   ierr = PetscOptionsString(
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
@@ -695,6 +692,10 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-notry", "on SNES diverge, DO NOT try again with recovery",
+      NULL,!user->divergetryagain,&user->divergetryagain,&notryset);CHKERRQ(ierr);
+  if (notryset) user->divergetryagain = PETSC_FALSE;
   ierr = PetscOptionsString(
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
@@ -712,8 +713,12 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if (dtBEset)
-      user->dtBE *= user->secpera;
+  if (dtBEset) {
+      if (!user->divergetryagain) {
+        SETERRQ(PETSC_COMM_WORLD,1,"ERROR setting -mah_dtBE has no effect if -mah_notry is also set\n");
+      } else
+        user->dtBE *= user->secpera;
+  }
   if ((user->averr) || (user->maxerr))
       user->silent = PETSC_TRUE;
   if (user->read) {

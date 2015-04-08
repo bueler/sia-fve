@@ -39,7 +39,7 @@ Now run `mahaffy` on it; these defaults do well:
 
     $ (cd ../../ && make mahaffy)   # if needed
     $ mkdir test/
-    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test/ -mah_divergetryagain
+    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test/
 
 Generate figures on the results in `test/` as described in `../README.md`.
 
@@ -53,7 +53,7 @@ Redo the above, for example:
     $ ./remap2mcb.py searise5km.nc mcb1500m.nc fix1500m.nc
     $ ../grn2petsc.py fix1500m.nc fix1500m.dat
     $ mkdir test1500m/
-    $ mpiexec -n 6 ../../mahaffy -mah_read fix1500m.dat -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test1500m/ -mah_divergetryagain
+    $ mpiexec -n 6 ../../mahaffy -mah_read fix1500m.dat -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test1500m/
 
 Note that if the big file `MCdataset-2014-11-19.nc` is already present,
 re-running `getmcb.sh` will not cause it to be downloaded again.

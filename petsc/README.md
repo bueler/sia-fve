@@ -5,7 +5,7 @@ The code `mahaffy.c` tests classical Mahaffy and improved (M*) finite volume
 element methods for the shallow ice approximation (SIA) on a structured Q1 grid.
 We use PETSc DMDA and SNESVI to solve the steady SIA free boundary problem.
 
-This code is documented by manuscript `../paper/mahaffyfem.tex`.
+This code is documented by manuscript `../paper/siafve.tex`.
 
 Build the executable, and run on minimal verification case, by
 
@@ -13,9 +13,14 @@ Build the executable, and run on minimal verification case, by
     $ ./mahaffy
 
 See comments at start of `mahaffy.c` for dome and bedstep verification runs.
+See also `domeconv.sh` and `bedstepconv.sh`.
+
+Some quick verification runs are used as regression tests in
+
+    $ make test
 
 In addition, `mahaffy.c` can read real data and model real ice sheets.  See
-the `grn/` subdirectory for a Greenland ice sheet example.
+the `grn/` and `grn/mcb/` subdirectories for Greenland ice sheet examples.
 
 Figures from dump
 -----------------
@@ -55,5 +60,5 @@ Thus the new `-snes_vi_monitor_residual` option in PETSc (may not be in
 maint/master yet) is helpful in the sense of showing only the negative values of
 the residual `F(H)`.
 
-The way `figsmahaffy.py` also shows only the negative values of the residual.
+Note `figsmahaffy.py` also shows only the negative values of the residual.
 
