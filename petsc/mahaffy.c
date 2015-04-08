@@ -141,10 +141,10 @@ int main(int argc,char **argv) {
   user.Neps   = 13;
   for (i=0; i<user.Neps-1; i++)  user.eps_sched[i] = PetscPowReal(0.1,((double)i) / 3.0);
   user.eps_sched[user.Neps-1] = 0.0;
-  user.D0     = 1.0;        // m^2 / s
+  user.D0     = 10.0;        // m^2 / s
   user.eps    = 0.0;
   user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence problem on refined grid (=125m) but this does not; earlier M* was 0.5 here
-  user.dtBE   = 100.0 * user.secpera;  // (FIXME: make option controllable) 100 year time step for Backward Euler; used only in recovery
+  user.dtBE   = 1.0 * user.secpera;  // default 1 year time step for Backward Euler; used only in recovery
 
   user.mtrue      = PETSC_FALSE;
 
