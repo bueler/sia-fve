@@ -50,7 +50,7 @@ diffusivity:
 
     $ (cd ../ && make mahaffy)
     $ mkdir test/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn5km.dat -mah_showdata -draw_pause 2 -mah_D0 10.0 -snes_monitor -mah_divergetryagain -mah_dump test/
+    $ mpiexec -n 6 ../mahaffy -mah_read grn5km.dat -mah_showdata -draw_pause 2 -snes_monitor -mah_divergetryagain -mah_dump test/
 
 This run only takes a few minutes and uses the data as is.
 
@@ -70,7 +70,7 @@ A higher-res (2.5 km), parallel version might look like this; the robust
 
     $ python grn2petsc.py --refine 2 grn.nc grn2p5km.dat
     $ mkdir test2p5km/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -snes_monitor -pc_type asm -sub_pc_type lu -mah_D0 10.0 -snes_max_it 2000
+    $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 2000
 
 Around 700m grid (e.g. `--refine 7`) my 16Gb desktop runs out of memory.
 
