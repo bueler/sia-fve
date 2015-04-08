@@ -9,30 +9,32 @@ static const char help[] =
 "Note  n > 1  and  Gamma = 2 A (rho g)^n / (n+2).\n"
 "Domain is  -Lx < x < Lx,  -Ly < y < Ly,  with periodic boundary conditions.\n\n"
 "Computed by Q1 FVE method with either analytical or FD evaluation of Jacobian.\n"
-"Compares M* improved scheme (default) and true Mahaffy schemes.\n"
-"Uses SNESVI with constraint  H(x,y) >= 0.\n\n"
+"Compares M* improved scheme (default), different amounts of upwinding, and\n"
+"true Mahaffy schemes.  Uses SNESVI with constraint  H(x,y) >= 0.\n\n"
 "Three problem cases:\n"
 "  (1) flat bed case where analytical solution is known\n"
 "  (2) bedrock-step case where analytical solution is known\n"
-"  (3) -mah_read foo.dat reads b and m from PETSc binary file; see grn/README.md.\n\n";
+"  (3) reads input data b and m from PETSc binary file; see grn/README.md.\n\n";
 
 /* Usage help:
    ./mahaffy -help |grep mah_
 
-Use one of these problem cases:
+Use one of these three problem cases:
    ./mahaffy -mah_dome         # default problem
    ./mahaffy -mah_bedstep
    ./mahaffy -mah_read foo.dat # see README.md for Greenland example
 
 Solution options:
-   ./mahaffy -mah_true -da_grid_x 15 -da_grid_y 15
-                               # use true Mahaffy (sans quadrature & upwind improvements), but with 5|mx and 5|my
-   ./mahaffy -mah_bedstep -mah_lambda 0.0
-                               # do not use upwinding on  grad b  part of flux
    ./mahaffy -mah_Neps 4       # don't go all the way on continuation
-   ./mahaffy -mah_D0 10.0      # change constant diffusivity, used in continuation, to other value than
-                               # default = 1.0;  big may be good for convergence, esp. w upwinding
-   ./mahaffy -mah_divergetryagain # on SNES diverge, try again with eps *= 1.5
+   ./mahaffy -mah_D0 1.0       # change constant diffusivity used in continuation to other value than
+                               # default = 10.0;  big may be good for convergence, esp. w upwinding
+   ./mahaffy -mah_bedstep -mah_lambda 0.0  # NO upwinding on  grad b  part of flux
+   ./mahaffy -mah_bedstep -mah_lambda 1.0  # FULL upwinding
+FIXME implement   ./mahaffy -mah_notry        # on SNES diverge, do not try again in recovery mode
+   ./mahaffy -snes_fd_color    # Jacobian by FD coloring; for M* requires 3|mx and 3|my
+   ./mahaffy -mah_true -snes_fd_color -da_grid_x 15 -da_grid_y 15
+                               # use true Mahaffy (sans quadrature & upwind improvements)
+                               # requires 5|mx and 5|my
 
 PETSc solver variations:
    ./mahaffy -snes_type vinewtonssls  # vinewtonrsls is default
@@ -744,16 +746,31 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
   PetscErrorCode ierr;
   KSP            ksp;
   PetscInt       its, kspits;
+  const PetscInt lureason = -99;
+  const char     lureasons[30] = "DIVERGED_LU_ZERO_PIVOT";
+  char           reasonstr[30];
+
   PetscFunctionBeginUser;
-  ierr = SNESSolve(*s, NULL, H); CHKERRQ(ierr);
+  ierr = SNESSolve(*s, NULL, H);
+  if (ierr) {
+      if (ierr == PETSC_ERR_MAT_LU_ZRPVT) {
+          myPrintf(user,"SNESSolve() reports ierr = PETSC_ERR_MAT_LU_ZRPVT --> new SNESConvergedReason %s = %d\n",
+                   lureasons, lureason);
+          *reason = lureason;
+      } else {
+          CHKERRQ(ierr);
+      }
+  } else {
+      ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
+  }
   ierr = SNESGetIterationNumber(*s,&its);CHKERRQ(ierr);
-  ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
+  strcpy(reasonstr,(*reason==-99) ? lureasons : SNESConvergedReasons[*reason]);
   if (again)
-      myPrintf(user,"     %s again w. ",SNESConvergedReasons[*reason]);
+      myPrintf(user,"     %s again w. ",reasonstr);
   else
-      myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
+      myPrintf(user,"%3d. %s   with   ",m,reasonstr);
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters%s\n",
            user->eps,kspits,its,(user->dorecovery) ? " (recovery mode)" : "");
   PetscFunctionReturn(0);
