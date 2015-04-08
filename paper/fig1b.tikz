@@ -28,6 +28,12 @@
   \draw (6+0.45,4+0.25) node {$\ell\!=\!2$};
   \draw (3-0.45,4+0.25) node {$\ell\!=\!3$};
 
+  % true Mahaffy "quadrature" points
+  \draw (3,1)   circle (3.5pt);
+  \draw (4.5,2) circle (3.5pt);
+  \draw (3,3)   circle (3.5pt);
+  \draw (1.5,2) circle (3.5pt);
+
   % outline control volume
   \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
 
