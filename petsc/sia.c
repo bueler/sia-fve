@@ -43,7 +43,9 @@ PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   delta = getdelta(gH,gb,user),
                   D     = Dcont(delta,H,user);
   const Grad      W     = getW(delta,gb);
-  user->maxD = PetscMax(user->maxD, D);
+  user->maxD      = PetscMax(user->maxD, D);
+  user->avD      += D;
+  user->avDcount += 1;
   if (xdir)
       return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
   else

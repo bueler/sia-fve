@@ -453,7 +453,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   if (user->checkadmissible) {
       ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
 
-  user->maxD = 0.0;
+  user->avD      = 0.0;
+  user->avDcount = 0;
+  user->maxD     = 0.0;
 
   // need stencil width on locally-computed q
   ierr = DMGetLocalVector(user->quadda,&qloc);CHKERRQ(ierr);

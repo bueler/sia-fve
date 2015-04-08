@@ -34,13 +34,15 @@ typedef struct {
             delta,  // current dimensionless regularization for slope in SIA formulas
             lambda, // amount of upwinding; lambda=0 is none and lambda=1 is "full"
             dtBE,   // time step for backward Euler, used in recovery
-            maxD,   // local value maximum of diffusivity, in m^2 s^-1; used for reporting
+            avD,    // local average value of diffusivity, in m^2 s^-1; used for reporting
+            maxD,   // local maximum value of diffusivity, in m^2 s^-1; used for reporting
             D0,     // representative value of diffusivity (in regularization)
             initmagic,// constant, in years, used to multiply SMB to get initial iterate for thickness
             eps_sched[13];
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
-            Neps;   // number of levels in regularization/continuation
+            Neps,   // number of levels in regularization/continuation
+            avDcount;// used to get local average value of diffusivity; used for reporting
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")

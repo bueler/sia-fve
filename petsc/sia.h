@@ -24,7 +24,7 @@ and similarly for y component if xdir==PETSC_FALSE.
 This method also applies diffusivity- and power-regularization parts of the
 continuation scheme.
 
-Side effect: we update maximum of diffusivity (user->maxD).
+Side effect: we update diffusivity diagnostics (user->{avD,avDcount,maxD}).
 */
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, AppCtx *user);
