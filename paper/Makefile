@@ -30,12 +30,11 @@ newtonconv.txt:
 	../petsc/mahaffy -da_refine 2 -mah_D0 1.0 -snes_type vinewtonssls -snes_monitor -snes_rtol 1.0e-10 > newtonconv.txt
 
 domeprofile.pdf:
-	rm -rf tmpdome/
-	mkdir tmpdome/
-	../petsc/mahaffy -mah_dump tmpdome/ -da_refine 2 -mah_D0 1.0 -snes_type vinewtonssls
-	(cd tmpdome/ && ../../petsc/figsmahaffy.py --profile --half --exactdome)
-	cp tmpdome/HHexact1d.pdf domeprofile.pdf
-	rm -rf tmpdome/
+	rm -rf ../petsc/tmpdome/
+	mkdir ../petsc/tmpdome/
+	(cd ../petsc/ && ./domeprofileinset.sh tmpdome/)
+	cp ../petsc/tmpdome/HHexact1d.pdf domeprofile.pdf
+	rm -rf ../petsc/tmpdome/
 
 bedstepprofiles.pdf:
 	rm -rf ../petsc/tmpbs/

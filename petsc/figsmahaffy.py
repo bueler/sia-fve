@@ -17,6 +17,8 @@ parser.add_argument("--exactbed", action="store_true",
                     help="plot exact solution from Jarosch et al (2013)")
 parser.add_argument("--exactdome", action="store_true",
                     help="plot exact solution from Bueler (2003)")
+parser.add_argument("--blowup", action="store_true",
+                    help="plot detail inset; use only with --exactdome")
 parser.add_argument("--map", action="store_true",
                     help="generate map-plane figures only")
 parser.add_argument('-extra_H', default='', metavar='A,B', type=str,
@@ -79,7 +81,6 @@ def readvec(fname,shape=(0,0)):
     else:
         print "unexpected objectype '%s' ... ending ..." % objecttype
         sys.exit(4)
-        return
 
 print "reading vars x,y,b,m,Hexact,H from *.dat ..."
 x = readvec('x.dat')
@@ -156,30 +157,64 @@ if args.profile:
             xfine = np.linspace(0.0,x.max()*1000.0,2001)
             Hdome = dome_exact(xfine)
             plt.plot(xfine/1000.0,Hdome,'-k',label=Hexlabel,lw=0.8)
+            if args.blowup:
+                xfineblowup = xfine[(xfine >= 700.0e3) & (xfine <= 800.0e3)]
+                Hdomeblowup = Hdome[(xfine >= 700.0e3) & (xfine <= 800.0e3)]
         else:
             plt.plot(x,Hexactn,'-k',label=Hexlabel,lw=0.8)
-    # now plot numerical H and extras
-    Hn = extracthalf(H)
+    # now plot extra H if any
+    extrastylelist = ['+k', 'xk']
     if extraH:
-        tmplabel = Hlabels[0]
+        mainlabel = Hlabels[0]
     else:
-        tmplabel = 'M*'
-    if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
-        plt.plot(x,gets(Hn,bn),'ok',label=tmplabel,markersize=4.0)
-    else:
-        plt.plot(x,Hn,'ok',label=tmplabel,markersize=4.0)
-    if extraH:
-        stylelist = ['+k', 'xk', 'sk', 'dk']
-        for j in range(len(Hlist)):
+        mainlabel = 'M*'
+    if extraH and not args.blowup:  # don't plot extra_H in main figure ... see blowup below
+        for j in range(len(extrastylelist)):  # FIXME ignore extra_H beyond 2
             nextH = readvec(Hlist[j],shape=(len(y),len(xoriginal)))
             nextHn = extracthalf(nextH)
-            plt.plot(x,gets(nextHn,bn),stylelist[j],label=Hlabels[j+1],markersize=8.0)
+            plt.plot(x,gets(nextHn,bn),extrastylelist[j],label=Hlabels[j+1],markersize=[10.0,8.0][j])
+    # plot main numerical H last
+    Hn = extracthalf(H)
+    if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
+        plt.plot(x,gets(Hn,bn),'ok',label=mainlabel,markersize=6.0)
+    else:
+        plt.plot(x,Hn,'ok',label=mainlabel,markersize=6.0)
     # finish up with labels etc.
     plt.hold(False)
     plt.xlabel('x  (km)')
     plt.ylabel('z  (m)')
     plt.grid(True)
     plt.legend(fontsize=12.0)
+    # fill in blowup
+    if args.blowup:
+        if not args.exactdome:
+            print "ERROR: option --blowup only valid if also --exactdome"
+            sys.exit(7)
+        # put box around margin in original axes, and draw lines
+        plt.hold(True)
+        plt.plot([700.0, 700.0, 800.0, 800.0],[0.0, 1000.0, 1000.0, 0.0],'-k',lw=1.0)
+        plt.plot([275.0, 685.0],[2390.0, 1025.0],'-k',lw=0.4)
+        plt.plot([275.0, 620.0],[150.0, 25.0],'-k',lw=0.4)
+        plt.hold(False)
+        # add axes and replot quantities
+        a = plt.axes([0.15, 0.13, 0.2, 0.45], axisbg='w')
+        plt.plot(xfineblowup/1000.0,Hdomeblowup,'-k',label=Hexlabel,lw=0.8)
+        plt.hold(True)
+        iblowup = (x >= 700.0) & (x <= 800.0)
+        xblowup = x[iblowup]
+        if extraH:
+            nextx = readvec('xfiner.dat')
+            nexty = readvec('yfiner.dat')
+            nextH = readvec('Hfiner.dat',shape=(len(nexty),len(nextx)))
+            nextx /= 1000.0
+            inext = (nextx >= 700.0) & (nextx <= 800.0)
+            nextn = len(nexty) / 2
+            plt.plot(nextx[inext],nextH[nextn][inext],'dk',markersize=5.0)
+        plt.plot(xblowup,Hn[iblowup],'ok',markersize=7.0)
+        plt.hold(False)
+        plt.axis([700.0, 800.0, -100.0, 1000.0])
+        plt.setp(a, xticks=[], yticks=[])  # no ticks on inset
+    # output it
     figsave('HHexact1d.pdf')
 
 if args.map:
