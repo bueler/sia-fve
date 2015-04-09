@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#
 # (C) 2015 Ed Bueler
 
 import argparse

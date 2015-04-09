@@ -381,13 +381,13 @@ We call the method which combines both improve-ments---i.e.~more quadrature poin
 
 \section{Solution of the equations} \label{sec:solution}
 
-We are ready to write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because locating the free boundary (ice sheet margin) is an integral part of the problem of solving for steady state.
+We are ready to write down a system of nonlinear algebraic equations, so it remains to describe its numerical solution.  This is nontrivial because locating the free boundary (ice sheet margin) is an integral part of the problem of solving for steady state.  In fact, inequality constraints apply to each unknown.
 
-Each equation in the \Mstar scheme is simply \eqref{eq:siamstar} with upwind modification \eqref{eq:upwindschemex}.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
+Each equation in the \Mstar scheme is simply \eqref{eq:siamstar} with an upwind modification like \eqref{eq:upwindschemex} at the quadrature points.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
 \begin{equation}
 F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
 \end{equation}
-determines $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note ``$H^h(x,y)$'' and ``$\bH$'' are two notations for the same discrete thickness representation.  Actually, system \eqref{eq:nonlinsystem} is not adequate by itself because each unknown thickness $H_{j,k}$ is constrained to be a nonnegative number,
+determines $N$ unknowns, a vector $\bH=\{H_{j,k}\}$.  (Note ``$H^h(x,y)$'' and ``$\bH$'' are actually two notations for the same discrete thickness representation.)  System \eqref{eq:nonlinsystem} is not adequate by itself because each unknown thickness $H_{j,k}$ must be nonnegative,
 \begin{equation}
 \bH \ge 0.  \label{eq:nonlinconstraints}
 \end{equation}
@@ -396,18 +396,15 @@ Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be com
 \begin{equation}
 \bH \ge 0, \quad \bF(\bH) \ge 0, \quad \bH \cdot \bF(\bH) = 0.  \label{eq:nonlincomplementarity}
 \end{equation}
-
-We solve problem \eqref{eq:nonlincomplementarity} by a ``constrained'' Newton solver, specifically by either the semi-smooth or the reduced-set method \citep{BensonMunson2006}, as implemented in PETSc \citep{Balayetal2014}.  Our open-source C code\footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve} and then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is therefore brief.  It essentially contains just residual and Jacobian (below) subroutines, with parallel structured-grid management, nonlinear solver, iterative linear solver, and linear preconditioning all consigned to PETSc.
-
-The choice of linear solver and preconditioner is made only at runtime.  Both multigrid \citep{Briggsetal2000} and additive-Schwarz-type domain decomposition \citep{Smithetal1996} preconditioning is found to allow convergence, but the latter is noticably more robust, and is used in the Results section.
+We solve \eqref{eq:nonlincomplementarity} by a ``constrained'' Newton solver, specifically by either the semi-smooth or the reduced-set method \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.  Our open-source C code\footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve} and then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.  The residual-evaluating method in \texttt{mahaffy.c} is called \texttt{FormFunctionLocal()}.} is brief as it contains just residual and Jacobian (below) evaluation subroutines.  Parallel grid management, Newton solver, iterative linear solver, and linear preconditioning jobs are all consigned to PETSc.  The choice of linear solver and preconditioner is made only at runtime.  Both multigrid \citep{Briggsetal2000} and additive-Schwarz-type domain decomposition \citep{Smithetal1996} preconditioning is found to allow convergence, but the latter is more robust.
 
 The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
 J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right), \label{eq:nonlinjacobian}
 \end{equation}
-is computed in one of two ways.  First, it can be computed numerically within PETSc by finite-differencing \citep{Kelley2003}.  This is made efficient by ``coloring'' the nodes \citep{CurtisPowellReid1974} so that, because of the nine-point stencil, only ten residual evaluations are needed to approximate $J$.  Because the grid is logically periodic, however, the coloring method requires the grid dimensions $N_x$,$N_y$ to each be divisible by three.  Second, the Jacobian \eqref{eq:nonlinjacobian} can be computed via hand-calculated derivatives.  This calculation (Appendix B) allows a speed-up by a rough factor of two over the finite-difference method, and it avoids the divisibility restriction.
+can be computed via hand-calculated derivatives.  This additional effort (Appendix B) gives a speed-up by a rough factor of 1.5 over the alternative, namely finite-difference (FD) computation of Jacobian entries coming from additional residual (i.e.~$F$) evaluations.  Such FD Jacobians are efficiently-implemented in PETSc using ``coloring'' of the nodes \citep{CurtisPowellReid1974} so that, because of the nine-point stencil, only ten residual evaluations are needed to approximate $J$.  Because the grid is logically periodic and the stencil is three-by-three, however, the FD/coloring method requires grid dimensions $N_x$ and $N_y$ to each be divisible by three.
 
-The standard theory of convergence of Newton's method shows that quadratic convergence occurs if $J$ is Lipshitz-continuous as a function of the unknowns \citep[and references therein]{Kelley2003}.  However, the flux $\bq$ is generally not smooth as a function of $\grad H$.  In particular, for $1<n<3$ the flux has a second derivative which is not Lipshitz-continuous with respect to changes in $\grad H$.  Because our Jacobian is the derivative of equations \eqref{eq:siamstar}, which already involves differentiating $\bq$ in the limit where the control volume shrinks to zero, the behavior of second derivatives of $\bq$ determines the convergence of the solver.  Nonsmoothness of the flux is easiest to see in one dimension where equation \eqref{eq:siaflux} is
+The standard theory of convergence of Newton's method shows that quadratic convergence should occur if $J$ is Lipshitz-continuous as a function of the unknowns \citep[and references therein]{Kelley2003}.  However, the flux $\bq$ is generally not smooth as a function of $\grad H$.  In particular, for $1<n<3$ the flux has a second derivative which is not Lipshitz-continuous with respect to changes in $\grad H$.  Because our Jacobian is the derivative of equations \eqref{eq:siamstar}, which already involves differentiating $\bq$ (in the limit where the control volume shrinks to zero), the behavior of second derivatives of $\bq$ determines the convergence of the solver.  Nonsmoothness of the flux is easiest to see in one dimension where equation \eqref{eq:siaflux} is
 \begin{equation}
 q(H,H') = - \Gamma H^{n+2} \left|H'+b'\right|^{n-1} (H'+b'). \label{eq:flux1d}
 \end{equation}
@@ -419,9 +416,9 @@ for $C>0$.  When $n=2$, for example, this function undergoes a step at $H'=-b'$,
 
 Because we want methods that work for all exponents $n\ge 1$, we regularize by replacing
 \begin{equation}
-|\grad s| \to \left(|\grad s|^2 + \delta^2\right)^{1/2},
+|\grad s| \to \left(|\grad s|^2 + \delta^2\right)^{1/2}, \label{eq:nonlinregularization}
 \end{equation}
-with $\delta = 10^{-4}$, from now on when we compute the flux $\bq$ and its derivatives.  This regularization, which makes little difference when the surface slope is of order $10^{-3}$ or larger, is not surprising because it is similar to that used in regularizing the viscosity in the Stokes equations \citep{GreveBlatter2009}, and other distributed stress balance models \citep[for example]{BuelerBrown2009}, so as to avoid infinite viscosity at zero deviatoric stress.  Not only does it allow convergence when $1<n<3$, it also reduces error relative to exact solutions of the unregularized continuum equations (see Results section).
+with $\delta = 10^{-4}$, from now on when we compute the flux $\bq$ and its derivatives.  This regularization, which makes little difference when the surface slope is of order $10^{-3}$ or larger, is not surprising because it is similar to that used in regularizing the viscosity in the Stokes equations \citep{GreveBlatter2009}, and other distributed stress balance models \citep[for example]{BuelerBrown2009}.
 
 A Newton solver requires an initial iterate $H^{(0)}$.  We generate it by a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems, and which is suggested by \cite{JouvetGraeser2013} in a time-stepping context.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
@@ -440,42 +437,39 @@ where $n$ is the original exponent, $D$ is computed in \eqref{eq:siaflux}, $n_0=
            0, & i=12,
          \end{cases}  \label{eq:continuationseq}
 \end{equation}
-so that, until the last stage $\eps_{12}=0$, the parameter $\eps_i$ is reduce by an order of magnitude when $i$ increases by three.
+so that, until the last stage $\eps_{12}=0$, the parameter $\eps_i$ is reduce by an order of magnitude as $i$ increases by three.
 
-Thus we start by solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ from \eqref{eq:continuationND}, and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlincomplementarity} but using the second value $\eps=0.5$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.
+We start with $\eps_0=1$ so we are solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ from \eqref{eq:continuationND}, and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once the Newton solver for this problem converges, we take the solution as the initial iterate for problem \eqref{eq:nonlincomplementarity} but using the second value $\eps_1=(0.1)^{1/3}\approx 0.46$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.  The first twelve stages $\eps_0,\dots,\eps_{11}$ generate a very high-quality initial iterate for the un-modified SIA calculation ($\eps_{12}=0$).
 
-FIXME: explain that the first 12 stages are just to generate an initial iterate for the full SIA calc at stage 12
+The first $\eps_0=1$ problem is a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad s) = m$ subject to the constraint $s\ge b$.  Starting with this well-behaved free-boundary problem, which nonetheless uses all the data $b,m$, allows the Newton solver to generate a first estimate of the ice-covered domain.  In particular, at the end of the first stage the ice margin has moved from the equilibrium line (i.e.~because of initial iterate \eqref{eq:nonlininitialheuristic}) into the ablation zone as expected.
 
-FIXME: don't lose bright idea that Newton method should converge if either $\|\bF(\bH^{(m)})\|_2$ or
-  $$\|(\bH^{(m)})^{8/3} - (\bH^{(m-1)})^{8/3}\|_2$$
-is small
+The relationship between our steady-state computations and fully-implicit time-stepping methods for equation \eqref{eq:siaevolution} deserves examination.  We can exploit the relationship to make the Newton solver highly-robust for real-data cases.
 
-The first problem in the continuation sequence, i.e.~for $\eps_0=1$, is a Laplacian obstacle problem \citep{KinderlehrerStampacchia1980}, namely $-\Div(D_0 \grad s) = m$ subject to the constraint $s\ge b$.  Starting with this well-behaved free-boundary problem, which nonetheless uses the data $b,m$ of the problem, allows the Newton solver to generate a first estimate of the ice-covered domain.  In particular, at the end of the first stage the free boundary (ice margin) is in the ablation zone as expected.
-
-
-\section{On time-stepping and sliding}
-
-Before giving computed examples which justify our claim of practical, not just theoretical, stability, we explain the relationship between our steady-state computations and fully-implicit time-stepping methods for equation \eqref{eq:siaevolution}.  Furthermore we suggest how to modify our methods to include sliding and flow models based on membrane stress balances.
-
-By solving for steady state we effectively take infinite time steps.  Indeed, the backward-Euler \citep{MortonMayers2005} discretized form of equation \eqref{eq:siaevolution} is
+Observe that by solving for steady state we effectively take infinite-duration implicit time steps in the time-dependent problem.  Indeed, the backward-Euler \citep{MortonMayers2005} approximation of equation \eqref{eq:siaevolution} is
 \begin{equation}
 \frac{H^\ell - H^{\ell-1}}{\Delta t} + \Div \bq^\ell = m \label{eq:backwardeuler}
 \end{equation}
-where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  The constrained, continued, Newton, \Mstar method above extends easily to solving \eqref{eq:backwardeuler} at each time step.  For instance, the initial iterate can be taken to be the initial value, or the solution at the previous time step, and the continuation sequence can be avoided or truncated to only include the smallest $\eps$ value.  If $\Delta t$ is not too large then \eqref{eq:backwardeuler} is easier to solve than the steady state limit equation \eqref{eq:siasteady}, because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  Solving the steady state problem is thus harder than any single fully-implicit time-step of finite duration.
-
-FIXME: we have been basically flux-agnostic, and the same basic FVE works as long as there is a way of computing $\bq^h(x_j^s,y_k^s)$ from the current $\bH$.  main issue is extending velocity, thus flux, to cover area that might be new support of $H^h$
+where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known from the previous time-step, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.  Our method extends easily from solving \eqref{eq:nonlincomplementarity} to solving a single time-step of \eqref{eq:backwardeuler}, subject as before to the constraint $\bH\ge 0$.  For finite $\Delta t$, problem \eqref{eq:backwardeuler} is practically easier because the initial iterate can be taken to be the initial value, or the solution at the previous time step, and because the continuation sequence can be avoided or truncated to only include the smallest $\eps$ value.  More important than that, however, is the key fact is that solving \eqref{eq:backwardeuler} gets easier as $\Delta t\to 0$, essentially because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.  If a Newton iteration fails to converge in the steady-state case, we might hope that the same scheme would still solve \eqref{eq:backwardeuler} successfully for finite $\Delta t$, and this is precisely what we see in practice.  Switching from the steady state problem to long (e.g.~100 year) backward-Euler time steps is a ``recovery strategy'' for dealing with Newton solver difficulties when dealing with highly-irregular bed topography data in the steady state problem (Results section).
 
 
 \section{Results}
 
-FIXME: show evidence of quadratic convergence
+In this section we first apply our method in two examples where exact solutions are known.  Our method consists of the \Mstar scheme \eqref{eq:siamstar} to set up the discrete system \eqref{eq:nonlincomplementarity}, on the one hand, and regularization \eqref{eq:nonlinregularization}, continuation scheme \eqref{eq:continuationND}, and the constraint-adapted Newton solvers in PETSc, on the other.  We use the verification cases to address both the convergence of the discrete solution to the continuum solution, under grid refinement, and the convergence of the Newton iteration on the discrete system.  Then we apply the method in an extended Greenland ice sheet example using high-resolution bedrock topography.
 
-Verification is the process of ensuring that our numerical scheme correctly solves the intended continuum equations, that is, in a measurably-convergent manner.  In the flat bed steady state case the angularly-symmetric exact solution constructed by \cite{Bueler2003}, which we call the ``dome'' exact solution, is suitable; see also subsection FIXME of \cite{vanderVeen2013}.  In a case with parameters suitable for a medium-sized ice sheet, this exact solution and a relatively coarse-grid application of the \Mstar method are compared in Figure \ref{fig:domeprofile}.
+An angularly-symmetric exact solution is constructed by \cite{Bueler2003} in the flat bed case; see also subsection 5.3 of \cite{vanderVeen2013}.  This ``dome'' exact solution, with parameters suitable for a medium-sized ice sheet, is shown in Figure \ref{fig:domeprofile}.  FIXME A relatively coarse-grid 500 m application of the \Mstar method is compared and is obviously very close, with the only visible error 
 
 \begin{figure}[ht]
 \onecol{domeprofile.pdf}
 \caption{Result from \Mstar method compared to the dome exact solution ($\Delta x=25$ km).}
 \label{fig:domeprofile}
+\end{figure}
+
+FIXME: Figure \ref{fig:newtonconv} show evidence of quadratic convergence; compare \citep{BrownSmithAhmadia2013}
+
+\begin{figure}[ht]
+\onecol{newtonconv.pdf}
+\caption{At each stage $\eps_i$ of the continuation scheme, the Newton iteration shows the characteristic curved drop of quadratic convergence (residual norm vs iteration number on semilog axes).  The SIA problem itself has $\eps_{12}=0$ (last curve).}
+\label{fig:newtonconv}
 \end{figure}
 
 Under grid refinement we can measure the maximum and average thickness error both for the classical Mahaffy method and for the \Mstar method (Figure \ref{fig:domeverif}).  The rate of convergence (dotted lines) is better for \Mstar, but also the Newton method fails to converge for all Mahaffy runs except the coarsest; gray circles indicate runs where the Newton method diverged before the last $\eps=0$ stage of the continuation.
@@ -524,6 +518,7 @@ FIXME: The first idea in the paper is that a FVE interpretation is compatible wi
 
 FIXME: idea: because we solve implicitly, very little of high-res (e.g. TVD-diminishing) transport scheme theory carries over.  what is important, it appears, is the smoothness of the discrete approximation in the sense that a helpful Jacobian can be formed (whether fd or not, perhaps) that allows convergence at the $\eps=0$ (or near) level
 
+FIXME: we have been basically flux-agnostic, and the same basic FVE works as long as there is a way of computing $\bq^h(x_j^s,y_k^s)$ from the current $\bH$.  main issue is extending velocity, thus flux, to cover area that might be new support of $H^h$.  how to modify our methods to include sliding and flow models based on membrane stress balances.
 
 \section*{Acknowledgements}
 This work was supported by NASA grant \#NNX13AM16G and a grant of high-performance computing resources from the Arctic Region Supercomputing Center.
