@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-#
 # (C) 2015 Ed Bueler
 #
 # Example of usage: see README.md and ../../mahaffypaper/Makefile.
 
 import argparse
+from exactforfigs import dome_exact, bedstep_exact
 
 parser = argparse.ArgumentParser(description='Generate figures from PETSc binary files written by mahaffy.c.  Default is to generate both .pdf profile and .png map-plane figures.')
 parser.add_argument("--profile", action="store_true",
@@ -13,8 +13,10 @@ parser.add_argument("--half", action="store_true",
                     help="make half-width profile")
 parser.add_argument("--observed", action="store_true",
                     help="label Hexact as observed in profile")
-parser.add_argument("--sharpbed", action="store_true",
-                    help="plot 'exact' bed from Jarosch et al")
+parser.add_argument("--exactbed", action="store_true",
+                    help="plot exact solution from Jarosch et al (2013)")
+parser.add_argument("--exactdome", action="store_true",
+                    help="plot exact solution from Bueler (2003)")
 parser.add_argument("--map", action="store_true",
                     help="generate map-plane figures only")
 parser.add_argument('-extra_H', default='', metavar='A,B', type=str,
@@ -114,7 +116,7 @@ def gets(H,b):
 if args.observed:
     Hexlabel = 'observed'
 else:
-    Hexlabel = 'exact solution'
+    Hexlabel = 'exact'
 
 half = (x > 0)
 def extracthalf(f):
@@ -135,20 +137,37 @@ if args.profile:
     plt.hold(True)
     # first plot bed and exact H
     if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
-        if args.sharpbed:  # only works with --half
-           plt.plot([0.0,7.0,7.0,x.max()],[500.0,500.0,0.0,0.0],'k',lw=2.5)
+        if args.exactbed:
+            if not args.half:
+                print "ERROR: option --exactbed only makes sense with --half"
+                sys.exit(9)
+            xfine = np.linspace(0.0,x.max()*1000.0,2001)
+            bbed, Hbed = bedstep_exact(xfine)
+            plt.plot(xfine/1000.0,bbed,'k',lw=2.5)
+            plt.plot(xfine/1000.0,gets(Hbed,bbed),'-k',label=Hexlabel,lw=0.8)
         else:
-           plt.plot(x,bn,'k',lw=1.5)
-        plt.plot(x,gets(Hexactn,bn),'-k',label=Hexlabel,lw=0.8)
+            plt.plot(x,bn,'k',lw=1.5)
+            plt.plot(x,gets(Hexactn,bn),'-k',label=Hexlabel,lw=0.8)
     else:
-        plt.plot(x,gets(Hexactn,bn),'k',label=Hexlabel)
-    # now plot H and extras
+        if args.exactdome:
+            if not args.half:
+                print "ERROR: option --exactdome only makes sense with --half"
+                sys.exit(8)
+            xfine = np.linspace(0.0,x.max()*1000.0,2001)
+            Hdome = dome_exact(xfine)
+            plt.plot(xfine/1000.0,Hdome,'-k',label=Hexlabel,lw=0.8)
+        else:
+            plt.plot(x,Hexactn,'-k',label=Hexlabel,lw=0.8)
+    # now plot numerical H and extras
     Hn = extracthalf(H)
     if extraH:
         tmplabel = Hlabels[0]
     else:
         tmplabel = 'M*'
-    plt.plot(x,gets(Hn,bn),'ok',label=tmplabel,markersize=4.0)
+    if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
+        plt.plot(x,gets(Hn,bn),'ok',label=tmplabel,markersize=4.0)
+    else:
+        plt.plot(x,Hn,'ok',label=tmplabel,markersize=4.0)
     if extraH:
         stylelist = ['+k', 'xk', 'sk', 'dk']
         for j in range(len(Hlist)):

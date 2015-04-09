@@ -33,7 +33,7 @@ domeprofile.pdf:
 	rm -rf tmpdome/
 	mkdir tmpdome/
 	../petsc/mahaffy -mah_dump tmpdome/ -da_refine 2 -mah_D0 1.0 -snes_type vinewtonssls
-	(cd tmpdome/ && ../../petsc/figsmahaffy.py --profile --half)
+	(cd tmpdome/ && ../../petsc/figsmahaffy.py --profile --half --exactdome)
 	cp tmpdome/HHexact1d.pdf domeprofile.pdf
 	rm -rf tmpdome/
 
