@@ -510,6 +510,7 @@ The second, third, and fourth columns are from the same three versions of the \M
 
 These good results from a little bit of first-order upwinding in our implicit \Mstar scheme have discouraged us from expensive further attempts to improve the advection scheme, until such time as new precise evidence is available.  Note \cite{JaroschSchoofAnslow2013} have explicit implementations, so the fact that implementations of the ``Superbee'' and other high-resolution flux methods have ``if-then'' conditionals \citep{LeVeque2002} is not dangerous.  For our implicit Newton solver, however, which needs a differentiable residual function to get a well-conditioned Jacobian, the additional non-smoothness of high-resolution flux methods suggests caution.  Our bit of upwinding seems helpful to Newton convergence, however.
 
+%FIXME: idea. upwinding in steady-state case is ``adding off-diagonal temr to nonsymmetric matrix so as to help invertibility''
 
 \subsection{Greenland}
 
