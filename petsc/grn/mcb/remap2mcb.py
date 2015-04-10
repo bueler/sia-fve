@@ -12,8 +12,6 @@
 import argparse
 import sys
 import numpy as np
-import matplotlib.mlab as ml
-import matplotlib.pyplot as plt
 
 try:
     from netCDF4 import Dataset as NC
@@ -145,8 +143,8 @@ def demoremap():
         print "(%11.2f,%11.2f) --> (%11.2f,%11.2f)  ... %s" % \
               (xtarg[ix[k]], ytarg[iy[k]], x, y, instr(flg))
         if flg:
-            iix = ml.find(x1src <= x).max()
-            iiy = ml.find(y1src <= y).max()
+            iix = np.nonzero(x1src <= x).max()
+            iiy = np.nonzero(y1src <= y).max()
             print "    box is [%11.2f,%11.2f] x [%11.2f,%11.2f]" % \
                   (x1src[iix],x1src[iix+1],y1src[iiy],y1src[iiy+1])
 
@@ -186,8 +184,8 @@ for k in range(len(ytarg)):
         x, y = transform(projtarg, projsrc, xtarg[j], ytarg[k])
         flg = insrc(x, y)
         if flg:
-            iix = ml.find(x1src <= x).max()
-            iiy = ml.find(y1src <= y).max()
+            iix = np.nonzero(x1src <= x).max()
+            iiy = np.nonzero(y1src <= y).max()
             if (iix+1 < len(x1src)) and (iiy-1 >= 0):
                 xx = x1src[iix:iix+2]
                 yy = y1src[iiy:iiy+2]
