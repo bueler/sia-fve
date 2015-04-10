@@ -4,7 +4,7 @@
 
 set -x
 
-otheropts="-mah_bedstep -mah_D0 0.001 -da_refine 2 -snes_max_it 400 -pc_type asm -sub_pc_type lu -mah_dtBE 100.0"
+otheropts="-mah_bedstep -mah_D0 0.001 -da_refine 1 -snes_max_it 400 -pc_type asm -sub_pc_type lu -mah_Neps 12"
 
 ./mahaffy -mah_dump $1 $otheropts -mah_lambda 0.0
 (cd $1 && mv H.dat Hnoupwind.dat)

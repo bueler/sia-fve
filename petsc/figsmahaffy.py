@@ -162,23 +162,23 @@ if args.profile:
                 Hdomeblowup = Hdome[(xfine >= 700.0e3) & (xfine <= 800.0e3)]
         else:
             plt.plot(x,Hexactn,'-k',label=Hexlabel,lw=0.8)
-    # now plot extra H if any
-    extrastylelist = ['+k', 'xk']
+    # plot main numerical H
     if extraH:
         mainlabel = Hlabels[0]
     else:
         mainlabel = 'M*'
-    if extraH and not args.blowup:  # don't plot extra_H in main figure ... see blowup below
-        for j in range(len(extrastylelist)):  # FIXME ignore extra_H beyond 2
-            nextH = readvec(Hlist[j],shape=(len(y),len(xoriginal)))
-            nextHn = extracthalf(nextH)
-            plt.plot(x,gets(nextHn,bn),extrastylelist[j],label=Hlabels[j+1],markersize=[10.0,8.0][j])
-    # plot main numerical H last
     Hn = extracthalf(H)
     if bn.max() - bn.min() > 0.0:  # only plot bed if it is not constant
         plt.plot(x,gets(Hn,bn),'ok',label=mainlabel,markersize=6.0)
     else:
         plt.plot(x,Hn,'ok',label=mainlabel,markersize=6.0)
+    # now plot extra H if any
+    extrastylelist = ['+k', 'xk']
+    if extraH and not args.blowup:  # don't plot extra_H in main figure ... see blowup below
+        for j in range(len(extrastylelist)):  # FIXME ignore extra_H beyond 2
+            nextH = readvec(Hlist[j],shape=(len(y),len(xoriginal)))
+            nextHn = extracthalf(nextH)
+            plt.plot(x,gets(nextHn,bn),extrastylelist[j],label=Hlabels[j+1],markersize=[12.0,10.0][j])
     # finish up with labels etc.
     plt.hold(False)
     plt.xlabel('x  (km)')
