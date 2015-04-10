@@ -50,10 +50,7 @@ for j in range(len(A)):
     plt.semilogy([ishift[0],ishift[0]], [1.5*topres,7.0*topres], 'k', lw=0.5)
     if A[j][0] == 0:
         tagfs = 16.0
-        if convcount == 12:
-            epsstr = r'$0$'
-        else:
-            epsstr = r'$\epsilon_{%d}$' % convcount
+        epsstr = r'$\epsilon_{%d}$' % convcount
         convcount += 1
     else:
         tagfs = 12.0
