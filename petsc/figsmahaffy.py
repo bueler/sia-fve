@@ -193,11 +193,11 @@ if args.profile:
         # put box around margin in original axes, and draw lines
         plt.hold(True)
         plt.plot([700.0, 700.0, 800.0, 800.0],[0.0, 1000.0, 1000.0, 0.0],'-k',lw=1.0)
-        plt.plot([275.0, 685.0],[2390.0, 1025.0],'-k',lw=0.4)
-        plt.plot([275.0, 620.0],[150.0, 25.0],'-k',lw=0.4)
+        plt.plot([390.0, 685.0],[2100.0, 1025.0],'-k',lw=0.4)
+        plt.plot([390.0, 685.0],[150.0, 35.0],'-k',lw=0.4)
         plt.hold(False)
         # add axes and replot quantities
-        a = plt.axes([0.15, 0.13, 0.2, 0.45], axisbg='w')
+        a = plt.axes([0.15, 0.13, 0.3, 0.4], axisbg='w')
         plt.plot(xfineblowup/1000.0,Hdomeblowup,'-k',label=Hexlabel,lw=0.8)
         plt.hold(True)
         iblowup = (x >= 700.0) & (x <= 800.0)
