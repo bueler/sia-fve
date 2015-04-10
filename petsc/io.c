@@ -206,11 +206,12 @@ PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *en
 PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscErrorCode  ierr;
   DMDALocalInfo   info;
-  PetscInt        NN, avDcount;
-  PetscReal       avD, maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
+  PetscInt        NN;
+  PetscReal       avD, avDcount, locavDcount, maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
 
   ierr = MPI_Allreduce(&user->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-  ierr = MPI_Allreduce(&user->avDcount,&avDcount,1,MPIU_INT,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  locavDcount = (double)user->avDcount;
+  ierr = MPI_Allreduce(&locavDcount,&avDcount,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr); // pacman will not take "MPIU_INT"
   avD /= avDcount;
   ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
   ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
