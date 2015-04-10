@@ -206,14 +206,13 @@ PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *en
 PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscErrorCode  ierr;
   DMDALocalInfo   info;
-  PetscInt        NN;
-  PetscReal       avD, avDcount, locavDcount, maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
+  PetscInt        NN, avDcount;
+  PetscReal       avD, maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
 
-  ierr = MPI_Allreduce(&user->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-  locavDcount = (double)user->avDcount;
-  ierr = MPI_Allreduce(&locavDcount,&avDcount,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr); // pacman will not take "MPIU_INT"
+  ierr = MPI_Allreduce(&user->avD,&avD,1,MPI_DOUBLE,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  ierr = MPI_Allreduce(&user->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
   avD /= avDcount;
-  ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
   ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
   myPrintf(user,"        state:  vol = %8.4e km^3,  max D = %8.4f,  av D = %8.4f m^2 s-1\n",
                 (double)volH / 1.0e9, (double)maxD, (double)avD);
