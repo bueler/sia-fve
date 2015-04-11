@@ -38,18 +38,16 @@ PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
 
 /* See sia.h for doc. */
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
-                  PetscBool xdir, AppCtx *user) {
+                  PetscBool xdir, const AppCtx *user,
+                  PetscReal *D) {
   const PetscReal n     = ncont(user),
-                  delta = getdelta(gH,gb,user),
-                  D     = Dcont(delta,H,user);
+                  delta = getdelta(gH,gb,user);
   const Grad      W     = getW(delta,gb);
-  user->maxD      = PetscMax(user->maxD, D);
-  user->avD      += D;
-  user->avDcount += 1;
+  *D = Dcont(delta,H,user);
   if (xdir)
-      return - D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+      return - *D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
   else
-      return - D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+      return - *D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
 }
 
 

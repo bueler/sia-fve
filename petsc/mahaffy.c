@@ -469,7 +469,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
           PetscInt  c;
-          PetscReal H, Hup;
+          PetscReal H, Hup, D;
           Grad      gH, gb;
           for (c=0; c<4; c++) {
               if (user->mtrue) {  // true Mahaffy method
@@ -494,7 +494,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
+              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user,&D);
+              // update diagnostics associated to D
+              user->maxD      = PetscMax(user->maxD, D);
+              user->avD      += D;
+              user->avDcount += 1;
           }
       }
   }

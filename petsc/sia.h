@@ -15,19 +15,20 @@ Evaluate a component of the flux from gradients and thickness.  Note:
 so:
    q = D grad H + W H^{n+2} (vector)
 
-If xdir==PETSC_TRUE then we compute
+If xdir==PETSC_TRUE then we return
    q.x = - D gH.x + W.x H^{n+2}
-but with upwinding, so we actually compute
+but with upwinding, so we actually return
    q.x = - D gH.x + W.x Hup^{n+2}
 and similarly for y component if xdir==PETSC_FALSE.
 
 This method also applies diffusivity- and power-regularization parts of the
 continuation scheme.
 
-Side effect: we update diffusivity diagnostics (user->{avD,avDcount,maxD}).
+And we return diffusivity at the same point.
 */
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
-                  PetscBool xdir, AppCtx *user);
+                  PetscBool xdir, const AppCtx *user,
+                  PetscReal *D);
 
 /*
 Derivative of flux (vector) with respect to nodal value H_l, at point
