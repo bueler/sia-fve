@@ -148,6 +148,9 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
     PetscInt       j, k;
     PetscReal      *ax, *ay;
 
+    myPrintf(user,"writing {x,y,H,b,m,Hexact,residual%s}.dat to %s ...\n",
+             (user->nodiag) ? "" : ",D,Wmag",user->figsprefix);
+
     ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
     ierr = VecCreateSeq(PETSC_COMM_SELF,info.mx,&x);CHKERRQ(ierr);
     ierr = VecCreateSeq(PETSC_COMM_SELF,info.my,&y);CHKERRQ(ierr);
@@ -169,11 +172,13 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
     ierr = ViewToBinary(PETSC_FALSE,user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,user->Hexact,user->figsprefix,"Hexact.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_FALSE,user->Dnodemax,user->figsprefix,"D.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_FALSE,user->Wmagnodemax,user->figsprefix,"Wmag.dat"); CHKERRQ(ierr);
-
     ierr = ViewToBinary(PETSC_FALSE,H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,r,user->figsprefix,"residual.dat"); CHKERRQ(ierr);
+
+    if (!user->nodiag) {
+        ierr = ViewToBinary(PETSC_FALSE,user->Dnodemax,user->figsprefix,"D.dat"); CHKERRQ(ierr);
+        ierr = ViewToBinary(PETSC_FALSE,user->Wmagnodemax,user->figsprefix,"Wmag.dat"); CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -207,23 +212,28 @@ PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *en
 PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscErrorCode  ierr;
   DMDALocalInfo   info;
-  PetscInt        NN, avDcount;
-  PetscReal       avD, maxD, volH, volHexact, enorminf, enorm1, voldiffrel;
+  PetscInt        NN;
+  PetscReal       volH, volHexact, enorminf, enorm1, voldiffrel;
 
-  ierr = MPI_Allreduce(&user->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-  ierr = MPI_Allreduce(&user->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-  avD /= avDcount;
-  ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
   ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
-  myPrintf(user,"        state:  vol = %8.4e km^3,  max D = %8.4f,  av D = %8.4f m^2 s-1\n",
-                (double)volH / 1.0e9, (double)maxD, (double)avD);
-
   ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
   NN = info.mx * info.my;
   ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
   voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
-  myPrintf(user,"       errors:  max = %7.2f m,       av = %7.2f m,        voldiff%% = %5.2f\n",
-                (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel);
+  myPrintf(user,"       volume = %8.4e km^3;  errors:  max = %7.2f m,  av = %7.2f m,  voldiff%% = %5.2f\n",
+                (double)volH / 1.0e9, (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel);
+
+  if (!user->nodiag) {
+      PetscInt  avDcount;
+      PetscReal avD, maxD;
+      ierr = MPI_Allreduce(&user->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      ierr = MPI_Allreduce(&user->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      avD /= avDcount;
+      ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      myPrintf(user,"       diagnostics:  max D = %8.4f,  av D = %8.4f m^2 s-1\n",
+                    (double)maxD, (double)avD);
+  }
+
   PetscFunctionReturn(0);
 }
 
@@ -237,6 +247,8 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     int             j, strerr, size;
     double          computationtime;
     PetscReal       volH, volHexact, enorminf, enorm1;
+
+    myPrintf(user,"writing %s to %s ...\n",name,user->figsprefix);
 
     strerr = sprintf(filename,"%s%s",user->figsprefix,name);
     if (strerr < 0) { SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr); }

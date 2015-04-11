@@ -160,6 +160,7 @@ int main(int argc,char **argv) {
   user.read       = PETSC_FALSE;
   user.showdata   = PETSC_FALSE;
   user.history    = PETSC_FALSE;
+  user.nodiag     = PETSC_FALSE;
   user.dump       = PETSC_FALSE;
 
   user.silent     = PETSC_FALSE;
@@ -333,14 +334,12 @@ int main(int argc,char **argv) {
   gettimeofday(&user.endtime, NULL);
 
   if (user.history == PETSC_TRUE) {
-      myPrintf(&user,"writing history.txt to %s ...\n",user.figsprefix);
       ierr = WriteHistoryFile(H,"history.txt",argc,argv,&user); CHKERRQ(ierr);
   }
 
   if (user.dump == PETSC_TRUE) {
       Vec r;
       ierr = SNESGetFunction(snes,&r,NULL,NULL); CHKERRQ(ierr);
-      myPrintf(&user,"writing {x,y,H,b,m,Hexact,residual,D}.dat to %s ...\n",user.figsprefix);
       ierr = DumpToFiles(H,r,&user); CHKERRQ(ierr);
   }
 
@@ -465,19 +464,21 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   user->avDcount = 0;
   user->maxD     = 0.0;
 
+  if (!user->nodiag) {
+      ierr = DMGetLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
+      ierr = DMGetLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecGetArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
+      ierr = DMDAVecGetArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
+  }
+
   // need stencil width on locally-computed q
   ierr = DMGetLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
-  ierr = DMGetLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
-  ierr = DMGetLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
-
   ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aqquad);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes at
   // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
@@ -508,7 +509,11 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aqquad[k][j][c] = getfluxDIAGNOSTIC(gH,gb,H,Hup,xdire[c],user,&(aDquad[k][j][c]),&(aWquad[k][j][c]));
+              if (user->nodiag)
+                  aqquad[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user);
+              else
+                  aqquad[k][j][c] = getfluxDIAGNOSTIC(gH,gb,H,Hup,xdire[c],user,
+                                                      &(aDquad[k][j][c]),&(aWquad[k][j][c]));
           }
       }
   }
@@ -529,8 +534,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
               FF[k][j] += coeff[s] * aqquad[k+ke[s]][j+je[s]][ce[s]];
           if (user->dorecovery)
               FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
-          // update diagnostics associated to diffusivity
-          {
+          if (!user->nodiag) {
+              // update diagnostics associated to diffusivity
               PetscReal Dmax = 0.0, Wmagmax = 0.0;
               for (s=0; s<8; s++) {
                   const PetscReal D = aDquad[k+ke[s]][j+je[s]][ce[s]];
@@ -547,16 +552,18 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aqquad);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
-
   ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
-  ierr = DMRestoreLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
-  ierr = DMRestoreLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
+
+  if (!user->nodiag) {
+      ierr = DMDAVecRestoreArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
+      ierr = DMRestoreLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
+      ierr = DMRestoreLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
+  }
   PetscFunctionReturn(0);
 }
 
@@ -728,6 +735,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsInt(
       "-Neps", "levels in schedule of eps regularization/continuation",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-nodiag", "do not store, generate, or output diagnostic D and Wmag fields",
+      NULL,user->nodiag,&user->nodiag,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-notry", "on SNES diverge, DO NOT try again with recovery",
       NULL,!user->divergetryagain,&user->divergetryagain,&notryset);CHKERRQ(ierr);

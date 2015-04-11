@@ -60,6 +60,7 @@ typedef struct {
             silent, // run silent
             averr,  // only display average error at end
             maxerr, // only display maximum error at end
+            nodiag, // do not store, generate, or output diagnostic D and Wmag fields
             history;// write ASCII history file
   char      figsprefix[512],
             readname[512];

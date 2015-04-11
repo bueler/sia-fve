@@ -65,12 +65,15 @@ except:
 
 # read a vec from a petsc binary file
 io = pbio.PetscBinaryIO()
-def readvec(fname,shape=(0,0)):
+def readvec(fname,shape=(0,0),failonmissing=True):
     try:
         fh = open(fname)
     except:
-        print "unable to open '%s' ... ending ..." % fname
-        sys.exit(3)
+        if failonmissing:
+            print "unable to open '%s' ... ending ..." % fname
+            sys.exit(3)
+        else:
+            return None
     objecttype = io.readObjectType(fh)
     if objecttype == 'Vec':
         v = io.readVec(fh)
@@ -83,7 +86,7 @@ def readvec(fname,shape=(0,0)):
         print "unexpected objectype '%s' ... ending ..." % objecttype
         sys.exit(4)
 
-print "reading vars x,y,b,m,Hexact,H,residual,D from *.dat ..."
+print "reading vars x,y,b,m,Hexact,H,residual from *.dat ..."
 x = readvec('x.dat')
 y = readvec('y.dat')
 b = readvec('b.dat',shape=(len(y),len(x)))
@@ -91,8 +94,6 @@ m = readvec('m.dat',shape=(len(y),len(x)))
 Hexact = readvec('Hexact.dat',shape=(len(y),len(x)))
 H = readvec('H.dat',shape=(len(y),len(x)))
 residual = readvec('residual.dat',shape=(len(y),len(x)))
-D = readvec('D.dat',shape=(len(y),len(x)))
-Wmag = readvec('Wmag.dat',shape=(len(y),len(x)))
 
 figdebug = False
 def figsave(name):
@@ -228,13 +229,15 @@ if args.map:
     plt.title('thickness solution H (m) with min=%.2f, max=%.2f' % (H.min(),H.max()))
     figsave('H.png')
 
-    plt.figure(figsize=fsize)
-    plt.pcolormesh(x,y,b)
-    plt.axis('tight')
-    if (b.max() > b.min()):
+    if b.max() == b.min():
+        print "  ... not generating b figure because field is identically zero"
+    else:
+        plt.figure(figsize=fsize)
+        plt.pcolormesh(x,y,b)
+        plt.axis('tight')
         plt.colorbar()
-    plt.title('bed elevation b (m) with min=%.2f, max=%.2f' % (b.min(),b.max()))
-    figsave('b.png')
+        plt.title('bed elevation b (m) with min=%.2f, max=%.2f' % (b.min(),b.max()))
+        figsave('b.png')
 
     plt.figure(figsize=fsize)
     s = gets(H,b)
@@ -269,19 +272,28 @@ if args.map:
     plt.title('residual log magnitude (log10|r|); H<=0 masked-out')
     figsave('residual.png')
 
-    plt.figure(figsize=fsize)
-    Dmask = ma.array(D,mask=(H<=0.0))
-    plt.pcolormesh(x,y,Dmask)
-    plt.axis('tight')
-    plt.colorbar()
-    plt.title('max diffusivity D at node  (m^2/s); H<=0 masked-out, with max=%.2f' % Dmask.max())
-    figsave('D.png')
+    print "will read and generate figures for diagnostic variables D and Wmag if present ..."
 
-    plt.figure(figsize=fsize)
-    Wmagmask = ma.array(Wmag,mask=(H<=0.0))
-    plt.pcolormesh(x,y,Wmagmask)
-    plt.axis('tight')
-    plt.colorbar()
-    plt.title('max mag of W at node  (m/s); H<=0 masked-out, with max=%.2f' % Wmagmask.max())
-    figsave('Wmag.png')
+    D = readvec('D.dat',shape=(len(y),len(x)),failonmissing=False)
+    if D != None:
+        plt.figure(figsize=fsize)
+        Dmask = ma.array(D,mask=(H<=0.0))
+        plt.pcolormesh(x,y,Dmask)
+        plt.axis('tight')
+        plt.colorbar()
+        plt.title('max diffusivity D at node  (m^2/s); H<=0 masked-out, with max=%.2f' % Dmask.max())
+        figsave('D.png')
+
+    Wmag = readvec('Wmag.dat',shape=(len(y),len(x)),failonmissing=False)
+    if Wmag != None:
+        Wmagmask = ma.array(Wmag,mask=(H<=0.0))
+        if Wmagmask.max() == 0.0:
+            print "  ... not generating Wmag figure because field is identically zero"
+        else:
+            plt.figure(figsize=fsize)
+            plt.pcolormesh(x,y,Wmagmask)
+            plt.axis('tight')
+            plt.colorbar()
+            plt.title('max mag of W at node  (m/s); H<=0 masked-out, with max=%.2f' % Wmagmask.max())
+            figsave('Wmag.png')
 

@@ -2,9 +2,5 @@
 
 * add to history file "first continuation level where recovery mode is on"; negative if no recovery
 
-* add option to turn off diagnostics for memory efficiency
-
-* figsmahaffy.py should only generate diagnostic maps if D.dat and Wmag.dat are present
-
 * check units on Wmag
 
