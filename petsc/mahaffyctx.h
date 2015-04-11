@@ -19,8 +19,10 @@ typedef struct {
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
             Hexact, // the exact or observed thickness (verification or data, resp.)
-            Hprev;  // only used when doing backward Euler time step as recovery
-  Vec       bloc;   // copy of bed elevation with ghosts
+            Hprev,  // only used when doing backward Euler time step as recovery
+            bloc,   // copy of bed elevation with ghosts
+            Dquad,  // diffusivity D at the quadrature points on an element
+            Dnodemax;// maximum value of the diffusivity D at the quadrature points which contribute to that node
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,

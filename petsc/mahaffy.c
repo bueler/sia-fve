@@ -469,7 +469,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
       for (j = info->xs-1; j < info->xs + info->xm; j++) {
           PetscInt  c;
-          PetscReal H, Hup, D;
+          PetscReal H, Hup;
           Grad      gH, gb;
           for (c=0; c<4; c++) {
               if (user->mtrue) {  // true Mahaffy method
@@ -494,11 +494,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user,&D);
-              // update diagnostics associated to D
-              user->maxD      = PetscMax(user->maxD, D);
-              user->avD      += D;
-              user->avDcount += 1;
+              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user,&(aDquad[k][j][c]));
           }
       }
   }
@@ -516,9 +512,21 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           //                   actually the same.
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
-            FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
+              FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
           if (user->dorecovery)
-            FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
+              FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
+          // update diagnostics associated to diffusivity
+          {
+              PetscReal Dmax = 0.0;
+              for (s=0; s<8; s++) {
+                  const PetscReal D = aDquad[k+ke[s]][j+je[s]][ce[s]];
+                  user->maxD      = PetscMax(user->maxD, D);
+                  Dmax            = PetscMax(Dmax, D);
+                  user->avD      += D;
+                  user->avDcount += 1;
+              }
+              aDnodemax[k][j] = Dmax;
+          }
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
