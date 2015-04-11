@@ -22,7 +22,9 @@ typedef struct {
             Hprev,  // only used when doing backward Euler time step as recovery
             bloc,   // copy of bed elevation with ghosts
             Dquad,  // diffusivity D at the quadrature points on an element
-            Dnodemax;// maximum value of the diffusivity D at the quadrature points which contribute to that node
+            Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
+            Wmagnodemax;// maximum value of the magnitude of the pseudo-velocity W at the
+                        // quadrature points for that node
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,

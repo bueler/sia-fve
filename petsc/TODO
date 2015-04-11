@@ -1,6 +1,10 @@
 * add ability to smooth bed in preprocessing script (poss. in grn2petsc.py so it can be run from either grn/ or grn/mcb/)
 
-* add D diagnostic by creating new local Vec from quadda and (under option) filling it by a call to getflux() which also returns the D value.  Show the resulting D by averaging over 4 quadrature points per element?
+* add to history file "first continuation level where recovery mode is on"; negative if no recovery
 
-* if the analysis of this shows that D is high where residual is large, in nonconvergent cases, then add code to smooth out the D values
+* add option to turn off diagnostics for memory efficiency
+
+* figsmahaffy.py should only generate diagnostic maps if D.dat and Wmag.dat are present
+
+* check units on Wmag
 

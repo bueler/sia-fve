@@ -23,12 +23,15 @@ and similarly for y component if xdir==PETSC_FALSE.
 
 This method also applies diffusivity- and power-regularization parts of the
 continuation scheme.
-
-And we return diffusivity at the same point.
 */
 PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+                  PetscBool xdir, const AppCtx *user);
+
+/* This version returns additional diagnositics, namely diffusivity and
+magnitude of W at the point. */
+PetscReal getfluxDIAGNOSTIC(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, const AppCtx *user,
-                  PetscReal *D);
+                  PetscReal *D, PetscReal *Wmag);
 
 /*
 Derivative of flux (vector) with respect to nodal value H_l, at point

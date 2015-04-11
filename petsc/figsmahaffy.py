@@ -46,6 +46,7 @@ if extraH:
 
 import sys
 import numpy as np
+import numpy.ma as ma
 import matplotlib.pyplot as plt
 
 try:
@@ -82,7 +83,7 @@ def readvec(fname,shape=(0,0)):
         print "unexpected objectype '%s' ... ending ..." % objecttype
         sys.exit(4)
 
-print "reading vars x,y,b,m,Hexact,H from *.dat ..."
+print "reading vars x,y,b,m,Hexact,H,residual,D from *.dat ..."
 x = readvec('x.dat')
 y = readvec('y.dat')
 b = readvec('b.dat',shape=(len(y),len(x)))
@@ -90,6 +91,8 @@ m = readvec('m.dat',shape=(len(y),len(x)))
 Hexact = readvec('Hexact.dat',shape=(len(y),len(x)))
 H = readvec('H.dat',shape=(len(y),len(x)))
 residual = readvec('residual.dat',shape=(len(y),len(x)))
+D = readvec('D.dat',shape=(len(y),len(x)))
+Wmag = readvec('Wmag.dat',shape=(len(y),len(x)))
 
 figdebug = False
 def figsave(name):
@@ -258,10 +261,27 @@ if args.map:
     figsave('Herror.png')
 
     plt.figure(figsize=fsize)
-    plt.pcolormesh(x,y,np.minimum(residual,0.0))
+    ar = ma.array(abs(residual),mask=(H<=0.0))
+    chopr = np.maximum(ar,1.0e-6*ar.max())  # show 6 orders of magnitude range only
+    plt.pcolormesh(x,y,np.log10(chopr))
     plt.axis('tight')
     plt.colorbar()
-    plt.title('VI-chopped residual r with min=%.2e so only %.2e <= r <= 0 shown' % \
-              (residual.min(),residual.min()))
+    plt.title('residual log magnitude (log10|r|); H<=0 masked-out')
     figsave('residual.png')
+
+    plt.figure(figsize=fsize)
+    Dmask = ma.array(D,mask=(H<=0.0))
+    plt.pcolormesh(x,y,Dmask)
+    plt.axis('tight')
+    plt.colorbar()
+    plt.title('max diffusivity D at node  (m^2/s); H<=0 masked-out, with max=%.2f' % Dmask.max())
+    figsave('D.png')
+
+    plt.figure(figsize=fsize)
+    Wmagmask = ma.array(Wmag,mask=(H<=0.0))
+    plt.pcolormesh(x,y,Wmagmask)
+    plt.axis('tight')
+    plt.colorbar()
+    plt.title('max mag of W at node  (m/s); H<=0 masked-out, with max=%.2f' % Wmagmask.max())
+    figsave('Wmag.png')
 

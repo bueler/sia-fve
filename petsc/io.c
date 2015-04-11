@@ -140,8 +140,7 @@ PetscErrorCode ViewToBinary(PetscBool fromrankzero, Vec v, const char prefix[], 
 
 //  write various vectors to petsc binary files, one file per vec
 //  FIXME: this could be re-designed to write a combined file like the one
-//         we read, but with H and Herror appended, but this would require
-//         mods to figsmahaffy.py
+//         we read; this would require modifications to figsmahaffy.py
 PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
@@ -170,6 +169,8 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
     ierr = ViewToBinary(PETSC_FALSE,user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,user->Hexact,user->figsprefix,"Hexact.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,user->Dnodemax,user->figsprefix,"D.dat"); CHKERRQ(ierr);
+    ierr = ViewToBinary(PETSC_FALSE,user->Wmagnodemax,user->figsprefix,"Wmag.dat"); CHKERRQ(ierr);
 
     ierr = ViewToBinary(PETSC_FALSE,H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
     ierr = ViewToBinary(PETSC_FALSE,r,user->figsprefix,"residual.dat"); CHKERRQ(ierr);

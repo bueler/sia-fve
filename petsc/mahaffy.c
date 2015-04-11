@@ -245,7 +245,12 @@ int main(int argc,char **argv) {
   ierr = VecDuplicate(H,&user.m); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.m),"surface mass balance m"); CHKERRQ(ierr);
   ierr = VecDuplicate(H,&user.Hexact); CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)H,"exact/observed thickness H"); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.Hexact),"exact/observed thickness H"); CHKERRQ(ierr);
+
+  ierr = VecDuplicate(H,&user.Dnodemax); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.Dnodemax),"maximum diffusivity D at node"); CHKERRQ(ierr);
+  ierr = VecDuplicate(H,&user.Wmagnodemax); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.Wmagnodemax),"maximum pseudo-velocity W magnitude at node"); CHKERRQ(ierr);
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read == PETSC_TRUE) {
@@ -335,7 +340,7 @@ int main(int argc,char **argv) {
   if (user.dump == PETSC_TRUE) {
       Vec r;
       ierr = SNESGetFunction(snes,&r,NULL,NULL); CHKERRQ(ierr);
-      myPrintf(&user,"writing {x,y,H,b,m,Hexact,residual}.dat to %s ...\n",user.figsprefix);
+      myPrintf(&user,"writing {x,y,H,b,m,Hexact,residual,D}.dat to %s ...\n",user.figsprefix);
       ierr = DumpToFiles(H,r,&user); CHKERRQ(ierr);
   }
 
@@ -353,6 +358,8 @@ int main(int argc,char **argv) {
   }
 
   ierr = VecDestroy(&user.bloc);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.Dnodemax);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.Wmagnodemax);CHKERRQ(ierr);
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
@@ -446,8 +453,9 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
                   upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k;
-  PetscReal       **am, **ab, ***aq, **aHprev;
-  Vec             qloc;
+  PetscReal       **am, **ab, **aHprev, **aDnodemax, **aWmagnodemax,
+                  ***aqquad,  ***aDquad, ***aWquad;
+  Vec             qloc, Dloc, Wloc;
 
   PetscFunctionBeginUser;
   if (user->checkadmissible) {
@@ -459,11 +467,17 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
 
   // need stencil width on locally-computed q
   ierr = DMGetLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
+  ierr = DMGetLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
+  ierr = DMGetLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
 
   ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
-  ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aqquad);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
+  ierr = DMDAVecGetArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes at
   // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
   for (k = info->ys-1; k < info->ys + info->ym; k++) {
@@ -494,7 +508,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   } else
                       Hup = H;
               }
-              aq[k][j][c] = getflux(gH,gb,H,Hup,xdire[c],user,&(aDquad[k][j][c]));
+              aqquad[k][j][c] = getfluxDIAGNOSTIC(gH,gb,H,Hup,xdire[c],user,&(aDquad[k][j][c]),&(aWquad[k][j][c]));
           }
       }
   }
@@ -512,29 +526,37 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           //                   actually the same.
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
-              FF[k][j] += coeff[s] * aq[k+ke[s]][j+je[s]][ce[s]];
+              FF[k][j] += coeff[s] * aqquad[k+ke[s]][j+je[s]][ce[s]];
           if (user->dorecovery)
               FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
           // update diagnostics associated to diffusivity
           {
-              PetscReal Dmax = 0.0;
+              PetscReal Dmax = 0.0, Wmagmax = 0.0;
               for (s=0; s<8; s++) {
                   const PetscReal D = aDquad[k+ke[s]][j+je[s]][ce[s]];
                   user->maxD      = PetscMax(user->maxD, D);
                   Dmax            = PetscMax(Dmax, D);
                   user->avD      += D;
                   user->avDcount += 1;
+                  Wmagmax         = PetscMax(Wmagmax, aWquad[k+ke[s]][j+je[s]][ce[s]]);
               }
               aDnodemax[k][j] = Dmax;
+              aWmagnodemax[k][j] = Wmagmax;
           }
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aq);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aqquad);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
 
   ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
+  ierr = DMRestoreLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
+  ierr = DMRestoreLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 

@@ -37,17 +37,25 @@ PetscReal Dcont(PetscReal delta, PetscReal H, const AppCtx *user) {
 }
 
 /* See sia.h for doc. */
-PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+PetscReal getfluxDIAGNOSTIC(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, const AppCtx *user,
-                  PetscReal *D) {
+                  PetscReal *D, PetscReal *Wmag) {
   const PetscReal n     = ncont(user),
-                  delta = getdelta(gH,gb,user);
-  const Grad      W     = getW(delta,gb);
-  *D = Dcont(delta,H,user);
+                  delta = getdelta(gH,gb,user),
+                  myD   = Dcont(delta,H,user);
+  const Grad      myW   = getW(delta,gb);
+  if (D)     *D    = myD;
+  if (Wmag)  *Wmag = PetscSqrtReal(myW.x * myW.x + myW.y * myW.y);
   if (xdir)
-      return - *D * gH.x + W.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+      return - myD * gH.x + myW.x * PetscPowReal(PetscAbsReal(Hup),n+2.0);
   else
-      return - *D * gH.y + W.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+      return - myD * gH.y + myW.y * PetscPowReal(PetscAbsReal(Hup),n+2.0);
+}
+
+/* See sia.h for doc. */
+PetscReal getflux(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
+                  PetscBool xdir, const AppCtx *user) {
+  return getfluxDIAGNOSTIC(gH,gb,H,Hup,xdir,user,NULL,NULL);
 }
 
 
