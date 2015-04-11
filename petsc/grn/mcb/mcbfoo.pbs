@@ -1,0 +1,19 @@
+#!/bin/bash
+#PBS -q standard_16
+
+#PBS -l walltime=4:00:00 
+
+#PBS -l nodes=4:ppn=16
+
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+./highresrun.sh 30 4500m 64
+
+./highresrun.sh 20 3000m 64
+
+./highresrun.sh 10 1500m 64
+
+./highresrun.sh  8 1200m 64
+

@@ -14,4 +14,4 @@ mkdir test$2/     # immediately generates error if already exists
 ./remap2mcb.py searise5km.nc mcb$2.nc fix$2.nc
 ../grn2petsc.py fix$2.nc fix$2.dat
 
-mpiexec -n $3 ../../mahaffy -mah_read fix$2.dat -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test$2/
+mpiexec -n $3 ../../mahaffy -mah_read fix$2.dat -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test$2/ -mah_dtBE 10.0
