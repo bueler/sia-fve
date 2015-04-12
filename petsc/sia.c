@@ -4,9 +4,9 @@
 
 // ******** FUNCTIONS ********
 
-/* In continuation scheme, n(1)=1.0 and n(0)=n. */
+/* In continuation scheme, n(1)=n0 and n(0)=n. */
 PetscReal ncont(const AppCtx *user) {
-  return (1.0 - user->eps) * user->n + user->eps * 1.0;
+  return (1.0 - user->eps) * user->n + user->eps * user->n0;
 }
 
 /*
@@ -16,11 +16,14 @@ from values of thickness and surface gradient:
 Also applies power-regularization part of continuation scheme.
 */
 PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user) {
-    const PetscReal sx  = gH.x + gb.x,
-                    sy  = gH.y + gb.y,
-                    n   = ncont(user),
-                    slopesqr = sx * sx + sy * sy + user->delta * user->delta;
-    return user->Gamma * PetscPowReal(slopesqr,(n-1.0)/2);
+    const PetscReal n = ncont(user);
+    if (n > 1.0) {
+        const PetscReal sx = gH.x + gb.x,
+                        sy = gH.y + gb.y,
+                        slopesqr = sx * sx + sy * sy + user->delta * user->delta;
+        return user->Gamma * PetscPowReal(slopesqr,(n-1.0)/2);
+    } else
+        return user->Gamma;
 }
 
 Grad getW(PetscReal delta, Grad gb) {

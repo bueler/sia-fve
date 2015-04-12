@@ -143,6 +143,7 @@ int main(int argc,char **argv) {
   user.Neps   = 13;
   for (i=0; i<user.Neps-1; i++)  user.eps_sched[i] = PetscPowReal(0.1,((double)i) / 3.0);
   user.eps_sched[user.Neps-1] = 0.0;
+  user.n0     = 1.0;
   user.D0     = 10.0;        // m^2 / s
   user.eps    = 0.0;
   user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence problem on refined grid (=125m) but this does not; earlier M* was 0.5 here
@@ -712,7 +713,7 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-D0", "representative value in m^2/s of diffusivity: D0 ~= D(H,|grad s|)",
+      "-D0", "initial (and representative?) value of diffusivity in continuation scheme; in m^2/s",
       NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-initmagic", "constant, in years, used to multiply SMB to get initial iterate for thickness",
@@ -728,12 +729,15 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-maxerr", "print final maximum error, and otherwise run silent",
       NULL,user->maxerr,&user->maxerr,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-n", "set value of Glen exponent n",
+      "-n", "value of Glen exponent n",
       NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
   if (user->n <= 1.0) {
       SETERRQ1(PETSC_COMM_WORLD,11,"ERROR: n = %f not allowed ... n > 1 is required\n",user->n); }
+  ierr = PetscOptionsReal(
+      "-n0", "initial value of Glen exponent in continuation scheme",
+      NULL,user->n0,&user->n0,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
-      "-Neps", "levels in schedule of eps regularization/continuation",
+      "-Neps", "levels in schedule of eps in continuation scheme",
       NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-nodiag", "do not store, generate, or output diagnostic D and Wmag fields",

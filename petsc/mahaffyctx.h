@@ -40,12 +40,13 @@ typedef struct {
             dtBE,   // time step for backward Euler, used in recovery
             avD,    // local average value of diffusivity, in m^2 s^-1; used for reporting
             maxD,   // local maximum value of diffusivity, in m^2 s^-1; used for reporting
-            D0,     // representative value of diffusivity (in regularization)
+            n0,     // initial value of Glen exponent in continuation scheme
+            D0,     // initial (and representative?) value of diffusivity in continuation scheme
             initmagic,// constant, in years, used to multiply SMB to get initial iterate for thickness
             eps_sched[13];
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
-            Neps,   // number of levels in regularization/continuation
+            Neps,   // number of levels in continuation scheme
             avDcount;// used to get local average value of diffusivity; used for reporting
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
