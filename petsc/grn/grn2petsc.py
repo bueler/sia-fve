@@ -32,17 +32,16 @@ except:
     sys.exit(2)
 
 parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')
-# positional
 parser.add_argument('inname', metavar='INNAME',
-                    help='name of NetCDF input file with x1,y1,topg,cmb,thk variables (e.g. grn.nc)',
-                    default='')
+                    help='input NetCDF file with x1,y1,topg,cmb,thk variables (e.g. grn.nc)')
 parser.add_argument('outname', metavar='OUTNAME',
-                    help='name of output PETSc binary file (e.g. grn.dat)',
-                    default='')
-# optional
-parser.add_argument('--refine', action='store', metavar='N',
-                    help='refine by factor of N (N=1 is no change, N=2 for 2.5km, N=5 for 5km)',
-                    default=1)
+                    help='output PETSc binary file (e.g. grn1km.dat if --refine 5)')
+parser.add_argument('--refine', action='store', metavar='N', default=1, type=int,
+                    help='refine by factor of N (N=1 is no change, N=2 for 2.5km, N=5 for 1km; default=%(default)d)')
+parser.add_argument('--nooceanfix', action='store_true',
+                    help='modify cmb and topg in ocean, as appropriate to SIA problem')
+#parser.add_argument('--smoothbed', action='store', metavar='N', default=0, type=int,
+#                    help='apply N smoothing sweeps to smooth the bed (default=%(default)d); applied AFTER ocean fixes')
 args = parser.parse_args()
 refine = int(args.refine)
 
@@ -52,11 +51,9 @@ except:
     print "ERROR: can't read from file %s ..." % args.inname
     sys.exit(11)
 
-# read axes
+print "reading axes x,y and fields topg,cmb,thk ..."
 x = nc.variables['x1'][:]
 y = nc.variables['y1'][:]
-
-# load data
 topg = np.squeeze(nc.variables['topg'][:])
 cmb = np.squeeze(nc.variables['cmb'][:])
 thk = np.squeeze(nc.variables['thk'][:])
@@ -69,38 +66,36 @@ if (refine != 1):
     cmb = quadinterp(cmb,refine)
     thk = quadinterp(thk,refine)
 
-# flatten
-topg = topg.flatten()
-cmb  = cmb.flatten()
-thk  = thk.flatten()
-
-print "variable lengths:  x = %d,  y = %d" % (np.shape(x)[0],np.shape(y)[0])
-print "                   topg (flattened) = %d" % (np.shape(topg)[0])
-print "                   cmb (flattened) = %d" % (np.shape(cmb)[0])
-print "                   thk (flattened) = %d" % (np.shape(thk)[0])
+print "dimensions:  x = %d,  y = %d" % (np.shape(x)[0],np.shape(y)[0])
 
 def showranges(t,c):
     print "      %10.4f <= topg <= %10.4f  (m)" % (t.min(), t.max())
     print "      %10.3e <= cmb  <= %10.3e  (m s-1)" % (c.min(), c.max())
+    print "      %10.4f <= thk  <= %10.4f  (m)" % (thk.min(), thk.max())
 
-# modify b and cmb in ocean
-print "before ocean fixes:"
-showranges(topg,cmb)
-for j in range(len(cmb)):
-     if (thk[j] <= 0.0):
-         if (topg[j] < -250.0):
-             topg[j] = -250.0
-         if (topg[j] < -200.0):
-             cmb[j] = -30.0 / 31556926.0
-         elif (topg[j] < -100.0):
-             cmb[j] = -10.0 / 31556926.0
-         elif (topg[j] < -50.0):
-             cmb[j] = -5.0 / 31556926.0
-print "after ocean fixes:"
+print "variable ranges:"
 showranges(topg,cmb)
 
-print "observed thickness:"
-print "      %10.4f <= thk  <= %10.4f  (m)" % (thk.min(), thk.max())
+if not args.nooceanfix:
+    # modify topg and cmb in ocean
+    print "applying ocean fixes ..."
+    for H,b,m in np.nditer([thk,topg,cmb], op_flags=['readwrite']):
+         if (H <= 0.0):
+             if (b < -250.0):
+                 b[...] = -250.0
+             if (b < -200.0):
+                 m[...] = -30.0 / 31556926.0
+             elif (b < -100.0):
+                 m[...] = -10.0 / 31556926.0
+             elif (b < -50.0):
+                 m[...] = -5.0 / 31556926.0
+    print "new variable ranges:"
+    showranges(topg,cmb)
+
+# flatten
+topg = topg.flatten()
+cmb  = cmb.flatten()
+thk  = thk.flatten()
 
 # convert to PETSc-type vecs
 xvec = x.view(pbio.Vec)
