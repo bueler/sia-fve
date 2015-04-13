@@ -1,21 +1,20 @@
 # (C) 2015 Ed Bueler
-#
-# Utilities to do interpolation with padding.
+# Utilities to do linear and binlinear interpolation.
 
 import numpy as np
 
-# coarse-to-fine linear interpolation plus padding in 1D:
+# coarse-to-fine linear interpolation in 1D:
 #     c = coarse, f = fine, r = refinement factor
 def lininterp(c,r):
-    f = np.zeros(r * len(c))
+    f = np.zeros(r * (len(c)-1) + 1)
     for j in range(len(c)-1):
         for s in range(r):
             lam = float(s)/float(r)
             f[r*j + s] = (1.0 - lam) * c[j] + lam * c[j+1]
-    j = len(c)-1
-    for s in range(r):
-        f[r*j + s] = c[j]
+    f[-1] = c[-1]
     return f
+
+FIXME
 
 # coarse-to-fine bilinear interpolation plus padding in 2D
 def quadinterp(c,r):

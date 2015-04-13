@@ -1,10 +1,13 @@
 petsc/grn/
 ==========
 
-The main script `grn2petsc.py` here reads SeaRISE data from NetCDF format and
-converts it to PETSc binary format.  It requires the
+Theses instructions document how to read SeaRISE data from
+[NetCDF](FIXME) format, do different amounts of pre-processing on it, and convert it
+to [PETSc binary format](FIXME).  Most steps require the
 [netcdf4-python module](https://github.com/Unidata/netcdf4-python).
-The code `mahaffy` can read the specially-formatted binary file it produces.
+
+The code `mahaffy` can read the specially-formatted `.dat` binary file we produce.
+
 
 Get the data from the PISM source
 ---------------------------------
@@ -17,19 +20,14 @@ copy of [PISM](http://www.pism-docs.org).  Do:
     $ cd ~/sia-fve/petsc/grn/           # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
 
+
 Clean the data
 --------------
 
 These stages all work on the data as NetCDF files, so their results can be
 viewed with `ncview` or similar.
 
-The dimensions in the `.nc` file must be multiples of 3 if we want `mahaffy.c`
-to use a FD-by-coloring-evaluated Jacobian on a periodic
-grid with stencil width 1.  Thus we trim the x dimension from 301 values to 300,
-but this removes only ocean cells.  The y dimension is already 561, which is
-divisible by 3.
-
-    $ ./cleangrn.sh         # creates grn.nc by trim dimensions and removing unwanted vars
+    $ ./cleangrn.sh         # creates grn.nc from FIXME by removing unwanted vars
 
 Also we convert the climatic mass balance variable kg m-2 a-1  into  m s-1:
 
@@ -46,6 +44,33 @@ Optionally we apply sweeps to remove bed dips:
 
     $ ./inplace.py --bedundip --sweeps 2 --ranges grn.nc
 
+
+If you want to use FD-by-coloring Jacobian
+------------------------------------------
+
+_Most users can ignore these steps_
+
+The dimensions in the `.nc` file must be multiples of 3 if we want `mahaffy.c`
+To use a Jacobian which PETSc calculates using finite differences and graph
+"coloring", care must be taken to ensure the dimensions are divisible by 3.
+This is because we have a periodic grid and stencil width 1 (i.e. the stencil is
+3 points across).
+
+Since the data includes a number of ocean cells at the limits, we can do this
+just by trimming the `x1` and/or `y1` dimensions to the next smallest multiple
+of 3.  So first do this to examine the dimensions:
+
+    $ ncdump -h grn.nc | head -n 5
+
+FIXME
+
+    $ ncks -O -d x1,0,299 grn.nc grn.nc
+
+ dimension from 301 values to 300,
+but this removes only ocean cells.  The y dimension is already 561, which is
+divisible by 3.
+
+
 Convert to PETSC binary
 -----------------------
 
@@ -60,6 +85,7 @@ module called `interpad.py`:
 
     $ ./nc2petsc.py --refine 5 grn.nc grn1km.dat
 
+
 Run the model
 -------------
 
@@ -72,6 +98,7 @@ diffusivity:
 
 This run only takes a few minutes and uses the data as is.
 
+
 Generate figures
 ----------------
 
@@ -79,6 +106,7 @@ Generate `.pdf` and `.png` figures:
 
     $ cd test/
     $ ../../figsmahaffy.py --observed
+
 
 Higher/lower resolution
 -----------------------

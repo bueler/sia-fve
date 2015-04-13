@@ -16,8 +16,8 @@ except:
 parser = argparse.ArgumentParser(description='In-place operations on .nc with ice sheet data.')
 parser.add_argument('name', metavar='NAME',
                     help='NetCDF file with x1,y1,topg,cmb,thk variables (e.g. grn.nc); on output has has topg-->topg_orig and new topg')
-#parser.add_argument('--bedundip', action='store_true',
-#                    help='sweeps which damp-out concave-up places on bed')
+parser.add_argument('--bedundip', action='store_true',
+                    help='sweeps which damp-out concave-up places on bed')
 parser.add_argument('--fixcmbunits', action='store_true',
                     help='convert cmb from  kg m-2 year-1  to  m s-1')
 parser.add_argument('--oceanfix', action='store_true',
@@ -25,7 +25,7 @@ parser.add_argument('--oceanfix', action='store_true',
 parser.add_argument('--ranges', action='store_true',
                     help='print out dimensions and variable ranges')
 parser.add_argument('--sweeps', action='store', metavar='N', default=1, type=int,
-                    help='number of sweeps; default=%(default)d)')
+                    help='number of "--bedundip" sweeps; default=%(default)d)')
 args = parser.parse_args()
 
 try:
@@ -48,7 +48,7 @@ if args.fixcmbunits:
     factor = 1.0 / (910.0 * secpera) #= 3.48228182586954e-11
     cmb_var[:] = factor * nc.variables['climatic_mass_balance'][:]
 
-elif args.oceanfix:
+if args.oceanfix:
     # modify topg and cmb
     print "applying ocean fixes ..."
     topg = np.squeeze(nc.variables['topg'])
