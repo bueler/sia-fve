@@ -7,7 +7,7 @@ import argparse
 import sys
 import numpy as np
 
-from interpad import lininterp, quadinterp
+from q1ops import lininterp, quadinterp
 
 try:
     from netCDF4 import Dataset as NC
