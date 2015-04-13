@@ -39,9 +39,8 @@ parser.add_argument('outname', metavar='OUTNAME',
 parser.add_argument('--refine', action='store', metavar='N', default=1, type=int,
                     help='refine by factor of N (N=1 is no change, N=2 for 2.5km, N=5 for 1km; default=%(default)d)')
 parser.add_argument('--nooceanfix', action='store_true',
-                    help='modify cmb and topg in ocean, as appropriate to SIA problem')
-#parser.add_argument('--smoothbed', action='store', metavar='N', default=0, type=int,
-#                    help='apply N smoothing sweeps to smooth the bed (default=%(default)d); applied AFTER ocean fixes')
+                    help='DO NOT modify cmb and topg in ocean; note ocean fixes are applied AFTER refinement')
+fixes')
 args = parser.parse_args()
 refine = int(args.refine)
 
