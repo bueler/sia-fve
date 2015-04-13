@@ -8,8 +8,6 @@ import argparse
 import sys
 import numpy as np
 
-from interpad import lininterp, quadinterp
-
 try:
     from netCDF4 import Dataset as NC
 except:
@@ -35,10 +33,7 @@ parser.add_argument('inname', metavar='INNAME',
                     help='input NetCDF file with x1,y1,topg,cmb,thk variables (e.g. grn.nc)')
 parser.add_argument('outname', metavar='OUTNAME',
                     help='output PETSc binary file (e.g. grn1km.dat if --refine 5)')
-parser.add_argument('--refine', action='store', metavar='N', default=1, type=int,
-                    help='refine by factor of N (N=1 is no change, N=2 for 2.5km, N=5 for 1km; default=%(default)d)')
 args = parser.parse_args()
-refine = int(args.refine)
 
 try:
     nc = NC(args.inname, 'r')
@@ -54,15 +49,6 @@ cmb = np.squeeze(nc.variables['cmb'][:])
 thk = np.squeeze(nc.variables['thk'][:])
 
 nc.close()
-
-# optionally refine
-if (refine != 1):
-    print "refining grid to %.3f km ..." % (5.0/float(refine))
-    x1 = lininterp(x1,refine)
-    y1 = lininterp(y1,refine)
-    topg = quadinterp(topg,refine)
-    cmb = quadinterp(cmb,refine)
-    thk = quadinterp(thk,refine)
 
 # convert to PETSc-type vecs
 x1vec = x1.view(pbio.Vec)

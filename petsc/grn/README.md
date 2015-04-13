@@ -2,9 +2,13 @@ petsc/grn/
 ==========
 
 Theses instructions document how to read SeaRISE data from
-[NetCDF](FIXME) format, do different amounts of pre-processing on it, and convert it
-to [PETSc binary format](FIXME).  Most steps require the
-[netcdf4-python module](https://github.com/Unidata/netcdf4-python).
+[NetCDF](http://www.unidata.ucar.edu/software/netcdf/)
+format, do different amounts of pre-processing on it, and convert it to
+[PETSc binary format](http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Viewer/PetscViewerBinaryOpen.html).
+
+These steps require the
+[netcdf4-python module](https://github.com/Unidata/netcdf4-python)
+and [NCO](http://nco.sourceforge.net/).
 
 The code `mahaffy` can read the specially-formatted `.dat` binary file we produce.
 
@@ -39,10 +43,34 @@ mass balance to very negative, because this simulates strong calving.
 
     $ ./inplace.py --oceanfix --ranges grn.nc
 
+
+Optional bed modifications
+--------------------------
 FIXME: not implemented:
 Optionally we apply sweeps to remove bed dips:
 
     $ ./inplace.py --bedundip --sweeps 2 --ranges grn.nc
+
+
+Optional refinement to higher resolution
+----------------------------------------
+
+To refine the grid from the native 5 km to higher resolution, by bilinear
+interpolation, do:
+
+    $ ./refine.py --factor 2 grn.nc grn2p5km.nc
+    $ ./inplace.py --ranges grn2p5km.nc          # should be same as for grn.nc
+
+
+Optional lower resolution
+-------------------------
+
+To run a lower resolution, you can use NCO.  For example:
+
+    $ ncks -d x1,,,4 -d y1,,,4 grn.nc grn20km.nc
+    $ ./nc2petsc.py grn20km.nc grn20km.dat
+    $ mkdir test20km/
+    $ ../mahaffy -mah_read grn20km.dat -snes_monitor -mah_dump test20km/
 
 
 If you want to use FD-by-coloring Jacobian
@@ -50,25 +78,21 @@ If you want to use FD-by-coloring Jacobian
 
 _Most users can ignore these steps_
 
-The dimensions in the `.nc` file must be multiples of 3 if we want `mahaffy.c`
-To use a Jacobian which PETSc calculates using finite differences and graph
+To use a finite-difference Jacobian, which PETSc calculates using graph
 "coloring", care must be taken to ensure the dimensions are divisible by 3.
 This is because we have a periodic grid and stencil width 1 (i.e. the stencil is
 3 points across).
 
-Since the data includes a number of ocean cells at the limits, we can do this
-just by trimming the `x1` and/or `y1` dimensions to the next smallest multiple
-of 3.  So first do this to examine the dimensions:
+Since the data includes a number of ocean cells at the edge of the computational
+domain, we can do this just by trimming the `x1` and/or `y1` dimensions to the
+next smallest multiple of 3.  So first do this to examine the dimensions:
 
-    $ ncdump -h grn.nc | head -n 5
+    $ ncdump -h grn.nc | head
 
-FIXME
+In this example we see that the `y1` dimension of 561 is already divisible by 3.
+But we trim the `x1` dimension:
 
     $ ncks -O -d x1,0,299 grn.nc grn.nc
-
- dimension from 301 values to 300,
-but this removes only ocean cells.  The y dimension is already 561, which is
-divisible by 3.
 
 
 Convert to PETSC binary
@@ -78,12 +102,7 @@ This stage uses PETSc scripts, with optional refinement.
 
     $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py  # or similar for maint/3.5
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
-    $ ./nc2petsc.py grn.nc grn5km.dat                         # defaults to 5km
-
-If desired one can go to a finer grid by bilinear interpolation; this uses a
-module called `interpad.py`:
-
-    $ ./nc2petsc.py --refine 5 grn.nc grn1km.dat
+    $ ./nc2petsc.py grn.nc grn.dat
 
 
 Run the model
@@ -94,7 +113,7 @@ diffusivity:
 
     $ (cd ../ && make mahaffy)
     $ mkdir test/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn5km.dat -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
+    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
 
 This run only takes a few minutes and uses the data as is.
 
@@ -108,22 +127,14 @@ Generate `.pdf` and `.png` figures:
     $ ../../figsmahaffy.py --observed
 
 
-Higher/lower resolution
------------------------
+Solver options for higher resolution
+------------------------------------
 
-A higher-res (2.5 km), parallel version might look like this; the robust
-`-pc_type asm -sub_pc_type lu` solver choice may be helpful:
+The robust `-pc_type asm -sub_pc_type lu` solver choice may be helpful:
 
-    $ ./nc2petsc.py --refine 2 grn.nc grn2p5km.dat
     $ mkdir test2p5km/
+    $ ./nc2petsc.py grn2p5km.nc grn2p5km.dat
     $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 2000
 
 Around 1 km grid (e.g. `--refine 1`) my 16Gb desktop runs out of memory.
-
-To run a lower resolution, and watch the residual, do (for example)
-
-    $ ncks -d x1,,,4 -d y1,,,4 grn.nc grn20km.nc
-    $ ./nc2petsc.py grn20km.nc grn20km.dat
-    $ mkdir test20km/
-    $ ../mahaffy -mah_read grn20km.dat -snes_monitor -snes_vi_monitor_residual -mah_dump test20km/
 

@@ -14,11 +14,9 @@ def lininterp(c,r):
     f[-1] = c[-1]
     return f
 
-FIXME
-
 # coarse-to-fine bilinear interpolation plus padding in 2D
 def quadinterp(c,r):
-    f = np.zeros((r*np.shape(c)[0],r*np.shape(c)[1]))
+    f = np.zeros((r*(np.shape(c)[0]-1)+1,r*(np.shape(c)[1]-1)+1))
     for j in range(np.shape(c)[0]-1):
         for k in range(np.shape(c)[1]-1):
             for s in range(r):
@@ -29,22 +27,7 @@ def quadinterp(c,r):
                                      + ls       * (1.0-lt) * c[j+1,k] \
                                      + (1.0-ls) * lt       * c[j,k+1] \
                                      + ls       * lt       * c[j+1,k+1]
-    j = np.shape(c)[0]-1
-    for k in range(np.shape(c)[1]-1):
-        for s in range(r):
-            for t in range(r):
-                lt = float(t)/float(r)
-                f[r*j+s,r*k+t] = (1.0-lt) * c[j,k] + lt * c[j,k+1]
-    k = np.shape(c)[1]-1
-    for j in range(np.shape(c)[1]-1):
-        for s in range(r):
-            ls = float(s)/float(r)
-            for t in range(r):
-                f[r*j+s,r*k+t] = (1.0-ls) * c[j,k] + ls * c[j+1,k]
-    j = np.shape(c)[0]-1
-    k = np.shape(c)[1]-1
-    for s in range(r):
-        for t in range(r):
-            f[r*j+s,r*k+t] = c[j,k]
+    f[:,-1] = lininterp(c[:,-1],r)
+    f[-1,:] = lininterp(c[-1,:],r)
     return f
 
