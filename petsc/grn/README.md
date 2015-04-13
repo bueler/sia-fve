@@ -1,14 +1,17 @@
 petsc/grn/
 ==========
 
-Theses instructions document how to read SeaRISE data from
+Theses instructions document how to read
+[SeaRISE](http://websrv.cs.umt.edu/isis/index.php/SeaRISE_Assessment)
+data from
 [NetCDF](http://www.unidata.ucar.edu/software/netcdf/)
 format, do different amounts of pre-processing on it, and convert it to
 [PETSc binary format](http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Viewer/PetscViewerBinaryOpen.html).
 
 These steps require the
-[netcdf4-python module](https://github.com/Unidata/netcdf4-python)
-and [NCO](http://nco.sourceforge.net/).
+[netcdf4-python](https://github.com/Unidata/netcdf4-python)
+module and
+[NCO](http://nco.sourceforge.net/).
 
 The code `mahaffy` can read the specially-formatted `.dat` binary file we produce.
 
@@ -16,24 +19,26 @@ The code `mahaffy` can read the specially-formatted `.dat` binary file we produc
 Get the data from the PISM source
 ---------------------------------
 
-This stage requires [NCO](http://nco.sourceforge.net/) and a
-copy of [PISM](http://www.pism-docs.org).  Do:
+This stage requires a copy of [PISM](http://www.pism-docs.org).  In the PISM
+examples are scripts to download the SeaRISE dataset `Greenland_5km_v1.1.nc`
+and preprocess it.  First do:
 
     $ cd ~/pism/examples/std-greenland/
-    $ ./preprocess.sh                   # download Greenland_5km_v1.1.nc with wget if not present
+    $ ./preprocess.sh                   # downloads with wget if needed
     $ cd ~/sia-fve/petsc/grn/           # back to this dir
-    $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
+
+For convenience we also make a local copy `grn.nc` that is smaller because it
+has only the variables we want.
+
+    $ ncks -v x1,y1,thk,topg,climatic_mass_balance ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc grn.nc
 
 
 Clean the data
 --------------
 
 These stages all work on the data as NetCDF files, so their results can be
-viewed with `ncview` or similar.
-
-    $ ./cleangrn.sh         # creates grn.nc from FIXME by removing unwanted vars
-
-Also we convert the climatic mass balance variable kg m-2 a-1  into  m s-1:
+viewed with `ncview` or similar.  First we we convert the climatic mass balance
+variable from units  kg m-2 a-1  to  m s-1:
 
     $ ./inplace.py --fixcmbunits --ranges grn.nc
 
@@ -43,9 +48,6 @@ mass balance to very negative, because this simulates strong calving.
 
     $ ./inplace.py --oceanfix --ranges grn.nc
 
-
-Optional bed modifications
---------------------------
 FIXME: not implemented:
 Optionally we apply sweeps to remove bed dips:
 
