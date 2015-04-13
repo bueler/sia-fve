@@ -4,7 +4,7 @@
 
 import numpy as np
 
-# linear interpolation plus padding in 1D:
+# coarse-to-fine linear interpolation plus padding in 1D:
 #     c = coarse, f = fine, r = refinement factor
 def lininterp(c,r):
     f = np.zeros(r * len(c))
@@ -17,7 +17,7 @@ def lininterp(c,r):
         f[r*j + s] = c[j]
     return f
 
-# bilinear interpolation plus padding in 2D
+# coarse-to-fine bilinear interpolation plus padding in 2D
 def quadinterp(c,r):
     f = np.zeros((r*np.shape(c)[0],r*np.shape(c)[1]))
     for j in range(np.shape(c)[0]-1):

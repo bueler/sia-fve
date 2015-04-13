@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#
 # (C) 2015 Ed Bueler
 #
 # Generate PETSc binary format file from Greenland NetCDF file.
@@ -67,13 +66,14 @@ if (refine != 1):
 
 print "dimensions:  x = %d,  y = %d" % (np.shape(x)[0],np.shape(y)[0])
 
-def showranges(t,c):
-    print "      %10.4f <= topg <= %10.4f  (m)" % (t.min(), t.max())
-    print "      %10.3e <= cmb  <= %10.3e  (m s-1)" % (c.min(), c.max())
+def showranges():
+    secpera = 31556926.0
+    print "      %10.4f <= topg <= %10.4f  (m)" % (topg.min(), topg.max())
+    print "      %10.3e <= cmb  <= %10.3e  (m a-1)" % (cmb.min()*secpera, cmb.max()*secpera)
     print "      %10.4f <= thk  <= %10.4f  (m)" % (thk.min(), thk.max())
 
 print "variable ranges:"
-showranges(topg,cmb)
+showranges()
 
 if not args.nooceanfix:
     # modify topg and cmb in ocean
@@ -89,7 +89,7 @@ if not args.nooceanfix:
              elif (b < -50.0):
                  m[...] = -5.0 / 31556926.0
     print "new variable ranges:"
-    showranges(topg,cmb)
+    showranges()
 
 # flatten
 topg = topg.flatten()
