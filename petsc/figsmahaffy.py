@@ -132,6 +132,7 @@ def extracthalf(f):
     return fn
 
 if args.profile:
+    print "generating profile figure ..."
     plt.figure(figsize=(7,5))
     n = len(y) / 2    # FIXME: make adjustable?
     xoriginal = x.copy()
@@ -222,6 +223,8 @@ if args.profile:
     figsave('HHexact1d.pdf')
 
 if args.map:
+    print "generating map-plane figures ..."
+
     plt.figure(figsize=fsize)
     plt.pcolormesh(x,y,H)
     plt.axis('tight')
@@ -272,7 +275,7 @@ if args.map:
     plt.title('residual log magnitude (log10|r|); H<=0 masked-out')
     figsave('residual.png')
 
-    print "will read and generate figures for diagnostic variables D and Wmag if present ..."
+    print "reading {D,Wmag}.dat if present, and generating map-plane figures ..."
 
     D = readvec('D.dat',shape=(len(y),len(x)),failonmissing=False)
     if D != None:
