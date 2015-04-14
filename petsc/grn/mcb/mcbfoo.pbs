@@ -7,11 +7,11 @@
 
 cd $PBS_O_WORKDIR
 
-./highresrun.sh 30 4500m 64
+./run.sh 30 4500m 64 "-snes_max_it 200 -mah_notry"
 
-./highresrun.sh 20 3000m 64
+./run.sh 20 3000m 64 "-snes_max_it 200 -mah_notry"
 
-./highresrun.sh 10 1500m 64
+./run.sh 10 1500m 64 "-snes_max_it 200 -mah_notry"
 
-./highresrun.sh  8 1200m 64
+./run.sh  8 1200m 64 "-snes_max_it 200 -mah_notry"
 

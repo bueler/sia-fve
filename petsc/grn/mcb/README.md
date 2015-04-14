@@ -26,8 +26,29 @@ Note that if the big file `MCdataset-2014-11-19.nc` is already present,
 re-running `getmcb.sh` will _not_ cause it to be downloaded again.
 
 
-Preprocess data
----------------
+Preprocess SeaRISE data
+-----------------------
+
+We get the SeaRISE data on a 5km grid and preprocess it mostly as described in
+`../README.md`, but adding the `mapping` variable and fixing the projection
+information:
+
+    $ ncks -O -v x1,y1,thk,topg,climatic_mass_balance,mapping ../pism_Greenland_5km_v1.1.nc searise5km.nc
+    $ ../inplace.py --fixcmbunits --ranges searise5km.nc
+    $ ../inplace.py --oceanfix --ranges searise5km.nc
+    $ ~/pism/util/nc2cdo.py searise5km.nc
+
+
+Quick start
+-----------
+
+Do the above steps.  Then this will complete the below non-optional steps:
+
+    $ ./run.sh 30 4500m 6 "-mah_notry"
+
+
+Coarsen and merge
+-----------------
 
 At this point we have not tried using the 150 m grid directly as the
 computational grid!  So we generate a coarser version by averaging over blocks
@@ -36,16 +57,9 @@ of a certain size.  Blocks of 30 x 30 gives 30*150m = 4500m resolution:
     $ ./average.py --block 30 mcb4500m.nc
 
 The next preprocessing steps, still at the NetCDF level, do a merge of SeaRISE
-and MCB data.  First we get the SeaRISE data on a 5km grid and preprocess it as
-described in `../README.md`:
+and MCB data.  The script `remap2mcb.py` handles the conversion between
+projections:
 
-    $ ncks -O -v x1,y1,thk,topg,climatic_mass_balance,mapping ../pism_Greenland_5km_v1.1.nc searise5km.nc
-    $ ../inplace.py --fixcmbunits --ranges searise5km.nc
-    $ ../inplace.py --oceanfix --ranges searise5km.nc
-
-The script `remap2mcb.py` handles the conversion between projections:
-
-    $ ~/pism/util/nc2cdo.py searise5km.nc
     $ ./remap2mcb.py searise5km.nc mcb4500m.nc fix4500m.nc
 
 Finally we do a conversion to PETSc binary.  See `../README.md` to set up links
@@ -57,10 +71,10 @@ so that `../nc2petsc.py` will work:
 Coarse resolution run
 ---------------------
 
-Now run `mahaffy` on it; these defaults do well:
+Now run `mahaffy` on it; these defaults do o.k.:
 
-    $ mkdir test/
-    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -mah_D0 1.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -mah_dump test/ -mah_notry
+    $ mkdir test4500m/
+    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -mah_D0 10.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -mah_dump test4500m/ -mah_notry
 
 
 Optional actions
@@ -68,20 +82,20 @@ Optional actions
 
   * _Generate figures._
 
-      $ cd test/
-      $ ../../../figsmahaffy.py
+        $ cd test4500m/
+        $ ../../../figsmahaffy.py
 
   * _Higher resolution._  For example:
 
-      $ ./average.py --block 10 mcb1500m.nc
-      $ ./remap2mcb.py searise5km.nc mcb1500m.nc fix1500m.nc
-      $ ../nc2petsc.py fix1500m.nc fix1500m.dat
-      $ mkdir test1500m/
-      $ mpiexec -n 6 ../../mahaffy -mah_read fix1500m.dat -mah_D0 1.0 -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 200 -mah_dump test1500m/ -mah_notry
+        $ ./run.sh 20 3000m 6 "-mah_notry"
+
+  or
+
+        $ ./run.sh 10 1500m 6 "-snes_max_it 200 -mah_dtBE 10.0"
 
   * _Apply sweeps to remove bed dips._  This is immoral:
 
-      $ cp fix4500m.nc fixbud4500m.nc
-      $ ../inplace.py --bedundip --sweeps 2 --ranges fixbud4500m.nc
-      $ ../nc2petsc.py fixbud4500m.nc fixbud4500m.dat
+        $ cp fix4500m.nc fixbud4500m.nc
+        $ ../inplace.py --bedundip --sweeps 2 --ranges fixbud4500m.nc
+        $ ../nc2petsc.py fixbud4500m.nc fixbud4500m.dat
 
