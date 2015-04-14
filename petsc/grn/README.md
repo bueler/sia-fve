@@ -63,11 +63,6 @@ mass balance to be very negative; this simulates strong calving:
 
     $ ./inplace.py --oceanfix --ranges grn.nc
 
-FIXME: not implemented:
-Optionally we apply sweeps to remove bed dips:
-
-    $ ./inplace.py --bedundip --sweeps 2 --ranges grn.nc
-
 
 Optional actions
 ----------------
@@ -84,6 +79,11 @@ Optional actions
 
       $ ncks -d x1,,,4 -d y1,,,4 grn.nc grn20km.nc
       $ ./inplace.py --ranges grn20km.nc          # different from grn.nc
+
+  * _Apply sweeps to remove bed dips._  This seems to help just slightly, but is
+  immoral:
+
+      $ ./inplace.py --bedundip --sweeps 2 --ranges grn.nc
 
   * _Grid trim as needed to use FD-by-coloring Jacobian._  To use a
   finite-difference Jacobian, which PETSc calculates using graph "coloring",
