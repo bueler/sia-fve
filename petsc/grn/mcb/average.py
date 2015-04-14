@@ -42,15 +42,17 @@ x = nc.variables['x'][:].astype(np.float64)
 y = nc.variables['y'][:].astype(np.float64)
 dx = x[1] - x[0]
 dy = y[1] - y[0]
-print "    ... which has dimensions (y,x)=(%d,%d) and dy=%.2f,dx=%.2f ..." % \
+print "data grid:"
+print "    dimensions (y,x)=(%d,%d) and (dy,dx)=(%.3f,%.3f)" % \
       (len(y),len(x),dy,dx)
 
 Mx = len(x) / N
 My = len(y) / N
 dxout = dx * N
 dyout = dy * N
-print "new grid in %s has dimensions (y,x)=(%d,%d) and dy=%.2f,dx=%.2f ..." % \
-      (args.outname,My,Mx,dyout,dxout)
+print "new grid in %s:" % args.outname
+print "    dimensions (y,x)=(%d,%d) and (dy,dx)=(%.3f,%.3f)" % \
+      (My,Mx,dyout,dxout)
 avbed = np.zeros((My,Mx))
 avthk = np.zeros((My,Mx))
 xoutstart = np.average(x[0:N])
@@ -66,7 +68,7 @@ for var in [(avbed,'bed'), (avthk,'thickness')]:
         v = np.squeeze(nc.variables[varname][:].filled())
     else:
         v = np.squeeze(nc.variables[varname][:])
-    print "    '%s', which has dimensions (y,x)=(%d,%d)" % (varname,v.shape[0],v.shape[1])
+    print "    '%s' ..." % varname
     for k in range(My):
         for j in range(Mx):
             block = v[N*k:N*(k+1),N*j:N*(j+1)].astype(np.float64)
@@ -97,13 +99,15 @@ y_var.long_name = "northing"
 y_var.standard_name = "projection_y_coordinate"
 y_var[:] = yout
 
-print "writing averaged thickness variable into %s ..." % args.outname
+print "writing:"
+print "    thk ..."
 thk_var = defvar(ncout, "thk", "m", "land_ice_thickness")
 thk_var[:] = avthk
 
-print "writing averaged bed variable into %s ..." % args.outname
+print "    topg_nobathy ..."
 bed_var = defvar(ncout, "topg_nobathy", "m", "bedrock_altitude")
 bed_var[:] = avbed
 
 ncout.close()
+print "done"
 

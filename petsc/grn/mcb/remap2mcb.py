@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#
 # (C) 2015 Ed Bueler
 #
 # Bilinearly-remap fields from SeaRISE file to grid used in mcbRES.nc (derived
@@ -26,45 +25,22 @@ except:
     sys.exit(2)
 
 def get_dims(nc):
-    '''
-    Gets dimensions from netcdf instance
-
-    Parameters:
-    -----------
-    nc: netCDF instance
-
-    Returns:
-    --------
-    xdim, ydim, zdim, tdim: dimensions
-    '''
-
-    # a list of possible x-dimensions names
+    # possible dimension names
     xdims = ['x', 'x1']
-    # a list of possible y-dimensions names
     ydims = ['y', 'y1']
-    # a list of possible z-dimensions names
     zdims = ['z', 'z1']
-    # a list of possible time-dimensions names
     tdims = ['t', 'time']
-
-    xdim = None
-    ydim = None
-    zdim = None
-    tdim = None
-
-    # assign x dimension
+    xdim,ydim,zdim,tdim = None,None,None,None
+    # assign dimensions
     for dim in xdims:
         if dim in list(nc.dimensions.keys()):
             xdim = dim
-    # assign y dimension
     for dim in ydims:
         if dim in list(nc.dimensions.keys()):
             ydim = dim
-    # assign z dimension
     for dim in zdims:
         if dim in list(nc.dimensions.keys()):
             zdim = dim
-    # assign time dimension
     for dim in tdims:
         if dim in list(nc.dimensions.keys()):
             tdim = dim
@@ -105,8 +81,8 @@ xdim, ydim, zdim, tdim = get_dims(ncsrc)
 x1src = ncsrc.variables[xdim][:].astype(np.float64)  # is increasing
 y1src = ncsrc.variables[ydim][:].astype(np.float64)  # is increasing
 print "source grid from %s has dimensions (%s,%s)=(%d,%d)" % (args.inname,xdim,ydim,len(y1src),len(x1src))
-print "    ... reading climatic_mass_balance and topg"
-cmbsrc = np.squeeze(ncsrc.variables['climatic_mass_balance'][:].astype(np.float64))
+print "    reading cmb and topg ..."
+cmbsrc = np.squeeze(ncsrc.variables['cmb'][:].astype(np.float64))
 topgsrc = np.squeeze(ncsrc.variables['topg'][:].astype(np.float64))
 
 # NOTE  ncsrc.proj4 is type 'unicode', so convert to type 'str'
@@ -117,7 +93,7 @@ xdim, ydim, zdim, tdim = get_dims(nctarg)
 xtarg = nctarg.variables[xdim][:].astype(np.float64)  # is increasing
 ytarg = nctarg.variables[ydim][:].astype(np.float64)  # is *decreasing*
 print "target grid from %s has dimensions (%s,%s)=(%d,%d)" % (args.targetname,xdim,ydim,len(ytarg),len(xtarg))
-print "    ... reading thk and topg_nobathy"
+print "    reading thk and topg_nobathy ..."
 thktarg = np.squeeze(nctarg.variables['thk'][:].astype(np.float64))
 topgnobathtarg = np.squeeze(nctarg.variables['topg_nobathy'][:].astype(np.float64))
 
@@ -177,7 +153,7 @@ def evalfbox(var,iix,iiy):
 print "bilinearly remapping cmb and merging topg with bathymetry ..."
 cmbtarg = np.zeros((len(ytarg),len(xtarg)))
 topgtarg = np.zeros((len(ytarg),len(xtarg)))
-cmb_fill = -1000.0  # kg m-2 year-1
+cmb_fill = -10.0 / 31556926.0  # = 10.0 m year-1
 topg_fill = -300.0  # m a.s.l.
 for k in range(len(ytarg)):
     for j in range(len(xtarg)):
@@ -245,12 +221,10 @@ thk_var.grid_mapping = "mapping"
 thk_var[:] = np.flipud(thktarg)
 
 print "putting new cmb variable in %s ..." % args.outname
-# convert  kg m-2 year-1  to  m s-1  for ice of 910.0 kg m-3
-conversion = 3.48228182586954e-11
 cmb_var = deftargvar(ncout, "cmb", "m s-1")
 cmb_var.grid_mapping = "mapping"
 cmb_var.standard_name = "land_ice_surface_specific_mass_balance"
-cmb_var[:] = conversion * np.flipud(cmbtarg)
+cmb_var[:] = np.flipud(cmbtarg)
 
 print "putting new topg variable in %s ..." % args.outname
 topg_var = deftargvar(ncout, "topg", "m")
