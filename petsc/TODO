@@ -1,6 +1,6 @@
-* add ability to smooth bed in preprocessing script (poss. in grn2petsc.py so it can be run from either grn/ or grn/mcb/)
+* scripts and README.md in grn/mcb/ are no longer up to date
+
+* try --bedundip in grn/mcb/ examples
 
 * add to history file "first continuation level where recovery mode is on"; negative if no recovery
-
-* check units on Wmag
 
