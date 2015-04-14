@@ -64,18 +64,17 @@ if args.oceanfix:
                  m[...] = -10.0 / 31556926.0
              elif (b < -50.0):
                  m[...] = -5.0 / 31556926.0
-    print "overwriting topg and cmb variable with modified ..."
+    print "overwriting topg and cmb variable with modified versions ..."
     nc.variables['topg'][:] = topg[:]
     nc.variables['cmb'][:] = cmb[:]
 
 if args.ranges:
     x = nc.variables['x1'][:]
     y = nc.variables['y1'][:]
-    print "dimensions:  x1 = %d,  y1 = %d" % (np.shape(x)[0],np.shape(y)[0])
     topg = np.squeeze(nc.variables['topg'])
     cmb  = np.squeeze(nc.variables['cmb'])
     thk  = np.squeeze(nc.variables['thk'])
-    print "variable ranges:"
+    print "dimensions:  x1 = %d,  y1 = %d;  variable ranges:" % (np.shape(x)[0],np.shape(y)[0])
     print "      %10.4f <= topg <= %10.4f  (m)" % (topg.min(), topg.max())
     print "      %10.3e <= cmb  <= %10.3e  (m a-1)" % (cmb.min()*secpera, cmb.max()*secpera)
     print "      %10.4f <= thk  <= %10.4f  (m)" % (thk.min(), thk.max())
