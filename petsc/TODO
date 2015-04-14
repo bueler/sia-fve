@@ -1,6 +1,2 @@
-* scripts and README.md in grn/mcb/ are no longer up to date
-
-* try --bedundip in grn/mcb/ examples
-
 * add to history file "first continuation level where recovery mode is on"; negative if no recovery
 
