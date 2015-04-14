@@ -73,7 +73,8 @@ Optional actions
 ----------------
 
   * _Refinement to higher resolution._  To refine the grid from the native 5 km
-  to higher resolution, by bilinear interpolation, do:
+  to higher resolution, by bilinear interpolation, we use `refine.py` which
+  calls methods from `q1ops.py`.  Do:
 
       $ ./refine.py --factor 2 grn.nc grn2p5km.nc
       $ ./inplace.py --ranges grn2p5km.nc          # same as for grn.nc

@@ -7,6 +7,8 @@ import argparse
 import sys
 import numpy as np
 
+from q1ops import locquadinterp
+
 try:
     from netCDF4 import Dataset as NC
 except:
@@ -49,7 +51,6 @@ if args.fixcmbunits:
     cmb_var[:] = factor * nc.variables['climatic_mass_balance'][:]
 
 if args.oceanfix:
-    # modify topg and cmb
     print "applying ocean fixes ..."
     topg = np.squeeze(nc.variables['topg'])
     cmb  = np.squeeze(nc.variables['cmb'])
@@ -67,6 +68,32 @@ if args.oceanfix:
     print "overwriting topg and cmb variable with modified versions ..."
     nc.variables['topg'][:] = topg[:]
     nc.variables['cmb'][:] = cmb[:]
+
+damp = 0.5
+def dampme(f, v):
+    av = locquadinterp(f,0.5,0.5)
+    if v < av:
+        return v + damp * (av - v)
+    else:
+        return v
+
+if args.bedundip:
+    print "applying sweeps to dampen bed concave-up areas ..."
+    topg = np.squeeze(nc.variables['topg'])
+    for N in range(args.sweeps):
+        newtopg = topg.copy()
+        for j in range(0,np.shape(topg)[0]-3,2):
+            for k in range(0,np.shape(topg)[1]-3,2):
+                newtopg[j+1][k+1] = dampme(topg[j:j+3:2,  k:k+3:2],  topg[j+1][k+1])
+                newtopg[j+1][k+2] = dampme(topg[j:j+3:2,  k+1:k+4:2],topg[j+1][k+2])
+                newtopg[j+2][k+1] = dampme(topg[j+1:j+4:2,k:k+3:2],  topg[j+2][k+1])
+                newtopg[j+2][k+2] = dampme(topg[j+1:j+4:2,k+1:k+4:2],topg[j+2][k+2])
+        topg = newtopg.copy()
+        print ".",
+        sys.stdout.flush()
+    print ""
+    print "overwriting topg with modified version ..."
+    nc.variables['topg'][:] = topg[:]
 
 if args.ranges:
     x = nc.variables['x1'][:]

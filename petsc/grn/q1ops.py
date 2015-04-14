@@ -14,19 +14,20 @@ def lininterp(c,r):
     f[-1] = c[-1]
     return f
 
-# coarse-to-fine bilinear interpolation plus padding in 2D
+def locquadinterp(f, xi, eta):
+    return   (1.0-xi) * (1.0-eta) * f[0,0]  + xi * (1.0-eta) * f[1,0] \
+           + (1.0-xi) * eta       * f[0,1]  + xi       * eta * f[1,1]
+
+# coarse-to-fine bilinear interpolation in 2D
 def quadinterp(c,r):
     f = np.zeros((r*(np.shape(c)[0]-1)+1,r*(np.shape(c)[1]-1)+1))
     for j in range(np.shape(c)[0]-1):
         for k in range(np.shape(c)[1]-1):
             for s in range(r):
-                ls = float(s)/float(r)
+                xi = float(s)/float(r)
                 for t in range(r):
-                    lt = float(t)/float(r)
-                    f[r*j+s,r*k+t] =   (1.0-ls) * (1.0-lt) * c[j,k] \
-                                     + ls       * (1.0-lt) * c[j+1,k] \
-                                     + (1.0-ls) * lt       * c[j,k+1] \
-                                     + ls       * lt       * c[j+1,k+1]
+                    eta = float(t)/float(r)
+                    f[r*j+s,r*k+t] = locquadinterp(c[j:j+2,k:k+2],xi,eta)
     f[:,-1] = lininterp(c[:,-1],r)
     f[-1,:] = lininterp(c[-1,:],r)
     return f
