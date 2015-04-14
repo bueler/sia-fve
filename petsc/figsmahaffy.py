@@ -281,10 +281,11 @@ if args.map:
     if D != None:
         plt.figure(figsize=fsize)
         Dmask = ma.array(D,mask=(H<=0.0))
-        plt.pcolormesh(x,y,Dmask)
+        chopD = np.maximum(Dmask,1.0e-6*Dmask.max())  # show 6 orders of magnitude range only
+        plt.pcolormesh(x,y,np.log10(chopD))
         plt.axis('tight')
         plt.colorbar()
-        plt.title('max diffusivity D at node  (m^2/s); H<=0 masked-out, with max=%.2f' % Dmask.max())
+        plt.title('log max diffusivity D at node  (log10(D)); H<=0 masked-out')
         figsave('D.png')
 
     Wmag = readvec('Wmag.dat',shape=(len(y),len(x)),failonmissing=False)
@@ -294,9 +295,10 @@ if args.map:
             print "  ... not generating Wmag figure because field is identically zero"
         else:
             plt.figure(figsize=fsize)
-            plt.pcolormesh(x,y,Wmagmask)
+            chopWmag = np.maximum(Wmagmask,1.0e-6*Wmagmask.max())  # show 6 orders of magnitude range only
+            plt.pcolormesh(x,y,np.log10(chopWmag))
             plt.axis('tight')
             plt.colorbar()
-            plt.title('max mag of W at node  (m/s); H<=0 masked-out, with max=%.2f' % Wmagmask.max())
+            plt.title('log max mag of W at node  (log10(|W|)); H<=0 masked-out')
             figsave('Wmag.png')
 
