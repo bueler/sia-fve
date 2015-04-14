@@ -16,8 +16,8 @@ module and
 in addition to stuff needed in `../`.
 
 
-Get the data from PISM and link scripts from PETSc
----------------------------------
+Get the data, link scripts, and compile
+---------------------------------------
 
 This stage requires a copy of [PISM](http://www.pism-docs.org).  In the PISM
 `examples/std-greenland/` directory is a script to download the SeaRISE dataset
@@ -33,11 +33,15 @@ Also we need to use scripts from the [PETSc](http://www.mcs.anl.gov/petsc/) sour
     $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py  # or similar for petsc3.5
     $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
 
+Of course, we need an executable:
+
+    $ (cd ../ && make mahaffy)
+
 
 Quick start
 -----------
 
-All non-optional actions below are executed by a bash script:
+All non-optional actions below are executed by a single bash script:
 
     $ ./quickstart.sh
 
@@ -51,7 +55,7 @@ viewed with `ncview` or similar.
 For convenience we make a local copy `grn.nc` that is smaller because it
 has only the variables we want.
 
-    $ ncks -v x1,y1,thk,topg,climatic_mass_balance pism_Greenland_5km_v1.1.nc grn.nc
+    $ ncks -O -v x1,y1,thk,topg,climatic_mass_balance pism_Greenland_5km_v1.1.nc grn.nc
 
 We convert the climatic mass balance variable from units  kg m-2 a-1  to  m s-1:
 
@@ -113,9 +117,9 @@ This stage uses the PETSc scripts which we linked earlier:
 Run the model
 -------------
 
-Build the executable `mahaffy`, and run on 5km grid:
+Run on the 5km grid; the `-mah_showdata` option means that the data is viewed
+with PETSc's X viewer:
 
-    $ (cd ../ && make mahaffy)
     $ mkdir test/
     $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
 
