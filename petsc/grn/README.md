@@ -121,7 +121,7 @@ Run on the 5km grid; the `-mah_showdata` option means that the data is viewed
 with PETSc's X viewer:
 
     $ mkdir test/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -mah_showdata -draw_pause 2 -snes_monitor -mah_dump test/
+    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -mah_D0 10.0 -snes_monitor -mah_showdata -draw_pause 2 -pc_type asm -sub_pc_type lu -mah_dump test/
 
 This run only takes a few minutes.
 
@@ -134,12 +134,9 @@ More optional steps
       $ cd test/
       $ ../../figsmahaffy.py --observed
 
-  * _Use solver options for higher resolution._  The robust
-  `-pc_type asm -sub_pc_type lu` solver choice may be helpful:
+  * _Higher resolution._  Try
 
-      $ mkdir test2p5km/
-      $ ./nc2petsc.py grn2p5km.nc grn2p5km.dat
-      $ mpiexec -n 6 ../mahaffy -mah_read grn2p5km.dat -mah_dump test2p5km/ -snes_monitor -pc_type asm -sub_pc_type lu -snes_max_it 2000
+      $ QSSHOW= QSREFINE=2 ./quickstart.sh "-snes_max_it 200"
 
-  Around 1 km grid (e.g. `--refine 1`) my 16Gb desktop runs out of memory.
+  Around 1 km grid (e.g. `QSREFINE=5`) my 16Gb desktop runs out of memory.
 
