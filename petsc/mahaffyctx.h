@@ -47,7 +47,8 @@ typedef struct {
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
             Neps,   // number of levels in continuation scheme
-            avDcount;// used to get local average value of diffusivity; used for reporting
+            avDcount,// used to get local average value of diffusivity; used for reporting
+            luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
             dome,   // use dome exact solution ("Bueler profile")

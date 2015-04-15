@@ -88,7 +88,7 @@ Generate .png figs:
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
 extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtx*);
-extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,const AppCtx*);
+extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
 extern void fillscheds(AppCtx*);
@@ -795,33 +795,45 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode PetscIgnoreZEROPIVOTErrorHandler(MPI_Comm comm,int line,const char *fun,
+                   const char *file,PetscErrorCode n,PetscErrorType p,const char *mess,void *ctx) {
+   if ((n == PETSC_ERR_MAT_LU_ZRPVT) || (p == PETSC_ERR_MAT_LU_ZRPVT)) {
+      int rank;
+      MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+      PetscPrintf(PETSC_COMM_SELF,"---- WARNING: intercepted PETSC_ERR_MAT_LU_ZRPVT on rank %d ----\n",rank);
+      AppCtx* user = (AppCtx*)ctx;
+      user->luzeropvterr = 1;
+      return 0;
+   } else {
+      return PetscTraceBackErrorHandler(comm,line,fun,file,n,p,mess,ctx);
+   }
+}
+
 // try a SNES solve and report on the result; H is modified
 PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
-                           SNESConvergedReason *reason, const AppCtx *user) {
+                           SNESConvergedReason *reason, AppCtx *user) {
   PetscErrorCode ierr;
   KSP            ksp;
-  PetscInt       its, kspits;
+  PetscInt       its, kspits, luzeropvterr;
   const PetscInt lureason = -99;
   const char     lureasons[30] = "DIVERGED_LU_ZERO_PIVOT";
   char           reasonstr[30];
 
   PetscFunctionBeginUser;
-  ierr = SNESSolve(*s, NULL, H);
-  if (ierr) {
-      if (ierr == PETSC_ERR_MAT_LU_ZRPVT) {
-          myPrintf(user,"SNESSolve() reports ierr = PETSC_ERR_MAT_LU_ZRPVT --> new SNESConvergedReason %s = %d\n",
-                   lureasons, lureason);
-          *reason = lureason;
-      } else {
-          CHKERRQ(ierr);
-      }
+  user->luzeropvterr = 0;
+  PetscPushErrorHandler(PetscIgnoreZEROPIVOTErrorHandler,user);
+  SNESSolve(*s, NULL, H);
+  PetscPopErrorHandler();
+  ierr = MPI_Allreduce(&user->luzeropvterr,&luzeropvterr,1,MPI_INT,MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  if (luzeropvterr > 0) {
+      *reason = lureason;
   } else {
       ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
   }
   ierr = SNESGetIterationNumber(*s,&its);CHKERRQ(ierr);
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
-  strcpy(reasonstr,(*reason==-99) ? lureasons : SNESConvergedReasons[*reason]);
+  strcpy(reasonstr,(*reason==lureason) ? lureasons : SNESConvergedReasons[*reason]);
   if (again)
       myPrintf(user,"     %s again w. ",reasonstr);
   else
