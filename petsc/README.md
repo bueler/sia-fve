@@ -43,9 +43,9 @@ A helpful view of the solution process comes from adding one of
 
     -snes_monitor_solution -snes_monitor_residual -snes_monitor_solution_update
 
-to the options.  With `-snes_monitor_solution` you see that the solution `H`
-starts out too diffuse because the continuation method over-regularizes at the
-beginning.
+to the options.  For example, with `-snes_monitor_solution` you see that the
+solution `H` starts out too diffuse because the continuation method
+over-regularizes at the beginning.
 
 However, recall we are solving the variational inequality version of equations
 `F(H)=0`, with constraint `H>=0`.  With `-snes_monitor_residual` you see that
@@ -56,9 +56,8 @@ reflects the complementarity interpretation of the variational inequality, i.e.
 
     H >= 0  and  F(H) >= 0  and  H F(H) = 0.
 
-Thus the new `-snes_vi_monitor_residual` option in PETSc (may not be in
-maint/master yet) is helpful in the sense of showing only the negative values of
-the residual `F(H)`.
+Thus the new `-snes_vi_monitor_residual` option in PETSc is helpful because it
+shows only the negative values of the residual `F(H)`.
 
 Note `figsmahaffy.py` also shows only the negative values of the residual.
 
