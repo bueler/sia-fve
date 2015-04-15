@@ -800,7 +800,7 @@ PetscErrorCode PetscIgnoreZEROPIVOTErrorHandler(MPI_Comm comm,int line,const cha
    if ((n == PETSC_ERR_MAT_LU_ZRPVT) || (p == PETSC_ERR_MAT_LU_ZRPVT)) {
       int rank;
       MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-      PetscPrintf(PETSC_COMM_SELF,"---- WARNING: intercepted PETSC_ERR_MAT_LU_ZRPVT on rank %d ----\n",rank);
+      //PetscPrintf(PETSC_COMM_SELF,"---- WARNING: intercepted PETSC_ERR_MAT_LU_ZRPVT on rank %d ----\n",rank);
       AppCtx* user = (AppCtx*)ctx;
       user->luzeropvterr = 1;
       return 0;
