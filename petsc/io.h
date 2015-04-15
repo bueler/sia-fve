@@ -25,7 +25,7 @@ PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
 PetscErrorCode DumpToFiles(Vec,Vec,AppCtx*);
 
 // utilities to compute quantities in reports and history files
-PetscErrorCode GetVolumes(Vec,AppCtx*,PetscReal*,PetscReal*);
+PetscErrorCode GetVolumeArea(Vec,AppCtx*,PetscReal*,PetscReal*,PetscReal*);
 PetscErrorCode GetErrors(Vec,AppCtx*,PetscReal*,PetscReal*);
 
 // write a text history file, including command line

@@ -184,14 +184,29 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
 }
 
 
-// volH and volHexact have units m^3
-PetscErrorCode GetVolumes(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact) {
+// volH and volHexact have units m^3; areaH has units m^2
+PetscErrorCode GetVolumeArea(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact, PetscReal *areaH) {
   PetscErrorCode  ierr;
   const PetscReal darea = user->dx * user->dx;
+  PetscReal      *aH;
+  PetscInt       n, i, loccount=0, count;
+
   ierr = VecSum(H,volH); CHKERRQ(ierr);
+  *volH *= darea;
+
   ierr = VecSum(user->Hexact,volHexact); CHKERRQ(ierr);
-  *volH      *= darea;
   *volHexact *= darea;
+
+  VecGetLocalSize(H, &n);
+  VecGetArray(H, &aH);
+  for (i = 0; i < n; ++i) {
+      if (aH[i] > 1.0)   // 1 m tolerance; fails if "> 0.0"
+          loccount += 1;
+  }
+  VecRestoreArray(H, &aH);
+  ierr = MPI_Allreduce(&loccount,&count,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  *areaH = (PetscReal)count * darea;
+
   PetscFunctionReturn(0);
 }
 
@@ -213,15 +228,11 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscErrorCode  ierr;
   DMDALocalInfo   info;
   PetscInt        NN;
-  PetscReal       volH, volHexact, enorminf, enorm1, voldiffrel;
+  PetscReal       volH, volHexact, areaH, enorminf, enorm1, voldiffrel;
 
-  ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
-  ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
-  NN = info.mx * info.my;
-  ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
-  voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
-  myPrintf(user,"       volume = %8.4e km^3;  errors:  max = %7.2f m,  av = %7.2f m,  voldiff%% = %5.2f\n",
-                (double)volH / 1.0e9, (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel);
+  ierr = GetVolumeArea(H, user, &volH, &volHexact, &areaH); CHKERRQ(ierr);
+  myPrintf(user,"       vol = %8.2e km3,  area = %8.2e km2",
+                (double)volH / 1.0e9, (double)areaH / 1.0e6);
 
   if (!user->nodiag) {
       PetscInt  avDcount;
@@ -230,9 +241,17 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
       ierr = MPI_Allreduce(&user->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
       avD /= avDcount;
       ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-      myPrintf(user,"       diagnostics:  max D = %8.4f,  av D = %8.4f m^2 s-1\n",
+      myPrintf(user,";  diagnostics:  max D = %6.4f,  av D = %6.4f m^2 s-1\n",
                     (double)maxD, (double)avD);
-  }
+  } else
+      myPrintf(user,"\n");
+
+  ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+  NN = info.mx * info.my;
+  ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
+  voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
+  myPrintf(user,"       errors:  max = %7.2f m,  av = %7.2f m,  voldiff%% = %5.2f\n",
+                (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel);
 
   PetscFunctionReturn(0);
 }
@@ -246,7 +265,7 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     char            cmdline[1024] = "", filename[1024] = "";
     int             j, strerr, size;
     double          computationtime;
-    PetscReal       volH, volHexact, enorminf, enorm1;
+    PetscReal       volH, volHexact, areaH, enorminf, enorm1;
 
     myPrintf(user,"writing %s to %s ...\n",name,user->figsprefix);
 
@@ -269,9 +288,10 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     ierr = PetscViewerASCIIPrintf(viewer,"spacing in x-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"last successful value of eps  %.6e\n",(double)user->eps); CHKERRQ(ierr);
-    ierr = GetVolumes(H, user, &volH, &volHexact); CHKERRQ(ierr);
+    ierr = GetVolumeArea(H, user, &volH, &volHexact, &areaH); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"solution ice volume (m^3)  %.6e\n",(double)volH); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"exact ice volume (m^3)  %.6e\n",(double)volHexact); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"solution ice area (m^2)  %.6e\n",(double)areaH); CHKERRQ(ierr);
     ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"max thickness error (m)  %.6e\n",(double)enorminf); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"av thickness error (m)  %.6e\n",(double)enorm1 / NN); CHKERRQ(ierr);
