@@ -27,8 +27,8 @@ Figures from dump
 
 To make figures, do:
 
-    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py
-    $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
+    $ ln -s ~/petsc/bin/PetscBinaryIO.py
+    $ ln -s ~/petsc/bin/petsc_conf.py
     $ mkdir test/
     $ ./mahaffy -mah_dump test/
     $ cd test/

@@ -28,11 +28,6 @@ This stage requires a copy of [PISM](http://www.pism-docs.org).  In the PISM
     $ cd ~/sia-fve/petsc/grn/           # back to this dir
     $ ln -s ~/pism/examples/std-greenland/pism_Greenland_5km_v1.1.nc
 
-Also we need to use scripts from the [PETSc](http://www.mcs.anl.gov/petsc/) source.  Do:
-
-    $ ln -s ~/petsc/bin/petsc-pythonscripts/PetscBinaryIO.py  # or similar for petsc3.5
-    $ ln -s ~/petsc/bin/petsc-pythonscripts/petsc_conf.py
-
 Of course, we need an executable:
 
     $ (cd ../ && make mahaffy)
