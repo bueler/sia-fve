@@ -62,10 +62,9 @@ projections:
 
     $ ./remap2mcb.py searise5km.nc mcb4500m.nc fix4500m.nc
 
-Finally we do a conversion to PETSc binary.  See `../README.md` to set up links
-so that `../nc2petsc.py` will work:
+Finally we do a conversion to PETSc binary:
 
-    $ ../nc2petsc.py fix4500m.nc fix4500m.dat
+    $ ../../nc2petsc.py fix4500m.nc fix4500m.dat
 
 
 Coarse resolution run

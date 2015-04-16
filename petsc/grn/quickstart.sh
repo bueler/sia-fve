@@ -54,7 +54,7 @@ fi
 # trim so that -snes_fd_color works:
 #ncks -O -d x1,0,299 grn.nc grn.nc
 
-./nc2petsc.py $NCDATA $DATA
+../nc2petsc.py $NCDATA $DATA
 
 mkdir -p $DUMP
 

@@ -104,9 +104,9 @@ Optional actions
 Convert to PETSC binary
 -----------------------
 
-This stage uses the PETSc scripts which we linked earlier:
+This stage uses the links to PETSc scripts setup in `../README.md`:
 
-    $ ./nc2petsc.py grn.nc grn.dat
+    $ ../nc2petsc.py grn.nc grn.dat
 
 
 Run the model

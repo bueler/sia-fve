@@ -22,19 +22,30 @@ Some quick verification runs are used as regression tests in
 In addition, `mahaffy.c` can read real data and model real ice sheets.  See
 the `grn/` and `grn/mcb/` subdirectories for Greenland ice sheet examples.
 
+
+Link the petsc python scripts
+-----------------------------
+
+Both using real data (i.e. using `nc2petsc.py`) and building figures
+(`figsmahaffy.py`) requires links to petsc python scripts.  So do this before
+proceeding further:
+
+    $ ln -s ~/petsc/bin/PetscBinaryIO.py
+    $ ln -s ~/petsc/bin/petsc_conf.py
+
+
 Figures from dump
 -----------------
 
 To make figures, do:
 
-    $ ln -s ~/petsc/bin/PetscBinaryIO.py
-    $ ln -s ~/petsc/bin/petsc_conf.py
     $ mkdir test/
     $ ./mahaffy -mah_dump test/
     $ cd test/
     $ ../figsmahaffy.py
 
 See `figsmahaffy.py -h` output for additional options.
+
 
 On viewing the solution process
 -------------------------------
