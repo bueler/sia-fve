@@ -1,3 +1,6 @@
 * add to history file "first continuation level where recovery mode is on"; negative if no recovery
 
-* Idea: add to input .dat a thk_initial fields, and rename thk-->thk_exact.  By default write thk_initial=0.  Dump in same format.  Then NM search can speed up by using output thk as thk_initial.
+* Dump in same format as -mah_read.  Then NM search can speed up by using thk_initial.
+
+* New options -mah_starteps and -mah_endeps replace -mah_Neps.  Try -mah_read -mah_readinitial -mah_starteps 3
+  or similar.

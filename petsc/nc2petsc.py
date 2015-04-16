@@ -28,11 +28,13 @@ except:
     print "need link to petsc/bin/petsc-pythonscripts/petsc_conf.py?"
     sys.exit(2)
 
-parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file, with optional refinement.')
+parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')
 parser.add_argument('inname', metavar='INNAME',
                     help='input NetCDF file with x1,y1,topg,cmb,thk variables (e.g. grn.nc)')
 parser.add_argument('outname', metavar='OUTNAME',
-                    help='output PETSc binary file (e.g. grn1km.dat if --refine 5)')
+                    help='output PETSc binary file (e.g. grn.dat)')
+parser.add_argument("--initialisobserved", action="store_true",
+                    help="instead of putting zero in for initial thickness, copy observed thickness")
 args = parser.parse_args()
 
 try:
@@ -41,12 +43,19 @@ except:
     print "ERROR: can't read from file %s ..." % args.inname
     sys.exit(11)
 
-print "reading axes x1,y1 and fields topg,cmb,thk ..."
+print "reading axes x1,y1 and fields topg,cmb,thk_obs ..."
 x1 = nc.variables['x1'][:]
 y1 = nc.variables['y1'][:]
 topg = np.squeeze(nc.variables['topg'][:])
 cmb = np.squeeze(nc.variables['cmb'][:])
-thk = np.squeeze(nc.variables['thk'][:])
+thk_obs = np.squeeze(nc.variables['thk'][:])
+
+if args.initialisobserved:
+    print "setting thk_initial = thk_obs ..."
+    thk_init = thk_obs.copy()
+else:
+    print "setting thk_initial = 0 ..."
+    thk_init = 0.0 * thk_obs
 
 nc.close()
 
@@ -55,12 +64,13 @@ x1vec = x1.view(pbio.Vec)
 y1vec = y1.view(pbio.Vec)
 topgvec = topg.flatten().view(pbio.Vec)
 cmbvec = cmb.flatten().view(pbio.Vec)
-thkvec = thk.flatten().view(pbio.Vec)
+thk_obsvec = thk_obs.flatten().view(pbio.Vec)
+thk_initvec = thk_init.flatten().view(pbio.Vec)
 
 # open petsc binary file
 io = pbio.PetscBinaryIO()
 
-# write fields **in a particular order**  (though names do not matter)
-print "writing vars x1,y1,topg,cmb,thk into %s ..." % args.outname
-io.writeBinaryFile(args.outname, [x1vec,y1vec,topgvec,cmbvec,thkvec,])
+# write fields **in a particular order**  (names do not matter)
+print "writing vars x1,y1,topg,cmb,thk_obs,thk_init into %s ..." % args.outname
+io.writeBinaryFile(args.outname, [x1vec,y1vec,topgvec,cmbvec,thk_obsvec,thk_initvec,])
 

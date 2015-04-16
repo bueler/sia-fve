@@ -34,4 +34,7 @@ PetscErrorCode WriteHistoryFile(Vec,const char[],int,char**,AppCtx*);
 // use X viewers to show b,m,Hexact
 PetscErrorCode ShowFields(AppCtx*);
 
+// utility missing in PETSc
+PetscErrorCode VecTrueChop(Vec,PetscReal);
+
 #endif // IO_H_

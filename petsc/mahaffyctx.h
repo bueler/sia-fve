@@ -19,7 +19,7 @@ typedef struct {
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
             Hexact, // the exact or observed thickness (verification or data, resp.)
-            Hprev,  // only used when doing backward Euler time step as recovery
+            Hinitial,// holds initial state (if read from file) and used when doing backward Euler time step as recovery
             bloc,   // copy of bed elevation with ghosts
             Dquad,  // diffusivity D at the quadrature points on an element
             Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
@@ -51,6 +51,7 @@ typedef struct {
             luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
+            readinitial,// use read initial H instead of generating guess in usual way
             dome,   // use dome exact solution ("Bueler profile")
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
             swapxy, // swap x and y axes in building exact solution

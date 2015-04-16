@@ -91,6 +91,7 @@ extern PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,App
 extern PetscErrorCode SNESAttempt(SNES*,Vec,PetscBool,PetscInt,SNESConvergedReason*,AppCtx*);
 extern PetscErrorCode ProcessOptions(AppCtx*);
 extern PetscErrorCode StateReport(Vec,DMDALocalInfo*,AppCtx*);
+extern PetscErrorCode ChopScaleSMBforInitial(Vec,AppCtx*);
 extern void fillscheds(AppCtx*);
 
 // indexing of the 8 quadrature points along the boundary of the control volume in M*
@@ -159,6 +160,7 @@ int main(int argc,char **argv) {
   user.checkadmissible = PETSC_FALSE;
 
   user.read       = PETSC_FALSE;
+  user.readinitial= PETSC_FALSE;
   user.showdata   = PETSC_FALSE;
   user.history    = PETSC_FALSE;
   user.nodiag     = PETSC_FALSE;
@@ -176,12 +178,12 @@ int main(int argc,char **argv) {
   // derived constant computed after n,A get set
   user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
 
-  if (user.read == PETSC_TRUE) {
+  if (user.read) {
       myPrintf(&user,
           "reading dimensions and grid spacing from %s ...\n",user.readname);
       ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
   } else {
-      if (user.dome == PETSC_TRUE) {
+      if (user.dome) {
           user.Nx = -18;        // so DMDACreate2d() defaults to 18x18
           user.Ny = -18;
           user.Lx = 900.0e3;    // m
@@ -240,7 +242,7 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
 
   ierr = VecDuplicate(H,&Htry); CHKERRQ(ierr);
-  ierr = VecDuplicate(H,&user.Hprev); CHKERRQ(ierr);  // user.Hprev is used only in recovery
+  ierr = VecDuplicate(H,&user.Hinitial); CHKERRQ(ierr);
 
   ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.b),"bed elevation b"); CHKERRQ(ierr);
@@ -255,16 +257,20 @@ int main(int argc,char **argv) {
   ierr = PetscObjectSetName((PetscObject)(user.Wmagnodemax),"maximum pseudo-velocity W magnitude at node"); CHKERRQ(ierr);
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
-  if (user.read == PETSC_TRUE) {
-      myPrintf(&user,"reading b, m, Hexact from %s ...\n", user.readname);
+  if (user.read) {
+      myPrintf(&user,"reading b, m, Hexact (or Hobserved), Hinitial from %s ...\n", user.readname);
       ierr = ReadDataVecs(&user); CHKERRQ(ierr);
+      if (!user.readinitial) {
+          myPrintf(&user,"  ignoring read Hinitial ...\n");
+          ierr = ChopScaleSMBforInitial(user.Hinitial,&user); CHKERRQ(ierr);
+      }
   } else {
-      if (user.dome == PETSC_TRUE) {
+      if (user.dome) {
           myPrintf(&user,"generating b, m, Hexact from dome formulas in Bueler (2003) ...\n");
           ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
           ierr = DomeCMB(user.m,&user); CHKERRQ(ierr);
           ierr = DomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
-      } else if (user.bedstep == PETSC_TRUE) {
+      } else if (user.bedstep) {
           myPrintf(&user,"generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n");
           ierr = BedStepBed(user.b,&user); CHKERRQ(ierr);
           ierr = BedStepCMB(user.m,&user); CHKERRQ(ierr);
@@ -272,16 +278,12 @@ int main(int argc,char **argv) {
       } else {
           SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,bedstep] must be TRUE since user.read is FALSE...\n");
       }
+      ierr = ChopScaleSMBforInitial(user.Hinitial,&user); CHKERRQ(ierr);
   }
 
-  if (user.showdata == PETSC_TRUE) {
+  if (user.showdata) {
       ierr = ShowFields(&user); CHKERRQ(ierr);
   }
-
-  // initialize by chop & scale SMB
-  ierr = VecCopy(user.m,H); CHKERRQ(ierr);
-  ierr = VecChop(H,0.0); CHKERRQ(ierr);
-  ierr = VecScale(H,user.initmagic*user.secpera); CHKERRQ(ierr);
 
   // setup local copy of bed
   ierr = DMCreateLocalVector(user.da,&user.bloc);CHKERRQ(ierr);
@@ -309,10 +311,10 @@ int main(int argc,char **argv) {
 
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
+  ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
   for (m = 0; m<user.Neps; m++) {
       user.eps = user.eps_sched[m];
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-      ierr = VecCopy(H,user.Hprev); CHKERRQ(ierr);  // only in case we need to recover
       ierr = SNESAttempt(&snes,Htry,PETSC_FALSE,m,&reason,&user);CHKERRQ(ierr);
       if (reason < 0) {
           if ((user.divergetryagain) && (!user.dorecovery)) {
@@ -320,6 +322,7 @@ int main(int argc,char **argv) {
                   "         turning on recovery mode (backward Euler step of %.2f a) and trying again ...\n",
                   user.dtBE/user.secpera);
               user.dorecovery = PETSC_TRUE;
+              ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);  // only in case we need to recover
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(&snes,Htry,PETSC_TRUE,m,&reason,&user);CHKERRQ(ierr);
           }
@@ -334,11 +337,11 @@ int main(int argc,char **argv) {
   }
   gettimeofday(&user.endtime, NULL);
 
-  if (user.history == PETSC_TRUE) {
+  if (user.history) {
       ierr = WriteHistoryFile(H,"history.txt",argc,argv,&user); CHKERRQ(ierr);
   }
 
-  if (user.dump == PETSC_TRUE) {
+  if (user.dump) {
       Vec r;
       ierr = SNESGetFunction(snes,&r,NULL,NULL); CHKERRQ(ierr);
       ierr = DumpToFiles(H,r,&user); CHKERRQ(ierr);
@@ -363,7 +366,7 @@ int main(int argc,char **argv) {
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
-  ierr = VecDestroy(&user.Hprev);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.Hinitial);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
@@ -373,6 +376,17 @@ int main(int argc,char **argv) {
 
   PetscFinalize();
   return 0;
+}
+
+
+// set initial H by chop & scale SMB
+PetscErrorCode ChopScaleSMBforInitial(Vec Hinitial, AppCtx *user) {
+  PetscErrorCode ierr;
+  PetscFunctionBeginUser;
+  ierr = VecCopy(user->m,Hinitial); CHKERRQ(ierr);
+  ierr = VecTrueChop(Hinitial,0.0); CHKERRQ(ierr);
+  ierr = VecScale(Hinitial,user->initmagic * user->secpera); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
 }
 
 
@@ -478,7 +492,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   ierr = DMGetLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(user->da, user->Hinitial, &aHprev);CHKERRQ(ierr);
   ierr = DMDAVecGetArrayDOF(user->quadda, qloc, &aqquad);CHKERRQ(ierr);
   // loop over locally-owned elements, including ghosts, to get fluxes at
   // c = 0,1,2,3 points in element;  note start at (xs-1,ys-1)
@@ -552,7 +566,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(user->da, user->Hprev, &aHprev);CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(user->da, user->Hinitial, &aHprev);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);
   ierr = DMDAVecRestoreArrayDOF(user->quadda, qloc, &aqquad);CHKERRQ(ierr);
   ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
@@ -749,6 +763,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsString(
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-readinitial", "use read initial H instead of generating guess in usual way",
+      NULL,user->readinitial,&user->readinitial,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-showdata", "use PETSc X viewers to show b, m, and exact/observed H",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);

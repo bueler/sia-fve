@@ -87,6 +87,7 @@ PetscErrorCode ReadAndReshape2DVec(Vec v, PetscViewer viewer, AppCtx *user) {
 }
 
 
+// NOTE: order in which data is read must match order in which nc2petsc.py writes
 PetscErrorCode ReadDataVecs(AppCtx *user) {
     PetscErrorCode ierr;
     PetscViewer    viewer;
@@ -105,6 +106,7 @@ PetscErrorCode ReadDataVecs(AppCtx *user) {
     ierr = ReadAndReshape2DVec(user->b, viewer, user); CHKERRQ(ierr);
     ierr = ReadAndReshape2DVec(user->m, viewer, user); CHKERRQ(ierr);
     ierr = ReadAndReshape2DVec(user->Hexact, viewer, user); CHKERRQ(ierr);
+    ierr = ReadAndReshape2DVec(user->Hinitial, viewer, user); CHKERRQ(ierr);
 
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -181,6 +183,21 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
     }
 
     PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode VecTrueChop(Vec v, PetscReal tol) {
+  PetscErrorCode  ierr;
+  PetscReal       *a;
+  PetscInt        n, i;
+
+  ierr = VecGetLocalSize(v, &n); CHKERRQ(ierr);
+  ierr = VecGetArray(v, &a); CHKERRQ(ierr);
+  for (i = 0; i < n; ++i) {
+      if (a[i] < tol)  a[i] = tol;
+  }
+  ierr = VecRestoreArray(v, &a); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
 }
 
 
@@ -303,9 +320,20 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
 }
 
 
-PetscErrorCode ShowFields(AppCtx *user) {
+PetscErrorCode ShowOne(Vec v, PetscInt xdim, PetscInt ydim, const char *title) {
   PetscErrorCode ierr;
   PetscViewer    graphical;
+  PetscFunctionBeginUser;
+  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,title,
+                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
+  ierr = VecView(v,graphical); CHKERRQ(ierr);
+  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode ShowFields(AppCtx *user) {
+  PetscErrorCode ierr;
   PetscInt       xdim, ydim;
   DMDALocalInfo  info;
 
@@ -313,19 +341,10 @@ PetscErrorCode ShowFields(AppCtx *user) {
   ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
   xdim = PetscMax(200,PetscMin(300,info.mx));
   ydim = PetscMax(200,PetscMin(561,info.my));
-
-  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"bed topography (m)",
-                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
-  ierr = VecView(user->b,graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"climatic mass balance (m s-1)",
-                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
-  ierr = VecView(user->m,graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,NULL,"exact or observed thickness (m)",
-                             PETSC_DECIDE,PETSC_DECIDE,xdim,ydim,&graphical); CHKERRQ(ierr);
-  ierr = VecView(user->Hexact,graphical); CHKERRQ(ierr);
-  ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
+  ierr = ShowOne(user->b,xdim,ydim,"bed topography (m)"); CHKERRQ(ierr);
+  ierr = ShowOne(user->m,xdim,ydim,"climatic mass balance (m s-1)"); CHKERRQ(ierr);
+  ierr = ShowOne(user->Hexact,xdim,ydim,"exact or observed thickness (m)"); CHKERRQ(ierr);
+  ierr = ShowOne(user->Hinitial,xdim,ydim,"initial thickness (m)"); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
