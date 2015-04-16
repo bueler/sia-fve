@@ -8,30 +8,35 @@ import numpy as np
 from optimizers import neldermead2, gridsearch
 import matplotlib.pyplot as plt
 
-parser = argparse.ArgumentParser(description='Optimize two-parameter objective functions by grid search (default) or Nelder-Mead.  Mostly designed to run mahaffy with various values of n and A and use the numerical error output as the objective value.')
+parser = argparse.ArgumentParser(description=
+'''
+Optimize two-parameter objective functions by grid search (default) or
+Nelder-Mead.  Ddesigned to run ../mahaffy with various values of
+n and A and use the numerical error output as the objective value.
+''')
 
 parser.add_argument("--fprint", action="store_true",
                     help="function will print at each evaluation")
 
-ngroup = parser.add_argument_group("for Nelder-Mead method")
+ngroup = parser.add_argument_group("Nelder-Mead method")
 ngroup.add_argument("--disp", action="store_true",
                     help="show simplex and convergence condition")
 ngroup.add_argument("--nm", action="store_true",
                     help="use Nelder-Mead method")
 
-ggroup = parser.add_argument_group("for grid search method")
+ggroup = parser.add_argument_group("grid search method")
 ggroup.add_argument("--nx", type=int, default=3,
-                    help="use  2 nx + 1  points in N direction (default: %(default)d)")
+                    help="use  2 nx + 1  points in x direction (= n direction; default: %(default)d)")
 ggroup.add_argument("--ny", type=int, default=3,
-                    help="use  2 ny + 1  points in A direction (default: %(default)d)")
+                    help="use  2 ny + 1  points in y direction (= A direction; default: %(default)d)")
 ggroup.add_argument("--show", action="store_true",
-                    help="plot surface")
+                    help="color plot of objective evaluations")
 
-rgroup = parser.add_argument_group("for Rosenbrock test objective")
+rgroup = parser.add_argument_group("test objective")
 rgroup.add_argument("--rosen", action="store_true",
                     help="use Rosenbrock example objective function for testing")
 
-mgroup = parser.add_argument_group("for mahaffy output objective")
+mgroup = parser.add_argument_group("mahaffy output objective")
 mgroup.add_argument("--mah", metavar = 'STR',
                     default="-mah_D0 40 -mah_Neps 10 -snes_type vinewtonssls -pc_type asm -sub_pc_type lu",
                     help="arguments to mahaffy (default: '%(default)s')")
@@ -77,7 +82,7 @@ else:
     cmdroot = "%s../mahaffy -mah_read %s %s %s " % (mahmpistr, args.read, maherr, mahargs)
     cmdfmt = cmdroot + "-mah_n N -mah_A A"
     print "mahaffy command:"
-    print "    f([N A]) = {" + cmdfmt + "}"
+    print "    f([N A]) = { " + cmdfmt + " }"
 
 if args.rosen:
     def rosen(x):
@@ -87,11 +92,11 @@ if args.rosen:
             print "  f([%12.9f %12.9f]) = %8e" % (x[0],x[1],f)
         return f
     myfunc = rosen
-    sim0 = np.array([[1.3, 0.7],
-                     [1.4, 0.7],
-                     [1.3, 0.8]])
-    myxtol=[1e-1,1e-1]
-    myftol=1e-2
+    sim0 = np.array([[1.05, 0.93],
+                     [1.15, 0.93],
+                     [1.05, 1.0]])
+    myxtol=[5e-2,5e-2]
+    myftol=1e-3
 else:
     secpera = 31556926.0
     A0      = 1.0e-16/secpera
@@ -119,6 +124,13 @@ else:
 if args.nm:
     res, _, _, _ = neldermead2(myfunc, sim0, xtol=myxtol, ftol=myftol, disp=args.disp)
 else:
+    nx = args.nx
+    ny = args.ny
+    dx = sim0[1,0] - sim0[0,0]
+    dy = sim0[2,1] - sim0[0,1]
+    print "running on grid of %d by %d points:" % (2*nx+1,2*ny+1)
+    print "    [%.2e, ..., %.2e] x [%.2e, ..., %.2e]" % \
+       (sim0[0,0]-dx*nx, sim0[0,0]+dx*nx, sim0[0,1]-dy*ny, sim0[0,1]+dy*ny)
     res, _, _, _ = gridsearch(myfunc, sim0, nx=args.nx, ny=args.ny, show=args.show)
     if args.show:
         if not args.rosen:
