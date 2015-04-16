@@ -178,8 +178,9 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
     ierr = ViewToBinary(PETSC_FALSE,r,user->figsprefix,"residual.dat"); CHKERRQ(ierr);
 
     if (!user->nodiag) {
-        ierr = ViewToBinary(PETSC_FALSE,user->Dnodemax,user->figsprefix,"D.dat"); CHKERRQ(ierr);
-        ierr = ViewToBinary(PETSC_FALSE,user->Wmagnodemax,user->figsprefix,"Wmag.dat"); CHKERRQ(ierr);
+        DiagnosticScheme *ds = &(user->ds);
+        ierr = ViewToBinary(PETSC_FALSE,ds->Dnodemax,user->figsprefix,"D.dat"); CHKERRQ(ierr);
+        ierr = ViewToBinary(PETSC_FALSE,ds->Wmagnodemax,user->figsprefix,"Wmag.dat"); CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
@@ -252,12 +253,13 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
                 (double)volH / 1.0e9, (double)areaH / 1.0e6);
 
   if (!user->nodiag) {
+      DiagnosticScheme *ds = &(user->ds);
       PetscInt  avDcount;
       PetscReal avD, maxD;
-      ierr = MPI_Allreduce(&user->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-      ierr = MPI_Allreduce(&user->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      ierr = MPI_Allreduce(&ds->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      ierr = MPI_Allreduce(&ds->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
       avD /= avDcount;
-      ierr = MPI_Allreduce(&user->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      ierr = MPI_Allreduce(&ds->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
       myPrintf(user,";  diagnostics:  max D = %6.4f,  av D = %6.4f m^2 s-1\n",
                     (double)maxD, (double)avD);
   } else

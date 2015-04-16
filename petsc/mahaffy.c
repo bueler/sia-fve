@@ -18,6 +18,7 @@ static const char help[] =
 
 /* Usage help:
    ./mahaffy -help |grep mah_
+   ./mahaffy -help |grep cs_
 
 Use one of these three problem cases:
    ./mahaffy -mah_dome         # default problem
@@ -25,8 +26,8 @@ Use one of these three problem cases:
    ./mahaffy -mah_read foo.dat # see README.md for Greenland example
 
 Solution options:
-   ./mahaffy -mah_Neps 4       # don't go all the way on continuation
-   ./mahaffy -mah_D0 1.0       # change constant diffusivity used in continuation to other value than
+   ./mahaffy -cs_end 4         # don't go all the way on continuation scheme
+   ./mahaffy -cs_D0 1.0        # change constant diffusivity used in continuation scheme to other value than
                                # default = 10.0;  big may be good for convergence, esp. w upwinding
    ./mahaffy -mah_bedstep -mah_lambda 0.0  # NO upwinding on  grad b  part of flux
    ./mahaffy -mah_bedstep -mah_lambda 1.0  # FULL upwinding
@@ -80,6 +81,7 @@ Generate .png figs:
 #include <petscsnes.h>
 
 #include "mahaffyctx.h"
+#include "continuationscheme.h"
 #include "exactsia.h"
 #include "io.h"
 #include "q1op.h"
@@ -127,7 +129,7 @@ int main(int argc,char **argv) {
   AppCtx              user;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
-  PetscInt            i, m;
+  PetscInt            m;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -139,14 +141,8 @@ int main(int argc,char **argv) {
   user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
 
   user.initmagic = 1000.0;  // a
-
   user.delta  = 1.0e-4;
-  user.Neps   = 13;
-  for (i=0; i<user.Neps-1; i++)  user.eps_sched[i] = PetscPowReal(0.1,((double)i) / 3.0);
-  user.eps_sched[user.Neps-1] = 0.0;
-  user.n0     = 1.0;
-  user.D0     = 10.0;        // m^2 / s
-  user.eps    = 0.0;
+
   user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence problem on refined grid (=125m) but this does not; earlier M* was 0.5 here
   user.dtBE   = 1.0 * user.secpera;  // default 1 year time step for Backward Euler; used only in recovery
 
@@ -170,13 +166,15 @@ int main(int argc,char **argv) {
   user.averr      = PETSC_FALSE;
   user.maxerr     = PETSC_FALSE;
 
+  ierr = InitializeCS(&(user.cs)); CHKERRQ(ierr);
+
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
   // derived constant computed after n,A get set
-  user.Gamma  = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
+  user.Gamma = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
 
   if (user.read) {
       myPrintf(&user,
@@ -251,10 +249,10 @@ int main(int argc,char **argv) {
   ierr = VecDuplicate(H,&user.Hexact); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.Hexact),"exact/observed thickness H"); CHKERRQ(ierr);
 
-  ierr = VecDuplicate(H,&user.Dnodemax); CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)(user.Dnodemax),"maximum diffusivity D at node"); CHKERRQ(ierr);
-  ierr = VecDuplicate(H,&user.Wmagnodemax); CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)(user.Wmagnodemax),"maximum pseudo-velocity W magnitude at node"); CHKERRQ(ierr);
+  ierr = VecDuplicate(H,&user.ds.Dnodemax); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.ds.Dnodemax),"maximum diffusivity D at node"); CHKERRQ(ierr);
+  ierr = VecDuplicate(H,&user.ds.Wmagnodemax); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.ds.Wmagnodemax),"maximum pseudo-velocity W magnitude at node"); CHKERRQ(ierr);
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read) {
@@ -312,8 +310,8 @@ int main(int argc,char **argv) {
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
   ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
-  for (m = 0; m<user.Neps; m++) {
-      user.eps = user.eps_sched[m];
+  for (m = user.cs.start; m<user.cs.end; m++) {
+      user.eps = epsCS(m,&(user.cs));
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
       ierr = SNESAttempt(&snes,Htry,PETSC_FALSE,m,&reason,&user);CHKERRQ(ierr);
       if (reason < 0) {
@@ -328,7 +326,7 @@ int main(int argc,char **argv) {
           }
           if (reason < 0) {
               if (m>0) // record last successful eps
-                  user.eps = user.eps_sched[m-1];
+                  user.eps = epsCS(m-1,&(user.cs));
               break;
           }
       }
@@ -361,8 +359,8 @@ int main(int argc,char **argv) {
   }
 
   ierr = VecDestroy(&user.bloc);CHKERRQ(ierr);
-  ierr = VecDestroy(&user.Dnodemax);CHKERRQ(ierr);
-  ierr = VecDestroy(&user.Wmagnodemax);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.ds.Dnodemax);CHKERRQ(ierr);
+  ierr = VecDestroy(&user.ds.Wmagnodemax);CHKERRQ(ierr);
   ierr = VecDestroy(&user.m);CHKERRQ(ierr);
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
@@ -470,20 +468,21 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   PetscReal       **am, **ab, **aHprev, **aDnodemax, **aWmagnodemax,
                   ***aqquad,  ***aDquad, ***aWquad;
   Vec             qloc, Dloc, Wloc;
+  DiagnosticScheme *ds = &(user->ds);
 
   PetscFunctionBeginUser;
   if (user->checkadmissible) {
-      ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
-
-  user->avD      = 0.0;
-  user->avDcount = 0;
-  user->maxD     = 0.0;
+      ierr = checkadmissible(info,aH); CHKERRQ(ierr);
+  }
 
   if (!user->nodiag) {
+      ds->avD      = 0.0;
+      ds->avDcount = 0;
+      ds->maxD     = 0.0;
       ierr = DMGetLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
       ierr = DMGetLocalVector(user->quadda,&Wloc);CHKERRQ(ierr);
-      ierr = DMDAVecGetArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
-      ierr = DMDAVecGetArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(user->da, ds->Dnodemax, &aDnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(user->da, ds->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
       ierr = DMDAVecGetArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
       ierr = DMDAVecGetArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
   }
@@ -554,10 +553,10 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
               PetscReal Dmax = 0.0, Wmagmax = 0.0;
               for (s=0; s<8; s++) {
                   const PetscReal D = aDquad[k+ke[s]][j+je[s]][ce[s]];
-                  user->maxD      = PetscMax(user->maxD, D);
+                  ds->maxD        = PetscMax(ds->maxD, D);
                   Dmax            = PetscMax(Dmax, D);
-                  user->avD      += D;
-                  user->avDcount += 1;
+                  ds->avD        += D;
+                  ds->avDcount   += 1;
                   Wmagmax         = PetscMax(Wmagmax, aWquad[k+ke[s]][j+je[s]][ce[s]]);
               }
               aDnodemax[k][j] = Dmax;
@@ -572,8 +571,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   ierr = DMRestoreLocalVector(user->quadda,&qloc);CHKERRQ(ierr);
 
   if (!user->nodiag) {
-      ierr = DMDAVecRestoreArray(user->da, user->Dnodemax, &aDnodemax);CHKERRQ(ierr);
-      ierr = DMDAVecRestoreArray(user->da, user->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(user->da, ds->Dnodemax, &aDnodemax);CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(user->da, ds->Wmagnodemax, &aWmagnodemax);CHKERRQ(ierr);
       ierr = DMDAVecRestoreArrayDOF(user->quadda, Dloc, &aDquad);CHKERRQ(ierr);
       ierr = DMDAVecRestoreArrayDOF(user->quadda, Wloc, &aWquad);CHKERRQ(ierr);
       ierr = DMRestoreLocalVector(user->quadda,&Dloc);CHKERRQ(ierr);
@@ -727,9 +726,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-D0", "initial (and representative?) value of diffusivity in continuation scheme; in m^2/s",
-      NULL,user->D0,&user->D0,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsReal(
       "-initmagic", "constant, in years, used to multiply SMB to get initial iterate for thickness",
       NULL,user->initmagic,&user->initmagic,NULL);CHKERRQ(ierr);
   strcpy(histprefix,"PREFIX/");
@@ -747,12 +743,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->n,&user->n,NULL);CHKERRQ(ierr);
   if (user->n <= 1.0) {
       SETERRQ1(PETSC_COMM_WORLD,11,"ERROR: n = %f not allowed ... n > 1 is required\n",user->n); }
-  ierr = PetscOptionsReal(
-      "-n0", "initial value of Glen exponent in continuation scheme",
-      NULL,user->n0,&user->n0,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt(
-      "-Neps", "levels in schedule of eps in continuation scheme",
-      NULL,user->Neps,&user->Neps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-nodiag", "do not store, generate, or output diagnostic D and Wmag fields",
       NULL,user->nodiag,&user->nodiag,NULL);CHKERRQ(ierr);
@@ -809,6 +799,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       user->history = PETSC_TRUE;
   else if (user->history)
       strcpy(user->figsprefix,histprefix);
+
+  ierr = OptionsCS(&(user->cs)); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }
 

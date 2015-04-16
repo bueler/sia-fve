@@ -9,10 +9,23 @@
 #include <petscdmda.h>
 #include <petscvec.h>
 
-// holds value of gradient or vector at point
+#include "continuationscheme.h"
+
+// holds value of gradient or other vector at point
 typedef struct {
     PetscReal x,y;
 } Grad;
+
+
+typedef struct {
+  Vec       Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
+            Wmagnodemax;// maximum value of the magnitude of the pseudo-velocity W at the
+                        // quadrature points for that node
+  PetscReal avD,    // local average value of diffusivity, in m^2 s^-1
+            maxD;   // local maximum value of diffusivity, in m^2 s^-1
+  PetscInt  avDcount;// used to get local average value of diffusivity
+} DiagnosticScheme;
+
 
 typedef struct {
   DM        da, quadda, sixteenda;
@@ -20,11 +33,7 @@ typedef struct {
             m,      // the (steady) surface mass balance
             Hexact, // the exact or observed thickness (verification or data, resp.)
             Hinitial,// holds initial state (if read from file) and used when doing backward Euler time step as recovery
-            bloc,   // copy of bed elevation with ghosts
-            Dquad,  // diffusivity D at the quadrature points on an element
-            Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
-            Wmagnodemax;// maximum value of the magnitude of the pseudo-velocity W at the
-                        // quadrature points for that node
+            bloc;   // copy of bed elevation with ghosts
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
             Ly,
@@ -34,20 +43,13 @@ typedef struct {
             secpera,// number of seconds in a year
             A,      // ice softness
             Gamma,  // coefficient for SIA flux term
-            eps,    // current dimensionless regularization for n and D
-            delta,  // current dimensionless regularization for slope in SIA formulas
+            eps,    // current continuation parameter for n and D
+            delta,  // dimensionless regularization for slope in SIA formulas
             lambda, // amount of upwinding; lambda=0 is none and lambda=1 is "full"
             dtBE,   // time step for backward Euler, used in recovery
-            avD,    // local average value of diffusivity, in m^2 s^-1; used for reporting
-            maxD,   // local maximum value of diffusivity, in m^2 s^-1; used for reporting
-            n0,     // initial value of Glen exponent in continuation scheme
-            D0,     // initial (and representative?) value of diffusivity in continuation scheme
-            initmagic,// constant, in years, used to multiply SMB to get initial iterate for thickness
-            eps_sched[13];
+            initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
-            Neps,   // number of levels in continuation scheme
-            avDcount,// used to get local average value of diffusivity; used for reporting
             luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
@@ -63,12 +65,13 @@ typedef struct {
             silent, // run silent
             averr,  // only display average error at end
             maxerr, // only display maximum error at end
-            nodiag, // do not store, generate, or output diagnostic D and Wmag fields
+            nodiag, // do not use DiagnosticScheme
             history;// write ASCII history file
   char      figsprefix[512],
             readname[512];
-  struct timeval starttime,
-                 endtime;
+  struct timeval     starttime, endtime;
+  ContinuationScheme cs;
+  DiagnosticScheme   ds;
 } AppCtx;
 
 #endif // MAHAFFYCTX_H_

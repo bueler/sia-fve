@@ -7,7 +7,7 @@ Also utilities for computing stats, viewing at stdout, and viewing with X. */
 #define IO_H_
 
 #include <petscvec.h>
-#include "mahaffyctx.h"  // for AppCtx
+#include "mahaffyctx.h"  // for AppCtx & DiagnosticScheme
 
 // print according to AppCtx.silent
 void myPrintf(const AppCtx*, const char[], ...);

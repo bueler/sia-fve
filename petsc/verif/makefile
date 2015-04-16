@@ -11,11 +11,11 @@ true.verif: mahaffy domeconv.sh
 
 # for generating bedstep verification table in ../paper/
 bedstep.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstep.verif 4 6 "-snes_max_it 200 -mah_Neps 12"
+	./bedstepconv.sh bedstep.verif 4 6 "-snes_max_it 200 -cs_end 12"
 
 bedstepnoup.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstepnoup.verif 4 6 "-snes_max_it 200 -mah_Neps 12 -mah_lambda 0.0"
+	./bedstepconv.sh bedstepnoup.verif 4 6 "-snes_max_it 200 -cs_end 12 -mah_lambda 0.0"
 
 bedstepfullup.verif: mahaffy bedstepconv.sh
-	./bedstepconv.sh bedstepfullup.verif 4 6 "-snes_max_it 200 -mah_Neps 12 -mah_lambda 1.0"
+	./bedstepconv.sh bedstepfullup.verif 4 6 "-snes_max_it 200 -cs_end 12 -mah_lambda 1.0"
 
