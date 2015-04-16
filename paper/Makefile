@@ -14,14 +14,16 @@ siafve.aux: siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
 siafve.bbl: siafve.bib
 	bibtex siafve
 
-domeverif.pdf: convfigs.py ../petsc/dome.verif ../petsc/true.verif
-	./convfigs.py --showdata -dome ../petsc/dome.verif -true ../petsc/true.verif -o domeverif.pdf
+VERIF = ../petsc/verif/
 
-bedstepverif.pdf: convfigs.py ../petsc/bedstep.verif
-	./convfigs.py --showdata -bedstep ../petsc/bedstep.verif -o bedstepverif.pdf
+domeverif.pdf: convfigs.py $(VERIF)dome.verif $(VERIF)true.verif
+	./convfigs.py --showdata -dome $(VERIF)dome.verif -true $(VERIF)true.verif -o domeverif.pdf
 
-bedsteptable.tex: convfigs.py ../petsc/bedstep.verif ../petsc/bedstepnoup.verif ../petsc/bedstepfullup.verif
-	./convfigs.py --bedsteptable -tablefiles ../petsc/bedstep.verif,../petsc/bedstepnoup.verif,../petsc/bedstepfullup.verif > bedsteptable.tex
+bedstepverif.pdf: convfigs.py $(VERIF)bedstep.verif
+	./convfigs.py --showdata -bedstep $(VERIF)bedstep.verif -o bedstepverif.pdf
+
+bedsteptable.tex: convfigs.py $(VERIF)bedstep.verif $(VERIF)bedstepnoup.verif $(VERIF)bedstepfullup.verif
+	./convfigs.py --bedsteptable -tablefiles $(VERIF)bedstep.verif,$(VERIF)bedstepnoup.verif,$(VERIF)bedstepfullup.verif > bedsteptable.tex
 
 newtonconv.pdf: newtonconv.txt
 	./newtonconvshow.py -o newtonconv.pdf newtonconv.txt
@@ -29,21 +31,24 @@ newtonconv.pdf: newtonconv.txt
 newtonconv.txt:
 	../petsc/mahaffy -da_refine 2 -mah_D0 1.0 -snes_type vinewtonssls -snes_monitor -snes_rtol 1.0e-10 > newtonconv.txt
 
+TMP = ../petsc/tmp/
+
 domeprofile.pdf:
-	rm -rf ../petsc/tmpdome/
-	mkdir ../petsc/tmpdome/
-	(cd ../petsc/ && ./domeprofileinset.sh tmpdome/)
-	cp ../petsc/tmpdome/HHexact1d.pdf domeprofile.pdf
-	rm -rf ../petsc/tmpdome/
+	rm -rf $(TMP)
+	mkdir $(TMP)
+	(cd ../petsc/ && ./domeprofileinset.sh tmp/)
+	cp $(TMP)HHexact1d.pdf domeprofile.pdf
+	rm -rf $(TMP)
 
 bedstepprofiles.pdf:
-	rm -rf ../petsc/tmpbs/
-	mkdir ../petsc/tmpbs/
-	(cd ../petsc/ && ./bedstepprofiles.sh tmpbs/)
-	cp ../petsc/tmpbs/HHexact1d.pdf bedstepprofiles.pdf
-	rm -rf ../petsc/tmpbs/
+	rm -rf $(TMP)
+	mkdir $(TMP)
+	(cd ../petsc/ && ./bedstepprofiles.sh tmp/)
+	cp $(TMP)HHexact1d.pdf bedstepprofiles.pdf
+	rm -rf $(TMP)
 
 .PHONY: clean
 
 clean:
 	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz *~
+
