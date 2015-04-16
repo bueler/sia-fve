@@ -38,7 +38,7 @@ rgroup.add_argument("--rosen", action="store_true",
 
 mgroup = parser.add_argument_group("mahaffy output objective")
 mgroup.add_argument("--mah", metavar = 'STR',
-                    default="-mah_D0 40 -mah_Neps 10 -snes_type vinewtonssls -pc_type asm -sub_pc_type lu",
+                    default="-cs_D0 40 -cs_end 10 -snes_type vinewtonssls -pc_type asm -sub_pc_type lu",
                     help="arguments to mahaffy (default: '%(default)s')")
 mgroup.add_argument("--maxerr", action="store_true",
                     help="use -mah_maxerr instead of -mah_averr")

@@ -116,7 +116,7 @@ Run on the 5km grid; the `-mah_showdata` option means that the data is viewed
 with PETSc's X viewer:
 
     $ mkdir test/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -mah_D0 10.0 -snes_monitor -mah_showdata -draw_pause 2 -pc_type asm -sub_pc_type lu -mah_dump test/
+    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -cs_D0 10.0 -snes_monitor -mah_showdata -draw_pause 2 -pc_type asm -sub_pc_type lu -mah_dump test/
 
 This run only takes a few minutes.
 

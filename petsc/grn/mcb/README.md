@@ -73,7 +73,7 @@ Coarse resolution run
 Now run `mahaffy` on it; these defaults do o.k.:
 
     $ mkdir test4500m/
-    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -mah_D0 10.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -mah_dump test4500m/ -mah_notry
+    $ mpiexec -n 6 ../../mahaffy -mah_read fix4500m.dat -cs_D0 10.0 -mah_showdata -draw_pause 2 -snes_monitor -pc_type asm -sub_pc_type lu -mah_dump test4500m/ -mah_notry
 
 
 Optional actions

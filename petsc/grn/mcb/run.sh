@@ -13,6 +13,6 @@ mkdir test$2/     # immediately generates error if already exists
 
 ./remap2mcb.py searise5km.nc mcb$2.nc fix$2.nc
 
-../nc2petsc.py fix$2.nc fix$2.dat
+../../nc2petsc.py fix$2.nc fix$2.dat
 
-mpiexec -n $3 ../../mahaffy -mah_read fix$2.dat -mah_D0 10.0 -snes_monitor -pc_type asm -sub_pc_type lu -mah_dump test$2/ $4
+mpiexec -n $3 ../../mahaffy -mah_read fix$2.dat -cs_D0 10.0 -snes_monitor -pc_type asm -sub_pc_type lu -mah_dump test$2/ $4

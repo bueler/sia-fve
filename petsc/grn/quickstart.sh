@@ -58,5 +58,5 @@ fi
 
 mkdir -p $DUMP
 
-mpiexec -n $QSMPI ../mahaffy -mah_read $DATA -mah_D0 $QSD0 -snes_monitor $QSSHOW $QSSOLVE -mah_dump $DUMP $1
+mpiexec -n $QSMPI ../mahaffy -mah_read $DATA -cs_D0 $QSD0 -snes_monitor $QSSHOW $QSSOLVE -mah_dump $DUMP $1
 
