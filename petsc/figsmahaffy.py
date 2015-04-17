@@ -6,7 +6,7 @@
 import argparse
 from exactforfigs import dome_exact, bedstep_exact
 
-parser = argparse.ArgumentParser(description='Generate figures from PETSc binary files written by mahaffy.c.  Default is to generate both .pdf profile and .png map-plane figures.')
+parser = argparse.ArgumentParser(description='Generate figures from PETSc binary file written by mahaffy.c.  Default is to generate both .pdf profile and .png map-plane figures.')
 parser.add_argument("--profile", action="store_true",
                     help="generate profile figure only")
 parser.add_argument("--half", action="store_true",
@@ -21,6 +21,8 @@ parser.add_argument("--blowup", action="store_true",
                     help="plot detail inset; use only with --exactdome")
 parser.add_argument("--map", action="store_true",
                     help="generate map-plane figures only")
+parser.add_argument('-i', default='unnamed.dat', metavar='NAME', type=str,
+                    help='name of special format PETSc binary file from which to read; default=%(default)s)')
 parser.add_argument('-extra_H', default='', metavar='A,B', type=str,
                     help='comma-delimited list of files from which to ADDITIONALLY read thickness H, for combined profile')
 parser.add_argument('-extra_H_labels', default='', metavar='"0","A","B"', type=str,
@@ -63,9 +65,10 @@ except:
     print "need link to petsc/bin/petsc-pythonscripts/petsc_conf.py?"
     sys.exit(2)
 
-# read a vec from a petsc binary file
 io = pbio.PetscBinaryIO()
-def readvec(fname,shape=(0,0),failonmissing=True):
+
+# read Vecs from a petsc binary file
+def readvecs(fname,skip=0,num=7,shape=(0,0),failonmissing=True,metaname='variable',names=None):
     try:
         fh = open(fname)
     except:
@@ -74,26 +77,42 @@ def readvec(fname,shape=(0,0),failonmissing=True):
             sys.exit(3)
         else:
             return None
-    objecttype = io.readObjectType(fh)
-    if objecttype == 'Vec':
-        v = io.readVec(fh)
-        fh.close()
-        if sum(shape) > 0:
-            v = np.reshape(v,shape)
-        print "  read vec from '%s' with shape %s" % (fname, str(np.shape(v)))
-        return v
-    else:
-        print "unexpected objectype '%s' ... ending ..." % objecttype
-        sys.exit(4)
+    vecs = []
+    if names:
+        names.reverse()
+    for j in range(num):
+        try:
+            objecttype = io.readObjectType(fh)
+        except pbio.DoneWithFile:
+            if failonmissing:
+                print "no next vec in '%s' ... ending ..." % fname
+                sys.exit(2)
+            else:
+                return vecs
+        if objecttype == 'Vec':
+            v = io.readVec(fh)
+            if (j >= skip):
+                if (sum(shape) > 0):
+                    v = np.reshape(v,shape)
+                vecs.append(v)
+                if names:
+                    print "  read %s '%s' with shape %s" % (metaname,names.pop(),str(np.shape(v)))
+                else:
+                    print "  read %s with shape %s" % (metaname,str(np.shape(v)))
+        else:
+            if failonmissing:
+                print "unexpected objecttype '%s' ... ending ..." % objecttype
+                sys.exit(4)
+            else:
+                return None
+    fh.close()
+    return vecs
 
-print "reading vars x,y,b,m,Hexact,H,residual from *.dat ..."
-x = readvec('x.dat')
-y = readvec('y.dat')
-b = readvec('b.dat',shape=(len(y),len(x)))
-m = readvec('m.dat',shape=(len(y),len(x)))
-Hexact = readvec('Hexact.dat',shape=(len(y),len(x)))
-H = readvec('H.dat',shape=(len(y),len(x)))
-residual = readvec('residual.dat',shape=(len(y),len(x)))
+print "reading from file %s ..." % args.i
+d = readvecs(args.i,num=2,metaname='dimension variable',names=['x','y'])
+x,y = d[0],d[1]
+v = readvecs(args.i,num=7,skip=2,shape=(len(y),len(x)),names=['b','m','Hexact','H','residual'])
+b,m,Hexact,H,residual = v[0],v[1],v[2],v[3],v[4]
 
 figdebug = False
 def figsave(name):
@@ -181,7 +200,9 @@ if args.profile:
     extrastylelist = ['+k', 'xk']
     if extraH and not args.blowup:  # don't plot extra_H in main figure ... see blowup below
         for j in range(len(extrastylelist)):  # FIXME ignore extra_H beyond 2
-            nextH = readvec(Hlist[j],shape=(len(y),len(xoriginal)))
+            print "reading extra H from file %s ..." % Hlist[j]
+            v = readvecs(Hlist[j],num=6,skip=5,shape=(len(y),len(xoriginal)),names=[Hlabels[j+1]])
+            nextH = v[0]
             nextHn = extracthalf(nextH)
             plt.plot(x,gets(nextHn,bn),extrastylelist[j],label=Hlabels[j+1],markersize=[12.0,10.0][j])
     # finish up with labels etc.
@@ -208,9 +229,11 @@ if args.profile:
         iblowup = (x >= 700.0) & (x <= 800.0)
         xblowup = x[iblowup]
         if extraH:
-            nextx = readvec('xfiner.dat')
-            nexty = readvec('yfiner.dat')
-            nextH = readvec('Hfiner.dat',shape=(len(nexty),len(nextx)))
+            print "reading extra H for inset blowup from file %s ..." % Hlist[0]
+            d = readvecs(Hlist[0],num=2,names=['x','y'],metaname='dimension variable')
+            nextx,nexty = d[0],d[1]
+            v = readvecs(Hlist[0],num=6,skip=5,shape=(len(nexty),len(nextx)),names=['Hfiner'])
+            nextH = v[0]
             nextx /= 1000.0
             inext = (nextx >= 700.0) & (nextx <= 800.0)
             nextn = len(nexty) / 2
@@ -275,10 +298,11 @@ if args.map:
     plt.title('residual log magnitude (log10|r|); H<=0 masked-out')
     figsave('residual.png')
 
-    print "reading {D,Wmag}.dat if present, and generating map-plane figures ..."
+    print "reading D and Wmag if present ..."
 
-    D = readvec('D.dat',shape=(len(y),len(x)),failonmissing=False)
-    if D != None:
+    v = readvecs(args.i,num=8,skip=7,shape=(len(y),len(x)),names=['D'],failonmissing=False)
+    if (v != None) & (len(v) > 0):
+        D = v[0]
         plt.figure(figsize=fsize)
         Dmask = ma.array(D,mask=(H<=0.0))
         chopD = np.maximum(Dmask,1.0e-6*Dmask.max())  # show 6 orders of magnitude range only
@@ -288,8 +312,9 @@ if args.map:
         plt.title('log max diffusivity D at node  (log10(D)); H<=0 masked-out')
         figsave('D.png')
 
-    Wmag = readvec('Wmag.dat',shape=(len(y),len(x)),failonmissing=False)
-    if Wmag != None:
+    v = readvecs(args.i,num=9,skip=8,shape=(len(y),len(x)),names=['Wmag'],failonmissing=False)
+    if (v != None) & (len(v) > 0):
+        Wmag = v[0]
         Wmagmask = ma.array(Wmag,mask=(H<=0.0))
         if Wmagmask.max() == 0.0:
             print "  ... not generating Wmag figure because field is identically zero"

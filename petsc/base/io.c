@@ -121,14 +121,14 @@ PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
     Vec            x, y;
     PetscInt       j, k;
     PetscReal      *ax, *ay;
-    char           filename[1024];
+    char           filename[1024], name[1024]="unnamed.dat";
     int            strerr;
     PetscViewer    viewer;
 
-    //myPrintf(user,"writing {x,y,H,b,m,Hexact,residual%s}.dat to %s ...\n",
-    //         (user->nodiag) ? "" : ",D,Wmag",user->figsprefix);
+    myPrintf(user,"writing x,y,H,b,m,Hexact,residual%s into file %s in %s ...\n",
+             (user->nodiag) ? "" : ",D,Wmag",name,user->figsprefix);
 
-    strerr = sprintf(filename,"%s%s",user->figsprefix,"unnamed.dat");
+    strerr = sprintf(filename,"%s%s",user->figsprefix,name);
     if (strerr < 0) {
         SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
     }
