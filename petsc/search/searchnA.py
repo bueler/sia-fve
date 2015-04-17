@@ -4,6 +4,7 @@
 
 import argparse
 import subprocess
+import os.path
 import numpy as np
 from optimizers import neldermead2, gridsearch
 import matplotlib.pyplot as plt
@@ -38,7 +39,7 @@ rgroup.add_argument("--rosen", action="store_true",
 
 mgroup = parser.add_argument_group("mahaffy output objective")
 mgroup.add_argument("--mah", metavar = 'STR',
-                    default="-cs_D0 40 -cs_end 10 -snes_type vinewtonssls -pc_type asm -sub_pc_type lu",
+                    default="-cs_D0 10.0 -cs_end 10 -pc_type asm -sub_pc_type lu -snes_max_it 200 -snes_type vinewtonssls -mah_notry",
                     help="arguments to mahaffy (default: '%(default)s')")
 mgroup.add_argument("--maxerr", action="store_true",
                     help="use -mah_maxerr instead of -mah_averr")
@@ -81,7 +82,7 @@ else:
         mahmpistr = "mpiexec -n %d " % args.mpi
     else:
         mahmpistr = ""
-    cmdroot = "%s../mahaffy -mah_read %s %s %s " % (mahmpistr, args.read, maherr, mahargs)
+    cmdroot = "%s../mahaffy %s %s " % (mahmpistr, maherr, mahargs)
     cmdfmt = cmdroot + "-mah_n N -mah_A A"
     print "mahaffy command:"
     print "    f([N A]) = { " + cmdfmt + " }"
@@ -102,24 +103,38 @@ if args.rosen:
 else:
     secpera = 31556926.0
     A0      = 1.0e-16/secpera
+    convlasttime = False
     def mahaffy(x):
+        global convlasttime
+        cmd = cmdroot + "-mah_n %.4f -mah_A %.4e" % (x[0], x[1])
+        if len(args.read) > 0:
+            if args.restart:
+                if not os.path.exists('foo/'):
+                    subprocess.call("mkdir -p foo/".split())
+                cmd += " -mah_dump foo/"
+                if convlasttime:
+                    if os.path.exists('foo/unnamed.dat'):
+                        cmd += " -mah_read foo/unnamed.dat -mah_readinitial -cs_start 8"
+                    else:
+                        print "ERROR: foo/unnamed.dat should exist if --restart and convlasttime==True"
+                        sys.exit(111)
+                else:
+                    cmd += " -mah_read %s" % args.read
+            else:
+                cmd += " -mah_read %s" % args.read
+        print "COMMAND: %s" % cmd
         if args.fprint:
             print "f([%.4f %.4e]) = " % (x[0],x[1]),
-        cmd = cmdroot + "-mah_n %.4f -mah_A %.4e" % (x[0], x[1])
-        if args.restart:
-            import os.path
-            if not os.path.exists('foo/'):
-                subprocess.call("mkdir -p foo/".split())
-            cmd += " -mah_dump foo/"
-            if os.path.exists('foo/unnamed.dat'):
-                cmd += " -mah_read foo/unnamed.dat -mah_readinitial -cs_start 8"
+            sys.stdout.flush()
         mahout = subprocess.check_output(cmd.split())
         if "DIV" in mahout:
             f = np.inf
+            convlasttime = False
             if args.fprint:
                 print "inf  ... because returned %s" % mahout
         else:
             f = float(mahout)
+            convlasttime = True
             if args.fprint:
                 print "%.10f" % f
         return f
