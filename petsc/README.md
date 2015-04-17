@@ -37,14 +37,28 @@ proceeding further:
 Figures from dump
 -----------------
 
-To make figures, do:
+To make figures, first do this, which writes `unnamed.dat` into `test/`:
 
     $ mkdir test/
     $ ./mahaffy -mah_dump test/
     $ cd test/
+
+Then run the script which reads the `.dat` file and generates `.png` and
+`.pdf` figures:
+
     $ ../figsmahaffy.py
 
 See `figsmahaffy.py -h` output for additional options.
+
+
+Initialize with previous result
+-------------------------------
+
+The PETSc binary file written with option `-mah_dump` includes the
+thickness, so we can read it and restart.  Continuing the previous:
+
+    $ cd ..
+    $ ./mahaffy -mah_read test/unnamed.dat -mah_readinitial -cs_start 10
 
 
 On viewing the solution process
