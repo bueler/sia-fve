@@ -15,14 +15,13 @@ void myPrintf(const AppCtx*, const char[], ...);
 // print a report to stdout
 PetscErrorCode StdoutReport(Vec,AppCtx*);
 
-// read special format PETSc binary .dat input file
+// read a special format PETSc binary .dat input file
 PetscErrorCode ReadDimensions(AppCtx*);
 PetscErrorCode ReadAndReshape2DVec(Vec,PetscViewer,AppCtx*);
 PetscErrorCode ReadDataVecs(AppCtx*);
 
-// write PETSc binary .dat files, one per var
-PetscErrorCode ViewToBinary(PetscBool,Vec,const char[],const char[]);
-PetscErrorCode DumpToFiles(Vec,Vec,AppCtx*);
+// write a special format PETSc binary .dat output file like the one we read
+PetscErrorCode DumpToFile(Vec,Vec,AppCtx*);
 
 // utilities to compute quantities in reports and history files
 PetscErrorCode GetVolumeArea(Vec,AppCtx*,PetscReal*,PetscReal*,PetscReal*);

@@ -113,45 +113,25 @@ PetscErrorCode ReadDataVecs(AppCtx *user) {
 }
 
 
-//  write a vector into a petsc binary file with name built from prefix and name
-PetscErrorCode ViewToBinary(PetscBool fromrankzero, Vec v, const char prefix[], const char name[]) {
-    PetscErrorCode ierr;
-    PetscViewer    viewer;
-    char           filename[1024];
-    int            strerr;
-    strerr = sprintf(filename,"%s%s",prefix,name);
-    if (strerr < 0) {
-        SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
-    }
-    if (fromrankzero == PETSC_TRUE) {
-        int  rank;
-        ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
-        if (rank == 0) {
-            ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
-            ierr = VecView(v,viewer); CHKERRQ(ierr);
-            ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
-        }
-    } else {
-        ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
-        ierr = VecView(v,viewer); CHKERRQ(ierr);
-        ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
-    }
-    PetscFunctionReturn(0);
-}
-
-
-//  write various vectors to petsc binary files, one file per vec
-//  FIXME: this could be re-designed to write a combined file like the one
-//         we read; this would require modifications to figsmahaffy.py
-PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
+//  write vectors into a petsc binary file with the same format as the one we read
+// FIXME: this requires modifications to figsmahaffy.py
+PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
     Vec            x, y;
     PetscInt       j, k;
     PetscReal      *ax, *ay;
+    char           filename[1024];
+    int            strerr;
+    PetscViewer    viewer;
 
-    myPrintf(user,"writing {x,y,H,b,m,Hexact,residual%s}.dat to %s ...\n",
-             (user->nodiag) ? "" : ",D,Wmag",user->figsprefix);
+    //myPrintf(user,"writing {x,y,H,b,m,Hexact,residual%s}.dat to %s ...\n",
+    //         (user->nodiag) ? "" : ",D,Wmag",user->figsprefix);
+
+    strerr = sprintf(filename,"%s%s",user->figsprefix,"unnamed.dat");
+    if (strerr < 0) {
+        SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
+    }
 
     ierr = DMDAGetLocalInfo(user->da, &info); CHKERRQ(ierr);
     ierr = VecCreateSeq(PETSC_COMM_SELF,info.mx,&x);CHKERRQ(ierr);
@@ -166,23 +146,29 @@ PetscErrorCode DumpToFiles(Vec H, Vec r, AppCtx *user) {
         ay[k] = -user->Ly + user->dx/2.0 + k * user->dx;
     }
     ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_TRUE,x,user->figsprefix,"x.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_TRUE,y,user->figsprefix,"y.dat"); CHKERRQ(ierr);
+
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,filename,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
+    ierr = VecView(x,viewer); CHKERRQ(ierr);
+    ierr = VecView(y,viewer); CHKERRQ(ierr);
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
 
-    ierr = ViewToBinary(PETSC_FALSE,user->b,user->figsprefix,"b.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_FALSE,user->m,user->figsprefix,"m.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_FALSE,user->Hexact,user->figsprefix,"Hexact.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_FALSE,H,user->figsprefix,"H.dat"); CHKERRQ(ierr);
-    ierr = ViewToBinary(PETSC_FALSE,r,user->figsprefix,"residual.dat"); CHKERRQ(ierr);
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,filename,FILE_MODE_APPEND,&viewer); CHKERRQ(ierr);
+    ierr = VecView(user->b,viewer); CHKERRQ(ierr);
+    ierr = VecView(user->m,viewer); CHKERRQ(ierr);
+    ierr = VecView(user->Hexact,viewer); CHKERRQ(ierr);
+    ierr = VecView(H,viewer); CHKERRQ(ierr);
 
+    // keep writing more than
+    ierr = VecView(r,viewer); CHKERRQ(ierr);
     if (!user->nodiag) {
         DiagnosticScheme *ds = &(user->ds);
-        ierr = ViewToBinary(PETSC_FALSE,ds->Dnodemax,user->figsprefix,"D.dat"); CHKERRQ(ierr);
-        ierr = ViewToBinary(PETSC_FALSE,ds->Wmagnodemax,user->figsprefix,"Wmag.dat"); CHKERRQ(ierr);
+        ierr = VecView(ds->Dnodemax,viewer); CHKERRQ(ierr);
+        ierr = VecView(ds->Wmagnodemax,viewer); CHKERRQ(ierr);
     }
 
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

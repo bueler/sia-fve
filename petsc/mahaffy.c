@@ -342,7 +342,7 @@ int main(int argc,char **argv) {
   if (user.dump) {
       Vec r;
       ierr = SNESGetFunction(snes,&r,NULL,NULL); CHKERRQ(ierr);
-      ierr = DumpToFiles(H,r,&user); CHKERRQ(ierr);
+      ierr = DumpToFile(H,r,&user); CHKERRQ(ierr);
   }
 
   if ((user.averr) || (user.maxerr)) {

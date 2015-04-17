@@ -30,5 +30,5 @@ test: regress/dome.short regress/bedstep.short regress/true.short regress/noupwi
 .PHONY: distclean texclean
 
 dirclean:
-	@rm -f *~ mahaffy *.pyc
+	@rm -f *~ base/*~ grn/*~ search/*~ regress/*~ verif/*~ grn/mcb/*~ mahaffy *.pyc grn/*.pyc search/*.pyc
 
