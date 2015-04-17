@@ -80,12 +80,12 @@ Generate .png figs:
 #include <petscdmda.h>
 #include <petscsnes.h>
 
-#include "mahaffyctx.h"
-#include "continuationscheme.h"
-#include "exactsia.h"
-#include "io.h"
-#include "q1op.h"
-#include "sia.h"
+#include "base/mahaffyctx.h"
+#include "base/continuationscheme.h"
+#include "base/exactsia.h"
+#include "base/io.h"
+#include "base/q1op.h"
+#include "base/sia.h"
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtx*);
