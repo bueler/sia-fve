@@ -1,5 +1,2 @@
 * add to history file "first continuation level where recovery mode is on"; negative if no recovery
 
-* Dump in same format as -mah_read.  Then NM search can speed up by using thk_initial.
-
-* Try  -mah_read -mah_readinitial -cs_start 3  or similar.
