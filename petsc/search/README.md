@@ -36,4 +36,11 @@ To use the Nelder-Mead simplex optimization method instead of a grid search, do:
 
     $ ./searchnA.py --read grn20km.dat --fprint --mpi 6 --disp --nm
 
+To do the above but speed it up with restarting from the last state:
+
+    $ rm -rf foo/
+    $ ./searchnA.py --read grn20km.dat --fprint --mpi 6 --disp --nm --restart
+
+This achieves a speed-up by a factor of five, which is significant.
+
 

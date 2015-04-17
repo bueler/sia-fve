@@ -48,6 +48,8 @@ mgroup.add_argument("--mpi", type=int, default=1, metavar='N',
                     help="number of processes in 'mpiexec -n N' (default: %(default)d)")
 mgroup.add_argument("--read", metavar='FILE', default='',
                     help="file to read using -mah_read")
+mgroup.add_argument("--restart", action="store_true",
+                    help="use -mah_dump foo/ and -mah_read foo/unnamed.dat -mah_readinitial")
 
 args = parser.parse_args()
 
@@ -104,6 +106,13 @@ else:
         if args.fprint:
             print "f([%.4f %.4e]) = " % (x[0],x[1]),
         cmd = cmdroot + "-mah_n %.4f -mah_A %.4e" % (x[0], x[1])
+        if args.restart:
+            import os.path
+            if not os.path.exists('foo/'):
+                subprocess.call("mkdir -p foo/".split())
+            cmd += " -mah_dump foo/"
+            if os.path.exists('foo/unnamed.dat'):
+                cmd += " -mah_read foo/unnamed.dat -mah_readinitial -cs_start 8"
         mahout = subprocess.check_output(cmd.split())
         if "DIV" in mahout:
             f = np.inf
