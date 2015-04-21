@@ -9,9 +9,10 @@ M. Morlighem, E. Rignot, J. Mouginot, H. Seroussi and E. Larour,
 Nat. Geosci., 7, 418-422, 2014, doi:10.1038/ngeo2167
 
 This bed data, which is available in NetCDF from
-[NSIDC](),
-does not have bathymetry.  Also there is no surface mass balance on this same
-projection.  Scripts here deal with those issues.
+[NSIDC](https://nsidc.org/data)
+at the specific address given in `getmcb.sh`, does not have bathymetry.  Also
+there is no surface mass balance on this same projection.  Scripts here deal
+with those issues.
 
 
 Get large data file
