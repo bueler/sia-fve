@@ -10,3 +10,7 @@ DIVERGED_LINE_SEARCH
 * idea about doing searchs:  run with "-mah_dtBE 10.0" or similar; if converges
   but recovery was necessary, restart with "-mah_read foo/unnamed.dat -mah_readinitial -mah_notry -cs_start 8"
   or similar; this *does* seem to promote convergence for steady-state problem
+
+* compute time-step restriction for BE recovery using layer-conserve theory;
+  just print it
+
