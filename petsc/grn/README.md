@@ -126,12 +126,12 @@ More optional steps
 
   * _Generate figures._  Generate `.pdf` and `.png` figures:
 
-      $ cd test/
-      $ ../../figsmahaffy.py --observed
+        $ cd test/
+        $ ../../figsmahaffy.py --observed
 
   * _Higher resolution._  Try
 
-      $ QSSHOW= QSREFINE=2 ./quickstart.sh "-snes_max_it 200"
+        $ QSSHOW= QSREFINE=2 ./quickstart.sh "-snes_max_it 200"
 
   Around 1 km grid (e.g. `QSREFINE=5`) my 16Gb desktop runs out of memory.
 
