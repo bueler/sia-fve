@@ -4,6 +4,20 @@
 #include <sys/time.h>
 #include "io.h"
 
+PetscErrorCode VecTrueChop(Vec v, PetscReal tol) {
+  PetscErrorCode  ierr;
+  PetscReal       *a;
+  PetscInt        n, i;
+
+  ierr = VecGetLocalSize(v, &n); CHKERRQ(ierr);
+  ierr = VecGetArray(v, &a); CHKERRQ(ierr);
+  for (i = 0; i < n; ++i) {
+      if (a[i] < tol)  a[i] = tol;
+  }
+  ierr = VecRestoreArray(v, &a); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 void myPrintf(const AppCtx *user, const char format[], ...) {
     int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -57,7 +71,6 @@ PetscErrorCode ReadDimensions(AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-
 PetscErrorCode ReadAndReshape2DVec(Vec v, PetscViewer viewer, AppCtx *user) {
     PetscErrorCode ierr;
     Vec            ser;
@@ -86,8 +99,6 @@ PetscErrorCode ReadAndReshape2DVec(Vec v, PetscViewer viewer, AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-
-// NOTE: order in which data is read must match order in which nc2petsc.py writes
 PetscErrorCode ReadDataVecs(AppCtx *user) {
     PetscErrorCode ierr;
     PetscViewer    viewer;
@@ -112,9 +123,6 @@ PetscErrorCode ReadDataVecs(AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-
-//  write vectors into a petsc binary file with the same format as the one we read
-// FIXME: this requires modifications to figsmahaffy.py
 PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
@@ -172,23 +180,6 @@ PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-
-PetscErrorCode VecTrueChop(Vec v, PetscReal tol) {
-  PetscErrorCode  ierr;
-  PetscReal       *a;
-  PetscInt        n, i;
-
-  ierr = VecGetLocalSize(v, &n); CHKERRQ(ierr);
-  ierr = VecGetArray(v, &a); CHKERRQ(ierr);
-  for (i = 0; i < n; ++i) {
-      if (a[i] < tol)  a[i] = tol;
-  }
-  ierr = VecRestoreArray(v, &a); CHKERRQ(ierr);
-  PetscFunctionReturn(0);
-}
-
-
-// volH and volHexact have units m^3; areaH has units m^2
 PetscErrorCode GetVolumeArea(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact, PetscReal *areaH) {
   PetscErrorCode  ierr;
   const PetscReal darea = user->dx * user->dx;
@@ -214,8 +205,6 @@ PetscErrorCode GetVolumeArea(Vec H, AppCtx *user, PetscReal *volH, PetscReal *vo
   PetscFunctionReturn(0);
 }
 
-
-// enorminf = ||H - Hexact||_infty,  enorm1 = ||H-Hexact||_1;  both have units of m
 PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *enorm1) {
   PetscErrorCode  ierr;
   Vec             dH;
@@ -226,7 +215,6 @@ PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *en
   ierr = VecDestroy(&dH); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
 PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscErrorCode  ierr;
@@ -260,7 +248,6 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
 
   PetscFunctionReturn(0);
 }
-
 
 PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv, AppCtx *user) {
     PetscErrorCode  ierr;
@@ -307,7 +294,6 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     PetscFunctionReturn(0);
 }
 
-
 PetscErrorCode ShowOne(Vec v, PetscInt xdim, PetscInt ydim, const char *title) {
   PetscErrorCode ierr;
   PetscViewer    graphical;
@@ -318,7 +304,6 @@ PetscErrorCode ShowOne(Vec v, PetscInt xdim, PetscInt ydim, const char *title) {
   ierr = PetscViewerDestroy(&graphical); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
 PetscErrorCode ShowFields(AppCtx *user) {
   PetscErrorCode ierr;
