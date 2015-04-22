@@ -7,20 +7,49 @@ We use PETSc DMDA and SNESVI to solve the steady SIA free boundary problem.
 
 This code is documented by manuscript `../paper/siafve.tex`.
 
-Build the executable, and run on minimal verification case, by
+Quickstart
+----------
+
+To build the executable and run a minimal verification case do:
 
     $ make mahaffy
     $ ./mahaffy
 
-See comments at start of `mahaffy.c` for dome and bedstep verification runs.
-See also `domeconv.sh` and `bedstepconv.sh`.
-
-Some quick verification runs are used as regression tests in
+Some quick verification runs are also used as regression tests:
 
     $ make test
 
 In addition, `mahaffy.c` can read real data and model real ice sheets.  See
 the `grn/` and `grn/mcb/` subdirectories for Greenland ice sheet examples.
+
+Usage help and major run modes
+------------------------------
+
+Usage help (i.e. options) comes from the usual PETSc `-help` mechanism.  There
+are two collections of options, with prefixes `mah_` (for "mahaffy") and `cs_`
+(for "continuation scheme"), respectively:
+
+    $ ./mahaffy -help |grep mah_
+    $ ./mahaffy -help |grep cs_
+
+Note there are basically these three problem cases.  The first two are
+verification cases documented in the manuscript and in `base/exactsia.{h|c}`.
+
+  1. "Dome" exact solution (the default problem, so `-mah_dome` is optional):
+
+        $ ./mahaffy -mah_dome
+
+  2. "Bedrock step" exact solution:
+
+        $ ./mahaffy -mah_bedstep
+
+  3. Real data from a PETSc binary file.  See `grn/README.md` and
+  `grn/mcb/README.md` for two Greenland examples using different bedrock
+  topography:
+
+        $ ./mahaffy -mah_read foo.dat
+
+See also `domeconv.sh` and `bedstepconv.sh` for the verification cases.
 
 
 Link the petsc python scripts
@@ -64,13 +93,14 @@ thickness, so we can read it and restart.  Continuing the previous:
 On viewing the solution process
 -------------------------------
 
-A helpful view of the solution process comes from adding one of
+A helpful graphical view of the solution process comes from adding one of
 
     -snes_monitor_solution -snes_monitor_residual -snes_monitor_solution_update
 
 to the options.  For example, with `-snes_monitor_solution` you see that the
 solution `H` starts out too diffuse because the continuation method
-over-regularizes at the beginning.
+over-regularizes at the beginning.  These options all use X windows, and
+often `-draw_pause s`, with `s` in seconds, will be needed.
 
 However, recall we are solving the variational inequality version of equations
 `F(H)=0`, with constraint `H>=0`.  With `-snes_monitor_residual` you see that

@@ -16,14 +16,7 @@ static const char help[] =
 "  (2) bedrock-step case where analytical solution is known\n"
 "  (3) reads input data b and m from PETSc binary file; see grn/README.md.\n\n";
 
-/* Usage help:
-   ./mahaffy -help |grep mah_
-   ./mahaffy -help |grep cs_
-
-Use one of these three problem cases:
-   ./mahaffy -mah_dome         # default problem
-   ./mahaffy -mah_bedstep
-   ./mahaffy -mah_read foo.dat # see README.md for Greenland example
+/* See README.md first.  Here are additional technical notes:
 
 Solution options:
    ./mahaffy -cs_end 4         # don't go all the way on continuation scheme
@@ -32,21 +25,16 @@ Solution options:
    ./mahaffy -mah_bedstep -mah_lambda 0.0  # NO upwinding on  grad b  part of flux
    ./mahaffy -mah_bedstep -mah_lambda 1.0  # FULL upwinding
    ./mahaffy -mah_notry        # on SNES diverge, do not try again in recovery mode
-   ./mahaffy -snes_fd_color    # Jacobian by FD coloring; for M* requires 3|mx and 3|my
-   ./mahaffy -mah_true -snes_fd_color -da_grid_x 15 -da_grid_y 15
-                               # use true Mahaffy (sans quadrature & upwind improvements)
-                               # requires 5|mx and 5|my
+
+Jacobian by FD coloring:
+   ./mahaffy -snes_fd_color    # with M*; this requires 3|mx and 3|my !
+
+True Mahaffy, i.e. M* sans quadrature & upwind improvements, *only* runs with
+Jacobian by FD coloring:
+   ./mahaffy -mah_true -snes_fd_color -da_grid_x 15 -da_grid_y 15   # this requires 5|mx and 5|my !
 
 PETSc solver variations:
    ./mahaffy -snes_type vinewtonssls  # vinewtonrsls is default
-
-Feedback on solution process:
-   ./mahaffy -da_refine 1 -snes_vi_monitor  # widen screen to see SNESVI monitor output
-   mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_monitor_solution -draw_pause 0
-   mpiexec -n 4 ./mahaffy -da_refine 2 -snes_monitor -snes_vi_monitor_residual -draw_pause 0
-
-Run to show quadratic convergence at full-SIA stage (i.e. stage 13):
-   mpiexec -n 4 ./mahaffy -snes_monitor -da_refine 4 -snes_type vinewtonssls -snes_rtol 1.0e-9 -pc_type asm -sub_pc_type lu -snes_max_it 1000
 
 Fully converges for these levels:
    for LEV in 0 1 2 3 4; do  mpiexec -n 6 ./mahaffy -da_refine $LEV -snes_type vinewtonssls -snes_max_it 200 -pc_type asm -sub_pc_type lu; done
@@ -68,12 +56,6 @@ Divergence:
    ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4    # DIVERGED_LINEAR_SOLVE at 4
    # zero pivot at 13:
    mpiexec -n 6 ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000 -pc_type asm -sub_pc_type lu
-
-Generate .png figs:
-   mkdir foo/
-   ./mahaffy -mah_dump foo/
-   cd foo/
-   python ../figsmahaffy.py
 */
 
 #include <math.h>
