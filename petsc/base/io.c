@@ -280,6 +280,8 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     ierr = PetscViewerASCIIPrintf(viewer,"spacing in x-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"last successful value of eps  %.6e\n",(double)user->eps); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"last c.s. level where convergence happened  %d\n",user->cs.goodm); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"count of recovery steps (zero if no recovery)  %d\n",user->recoverycount); CHKERRQ(ierr);
     ierr = GetVolumeArea(H, user, &volH, &volHexact, &areaH); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"solution ice volume (m^3)  %.6e\n",(double)volH); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"exact ice volume (m^3)  %.6e\n",(double)volHexact); CHKERRQ(ierr);

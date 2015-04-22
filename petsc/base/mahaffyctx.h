@@ -50,6 +50,7 @@ typedef struct {
             initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
+            recoverycount,// number of steps of recovery taken; zero if recovery did not happen
             luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file

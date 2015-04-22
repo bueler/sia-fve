@@ -8,6 +8,7 @@ PetscErrorCode InitializeCS(ContinuationScheme *cs) {
   cs->max   = CSMAX;
   cs->start = 0;
   cs->end   = cs->max;
+  cs->goodm = -1;
   for (i = 0; i < cs->max - 1; i++)
       cs->sched[i] = PetscPowReal(0.1,((double)i) / 3.0);
   cs->sched[cs->max-1] = 0.0;

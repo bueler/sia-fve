@@ -125,8 +125,11 @@ int main(int argc,char **argv) {
   user.initmagic = 1000.0;  // a
   user.delta  = 1.0e-4;
 
-  user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence problem on refined grid (=125m) but this does not; earlier M* was 0.5 here
-  user.dtBE   = 1.0 * user.secpera;  // default 1 year time step for Backward Euler; used only in recovery
+  user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence difficulties on refined grid (=125m); earlier M* used 0.5
+
+  user.dorecovery    = PETSC_FALSE;
+  user.dtBE          = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
+  user.recoverycount = 0;
 
   user.mtrue      = PETSC_FALSE;
 
@@ -134,7 +137,6 @@ int main(int argc,char **argv) {
   user.bedstep    = PETSC_FALSE;
   user.swapxy     = PETSC_FALSE;
   user.divergetryagain = PETSC_TRUE;
-  user.dorecovery      = PETSC_FALSE;
   user.checkadmissible = PETSC_FALSE;
 
   user.read       = PETSC_FALSE;
@@ -292,6 +294,8 @@ int main(int argc,char **argv) {
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
   ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
+
+  // continuation loop
   for (m = user.cs.start; m<user.cs.end; m++) {
       user.eps = epsCS(m,&(user.cs));
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
@@ -302,6 +306,7 @@ int main(int argc,char **argv) {
                   "         turning on recovery mode (backward Euler step of %.2f a) and trying again ...\n",
                   user.dtBE/user.secpera);
               user.dorecovery = PETSC_TRUE;
+              user.cs.goodm = m-1;
               ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);  // only in case we need to recover
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
               ierr = SNESAttempt(&snes,Htry,PETSC_TRUE,m,&reason,&user);CHKERRQ(ierr);
@@ -312,6 +317,10 @@ int main(int argc,char **argv) {
               break;
           }
       }
+      if (user.dorecovery)
+          user.recoverycount++;
+      else
+          user.cs.goodm = m;
       ierr = VecCopy(Htry,H); CHKERRQ(ierr);
       ierr = StdoutReport(H,&user); CHKERRQ(ierr);
   }

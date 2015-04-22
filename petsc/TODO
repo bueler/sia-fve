@@ -1,6 +1,3 @@
-* add to history file "first continuation level where recovery mode is on";
-  negative if no recovery
-
 * have -mah_averr and -mah_maxerr write
 2.34567e+02 RECOVERY
   or similar if recovery was necessary for convergence, while write
