@@ -14,3 +14,4 @@ DIVERGED_LINE_SEARCH
 * compute time-step restriction for BE recovery using layer-conserve theory;
   just print it
 
+* have schedule of recovery time steps 1,10,100,1000,10000 ?
