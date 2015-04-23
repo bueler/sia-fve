@@ -3,7 +3,7 @@ petsc/grn/robust/
 
 The purpose of these scripts is to study robustness.  The cases studied have:
 
-  * varying bed roughness, because they are based on SeaRISE (see `../README.md`)
+  * varying bed roughness, because they are based on either SeaRISE (see `../README.md`)
     or mass-conserving-bed (see `../mcb/README.md`) data,
 
   * varying grid resolution, from 10 km down to 450 m,
@@ -13,7 +13,7 @@ The purpose of these scripts is to study robustness.  The cases studied have:
 
 FIXME:  Other parameters which could be studied include especially `-cs_D0 XX`.
 
-FIXME:  Could study duration `-mah_dtBE` which allows convergence.
+FIXME:  Study duration `-mah_dtBE` which allows convergence, perhaps only with rsls.
 
 Run the quicker version
 -----------------------
@@ -21,9 +21,9 @@ Run the quicker version
 First run `quickstart.sh` in `../`.  Then do:
 
     $ ./generate.sh
-    $ ./study.sh
+    $ ./study.sh       # defaults to NN=6 processes; otherwise run as  ./study.sh NN
 
-Look at `study.robust`.
+Though shortish, this still takes about 20 minutes.  Look at `study.robust`.
 
 Longer version
 --------------
