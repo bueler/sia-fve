@@ -8,8 +8,7 @@ set -x
 if [ -z ${LONG+x} ]; then
   LEVELS="0 1 2"
 else
-  # correspond to 10km, 5km, 2500m, 1667m, 1000m, 625m grids
-  LEVELS="0 1 2 3 5 8"
+  LEVELS="0 1 2 3 4 5 6"
 fi
 
 if [ -z ${1+x} ]; then
@@ -35,9 +34,9 @@ for GRN in sea mcb; do
             DUMP=${STEM}_${METHOD}/
             mkdir -p $DUMP
             mpiexec -n $NN ../../mahaffy -mah_read $DAT $STDOPTS -snes_type vinewton${METHOD} -mah_notry -mah_dump $DUMP
-            #FIXME: also capture run-time
             cat $DUMP/history.txt | grep "spacing in x" | sed 's/.* //g' >> $OUT
             cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
+            cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
             echo $GRN >> $OUT
             echo $METHOD >> $OUT
         done

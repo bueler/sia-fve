@@ -15,8 +15,8 @@ set -x
 if [ -z ${LONG+x} ]; then
   REFINELEVELS="2"
 else
-  # correspond to 2500m, 1667m, 1000m, 625m grids, where refinement needed
-  REFINELEVELS="2 3 5 8"
+  # correspond to 2500m, 1667m, 1250m, 1000m, 625m grids, where refinement needed
+  REFINELEVELS="2 3 4 5 8"
 fi
 
 # FIXME: check if ../grn exists
@@ -28,8 +28,10 @@ ncks -v topg,cmb,thk -d x1,,,2 -d y1,,,2 ../grn.nc sea0.nc
 # 5 km:
 ncks -v topg,cmb,thk ../grn.nc sea1.nc
 # 2.5 km and finer:
+COUNTER=2
 for LEV in $REFINELEVELS; do
-  ../refine.py --factor $LEV ../grn.nc sea${LEV}.nc
+  ../refine.py --factor $LEV ../grn.nc sea${COUNTER}.nc
+  let COUNTER=COUNTER+1
 done
 
 if [ -z ${LONG+x} ]; then
