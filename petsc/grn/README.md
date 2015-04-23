@@ -63,8 +63,8 @@ mass balance to be very negative; this simulates strong calving:
     $ ./inplace.py --oceanfix --ranges grn.nc
 
 
-Optional actions
-----------------
+Optional preprocessing
+----------------------
 
   * _Refinement to higher resolution._  To refine the grid from the native 5 km
   to higher resolution, by bilinear interpolation, we use `refine.py` which
