@@ -1,6 +1,6 @@
 all: siafve.pdf
 
-figures = domeverif.pdf bedstepverif.pdf domeprofile.pdf bedstepprofiles.pdf newtonconv.pdf
+figures = domeverif.pdf bedstepverif.pdf domeprofile.pdf bedstepprofiles.pdf newtonconv.pdf grnrobusteps.pdf
 tikzfigs = fig1a.tikz fig1b.tikz fig2a.tikz fig2b.tikz fig3.tikz
 
 siafve.pdf: siafve.bbl siafve.aux siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
@@ -30,6 +30,9 @@ newtonconv.pdf: newtonconv.txt
 
 newtonconv.txt:
 	../petsc/mahaffy -da_refine 2 -mah_D0 1.0 -snes_type vinewtonssls -snes_monitor -snes_rtol 1.0e-10 > newtonconv.txt
+
+grnrobusteps.pdf:
+	./robustfigs.py -o grnrobusteps.pdf study.robust
 
 TMP = ../petsc/tmp/
 
