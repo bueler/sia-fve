@@ -32,7 +32,7 @@ Then do:
 to generate files `sea?.nc` and `mcb?.nc`.  You may want to set the PISM
 location, e.g.
 
-    $ PISM=/u1/uaf/bueler/pism-github ./generate.sh
+    $ PISM=/u1/uaf/bueler/pism ./generate.sh
 
 for me on pacman.  Then do:
 

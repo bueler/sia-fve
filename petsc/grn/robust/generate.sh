@@ -44,7 +44,7 @@ else
   BLOCKLEVELS="60 30 20 10 8 6 3"
 fi
 
-# MCB
+# MCB needs tools: NCO, ../inplace.py, and PISM util script nc2cdo.py
 ncks -O -v x1,y1,thk,topg,climatic_mass_balance,mapping ../pism_Greenland_5km_v1.1.nc searise5km.nc
 ../inplace.py --fixcmbunits --ranges searise5km.nc
 ../inplace.py --oceanfix --ranges searise5km.nc
