@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# this script generates two sequence of files
+# this script generates two sequence of files with refining grids
 #   sea0.nc, sea1.nc, ...
-#   fix0.nc, fix1.nc, ...
-# for reading by ../../mahaffy
+#   mcb0.nc, mcb1.nc, ...
 
 # do ../quickstart.sh first
 
@@ -11,6 +10,10 @@
 
 set -e # exit on error
 set -x
+
+if [ -z ${LONG+x} ]; then
+  PISM=~/pism
+fi
 
 if [ -z ${LONG+x} ]; then
   REFINELEVELS="2"
@@ -45,7 +48,7 @@ fi
 ncks -O -v x1,y1,thk,topg,climatic_mass_balance,mapping ../pism_Greenland_5km_v1.1.nc searise5km.nc
 ../inplace.py --fixcmbunits --ranges searise5km.nc
 ../inplace.py --oceanfix --ranges searise5km.nc
-~/pism/util/nc2cdo.py searise5km.nc
+$PISM/util/nc2cdo.py searise5km.nc
 
 COUNTER=0
 for LEV in $BLOCKLEVELS; do

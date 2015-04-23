@@ -18,9 +18,24 @@ FIXME:  Study duration `-mah_dtBE` which allows convergence, perhaps only with r
 Run the quicker version
 -----------------------
 
-First run `quickstart.sh` in `../`.  Then do:
+First run `quickstart.sh` in the `grn/` directory and the download script in the
+`grn/mcb/` directory:
+
+    $ (cd ../ && QSSHOW= ./quickstart.sh)
+    $ (cd ../mcb/ && ./getmcb.sh)     # downloads with wget; no action if present
+    $ ln -s ../mcb/MCdataset-2014-11-19.nc
+
+Then do:
 
     $ ./generate.sh
+
+to generate files `sea?.nc` and `mcb?.nc`.  You may want to set the PISM
+location, e.g.
+
+    $ PISM=/u1/uaf/bueler/pism-github ./generate.sh
+
+for me on pacman.  Then do:
+
     $ ./study.sh       # defaults to NN=6 processes; otherwise run as  ./study.sh NN
 
 Though shortish, this still takes about 20 minutes.  Look at `study.robust`.
