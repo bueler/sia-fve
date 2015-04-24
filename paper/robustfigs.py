@@ -42,6 +42,18 @@ def readfile(filename):
 
 dx, cseps, maxD, ttime, datatype, vitype = readfile(args.inname)
 
+ssi = [i for i,x in enumerate(vitype) if x=='ssls']
+rsi = [i for i,x in enumerate(vitype) if x=='rsls']
+print 'dx values:'
+print np.array([dx[i] for i in rsi])
+print 'continuation eps ratios ssls/rsls (big means ssls worse convergence):'
+erat = np.array([cseps[i] for i in ssi]) / np.array([cseps[i] for i in rsi])
+print erat
+print 'time ratios ssls/rsls (big means ssls bad):'
+trat = np.array([ttime[i] for i in ssi]) / np.array([ttime[i] for i in rsi])
+print trat
+print 'mean = %.3f' % np.mean(trat)
+
 plt.figure(figsize=(7,5))
 plt.hold(True)
 for k in range(len(dx)):
