@@ -18,7 +18,7 @@ mv -f $OUT SAFE_$OUT
 
 # perform robustness study
 LEVELS="0 1 2 3 4 5 6"
-STDOPTS="-cs_D0 10.0 -snes_monitor -snes_max_it 200 -pc_type asm -sub_pc_type lu"
+STDOPTS="-cs_D0 10.0 -snes_monitor -snes_max_it 400 -pc_type asm -sub_pc_type lu"
 for GRN in sea mcb; do
     for LEV in $LEVELS; do
         STEM=${GRN}${LEV}
