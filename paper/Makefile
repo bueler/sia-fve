@@ -3,16 +3,14 @@ all: siafve.pdf
 figures = domeverif.pdf bedstepverif.pdf domeprofile.pdf bedstepprofiles.pdf newtonconv.pdf grnrobusteps.pdf
 tikzfigs = fig1a.tikz fig1b.tikz fig2a.tikz fig2b.tikz fig3.tikz
 
-siafve.pdf: siafve.bbl siafve.aux siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
+siafve.pdf: siafve.aux
+	bibtex siafve
+	pdflatex siafve
 	pdflatex siafve
 	pdflatex siafve
 
 siafve.aux: siafve.tex bedsteptable.tex $(figures) $(tikzfigs)
 	pdflatex siafve
-	bibtex siafve
-
-siafve.bbl: siafve.bib
-	bibtex siafve
 
 VERIF = ../petsc/verif/
 
