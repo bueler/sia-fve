@@ -21,6 +21,8 @@ parser.add_argument("--blowup", action="store_true",
                     help="plot detail inset; use only with --exactdome")
 parser.add_argument("--map", action="store_true",
                     help="generate map-plane figures only")
+parser.add_argument("--dpi", type=int, metavar='N', default=200,
+                    help="dots per inch for .png figures")
 parser.add_argument('-i', default='unnamed.dat', metavar='NAME', type=str,
                     help='name of special format PETSc binary file from which to read; default=%(default)s)')
 parser.add_argument('-extra_H', default='', metavar='A,B', type=str,
@@ -120,8 +122,9 @@ def figsave(name):
         print '  showing %s ... close window to proceed ...' % name
         plt.show()  # debug
     else:
-        plt.savefig(name,dpi=200,bbox_inches='tight')
-        print '  figure file %s generated ...' % name
+        plt.savefig(name,dpi=args.dpi,bbox_inches='tight')
+        print '  figure file %s generated at %d dpi ...' % (name,args.dpi)
+    plt.close()
 
 x = x/1000.0
 y = y/1000.0
