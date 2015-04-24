@@ -33,6 +33,8 @@ PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user);
 PetscErrorCode GetVolumeArea(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact, PetscReal *areaH);
 // enorminf = ||H - Hexact||_infty,  enorm1 = ||H-Hexact||_1;  both have units of m
 PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *enorm1);
+// avD is average and maxD is maximum diffusivity; both have units of m^2 s-1
+PetscErrorCode DiffusivityReduce(AppCtx *user, PetscReal *avD, PetscReal *maxD);
 
 // write a text history file, including command line
 PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv, AppCtx *user);

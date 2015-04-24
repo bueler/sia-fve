@@ -216,6 +216,17 @@ PetscErrorCode GetErrors(Vec H, AppCtx *user, PetscReal *enorminf, PetscReal *en
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode DiffusivityReduce(AppCtx *user, PetscReal *avD, PetscReal *maxD) {
+  PetscErrorCode   ierr;
+  DiagnosticScheme *ds = &(user->ds);
+  PetscInt         avDcount;
+  ierr = MPI_Allreduce(&ds->avD,avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  ierr = MPI_Allreduce(&ds->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  *avD /= avDcount;
+  ierr = MPI_Allreduce(&ds->maxD,maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscErrorCode  ierr;
   DMDALocalInfo   info;
@@ -227,13 +238,8 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
                 (double)volH / 1.0e9, (double)areaH / 1.0e6);
 
   if (!user->nodiag) {
-      DiagnosticScheme *ds = &(user->ds);
-      PetscInt  avDcount;
       PetscReal avD, maxD;
-      ierr = MPI_Allreduce(&ds->avD,&avD,1,MPIU_REAL,MPIU_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-      ierr = MPI_Allreduce(&ds->avDcount,&avDcount,1,MPI_INT,MPI_SUM,PETSC_COMM_WORLD); CHKERRQ(ierr);
-      avD /= avDcount;
-      ierr = MPI_Allreduce(&ds->maxD,&maxD,1,MPIU_REAL,MPIU_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+      ierr = DiffusivityReduce(user,&avD,&maxD); CHKERRQ(ierr);
       myPrintf(user,";  diagnostics:  max D = %6.4f,  av D = %6.4f m^2 s-1\n",
                     (double)maxD, (double)avD);
   } else
@@ -257,7 +263,7 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     char            cmdline[1024] = "", filename[1024] = "";
     int             j, strerr, size;
     double          computationtime;
-    PetscReal       volH, volHexact, areaH, enorminf, enorm1;
+    PetscReal       volH, volHexact, areaH, enorminf, enorm1, avD, maxD;
 
     myPrintf(user,"writing %s to %s ...\n",name,user->figsprefix);
 
@@ -286,6 +292,9 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     ierr = PetscViewerASCIIPrintf(viewer,"solution ice volume (m^3)  %.6e\n",(double)volH); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"exact ice volume (m^3)  %.6e\n",(double)volHexact); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"solution ice area (m^2)  %.6e\n",(double)areaH); CHKERRQ(ierr);
+    ierr = DiffusivityReduce(user,&avD,&maxD); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"average solution diffusivity (m^2 s-1)  %.6e\n",(double)avD); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"maximum solution diffusivity (m^2 s-1)  %.6e\n",(double)maxD); CHKERRQ(ierr);
     ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"max thickness error (m)  %.6e\n",(double)enorminf); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"av thickness error (m)  %.6e\n",(double)enorm1 / NN); CHKERRQ(ierr);

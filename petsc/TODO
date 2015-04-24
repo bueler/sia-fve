@@ -10,3 +10,5 @@
 * for grn/robust/ runs, compute execution time ratio SSLS/RSLS for each pair of
   runs
 
+* to compare sea and mcb runs, explain/show maps of D or just show maxD versus
+  dx

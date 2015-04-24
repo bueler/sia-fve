@@ -32,6 +32,7 @@ for GRN in sea mcb; do
                 mpiexec -n $NN ../../mahaffy -mah_read $DAT $STDOPTS -snes_type vinewton${METHOD} -mah_notry -mah_dump $DUMP
                 cat $DUMP/history.txt | grep "spacing in x" | sed 's/.* //g' >> $OUT
                 cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
+                cat $DUMP/history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
                 cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
                 echo $GRN >> $OUT
                 echo $METHOD >> $OUT
