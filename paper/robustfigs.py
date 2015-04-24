@@ -22,16 +22,17 @@ def readfile(filename):
         sys.exit(1)
     x = vfile.readlines()
     vfile.close()
-    if np.mod(len(x),5) != 0:
-        print 'ERROR: file does not contain 5X lines'
+    if np.mod(len(x),6) != 0:
+        print 'ERROR: file does not contain 6X lines'
         sys.exit(2)
     res = []
-    for k in range(len(x)/5):
-        res.append((float(x[5*k].rstrip()), \
-                    float(x[5*k+1].rstrip()), \
-                    float(x[5*k+2].rstrip()), \
-                    x[5*k+3].rstrip(), \
-                    x[5*k+4].rstrip()))
+    for k in range(len(x)/6):
+        res.append((float(x[6*k].rstrip()), \   # dx
+                    float(x[6*k+1].rstrip()), \ # eps
+                    float(x[6*k+2].rstrip()), \ # maxD
+                    float(x[6*k+3].rstrip()), \ # time
+                    x[6*k+4].rstrip(), \        # datatype: sea,mcb
+                    x[6*k+5].rstrip()))         # vitype: rsls,ssls
     return res
 
 res = readfile(args.inname)
@@ -68,8 +69,8 @@ for k in range(len(res)):
                        markerfacecolor='w',alpha=0.7,markeredgewidth=2.0)
     if dx[k] > 7000.0:
         line.set_label(datatype[k]+' '+vitype[k])
-# show \eps_0 ... \eps_11
 dxmin, dxmax = 300.0, 12000.0
+# lines at \eps_0 ... \eps_11:
 klist = np.arange(12)
 epslist = 10.0**(-klist/3.0)
 for k in klist:
@@ -79,10 +80,8 @@ plt.hold(False)
 plt.axis([dxmin, dxmax, 0.0001/1.2, 2.0*1.0])
 plt.xlabel(r'$\Delta x$', fontsize=16.0, labelpad=1)
 plt.xticks([500, 1000, 2500, 5000, 10000], ('500m', '1km', '2.5km', '5km', '10km'), fontsize=12.0)
-#plt.ylabel(r'$\epsilon$',fontsize=16.0)
 klist = np.arange(5)
 plt.yticks(10.0**(-klist), ('1.0','0.1','0.01','0.001','0.0001'), fontsize=12.0)
-#plt.grid(True)
 ax = plt.axes()
 ax.xaxis.grid(True)
 ax.yaxis.grid(False)
