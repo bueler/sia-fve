@@ -25,33 +25,26 @@ def readfile(filename):
     if np.mod(len(x),6) != 0:
         print 'ERROR: file does not contain 6X lines'
         sys.exit(2)
-    res = []
+    dx = []
+    cseps = []
+    maxD = []
+    ttime = []
+    datatype = []
+    vitype = []
     for k in range(len(x)/6):
-        res.append((float(x[6*k].rstrip()), \   # dx
-                    float(x[6*k+1].rstrip()), \ # eps
-                    float(x[6*k+2].rstrip()), \ # maxD
-                    float(x[6*k+3].rstrip()), \ # time
-                    x[6*k+4].rstrip(), \        # datatype: sea,mcb
-                    x[6*k+5].rstrip()))         # vitype: rsls,ssls
-    return res
+        dx.append(      float(x[6*k].rstrip()  ))
+        cseps.append(   float(x[6*k+1].rstrip()))
+        maxD.append(    float(x[6*k+2].rstrip()))
+        ttime.append(   float(x[6*k+3].rstrip()))
+        datatype.append(x[6*k+4].rstrip())  # sea or mcb
+        vitype.append(  x[6*k+5].rstrip())  # rsls or ssls
+    return dx, cseps, maxD, ttime, datatype, vitype
 
-res = readfile(args.inname)
-
-#print res
+dx, cseps, maxD, ttime, datatype, vitype = readfile(args.inname)
 
 plt.figure(figsize=(7,5))
 plt.hold(True)
-dx = []
-eps = []
-time = []
-datatype = []
-vitype = []
-for k in range(len(res)):
-    dx.append(res[k][0])
-    eps.append(res[k][1])
-    time.append(res[k][2])
-    datatype.append(res[k][3])
-    vitype.append(res[k][4])
+for k in range(len(dx)):
     marksize = 10.0
     if vitype[k] == 'rsls':
         if datatype[k] == 'sea':
@@ -65,17 +58,25 @@ for k in range(len(res)):
         else:
             mark = '+k'
             marksize = 12.0
-    line, = plt.loglog(dx[k],eps[k],mark,markersize=marksize,
+    line, = plt.loglog(dx[k],cseps[k],mark,markersize=marksize,
                        markerfacecolor='w',alpha=0.7,markeredgewidth=2.0)
     if dx[k] > 7000.0:
-        line.set_label(datatype[k]+' '+vitype[k])
-dxmin, dxmax = 300.0, 12000.0
+        if datatype[k] == 'sea':
+            DT = 'BM1'
+        else:
+            DT = 'MCB'
+        if vitype[k] == 'rsls':
+            VI = 'rs'
+        else:
+            VI = 'ss'
+        line.set_label(DT + ' ' + VI)
+dxmin, dxmax = 350.0, 12000.0
 # lines at \eps_0 ... \eps_11:
 klist = np.arange(12)
 epslist = 10.0**(-klist/3.0)
 for k in klist:
-    plt.loglog([390.0,dxmax],[epslist[k],epslist[k]],'k--',lw=0.7)
-    plt.text(320.0,0.9*epslist[k],r'$\epsilon_{%d}$' % k, fontsize=16.0)
+    plt.loglog([480.0,dxmax],[epslist[k],epslist[k]],'k--',lw=0.7)
+    plt.text(390.0,0.9*epslist[k],r'$\epsilon_{%d}$' % k, fontsize=16.0)
 plt.hold(False)
 plt.axis([dxmin, dxmax, 0.0001/1.2, 2.0*1.0])
 plt.xlabel(r'$\Delta x$', fontsize=16.0, labelpad=1)

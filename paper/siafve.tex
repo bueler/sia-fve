@@ -494,15 +494,15 @@ To compare to results in \citep{JaroschSchoofAnslow2013}, we applied the \Mstar 
 
 However, like \cite{JaroschSchoofAnslow2013} we can examine relative volume error, a weak quality measure which is not a norm, in addition to the visual evidence.  Table \ref{tab:bedstepvol} shows the value
 \begin{equation}
-100\, \frac{V_{\text{numerical}} - V_{\text{exact}}}{V_{\text{exact}}}.
+100\, \frac{V_{\text{numerical}} - V_{\text{exact}}}{V_{\text{exact}}}. \label{eq:volrel}
 \end{equation}
 The second, third, and fourth columns are from the same three versions of the \Mstar method shown in Figure \ref{fig:bedstepprofiles}.  Again we see why $\lambda=1/4$ is preferred to the upwinding alternatives.  The last two columns show the results reported by \cite{JaroschSchoofAnslow2013} for their best ``Superbee''-limited MUSCL scheme and for their implementation ``M2'' of the classical Mahaffy scheme.
 
 \begin{table}[ht]
-  \caption{Relative volume differences, as percentage, for results on the \cite{JaroschSchoofAnslow2013} bedrock-step exact solution.  ``\Mstar'' columns show three upwinding variations (see text).  ``NC'' indicates a Newton method convergence failure.  ``Superbee'' and ``M2'' are results from \cite{JaroschSchoofAnslow2013} (see text).}
+  \caption{Relative volume differences \eqref{eq:volrel} for results on the \cite{JaroschSchoofAnslow2013} bedrock-step exact solution.  ``\Mstar'' columns show three upwinding variations (see text).  ``NC'' indicates a Newton method convergence failure.  ``Superbee'' and ``M2'' are results from \cite{JaroschSchoofAnslow2013} (see text).}
   \vskip4mm \centering
   \begin{tabular}{lccccc}
-    $\Delta x$ & \Mstar & \Mstarnoup & \Mstarfullup & Superbee & M2 \\  \hline
+    $\Delta x$ (m) & \Mstar & \Mstarnoup & \Mstarfullup & Superbee & M2 \\  \hline
 \input{bedsteptable.tex}
   \end{tabular}
   \label{tab:bedstepvol}
@@ -512,15 +512,22 @@ These good results from a little bit of first-order upwinding in our implicit \M
 
 %FIXME: idea. upwinding in steady-state case is ``adding off-diagonal temr to nonsymmetric matrix so as to help invertibility''
 
-\subsection{Greenland}
+\subsection{Greenland: bed topography robustness}
 
-FIXME: add whole Greenland model; compute \Mstar SIA solution with present-day climate in one step on fairly high res (1km); like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
+FIXME: goal is to understand robustness of whole method, but especially the Newton convergence, w.r.t. real bedrock topography.  used two data sets, namely BEDMAP1 on 5km data grid \citep{Bamberetal2001} (``BM1'') and mass-conserving on 150 m data grid \citep{Morlighemetal2014} (``MCB'').  surface mass balance from \citep{Ettemaetal2009}, also on 5 km data grid as supplied by SeaRISE \citep{Bindschadleretal2013}, with reprojection and bilinear interpolation as needed onto MCB grid.  finer grids for BM1 runs (2500--625 m) used bilinear interpolation; coarser runs used the data as is (5000 m) or subsampling (10000 m).  can't go to 150 m currently, so all MCB runs (9000--600 m) used bed topography averages from the 150 m points
+
+FIXME: first compute \Mstar SIA solution on all grids without ``recovery''; non-convergence always seen; Figure \ref{fig:grnrobusteps}
 
 \begin{figure}[ht]
 \onecol{grnrobusteps.pdf}
 \caption{Lowest value of $\eps_i$ in the continuation scheme where the Newton method converges on the steady-state problem.}
 \label{fig:grnrobusteps}
 \end{figure}
+
+
+FIXME: like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
+
+
 
 \section{Discussion and Conclusion} \label{sec:conclusion}
 
