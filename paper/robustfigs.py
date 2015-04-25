@@ -12,6 +12,8 @@ parser.add_argument('-o', metavar='FILENAME',
                     help='image filename (e.g. .png or .pdf)')
 parser.add_argument('inname', metavar='FILE', type=str,
                     help='name of ASCII input file')
+parser.add_argument('--ratios', action="store_true",
+                    help='generate cseps and ttime ratios between rsls and ssls; requires equal numbers')
 args = parser.parse_args()
 
 def readfile(filename):
@@ -44,34 +46,40 @@ dx, cseps, maxD, ttime, datatype, vitype = readfile(args.inname)
 
 ssi = [i for i,x in enumerate(vitype) if x=='ssls']
 rsi = [i for i,x in enumerate(vitype) if x=='rsls']
-print 'dx values:'
-print np.array([dx[i] for i in rsi])
-print 'continuation eps ratios ssls/rsls (big means ssls worse convergence):'
-erat = np.array([cseps[i] for i in ssi]) / np.array([cseps[i] for i in rsi])
-print erat
-print 'time ratios ssls/rsls (big means ssls bad):'
-trat = np.array([ttime[i] for i in ssi]) / np.array([ttime[i] for i in rsi])
-print trat
-print 'mean = %.3f' % np.mean(trat)
+if args.ratios:
+    if len(ssi) != len(rsi):
+        print 'generating ratios requires equal numbers of rsls and ssls runs'
+        sys.exit(99)
+    print 'dx values:'
+    print np.array([dx[i] for i in rsi])
+    print 'continuation eps ratios ssls/rsls (big means ssls worse convergence):'
+    erat = np.array([cseps[i] for i in ssi]) / np.array([cseps[i] for i in rsi])
+    print erat
+    print 'time ratios ssls/rsls (big means ssls bad):'
+    trat = np.array([ttime[i] for i in ssi]) / np.array([ttime[i] for i in rsi])
+    print trat
+    print 'mean = %.3f' % np.mean(trat)
+    sys.exit(0)
 
 plt.figure(figsize=(7,5))
 plt.hold(True)
-for k in range(len(dx)):
-    marksize = 10.0
+for k in rsi+ssi:
     if vitype[k] == 'rsls':
         if datatype[k] == 'sea':
             mark = 'ok' # circle
-            marksize = 11.0
+            marksize = 10.0
         else:
-            mark = 'xk'
+            mark = 'sk'
+            marksize = 9.0
     else:
         if datatype[k] == 'sea':
-            mark = 'sk' # square
+            mark = 'xk' # square
+            marksize = 11.0
         else:
             mark = '+k'
-            marksize = 12.0
+            marksize = 13.0
     line, = plt.loglog(dx[k],cseps[k],mark,markersize=marksize,
-                       markerfacecolor='w',alpha=0.7,markeredgewidth=2.0)
+                       markerfacecolor='w',markeredgewidth=1.5)
     if dx[k] > 7000.0:
         if datatype[k] == 'sea':
             DT = 'BM1'
