@@ -5,6 +5,7 @@
 
 import sys
 import numpy as np
+import numpy.ma as ma
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
 
@@ -40,9 +41,14 @@ def gets(H,b):
 s = gets(H,b)
 print 'surface computed ...'
 
+#alternative: see shading.py
+#from shading import set_shade, hillshade
+#rgb = set_shade(np.flipud(s),cmap=plt.cm.gist_earth)
+#rgb = set_shade(np.flipud(s),cmap=plt.cm.gray,azdeg=300.0,altdeg=30.0)
+
 # create light source object.
 #ls = LightSource(azdeg=0,altdeg=65)
-ls = LightSource(azdeg=0,altdeg=50)
+ls = LightSource(azdeg=300,altdeg=50)
 
 # shade data, creating an rgb array.
 rgb = ls.shade(np.flipud(s),plt.cm.gray)
@@ -50,7 +56,7 @@ rgb = ls.shade(np.flipud(s),plt.cm.gray)
 print 'light source created ...'
 
 plt.figure(figsize=(5,12))
-plt.imshow(rgb)
+plt.imshow(rgb, interpolation='nearest')
 print 'figure generated ...'
 
 #plt.title('imshow with shading')
