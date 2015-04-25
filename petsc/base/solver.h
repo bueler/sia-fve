@@ -5,7 +5,6 @@
 
 #include <petscsnes.h>
 
-
 // indexing of the 8 quadrature points along the boundary of the control volume in M*
 // point s=0,...,7 is in element (j,k) = (j+je[s],k+ke[s])
 static const PetscInt  je[8] = {0,  0, -1, -1, -1, -1,  0,  0},
@@ -35,8 +34,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
 
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user);
 
-PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
+PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
                            SNESConvergedReason *reason, AppCtx *user);
-
 
 #endif // SOLVER_H_

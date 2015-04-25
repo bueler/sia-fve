@@ -66,9 +66,7 @@ Divergence:
 #include "base/continuationscheme.h"
 #include "base/exactsia.h"
 #include "base/io.h"
-#include "base/q1op.h"
-#include "base/sia.h"
-#include "solver.h"
+#include "base/solver.h"
 
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode ProcessOptions(AppCtx*);
@@ -98,8 +96,10 @@ int main(int argc,char **argv) {
 
   user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence difficulties on refined grid (=125m); earlier M* used 0.5
 
-  user.dorecovery    = PETSC_FALSE;
-  user.dtBE          = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
+  user.doBEsteps  = PETSC_FALSE;
+  user.numBEsteps = 1;                   // recovery mode does one step
+  user.dtBE       = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
+
   user.recoverycount = 0;
 
   user.mtrue      = PETSC_FALSE;
@@ -270,17 +270,17 @@ int main(int argc,char **argv) {
   for (m = user.cs.start; m<user.cs.end; m++) {
       user.eps = epsCS(m,&(user.cs));
       ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-      ierr = SNESAttempt(&snes,Htry,PETSC_FALSE,m,&reason,&user);CHKERRQ(ierr);
+      ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
       if (reason < 0) {
-          if ((user.divergetryagain) && (!user.dorecovery)) {
+          if ((user.divergetryagain) && (!user.doBEsteps)) {
               myPrintf(&user,
-                  "         turning on recovery mode (backward Euler step of %.2f a) and trying again ...\n",
+                  "         turning on recovery mode (backward Euler time step of %.2f a) and trying again ...\n",
                   user.dtBE/user.secpera);
-              user.dorecovery = PETSC_TRUE;
+              user.doBEsteps = PETSC_TRUE;
               user.cs.goodm = m-1;
               ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);  // only in case we need to recover
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-              ierr = SNESAttempt(&snes,Htry,PETSC_TRUE,m,&reason,&user);CHKERRQ(ierr);
+              ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
           }
           if (reason < 0) {
               if (m>0) // record last successful eps
@@ -288,7 +288,7 @@ int main(int argc,char **argv) {
               break;
           }
       }
-      if (user.dorecovery)
+      if ((user.divergetryagain) && (user.doBEsteps))
           user.recoverycount++;
       else
           user.cs.goodm = m;

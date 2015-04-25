@@ -11,11 +11,10 @@
 
 #include "continuationscheme.h"
 
-// holds value of gradient or other vector at point
+// holds value of gradient at point
 typedef struct {
     PetscReal x,y;
 } Grad;
-
 
 typedef struct {
   Vec       Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
@@ -26,13 +25,12 @@ typedef struct {
   PetscInt  avDcount;// used to get local average value of diffusivity
 } DiagnosticScheme;
 
-
 typedef struct {
   DM        da, quadda, sixteenda;
   Vec       b,      // the bed elevation
             m,      // the (steady) surface mass balance
             Hexact, // the exact or observed thickness (verification or data, resp.)
-            Hinitial,// holds initial state (if read from file) and used when doing backward Euler time step as recovery
+            Hinitial,// holds initial state (if read from file) and used when doing time step
             bloc;   // copy of bed elevation with ghosts
   PetscReal dx,     // fixed grid spacing; dx = dy
             Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
@@ -46,10 +44,11 @@ typedef struct {
             eps,    // current continuation parameter for n and D
             delta,  // dimensionless regularization for slope in SIA formulas
             lambda, // amount of upwinding; lambda=0 is none and lambda=1 is "full"
-            dtBE,   // time step for backward Euler, used in recovery
+            dtBE,   // time step for backward Euler
             initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
   PetscInt  Nx,     // grid has Nx x Ny nodes
             Ny,
+            numBEsteps,
             recoverycount,// number of steps of recovery taken; zero if recovery did not happen
             luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
   PetscBool mtrue,  // use true Mahaffy method instead of M*
@@ -61,7 +60,7 @@ typedef struct {
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
-            dorecovery,// on SNES diverge, set this to TRUE for recovery attempt (by whatever mechanism)
+            doBEsteps,// do a time-step of duration dtBE
             dump,   // dump fields into individual PETSc binary files
             silent, // run silent
             averr,  // only display average error at end

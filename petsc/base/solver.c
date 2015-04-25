@@ -1,13 +1,11 @@
 /* (C) 2015 Ed Bueler */
 
-
 #include <petscsnes.h>
 
-#include "base/q1op.h"
-#include "base/sia.h"
-#include "base/io.h"  // for myPrintf()
+#include "q1op.h"
+#include "sia.h"
+#include "io.h"  // for myPrintf()
 #include "solver.h"
-
 
 /* Loop over locally-owned elements, including ghosts, checking
    nonnegativity of thickness.  Stops with error if not.  */
@@ -156,7 +154,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
               FF[k][j] += coeff[s] * aqquad[k+ke[s]][j+je[s]][ce[s]];
-          if (user->dorecovery)
+          if (user->doBEsteps)
               FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
           if (!user->nodiag) {
               // update diagnostics associated to diffusivity
@@ -277,7 +275,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
-          if (user->dorecovery) {
+          if (user->doBEsteps) {
               // add another stencil for diagonal
               col[32].j = j;
               col[32].k = k;
@@ -319,7 +317,7 @@ PetscErrorCode PetscIgnoreZEROPIVOTErrorHandler(MPI_Comm comm,int line,const cha
 }
 
 // try a SNES solve and report on the result; H is modified
-PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
+PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
                            SNESConvergedReason *reason, AppCtx *user) {
   PetscErrorCode ierr;
   KSP            ksp;
@@ -333,7 +331,8 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
   PetscPushErrorHandler(PetscIgnoreZEROPIVOTErrorHandler,user);
   SNESSolve(*s, NULL, H);
   PetscPopErrorHandler();
-  ierr = MPI_Allreduce(&user->luzeropvterr,&luzeropvterr,1,MPI_INT,MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+  ierr = MPI_Allreduce(&user->luzeropvterr,&luzeropvterr,1,MPI_INT,MPI_MAX,
+                       PETSC_COMM_WORLD); CHKERRQ(ierr);
   if (luzeropvterr > 0) {
       *reason = lureason;
   } else {
@@ -343,12 +342,11 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscBool again, PetscInt m,
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
   strcpy(reasonstr,(*reason==lureason) ? lureasons : SNESConvergedReasons[*reason]);
-  if (again)
-      myPrintf(user,"     %s again w. ",reasonstr);
-  else
-      myPrintf(user,"%3d. %s   with   ",m,reasonstr);
-  myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters%s\n",
-           user->eps,kspits,its,(user->dorecovery) ? " (recovery mode)" : "");
+  myPrintf(user,"%3d. %s   with   ",m,reasonstr);
+  myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+           user->eps,kspits,its);
+  if (user->doBEsteps)
+      myPrintf(user,"       BEuler time step of %.3f a\n",user->dtBE / user->secpera);
   PetscFunctionReturn(0);
 }
 
