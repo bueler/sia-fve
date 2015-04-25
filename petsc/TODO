@@ -7,8 +7,5 @@
 
 * have schedule of recovery time steps 1,10,100,1000,10000 ?
 
-* for grn/robust/ runs, compute execution time ratio SSLS/RSLS for each pair of
-  runs
-
 * to compare sea and mcb runs, explain/show maps of D or just show maxD versus
   dx
