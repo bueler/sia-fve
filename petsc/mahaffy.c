@@ -37,25 +37,19 @@ PETSc solver variations:
    ./mahaffy -snes_type vinewtonssls  # vinewtonrsls is default
 
 Fully converges for these levels:
-   for LEV in 0 1 2 3 4; do  mpiexec -n 6 ./mahaffy -da_refine $LEV -snes_type vinewtonssls -snes_max_it 200 -pc_type asm -sub_pc_type lu; done
-
-Successes:
-   mpiexec -n 6 ./mahaffy -pc_type mg -da_refine 5 -snes_max_it 200 -snes_monitor  # DIVERGED_LINE_SEARCH at 12
-   mpiexec -n 6 ./mahaffy -da_refine 6 -pc_type asm -sub_pc_type lu -snes_max_it 200
+   for LEV in 0 1 2 3; do  mpiexec -n 6 ./mahaffy -da_refine $LEV -snes_type vinewtonssls -snes_max_it 200 -pc_type asm -sub_pc_type lu -mah_notry; done
 
 Divergence:
-   ./mahaffy -da_refine 0                   # no divergence
-   ./mahaffy -da_refine 1                   # no divergence
-   ./mahaffy -da_refine 2                   # divergence at 12
-   ./mahaffy -da_refine 3                   # divergence at 11
-   ./mahaffy -da_refine 4 -snes_max_it 200  # divergence at 11
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 0    # DIVERGED_LINE_SEARCH at 12
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 1 -snes_max_it 1000  # DIVERGED_FUNCTION_COUNT at 13
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 2    # DIVERGED_LINE_SEARCH at 13
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 3    # DIVERGED_LINEAR_SOLVE at 4
-   ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4    # DIVERGED_LINEAR_SOLVE at 4
-   # zero pivot at 13:
-   mpiexec -n 6 ./mahaffy -mah_bedstep -mah_D0 0.01 -da_refine 4 -snes_max_it 1000 -pc_type asm -sub_pc_type lu
+   ./mahaffy -da_refine 2                   # DIVERGED_LINE_SEARCH at 10
+   ./mahaffy -da_refine 2 -snes_type vinewtonssls # DIVERGED       at 12
+   ./mahaffy -mah_bedstep -mah_notry        # DIVERGED_LU_ZERO_PIVOT at 12
+
+Do "manual" time steps after divergence, to approach steady state:
+   mkdir teststeps/
+   mpiexec -n 6 ./mahaffy -da_refine 2 -mah_dump teststeps/ -mah_notry
+   # above diverges at 10 with        errors:  max =  489.93 m,  av =   24.21 m,  voldiff% =  2.10
+   mpiexec -n 6 ./mahaffy -mah_read teststeps/unnamed.dat -mah_readinitial -cs_start 8 -mah_steps 100 -mah_dtBE 100.0 -mah_notry
+   # above completes 10000 a run with errors:  max =  412.68 m,  av =    6.52 m,  voldiff% =  0.34
 */
 
 #include <math.h>
@@ -80,7 +74,7 @@ int main(int argc,char **argv) {
   AppCtx              user;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
-  PetscInt            m;
+  PetscInt            l, m;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -264,37 +258,50 @@ int main(int argc,char **argv) {
 
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
-  ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
 
-  // continuation loop
-  for (m = user.cs.start; m<user.cs.end; m++) {
-      user.eps = epsCS(m,&(user.cs));
-      ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-      ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
-      if (reason < 0) {
-          if ((user.divergetryagain) && (!user.doBEsteps)) {
-              myPrintf(&user,
-                  "         turning on recovery mode (backward Euler time step of %.2f a) and trying again ...\n",
-                  user.dtBE/user.secpera);
-              user.doBEsteps = PETSC_TRUE;
-              user.cs.goodm = m-1;
-              ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);  // only in case we need to recover
-              ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-              ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
-          }
+  // time-stepping loop
+  // note "Hinitial" is really "H^{l-1}", i.e. the value of the solution at the
+  // last time step if time stepping
+  for (l = 0; l < user.numBEsteps; l++) {
+      ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
+      // continuation loop
+      for (m = user.cs.start; m<user.cs.end; m++) {
+          user.eps = epsCS(m,&(user.cs));
+          ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+          ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
           if (reason < 0) {
-              if (m>0) // record last successful eps
-                  user.eps = epsCS(m-1,&(user.cs));
-              break;
+              if (user.divergetryagain) {
+                  myPrintf(&user,
+                      "         turning on recovery mode (backward Euler time step of %.2f a) and trying again ...\n",
+                      user.dtBE/user.secpera);
+                  user.doBEsteps = PETSC_TRUE;
+                  user.cs.goodm = m-1;
+                  ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);      
+                  ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+                  ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
+              }
+              if (reason < 0) {
+                  if (m>0) // record last successful eps
+                      user.eps = epsCS(m-1,&(user.cs));
+                  break;
+              }
           }
-      }
-      if ((user.divergetryagain) && (user.doBEsteps))
-          user.recoverycount++;
-      else
-          user.cs.goodm = m;
-      ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-      ierr = StdoutReport(H,&user); CHKERRQ(ierr);
-  }
+          if ((user.divergetryagain) && (user.doBEsteps))
+              user.recoverycount++;
+          else
+              user.cs.goodm = m;
+          ierr = VecCopy(Htry,H); CHKERRQ(ierr);
+          ierr = StdoutReport(H,&user); CHKERRQ(ierr);
+      }  // for m
+      if (reason >= 0) {
+          if (user.numBEsteps > 1)
+              myPrintf(&user,"t = %.2f a: completed time step %d of %d\n",
+                       (l+1)*user.dtBE/user.secpera,l+1,user.numBEsteps);
+          ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
+      } else
+          break;
+  } // for l
+
   gettimeofday(&user.endtime, NULL);
 
   if (user.history) {
@@ -428,6 +435,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsBool(
       "-silent", "run silent (print nothing)",
       NULL,user->silent,&user->silent,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsInt(
+      "-steps", "number of Backward Euler time-steps to take; default=1 is for steady-state",
+      NULL,user->numBEsteps,&user->numBEsteps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
@@ -436,12 +446,10 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if (dtBEset) {
-      if (!user->divergetryagain) {
-        SETERRQ(PETSC_COMM_WORLD,1,"ERROR setting -mah_dtBE has no effect if -mah_notry is also set\n");
-      } else
-        user->dtBE *= user->secpera;
-  }
+  if (dtBEset)
+      user->dtBE *= user->secpera;
+  if (user->numBEsteps > 1)
+      user->doBEsteps = PETSC_TRUE;
   if ((user->averr) || (user->maxerr))
       user->silent = PETSC_TRUE;
   if (user->read) {
