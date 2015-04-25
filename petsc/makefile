@@ -10,9 +10,9 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 base := exactsia.o io.o q1op.o sia.o continuationscheme.o
 base := $(addprefix base/, $(base))
 
-mahaffy: mahaffy.o $(base) chkopts
-	-${CLINKER} -o mahaffy mahaffy.o $(base) ${PETSC_SNES_LIB}
-	${RM} mahaffy.o $(base)
+mahaffy: mahaffy.o solver.o $(base) chkopts
+	-${CLINKER} -o mahaffy mahaffy.o solver.o $(base) ${PETSC_SNES_LIB}
+	${RM} mahaffy.o solver.o $(base)
 
 # these targets are for regression testing
 regress/dome.short: mahaffy verif/domeconv.sh
