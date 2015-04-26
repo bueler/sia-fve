@@ -44,8 +44,11 @@ def readfile(filename):
 
 dx, cseps, maxD, ttime, datatype, vitype = readfile(args.inname)
 
-ssi = [i for i,x in enumerate(vitype) if x=='ssls']
-rsi = [i for i,x in enumerate(vitype) if x=='rsls']
+# indices where grid is not coarsest:
+nci = [i for i,h in enumerate(dx) if h < 7000.0]
+# indices where rs or ss resp.
+rsi = [i for i,x in enumerate(vitype) if ((x=='rsls') & (i in nci))]
+ssi = [i for i,x in enumerate(vitype) if ((x=='ssls') & (i in nci))]
 if args.ratios:
     if len(ssi) != len(rsi):
         print 'generating ratios requires equal numbers of rsls and ssls runs'
@@ -55,6 +58,7 @@ if args.ratios:
     print 'continuation eps ratios ssls/rsls (big means ssls worse convergence):'
     erat = np.array([cseps[i] for i in ssi]) / np.array([cseps[i] for i in rsi])
     print erat
+    print 'mean = %.3f' % np.mean(erat)
     print 'time ratios ssls/rsls (big means ssls bad):'
     trat = np.array([ttime[i] for i in ssi]) / np.array([ttime[i] for i in rsi])
     print trat
@@ -80,7 +84,7 @@ for k in rsi+ssi:
             marksize = 13.0
     line, = plt.loglog(dx[k],cseps[k],mark,markersize=marksize,
                        markerfacecolor='w',markeredgewidth=1.5)
-    if dx[k] > 7000.0:
+    if dx[k] > 4000.0:
         if datatype[k] == 'sea':
             DT = 'BM1'
         else:
@@ -90,17 +94,17 @@ for k in rsi+ssi:
         else:
             VI = 'ss'
         line.set_label(DT + ' ' + VI)
-dxmin, dxmax = 350.0, 12000.0
+dxmin, dxmax = 380.0, 6250.0
 # lines at \eps_0 ... \eps_11:
 klist = np.arange(12)
 epslist = 10.0**(-klist/3.0)
 for k in klist:
-    plt.loglog([480.0,dxmax],[epslist[k],epslist[k]],'k--',lw=0.7)
-    plt.text(390.0,0.9*epslist[k],r'$\epsilon_{%d}$' % k, fontsize=16.0)
+    plt.loglog([510.0,dxmax],[epslist[k],epslist[k]],'k--',lw=0.7)
+    plt.text(420.0,0.9*epslist[k],r'$\epsilon_{%d}$' % k, fontsize=16.0)
 plt.hold(False)
 plt.axis([dxmin, dxmax, 0.0001/1.2, 2.0*1.0])
 plt.xlabel(r'$\Delta x$', fontsize=16.0, labelpad=1)
-plt.xticks([500, 1000, 2500, 5000, 10000], ('500m', '1km', '2.5km', '5km', '10km'), fontsize=12.0)
+plt.xticks([500, 1000, 2500, 5000], ('500m', '1km', '2.5km', '5km'), fontsize=12.0)
 klist = np.arange(5)
 plt.yticks(10.0**(-klist), ('1.0','0.1','0.01','0.001','0.0001'), fontsize=12.0)
 ax = plt.axes()

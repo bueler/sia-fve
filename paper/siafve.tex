@@ -518,7 +518,7 @@ These good results from a little bit of first-order upwinding in our implicit \M
 
 \subsection{Greenland: bed topography robustness}
 
-FIXME: goal is to understand robustness of whole method, but especially the Newton convergence, w.r.t. real bedrock topography.  used two data sets, namely BEDMAP1 on 5km data grid \citep{Bamberetal2001} (``BM1'') and mass-conserving on 150 m data grid \citep{Morlighemetal2014} (``MCB'').  surface mass balance from \citep{Ettemaetal2009}, also on 5 km data grid as supplied by SeaRISE \citep{Bindschadleretal2013}, with reprojection and bilinear interpolation as needed onto MCB grid.  finer grids for BM1 runs (2500--625 m) used bilinear interpolation; coarser runs used the data as is (5000 m) or subsampling (10000 m).  can't go to 150 m currently, so all MCB runs (9000--600 m) used bed topography averages from the 150 m points
+FIXME: goal is to understand robustness of whole method, but especially the Newton convergence, w.r.t. real bedrock topography.  used two data sets, namely BEDMAP1 on 5km data grid \citep{Bamberetal2001} (``BM1'') and mass-conserving on 150 m data grid \citep{Morlighemetal2014} (``MCB'').  surface mass balance from \citep{Ettemaetal2009}, also on 5 km data grid as supplied by SeaRISE \citep{Bindschadleretal2013}, with reprojection and bilinear interpolation as needed onto MCB grid.  finer grids for BM1 runs (2500--625 m) used bilinear interpolation; coarsest run used the data as is (5000 m).  can't go to 150 m currently, so all MCB runs (4500--600 m) used bed topography averages from the 150 m points
 
 FIXME: first compute \Mstar SIA solution on all grids without ``recovery''; non-convergence always seen; Figure \ref{fig:grnrobusteps}
 
@@ -528,6 +528,11 @@ FIXME: first compute \Mstar SIA solution on all grids without ``recovery''; non-
 \label{fig:grnrobusteps}
 \end{figure}
 
+FIXME: conclude that rs is better because:
+% ./robustfigs.py --ratios study.robust
+(1) on all grids the ss is slower, and on average it is more than three times slower; (2) with exception of one coarse grid (2500m BM1), the convergence is worse.
+
+FIXME: conclude that rougher bed is harder because, with exception of the coarsest grids, convergence is worse for MCB than BM1
 
 FIXME: like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
 
