@@ -9,6 +9,9 @@ import numpy.ma as ma
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
 
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
 import argparse
 
 parser = argparse.ArgumentParser(description='Generate shaded figure of surface elevation from PETSc binary file written by mahaffy.c.')
@@ -60,12 +63,35 @@ rgb = ls.shade(np.flipud(s),plt.cm.gray)
 print 'light source created ...'
 
 plt.figure(figsize=(5,12))
-plt.imshow(rgb, interpolation='nearest')
+plt.imshow(rgb, extent=(0,len(x),0,len(y)), interpolation='nearest')
+#plt.imshow(rgb, interpolation='nearest')
+plt.xticks(visible=False)
+plt.yticks(visible=False)
+
+ax = plt.axes()
+
+axins = zoomed_inset_axes(ax, 5, loc=1) # zoom = 3
+axins.imshow(rgb, extent=(0,len(x),0,len(y)), interpolation='nearest')
+#axins.imshow(rgb, interpolation='nearest')
+
+#x1, x2, y1, y2 = -1.5, -0.9, -2.5, -1.9
+aspect = 1.5
+ox = 0.13 * len(x)
+oy = 0.32 * len(y)
+width = 0.12 * len(x)
+axins.set_xlim(ox, ox+width)
+axins.set_ylim(oy, oy+aspect*width)
+
+plt.xticks(visible=False)
+plt.yticks(visible=False)
+
+mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+
 print 'figure generated ...'
 
 #plt.title('imshow with shading')
-plt.xticks([])
-plt.yticks([])
+#plt.xticks([])
+#plt.yticks([])
 
 if args.o == None:
     plt.show()

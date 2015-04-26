@@ -104,9 +104,7 @@ The first part of the paper has a historical side, because we reinterpret the cl
 
 Because we also successfully solve the whole free-boundary problem at once by a parallel Newton method, our improved scheme is shown to be unconditionally stable as a fully-implicit scheme.  Our parallel implementation of the scheme uses Newton solvers adapted to inequality constraints \citep{BensonMunson2006} which are included in the open-source PETSc library \citep{Balayetal2014}.
 
-Our paper is organized as follows.  We start with a statement of the steady, isothermal SIA model.  We then recall the classical Mahaffy scheme in FD form before re-interpreting it as an FVE scheme and identifying its non-standard midpoint rule application in the flux integral.  Building off this re-interpretation we identify better quadrature in the flux integral, and we then add a bit of first-order upwinding on the part of the flux that comes from the bedrock slope.  The resulting improved scheme, which has the same stencil as the classical Mahaffy scheme, is called ``\Mstar.''  Next we describe the Newton solver which we apply to the discrete equations and constraints.  Results are then given in verification cases.  They are at least as good as those from higher-resolution upwind schemes when applied to the \cite{JaroschSchoofAnslow2013} bedrock-step exact solution.  Then we show how the method is applied to real ice sheets by computing, without time-stepping but at very 1 km high resolution, the steady state shape of the Greenland ice sheet in a present-day modeled climate.
-
-In the Appendix A we describe how to construct, on certain unstructured finite element triangulations, an analog of the \Mstar scheme.  Appendix B addresses the analytical calculation of the Jacobian in the \Mstar scheme.
+Our paper is organized as follows.  We start with a statement of the steady, isothermal SIA model.  We then recall the classical Mahaffy scheme in FD form before re-interpreting it as an FVE scheme and identifying its non-standard midpoint rule application in the flux integral.  Building off this re-interpretation we identify better quadrature in the flux integral, and we then add a bit of first-order upwinding on the part of the flux that comes from the bedrock slope.  The resulting improved scheme, which has the same stencil as the classical Mahaffy scheme, is called ``\Mstar.''  Next we describe the Newton solver which we apply to the discrete equations and constraints.  Results are then given in verification cases.  They are at least as good as those from higher-resolution upwind schemes when applied to the \cite{JaroschSchoofAnslow2013} bedrock-step exact solution.  Then we show how the method is applied to real ice sheets by computing, without time-stepping but at very 1 km high resolution, the steady state shape of the Greenland ice sheet in a present-day modeled climate.  An Appendix addresses the analytical calculation of the Jacobian in the \Mstar scheme.
 
 
 \section*{The continuum model}
@@ -402,7 +400,7 @@ The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
 J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right), \label{eq:nonlinjacobian}
 \end{equation}
-can be computed via hand-calculated derivatives.  This additional effort (Appendix B) gives a speed-up by a rough factor of 1.5 over the alternative, namely finite-difference (FD) computation of Jacobian entries coming from additional residual (i.e.~$F$) evaluations.  Such FD Jacobians are efficiently-implemented in PETSc using ``coloring'' of the nodes \citep{CurtisPowellReid1974} so that, because of the nine-point stencil, only ten residual evaluations are needed to approximate $J$.  Because the grid is logically periodic and the stencil is three-by-three, however, the FD/coloring method requires grid dimensions $N_x$ and $N_y$ to each be divisible by three.
+can be computed via hand-calculated derivatives.  This additional effort (Appendix) gives a speed-up by a rough factor of 1.5 over the alternative, namely finite-difference (FD) computation of Jacobian entries coming from additional residual (i.e.~$F$) evaluations.  Such FD Jacobians are efficiently-implemented in PETSc using ``coloring'' of the nodes \citep{CurtisPowellReid1974} so that, because of the nine-point stencil, only ten residual evaluations are needed to approximate $J$.  Because the grid is logically periodic and the stencil is three-by-three, however, the FD/coloring method requires grid dimensions $N_x$ and $N_y$ to each be divisible by three.
 
 The standard theory of convergence of Newton's method shows that quadratic convergence should occur if $J$ is Lipshitz-continuous as a function of the unknowns \citep[and references therein]{Kelley2003}.  However, the flux $\bq$ is generally not smooth as a function of $\grad H$.  In particular, for $1<n<3$ the flux has a second derivative which is not Lipshitz-continuous with respect to changes in $\grad H$.  Because our Jacobian is the derivative of equations \eqref{eq:siamstar}, which already involves differentiating $\bq$ (in the limit where the control volume shrinks to zero), the behavior of second derivatives of $\bq$ determines the convergence of the solver.  Nonsmoothness of the flux is easiest to see in one dimension where equation \eqref{eq:siaflux} is
 \begin{equation}
@@ -534,7 +532,11 @@ FIXME: conclude that rs is better because:
 
 FIXME: conclude that rougher bed is harder because, with exception of the coarsest grids, convergence is worse for MCB than BM1
 
-FIXME: like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
+\begin{figure}[ht]
+\onecol{grnwinset.pdf} % FIXME placeholder
+\caption{FIXME: what 600 m resolution means for resolving margin}
+\label{fig:grnmargindetail}
+\end{figure}
 
 
 
@@ -542,7 +544,11 @@ FIXME: like \cite{JouvetBueler2012} result but much higher res and replacing fix
 
 FIXME: The first idea in the paper is that a FVE interpretation is compatible with the original Mahaffy FD scheme.  The second idea is that the classical method's flux approximation is discontinuous along element edges.  We improve the method by doubling the number of quadrature points.  For nonflat beds we also add a bit of upwinding, and tests show the effectiveness.  The new \Mstar method is more accurate and its Newton iterations converge better, than the classical scheme.  We have applied the method at large scale and high resolution on real data, and it converges.  The computed examples using this method are novel, except for \cite{JouvetBueler2012}, by going directly to steady state from zero ice.
 
+FIXME: Greenland result like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
+
 FIXME: We have been basically flux-agnostic.  The same basic FVE works as long as there is a way of computing $\bq^h(x_j^s,y_k^s)$ from the current $\bH$.  Thus our methods can be extended to include sliding and flow models based on membrane stress balances. 
+
+FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
 
 \section*{Acknowledgements}
 This work was supported by NASA grant \#NNX13AM16G and a grant of high-performance computing resources from the Arctic Region Supercomputing Center.
@@ -553,20 +559,7 @@ This work was supported by NASA grant \#NNX13AM16G and a grant of high-performan
 \bibliographystyle{igs}
 
 \appendix
-\section{Appendix A.  Unstructured FVE scheme}  \label{sec:appA}
-
-FIXME: the same \Mstar idea can be extended to dual Delaunay/Voronoi meshes (e.g.~the meshes from \cite{EgholmNielsen2010,Ringleretal2013}) using $P^1$ elements on the Delaunay triangulation, and doing quadrature on the Voronoi-cell edges by splitting these edges where the element (i.e.~triangle) boundaries cross (perpendicularly) the Voronoi-cell edges.  This improves on the \cite{EgholmNielsen2010} method by exploiting an underlying $P^1$ element approximation to approximate the flux, instead of using the moving least squares method.
-
-\begin{comment}
-Here is what the MPAS Land-Ice User's Manual version 3.0 says:
-\begin{quote}
-\small
-Velocities and fluxes are calculated on the midpoint of Voronoi cell edges.  The normal component of surface slope is calculated on cell edges using surface elevation at adjacent cell centers.  The tangential component of surface slope is calculated on cell edges using surface elevation at adjacent vertices. The surface elevation at vertices is calculated from the values at adjacent cell centers using barycentric interpolation. Ice thickness on edges is calculated as the average of the adjacent cell center values (2nd-order approximation).
-\end{quote}
-Looking at this, and their code, I don't think they think of it as Petrov-Galerkin
-\end{comment}
-
-\section{Appendix B. Jacobian computation}  \label{sec:appB}
+\section{Appendix. Jacobian computation}  \label{sec:app}
 
 Though finite differencing can be used to approximate the Jacobian \eqref{eq:nonlinjacobian} of the nonlinear algebraic system \eqref{eq:nonlinsystem}, convergence of the Newton iteration is accelerated by analytical evaluation.  To sketch the calculation of the Jacobian for the \Mstar method, we recall that each equation $F_{j,k}(\bH)=0$ in the system comes from equation \eqref{eq:siamstar},
 \begin{equation}
