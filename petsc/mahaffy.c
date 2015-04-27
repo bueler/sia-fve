@@ -46,10 +46,10 @@ Divergence:
 
 Do "manual" time steps after divergence, to approach steady state:
    mkdir teststeps/
-   mpiexec -n 6 ./mahaffy -da_refine 2 -mah_dump teststeps/ -mah_notry
-   # above diverges at 10 with        errors:  max =  489.93 m,  av =   24.21 m,  voldiff% =  2.10
-   mpiexec -n 6 ./mahaffy -mah_read teststeps/unnamed.dat -mah_readinitial -cs_start 8 -mah_steps 100 -mah_dtBE 100.0 -mah_notry
-   # above completes 10000 a run with errors:  max =  412.68 m,  av =    6.52 m,  voldiff% =  0.34
+   mpiexec -n 6 ./mahaffy -da_refine 4 -mah_dump teststeps/ -mah_notry
+   # above diverges at 12 with          errors:  max =  268.69 m,  av =    8.04 m,  voldiff% =  0.70
+   mpiexec -n 6 ./mahaffy -mah_read teststeps/unnamed.dat -mah_readinitial -cs_start 10 -mah_steps 100 -mah_dt 100.0 -mah_notry
+   # above completes 10000 a run with   errors:  max =  217.21 m,  av =    0.74 m,  voldiff% =  0.00
 */
 
 #include <math.h>
@@ -90,10 +90,10 @@ int main(int argc,char **argv) {
 
   user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence difficulties on refined grid (=125m); earlier M* used 0.5
 
-  user.doBEsteps  = PETSC_FALSE;
-  user.numBEsteps = 1;                   // recovery mode does one step
-  user.dtBE       = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
-
+  user.numsteps   = 1;                   // steady state does one step
+  user.dtres      = 0.0;
+  user.dtjac      = 0.0;
+  user.dtrecovery = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
   user.recoverycount = 0;
 
   user.mtrue      = PETSC_FALSE;
@@ -248,21 +248,18 @@ int main(int argc,char **argv) {
   ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
 
-  if (user.mtrue)
-      myPrintf(&user,    "solving by true Mahaffy method ...\n");
-  else
-      if (user.lambda == 0.0)
-          myPrintf(&user,"solving by M* method _without_ upwinding ...\n");
-      else
-          myPrintf(&user,"solving by M* method ...\n");
+  myPrintf(&user,    "solving %s problem by %s method ...\n",
+           (user.dtres > 0.0) ? "single time-step" : "steady-state",
+           (user.mtrue) ? "true Mahaffy" :
+               ((user.lambda == 0.0) ? "M*-without-upwinding" : "M*"));
 
   SNESConvergedReason reason;
   gettimeofday(&user.starttime, NULL);
 
-  // time-stepping loop
-  // note "Hinitial" is really "H^{l-1}", i.e. the value of the solution at the
-  // last time step if time stepping
-  for (l = 0; l < user.numBEsteps; l++) {
+  // time-stepping loop or steady-state if numBEsteps==1
+  //     when time-stepping:  note "Hinitial" is really "H^{l-1}", namely the
+  //                          value of the solution at the last time step
+  for (l = 0; l < user.numsteps; l++) {
       ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
       // continuation loop
       for (m = user.cs.start; m<user.cs.end; m++) {
@@ -270,11 +267,13 @@ int main(int argc,char **argv) {
           ierr = VecCopy(H,Htry); CHKERRQ(ierr);
           ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
           if (reason < 0) {
-              if (user.divergetryagain) {
+              if ((user.divergetryagain) && (user.recoverycount == 0)) {
                   myPrintf(&user,
                       "         turning on recovery mode (backward Euler time step of %.2f a) and trying again ...\n",
-                      user.dtBE/user.secpera);
-                  user.doBEsteps = PETSC_TRUE;
+                      user.dtrecovery/user.secpera);
+                  user.dtres = user.dtrecovery;
+                  user.dtjac = user.dtrecovery;
+                  user.recoverycount = 1;
                   user.cs.goodm = m-1;
                   ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);      
                   ierr = VecCopy(H,Htry); CHKERRQ(ierr);
@@ -285,18 +284,18 @@ int main(int argc,char **argv) {
                       user.eps = epsCS(m-1,&(user.cs));
                   break;
               }
-          }
-          if ((user.divergetryagain) && (user.doBEsteps))
+          } else if (user.recoverycount > 0)
               user.recoverycount++;
-          else
-              user.cs.goodm = m;
+          // actions when successful:
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
           ierr = StdoutReport(H,&user); CHKERRQ(ierr);
+          if (user.recoverycount == 0)
+              user.cs.goodm = m;
       }  // for m
       if (reason >= 0) {
-          if (user.numBEsteps > 1)
+          if (user.dtres > 0.0)
               myPrintf(&user,"t = %.2f a: completed time step %d of %d\n",
-                       (l+1)*user.dtBE/user.secpera,l+1,user.numBEsteps);
+                       (l+1)*user.dtres/user.secpera,l+1,user.numsteps);
           ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
       } else
           break;
@@ -370,7 +369,7 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
 
 PetscErrorCode ProcessOptions(AppCtx *user) {
   PetscErrorCode ierr;
-  PetscBool      domechosen, dtBEset, notryset;
+  PetscBool      domechosen, dtflg, notryset;
   char           histprefix[512];
 
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"mah_","options to mahaffy","");CHKERRQ(ierr);
@@ -393,8 +392,21 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       "-dome", "use dome exact solution by Bueler (2003) [default]",
       NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-dtBE", "duration in years of time step used in Backward Euler recovery",
-      NULL,user->dtBE/user->secpera,&user->dtBE,&dtBEset);CHKERRQ(ierr);
+      "-dtjac", "use this time step (years) in Jacobian evaluation, even in steady-state",
+      NULL,user->dtjac/user->secpera,&user->dtjac,&dtflg);CHKERRQ(ierr);
+  if (dtflg)  user->dtjac *= user->secpera;
+  ierr = PetscOptionsReal(
+      "-dtrecovery", "use this time step (years) in recovery",
+      NULL,user->dtrecovery/user->secpera,&user->dtrecovery,&dtflg);CHKERRQ(ierr);
+  if (dtflg)  user->dtrecovery *= user->secpera;
+  ierr = PetscOptionsReal(
+      "-dt", "use this time step (years) FOR TIME-STEPPING; overrides -mah_dtjac,-mah_dtrecovery",
+      NULL,user->dtres/user->secpera,&user->dtres,&dtflg);CHKERRQ(ierr);
+  if (dtflg) {
+      user->dtres *= user->secpera;
+      user->dtjac = user->dtres;
+      user->dtrecovery = user->dtres;
+  }
   ierr = PetscOptionsString(
       "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
@@ -437,7 +449,7 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->silent,&user->silent,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-steps", "number of Backward Euler time-steps to take; default=1 is for steady-state",
-      NULL,user->numBEsteps,&user->numBEsteps,NULL);CHKERRQ(ierr);
+      NULL,user->numsteps,&user->numsteps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
@@ -446,15 +458,17 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if (dtBEset)
-      user->dtBE *= user->secpera;
-  if (user->numBEsteps > 1)
-      user->doBEsteps = PETSC_TRUE;
+  if (user->numsteps > 1) {
+      if ((user->dtres <= 0.0) || (user->dtjac <= 0.0) || (user->dtres != user->dtjac)) {
+        SETERRQ(PETSC_COMM_WORLD,4,
+           "OPTION CONFLICT: Backward Euler time-steps requested but dtres and dtjac are inconsistent; -mah_dt not set?\n");
+      }
+  }
   if ((user->averr) || (user->maxerr))
       user->silent = PETSC_TRUE;
   if (user->read) {
       if (domechosen) {
-        SETERRQ(PETSC_COMM_WORLD,1,"ERROR option conflict: both -mah_dome and -mah_read not allowed\n");
+        SETERRQ(PETSC_COMM_WORLD,1,"OPTION CONFLICT: both -mah_dome and -mah_read not allowed\n");
       } else
         user->dome = PETSC_FALSE;    // here user has chosen -mah_read and not -mah_dome
   }
@@ -468,17 +482,14 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       SETERRQ(PETSC_COMM_WORLD,3,"ERROR option conflict: both -mah_bedstep and -mah_read not allowed\n");
   }
   if (user->mtrue)
-      user->lambda = 0.0;
+      user->lambda = 0.0; // force no upwinding
   if (user->dump)
-      user->history = PETSC_TRUE;
+      user->history = PETSC_TRUE; // history is part of dump
   else if (user->history)
-      strcpy(user->figsprefix,histprefix);
+      strcpy(user->figsprefix,histprefix); // store path to history file in figsprefix
 
   ierr = OptionsCS(&(user->cs)); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
-
-
-
 

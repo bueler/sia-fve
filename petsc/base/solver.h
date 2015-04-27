@@ -34,7 +34,6 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
 
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user);
 
-PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
-                           SNESConvergedReason *reason, AppCtx *user);
+PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m, SNESConvergedReason *reason, AppCtx *user);
 
 #endif // SOLVER_H_

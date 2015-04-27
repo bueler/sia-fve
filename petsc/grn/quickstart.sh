@@ -3,7 +3,7 @@
 
 ### RUN EXAMPLES ###
 #  $ ./quickstart.sh
-#  $ QSSHOW= QSREFINE=2 ./quickstart.sh "-mah_dtBE 10.0 -snes_max_it 200"
+#  $ QSSHOW= QSREFINE=2 ./quickstart.sh "-mah_dtrecovery 10.0 -snes_max_it 200"
 
 set -e # exit on error
 

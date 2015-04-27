@@ -44,11 +44,12 @@ typedef struct {
             eps,    // current continuation parameter for n and D
             delta,  // dimensionless regularization for slope in SIA formulas
             lambda, // amount of upwinding; lambda=0 is none and lambda=1 is "full"
-            dtBE,   // time step for backward Euler
+            dtres,  // time step for backward Euler used in residual
+            dtjac,  //     ...                      used in Jacobian
+            dtrecovery,//  ...                      used in recovery
             initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
-  PetscInt  Nx,     // grid has Nx x Ny nodes
-            Ny,
-            numBEsteps,
+  PetscInt  Nx, Ny, // grid has Nx x Ny nodes
+            numsteps,// number of time-steps to take; is set to 1 if steady-state
             recoverycount,// number of steps of recovery taken; zero if recovery did not happen
             luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
   PetscBool mtrue,  // use true Mahaffy method instead of M*
@@ -60,7 +61,6 @@ typedef struct {
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
-            doBEsteps,// do a time-step of duration dtBE
             dump,   // dump fields into individual PETSc binary files
             silent, // run silent
             averr,  // only display average error at end

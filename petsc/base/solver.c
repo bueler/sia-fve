@@ -154,8 +154,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           FF[k][j] = - am[k][j] * dx * dy;
           for (s=0; s<8; s++)
               FF[k][j] += coeff[s] * aqquad[k+ke[s]][j+je[s]][ce[s]];
-          if (user->doBEsteps)
-              FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtBE;
+          if (user->dtres > 0.0)
+              FF[k][j] += (aH[k][j] - aHprev[k][j]) * dx * dy / user->dtres;
           if (!user->nodiag) {
               // update diagnostics associated to diffusivity
               PetscReal Dmax = 0.0, Wmagmax = 0.0;
@@ -275,11 +275,11 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
-          if (user->doBEsteps) {
+          if (user->dtjac > 0.0) {
               // add another stencil for diagonal
               col[32].j = j;
               col[32].k = k;
-              val[32]   = dx * dy / user->dtBE;
+              val[32]   = dx * dy / user->dtjac;
               ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,33,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
           } else {
               ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
@@ -345,8 +345,8 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
   myPrintf(user,"%3d. %s   with   ",m,reasonstr);
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
            user->eps,kspits,its);
-  if (user->doBEsteps)
-      myPrintf(user,"       BEuler time step of %.3f a\n",user->dtBE / user->secpera);
+  if (user->dtres > 0.0)
+      myPrintf(user,"       BEuler time step of %.3f a\n",user->dtres / user->secpera);
   PetscFunctionReturn(0);
 }
 
