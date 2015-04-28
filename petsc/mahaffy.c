@@ -268,6 +268,8 @@ int main(int argc,char **argv) {
           ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
           if (reason < 0) {
               if ((user.divergetryagain) && (user.recoverycount == 0)) {
+                  if (user.dtres > 0.0)
+                      user.dtrecovery = 0.5 * user.dtres;
                   myPrintf(&user,
                       "         turning on recovery mode (backward Euler time step of %.2f a) and trying again ...\n",
                       user.dtrecovery/user.secpera);
