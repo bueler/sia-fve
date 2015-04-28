@@ -99,24 +99,53 @@ PetscErrorCode ReadAndReshape2DVec(Vec v, PetscViewer viewer, AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReadDataVecs(AppCtx *user) {
+PetscErrorCode DiscardDimensions(PetscViewer viewer) {
     PetscErrorCode ierr;
-    PetscViewer    viewer;
-    Vec            x, y;  // will be read and discarded
-
-    ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,user->readname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
-
-    // read and discard x and y
+    Vec            x, y;
     ierr = VecCreate(PETSC_COMM_SELF,&x); CHKERRQ(ierr);
     ierr = VecLoad(x,viewer); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
     ierr = VecCreate(PETSC_COMM_SELF,&y); CHKERRQ(ierr);
     ierr = VecLoad(y,viewer); CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ReadDataVecs(AppCtx *user) {
+    PetscErrorCode ierr;
+    PetscViewer    viewer;
+
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,user->readname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+    ierr = DiscardDimensions(viewer); CHKERRQ(ierr);
 
     ierr = ReadAndReshape2DVec(user->b, viewer, user); CHKERRQ(ierr);
     ierr = ReadAndReshape2DVec(user->m, viewer, user); CHKERRQ(ierr);
     ierr = ReadAndReshape2DVec(user->Hexact, viewer, user); CHKERRQ(ierr);
+    ierr = ReadAndReshape2DVec(user->Hinitial, viewer, user); CHKERRQ(ierr);
+
+    ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ReadInitialHVec(AppCtx *user) {
+    PetscErrorCode ierr;
+    PetscViewer    viewer;
+    Vec            tmp;  // will be read and discarded
+
+    ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,user->readinitialname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
+    ierr = DiscardDimensions(viewer); CHKERRQ(ierr);
+
+    // read and discard b,m,Hexact
+    ierr = VecDuplicate(user->b,&tmp); CHKERRQ(ierr);
+    ierr = ReadAndReshape2DVec(tmp, viewer, user); CHKERRQ(ierr);
+    ierr = VecDestroy(&tmp); CHKERRQ(ierr);
+    ierr = VecDuplicate(user->m,&tmp); CHKERRQ(ierr);
+    ierr = ReadAndReshape2DVec(tmp, viewer, user); CHKERRQ(ierr);
+    ierr = VecDestroy(&tmp); CHKERRQ(ierr);
+    ierr = VecDuplicate(user->Hexact,&tmp); CHKERRQ(ierr);
+    ierr = ReadAndReshape2DVec(tmp, viewer, user); CHKERRQ(ierr);
+    ierr = VecDestroy(&tmp); CHKERRQ(ierr);
+    // actually read Hinitial
     ierr = ReadAndReshape2DVec(user->Hinitial, viewer, user); CHKERRQ(ierr);
 
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);

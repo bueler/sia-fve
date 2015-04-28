@@ -68,7 +68,8 @@ typedef struct {
             nodiag, // do not use DiagnosticScheme
             history;// write ASCII history file
   char      figsprefix[512],
-            readname[512];
+            readname[512],
+            readinitialname[512];
   struct timeval     starttime, endtime;
   ContinuationScheme cs;
   DiagnosticScheme   ds;

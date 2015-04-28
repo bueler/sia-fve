@@ -50,7 +50,7 @@ mgroup.add_argument("--mpi", type=int, default=1, metavar='N',
 mgroup.add_argument("--read", metavar='FILE', default='',
                     help="file to read using -mah_read")
 mgroup.add_argument("--restart", action="store_true",
-                    help="use -mah_dump foo/ and -mah_read foo/unnamed.dat -mah_readinitial")
+                    help="use -mah_dump foo/ and -mah_readinitial ...")
 
 args = parser.parse_args()
 
@@ -114,7 +114,7 @@ else:
                 cmd += " -mah_dump foo/"
                 if convlasttime:
                     if os.path.exists('foo/unnamed.dat'):
-                        cmd += " -mah_read foo/unnamed.dat -mah_readinitial -cs_start 8"
+                        cmd += " -mah_read foo/unnamed.dat -mah_readinitial foo/unnamed.dat -cs_start 8"
                     else:
                         print "ERROR: foo/unnamed.dat should exist if --restart and convlasttime==True"
                         sys.exit(111)

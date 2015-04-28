@@ -48,7 +48,7 @@ Do "manual" time steps after divergence, to approach steady state:
    mkdir teststeps/
    mpiexec -n 6 ./mahaffy -da_refine 4 -mah_dump teststeps/ -mah_notry
    # above diverges at 12 with          errors:  max =  268.69 m,  av =    8.04 m,  voldiff% =  0.70
-   mpiexec -n 6 ./mahaffy -mah_read teststeps/unnamed.dat -mah_readinitial -cs_start 10 -mah_steps 100 -mah_dt 100.0 -mah_notry
+   mpiexec -n 6 ./mahaffy -mah_read teststeps/unnamed.dat -mah_readinitial teststeps/unnamed.dat -cs_start 10 -mah_steps 100 -mah_dt 100.0 -mah_notry
    # above completes 10000 a run with   errors:  max =  217.21 m,  av =    0.74 m,  voldiff% =  0.00
 */
 
@@ -119,6 +119,7 @@ int main(int argc,char **argv) {
 
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
+  strcpy(user.readinitialname,"FILENAME");
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
 
@@ -205,12 +206,8 @@ int main(int argc,char **argv) {
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read) {
-      myPrintf(&user,"reading b, m, Hexact (or Hobserved), Hinitial from %s ...\n", user.readname);
+      myPrintf(&user,"reading b, m, Hexact (or Hobserved) from %s ...\n", user.readname);
       ierr = ReadDataVecs(&user); CHKERRQ(ierr);
-      if (!user.readinitial) {
-          myPrintf(&user,"  ignoring read Hinitial ...\n");
-          ierr = ChopScaleSMBforInitial(user.Hinitial,&user); CHKERRQ(ierr);
-      }
   } else {
       if (user.dome) {
           myPrintf(&user,"generating b, m, Hexact from dome formulas in Bueler (2003) ...\n");
@@ -225,6 +222,14 @@ int main(int argc,char **argv) {
       } else {
           SETERRQ(PETSC_COMM_WORLD,1,"ERROR: one of user.[dome,bedstep] must be TRUE since user.read is FALSE...\n");
       }
+  }
+
+  // fill user.Hinitial according to either -mah_readinitial foo.dat or chop-scale-SMB
+  if (user.readinitial) {
+      myPrintf(&user,"  reading Hinitial from %s ...\n", user.readinitialname);
+      ierr = ReadInitialHVec(&user); CHKERRQ(ierr);
+  } else {
+      myPrintf(&user,"  generating Hinitial by chop-and-scale of SMB ...\n");
       ierr = ChopScaleSMBforInitial(user.Hinitial,&user); CHKERRQ(ierr);
   }
 
@@ -440,9 +445,9 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
   ierr = PetscOptionsString(
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
-  ierr = PetscOptionsBool(
-      "-readinitial", "use read initial H instead of generating guess in usual way",
-      NULL,user->readinitial,&user->readinitial,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsString(
+      "-readinitial", "read grid initial H from this special-format PETSc binary file",
+      NULL,user->readinitialname,user->readinitialname,512,&user->readinitial); CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-showdata", "use PETSc X viewers to show b, m, and exact/observed H",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
