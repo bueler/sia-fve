@@ -333,11 +333,10 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
   PetscPopErrorHandler();
   ierr = MPI_Allreduce(&user->luzeropvterr,&luzeropvterr,1,MPI_INT,MPI_MAX,
                        PETSC_COMM_WORLD); CHKERRQ(ierr);
-  if (luzeropvterr > 0) {
+  if (luzeropvterr > 0)
       *reason = lureason;
-  } else {
+  else
       ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
-  }
   ierr = SNESGetIterationNumber(*s,&its);CHKERRQ(ierr);
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
@@ -346,7 +345,8 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
            user->eps,kspits,its);
   if (user->dtres > 0.0)
-      myPrintf(user,"       (on equations for backward Euler time step of %.3f a)\n",user->dtres / user->secpera);
+      myPrintf(user,"       (on equations for backward Euler time step of %.3f a)\n",
+               user->dtres / user->secpera);
   PetscFunctionReturn(0);
 }
 
