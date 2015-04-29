@@ -64,17 +64,19 @@ Do "manual" time steps after divergence, to approach steady state:
 
 extern PetscErrorCode ChopScaleSMBforInitial(Vec,AppCtx*);
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
+extern PetscErrorCode Step(Vec,SNES*,ContinuationScheme*,SNESConvergedReason*,AppCtx*);
 
 
 int main(int argc,char **argv) {
   PetscErrorCode      ierr;
   SNES                snes;
-  Vec                 H, Htry;
+  Vec                 H;
   AppCtx              user;
   ContinuationScheme  cs;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
-  PetscInt            l, m;
+  PetscInt            l;
+  SNESConvergedReason reason;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
 
@@ -82,25 +84,15 @@ int main(int argc,char **argv) {
   ierr = SetFromOptionsCS("cs_",&cs); CHKERRQ(ierr);
   user.cs = &cs;
 
-  // derived constant computed after n,A get set
-  user.Gamma = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
-
   if (user.read) {
       myPrintf(&user,
           "reading dimensions and grid spacing from %s ...\n",user.readname);
       ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
   } else {
-      if (user.dome) {
-          user.Nx = -18;        // so DMDACreate2d() defaults to 18x18
-          user.Ny = -18;
-          user.Lx = 900.0e3;    // m
-          user.Ly = 900.0e3;    // m
-      } else {
-          user.Nx = -30;
-          user.Ny = -30;
-          user.Lx = 30.0e3;    // m
-          user.Ly = 30.0e3;    // m
-      }
+      if (user.dome)
+          DomeDefaultGrid(&user);
+      else
+          BedStepDefaultGrid(&user);
   }
 
   // this DMDA is used for scalar fields on nodes; cell-centered grid
@@ -148,7 +140,6 @@ int main(int argc,char **argv) {
   ierr = DMCreateGlobalVector(user.da,&H);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)H,"thickness solution H"); CHKERRQ(ierr);
 
-  ierr = VecDuplicate(H,&Htry); CHKERRQ(ierr);
   ierr = VecDuplicate(H,&user.Hinitial); CHKERRQ(ierr);
 
   ierr = VecDuplicate(H,&user.b); CHKERRQ(ierr);
@@ -217,55 +208,27 @@ int main(int argc,char **argv) {
            (user.mtrue) ? "true Mahaffy" :
                ((user.lambda == 0.0) ? "M*-without-upwinding" : "M*"));
 
-  SNESConvergedReason reason;
+  ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
+
   gettimeofday(&user.starttime, NULL);
 
-  // time-stepping loop or steady-state if numBEsteps==1
-  //     when time-stepping:  note "Hinitial" is really "H^{l-1}", namely the
-  //                          value of the solution at the last time step
-  for (l = 0; l < user.numsteps; l++) {
-      ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
-      // continuation loop
-      for (m = startCS(&cs); m < endCS(&cs); m++) {
-          user.eps = epsCS(m,&cs);
-          ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-          ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
-          if (reason < 0) {
-              if ((user.divergetryagain) && (user.recoverycount == 0)) {
-                  if (user.dtres > 0.0)
-                      user.dtrecovery = 0.5 * user.dtres;
-                  myPrintf(&user,
-                      "         turning on recovery mode (backward Euler time step of %.2f a) and trying again ...\n",
-                      user.dtrecovery/user.secpera);
-                  user.dtres = user.dtrecovery;
-                  user.dtjac = user.dtrecovery;
-                  user.recoverycount = 1;
-                  user.goodm = m-1;
-                  ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);      
-                  ierr = VecCopy(H,Htry); CHKERRQ(ierr);
-                  ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
-              }
-              if (reason < 0) {
-                  if (m>0) // record last successful eps
-                      user.eps = epsCS(m-1,&cs);
-                  break;
-              }
-          } else if (user.recoverycount > 0)
-              user.recoverycount++;
-          // actions when successful:
-          ierr = VecCopy(Htry,H); CHKERRQ(ierr);
-          ierr = StdoutReport(H,&user); CHKERRQ(ierr);
-          if (user.recoverycount == 0)
-              user.goodm = m;
-      }  // for m
-      if (reason >= 0) {
-          if (user.dtres > 0.0)
+  if (user.dtres > 0.0) {  // time-stepping
+      // note "Hinitial" is really "H^{l-1}", the solution at the last time step
+      for (l = 0; l < user.numsteps; l++) {
+          ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);
+          if (reason >= 0) {
               myPrintf(&user,"t = %.2f a: completed time step %d of %d\n",
                        (l+1)*user.dtres/user.secpera,l+1,user.numsteps);
+              ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
+          } else
+              break;
+      }
+  } else { // steady-state
+      ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);
+      if (reason >= 0) {
           ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
-      } else
-          break;
-  } // for l
+      }
+  }
 
   gettimeofday(&user.endtime, NULL);
 
@@ -299,7 +262,6 @@ int main(int argc,char **argv) {
   ierr = VecDestroy(&user.b);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hexact);CHKERRQ(ierr);
   ierr = VecDestroy(&user.Hinitial);CHKERRQ(ierr);
-  ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&H);CHKERRQ(ierr);
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
   ierr = DMDestroy(&user.quadda);CHKERRQ(ierr);
@@ -330,3 +292,62 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscFunctionReturn(0);
 }
 
+PetscErrorCode Step(Vec H, SNES *snes, ContinuationScheme *cs, SNESConvergedReason *reason, AppCtx *user) {
+  PetscErrorCode ierr;
+  Vec            Htry;
+  PetscInt       m;
+
+  PetscFunctionBeginUser;
+  //ierr = DMGetGlobalVector(user->da,&Htry);CHKERRQ(ierr);
+/* above generates
+[0]PETSC ERROR: Object is in wrong state
+[0]PETSC ERROR: Clearing DM of global vectors that has a global vector obtained with DMGetGlobalVector()
+[0]PETSC ERROR: See http://www.mcs.anl.gov/petsc/documentation/faq.html for trouble shooting.
+[0]PETSC ERROR: Petsc Development GIT revision: v3.5.3-2719-gda40757  GIT Date: 2015-04-20 17:38:06 -0500
+[0]PETSC ERROR: ./mahaffy on a linux-gnu-opt named bueler-gazelle by bueler Wed Apr 29 10:27:03 2015
+[0]PETSC ERROR: Configure options --with-debugging=0 --download-mpich=1
+[0]PETSC ERROR: #1 DMClearGlobalVectors() line 196 in /home/bueler/petsc/src/dm/interface/dmget.c
+[0]PETSC ERROR: #2 DMSetVI() line 238 in /home/bueler/petsc/src/snes/impls/vi/rs/virs.c
+[0]PETSC ERROR: #3 SNESSolve_VINEWTONRSLS() line 461 in /home/bueler/petsc/src/snes/impls/vi/rs/virs.c
+[0]PETSC ERROR: #4 SNESSolve() line 3850 in /home/bueler/petsc/src/snes/interface/snes.c
+*/
+
+  ierr = VecDuplicate(H,&Htry);CHKERRQ(ierr);
+
+  for (m = startCS(cs); m < endCS(cs); m++) {
+      user->eps = epsCS(m,cs);
+      ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+      ierr = SNESAttempt(snes,Htry,m,reason,user);CHKERRQ(ierr);
+      if (*reason < 0) {
+          if ((user->divergetryagain) && (user->recoverycount == 0) && (user->dtres <= 0.0)) {
+              myPrintf(user,
+                  "         turning on steady-state recovery mode (backward Euler time step of %.2f a) ...\n",
+                  user->dtrecovery/user->secpera);
+              user->dtres = user->dtrecovery;
+              user->dtjac = user->dtrecovery;
+              user->recoverycount = 1;
+              user->goodm = m-1;
+              myPrintf(user,
+                  "         trying again ...\n");
+              ierr = VecCopy(H,user->Hinitial); CHKERRQ(ierr);
+              ierr = VecCopy(H,Htry); CHKERRQ(ierr);
+              ierr = SNESAttempt(snes,Htry,m,reason,user);CHKERRQ(ierr);
+          }
+          if (*reason < 0) {
+              if (m>0) // record last successful eps
+                  user->eps = epsCS(m-1,cs);
+              break;
+          }
+      } else if (user->recoverycount > 0)
+          user->recoverycount++;
+      // actions when successful:
+      ierr = VecCopy(Htry,H); CHKERRQ(ierr);
+      ierr = StdoutReport(H,user); CHKERRQ(ierr);
+      if (user->recoverycount == 0)
+          user->goodm = m;
+  }
+
+  //ierr = DMRestoreGlobalVector(user->da,&Htry);CHKERRQ(ierr);
+  ierr = VecDestroy(&Htry);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
