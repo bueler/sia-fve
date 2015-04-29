@@ -292,6 +292,9 @@ PetscErrorCode FormBounds(SNES snes, Vec Xl, Vec Xu) {
   PetscFunctionReturn(0);
 }
 
+// solve the steady-state problem or do one time step:
+//   * applies the continuation scheme
+//   * applies recovery if in steady-state and if desired
 PetscErrorCode Step(Vec H, SNES *snes, ContinuationScheme *cs, SNESConvergedReason *reason, AppCtx *user) {
   PetscErrorCode ierr;
   Vec            Htry;

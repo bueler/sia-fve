@@ -316,7 +316,7 @@ PetscErrorCode PetscIgnoreZEROPIVOTErrorHandler(MPI_Comm comm,int line,const cha
    }
 }
 
-// try a SNES solve and report on the result; H is modified
+// try a SNES solve and get feedback on the result; H is modified
 PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
                            SNESConvergedReason *reason, AppCtx *user) {
   PetscErrorCode ierr;
