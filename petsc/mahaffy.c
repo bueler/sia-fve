@@ -62,8 +62,8 @@ Do "manual" time steps after divergence, to approach steady state:
 #include "base/io.h"
 #include "base/solver.h"
 
-extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode ChopScaleSMBforInitial(Vec,AppCtx*);
+extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 
 
 int main(int argc,char **argv) {
@@ -76,48 +76,6 @@ int main(int argc,char **argv) {
   PetscInt            l, m;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
-
-  // default settings of parameters
-  user.n      = 3.0;
-  user.g      = 9.81;       // m/s^2
-  user.rho    = 910.0;      // kg/m^3
-  user.secpera= 31556926.0;
-  user.A      = 1.0e-16/user.secpera; // = 3.17e-24  1/(Pa^3 s); EISMINT I value
-
-  user.initmagic = 1000.0;  // a
-  user.delta  = 1.0e-4;
-
-  user.lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence difficulties on refined grid (=125m); earlier M* used 0.5
-
-  user.numsteps   = 1;                   // steady state does one step
-  user.dtres      = 0.0;
-  user.dtjac      = 0.0;
-  user.dtrecovery = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
-  user.goodm      = -1;
-  user.recoverycount = 0;
-
-  user.mtrue      = PETSC_FALSE;
-
-  user.dome       = PETSC_TRUE;  // defaults to this case
-  user.bedstep    = PETSC_FALSE;
-  user.swapxy     = PETSC_FALSE;
-  user.divergetryagain = PETSC_TRUE;
-  user.checkadmissible = PETSC_FALSE;
-
-  user.read       = PETSC_FALSE;
-  user.readinitial= PETSC_FALSE;
-  user.showdata   = PETSC_FALSE;
-  user.history    = PETSC_FALSE;
-  user.nodiag     = PETSC_FALSE;
-  user.dump       = PETSC_FALSE;
-
-  user.silent     = PETSC_FALSE;
-  user.averr      = PETSC_FALSE;
-  user.maxerr     = PETSC_FALSE;
-
-  strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
-  strcpy(user.readname,"FILENAME");
-  strcpy(user.readinitialname,"FILENAME");
 
   ierr = SetFromOptionsAppCtx("mah_",&user); CHKERRQ(ierr);
   ierr = SetFromOptionsCS("cs_",&(user.cs)); CHKERRQ(ierr);
@@ -350,7 +308,6 @@ int main(int argc,char **argv) {
   return 0;
 }
 
-
 // set initial H by chop & scale SMB
 PetscErrorCode ChopScaleSMBforInitial(Vec Hinitial, AppCtx *user) {
   PetscErrorCode ierr;
@@ -360,7 +317,6 @@ PetscErrorCode ChopScaleSMBforInitial(Vec Hinitial, AppCtx *user) {
   ierr = VecScale(Hinitial,user->initmagic * user->secpera); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
 //  for call-back: tell SNESVI (variational inequality) that we want
 //    0.0 <= H < +infinity

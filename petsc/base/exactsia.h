@@ -2,8 +2,8 @@
 
 /* Formulas for two exact solutions, one from Bueler2003 and one from JaroschSchoofAnslow2013. */
 
-#ifndef EXACTSIACTX_H_
-#define EXACTSIACTX_H_
+#ifndef EXACTSIA_H_
+#define EXACTSIA_H_
 
 #include <petscvec.h>
 #include "appctx.h"
@@ -15,4 +15,4 @@ PetscErrorCode BedStepBed(Vec,const AppCtx*);
 PetscErrorCode BedStepCMB(Vec,const AppCtx*);
 PetscErrorCode BedStepExactThickness(Vec,const AppCtx*);
 
-#endif // EXACTSIACTX_H_
+#endif // EXACTSIA_H_
