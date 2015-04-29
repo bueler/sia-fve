@@ -298,20 +298,6 @@ PetscErrorCode Step(Vec H, SNES *snes, ContinuationScheme *cs, SNESConvergedReas
   PetscInt       m;
 
   PetscFunctionBeginUser;
-  //ierr = DMGetGlobalVector(user->da,&Htry);CHKERRQ(ierr);
-/* above generates
-[0]PETSC ERROR: Object is in wrong state
-[0]PETSC ERROR: Clearing DM of global vectors that has a global vector obtained with DMGetGlobalVector()
-[0]PETSC ERROR: See http://www.mcs.anl.gov/petsc/documentation/faq.html for trouble shooting.
-[0]PETSC ERROR: Petsc Development GIT revision: v3.5.3-2719-gda40757  GIT Date: 2015-04-20 17:38:06 -0500
-[0]PETSC ERROR: ./mahaffy on a linux-gnu-opt named bueler-gazelle by bueler Wed Apr 29 10:27:03 2015
-[0]PETSC ERROR: Configure options --with-debugging=0 --download-mpich=1
-[0]PETSC ERROR: #1 DMClearGlobalVectors() line 196 in /home/bueler/petsc/src/dm/interface/dmget.c
-[0]PETSC ERROR: #2 DMSetVI() line 238 in /home/bueler/petsc/src/snes/impls/vi/rs/virs.c
-[0]PETSC ERROR: #3 SNESSolve_VINEWTONRSLS() line 461 in /home/bueler/petsc/src/snes/impls/vi/rs/virs.c
-[0]PETSC ERROR: #4 SNESSolve() line 3850 in /home/bueler/petsc/src/snes/interface/snes.c
-*/
-
   ierr = VecDuplicate(H,&Htry);CHKERRQ(ierr);
 
   for (m = startCS(cs); m < endCS(cs); m++) {
@@ -347,7 +333,6 @@ PetscErrorCode Step(Vec H, SNES *snes, ContinuationScheme *cs, SNESConvergedReas
           user->goodm = m;
   }
 
-  //ierr = DMRestoreGlobalVector(user->da,&Htry);CHKERRQ(ierr);
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
