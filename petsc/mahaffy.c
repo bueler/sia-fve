@@ -116,13 +116,12 @@ int main(int argc,char **argv) {
   user.averr      = PETSC_FALSE;
   user.maxerr     = PETSC_FALSE;
 
-  ierr = InitializeCS(&(user.cs)); CHKERRQ(ierr);
-
   strcpy(user.figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user.readname,"FILENAME");
   strcpy(user.readinitialname,"FILENAME");
 
   ierr = ProcessOptions(&user); CHKERRQ(ierr);
+  ierr = SetFromOptionsCS(&(user.cs)); CHKERRQ(ierr);
 
   // derived constant computed after n,A get set
   user.Gamma = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
@@ -495,8 +494,6 @@ PetscErrorCode ProcessOptions(AppCtx *user) {
       user->history = PETSC_TRUE; // history is part of dump
   else if (user->history)
       strcpy(user->figsprefix,histprefix); // store path to history file in figsprefix
-
-  ierr = OptionsCS(&(user->cs)); CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }

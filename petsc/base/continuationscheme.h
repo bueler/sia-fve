@@ -15,17 +15,20 @@ typedef struct {
             sched[CSMAX];
 } ContinuationScheme;
 
+PetscErrorCode SetFromOptionsCS(ContinuationScheme *cs);
 
-PetscErrorCode InitializeCS(ContinuationScheme *cs);
+/* first and one-after-last values of index for CS loop */
+PetscInt startCS(const ContinuationScheme *cs);
+PetscInt endCS(const ContinuationScheme *cs);
 
-PetscErrorCode OptionsCS(ContinuationScheme *cs);
-
+/* value of continuation parameter eps itself; for diagnostics */
 PetscReal epsCS(PetscInt m, const ContinuationScheme *cs);
 
-/* n(1)=n0 and n(0)=n. */
+/* continuation value n(eps) of Glen exponent:   n(1)=n0 and n(0)=n. */
 PetscReal nCS(PetscReal n, PetscReal eps, const ContinuationScheme *cs);
 
-/* D(eps)=(1-eps) delta H^{n+2} + eps D_0   so   D(1)=D_0 and D(0)=delta H^{n+2}. */
+/* continuation value D(eps) of diffusivity:   D(eps)=(1-eps) delta H^{n+2} + eps D_0
+   so   D(1)=D_0 and D(0)=delta H^{n+2}. */
 PetscReal DCS(PetscReal delta, PetscReal H, PetscReal n, PetscReal eps, const ContinuationScheme *cs);
 
 #endif // CONTINUATIONSCHEME_H_

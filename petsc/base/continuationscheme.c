@@ -3,7 +3,8 @@
 #include <petscvec.h>
 #include "continuationscheme.h"
 
-PetscErrorCode InitializeCS(ContinuationScheme *cs) {
+PetscErrorCode SetFromOptionsCS(ContinuationScheme *cs) {
+  PetscErrorCode ierr;
   PetscInt i;
   cs->max   = CSMAX;
   cs->start = 0;
@@ -13,12 +14,6 @@ PetscErrorCode InitializeCS(ContinuationScheme *cs) {
   cs->sched[cs->max-1] = 0.0;
   cs->n0    = 1.0;
   cs->D0    = 10.0;        // m^2 / s
-  return 0;
-}
-
-
-PetscErrorCode OptionsCS(ContinuationScheme *cs) {
-  PetscErrorCode ierr;
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"cs_","options to continuation scheme","");CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "initial (and representative?) value of diffusivity; in m^2/s",
@@ -34,7 +29,7 @@ PetscErrorCode OptionsCS(ContinuationScheme *cs) {
       NULL,cs->start,&cs->start,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   if (cs->end > cs->max) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR in ContinuationScheme option: -cs_end > -cs_max\n");
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR in ContinuationScheme option: -cs_end > cs.max\n");
   }
   if (cs->start >= cs->end) {
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR in ContinuationScheme option: -cs_start >= -cs_end\n");
@@ -54,17 +49,22 @@ PetscErrorCode OptionsCS(ContinuationScheme *cs) {
   PetscFunctionReturn(0);
 }
 
+PetscInt startCS(const ContinuationScheme *cs) {
+  return cs->start;
+}
+
+PetscInt endCS(const ContinuationScheme *cs) {
+  return cs->end;
+}
 
 PetscReal epsCS(PetscInt m, const ContinuationScheme *cs) {
   return cs->sched[m];
 }
 
-
 /* n(1)=n0 and n(0)=n. */
 PetscReal nCS(PetscReal n, PetscReal eps, const ContinuationScheme *cs) {
   return (1.0 - eps) * n + eps * cs->n0;
 }
-
 
 /* D(eps)=(1-eps) delta H^{n+2} + eps D_0   so   D(1)=D_0 and D(0)=delta H^{n+2}. */
 PetscReal DCS(PetscReal delta, PetscReal H, PetscReal n, PetscReal eps, const ContinuationScheme *cs) {

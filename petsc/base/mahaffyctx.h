@@ -77,3 +77,4 @@ typedef struct {
 } AppCtx;
 
 #endif // MAHAFFYCTX_H_
+
