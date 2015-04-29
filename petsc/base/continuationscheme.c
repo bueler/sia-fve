@@ -1,9 +1,8 @@
 /* (C) 2015 Ed Bueler */
 
-#include <petscvec.h>
 #include "continuationscheme.h"
 
-PetscErrorCode SetFromOptionsCS(ContinuationScheme *cs) {
+PetscErrorCode SetFromOptionsCS(const char *optprefix, ContinuationScheme *cs) {
   PetscErrorCode ierr;
   PetscInt i;
   cs->max   = CSMAX;
@@ -14,7 +13,7 @@ PetscErrorCode SetFromOptionsCS(ContinuationScheme *cs) {
   cs->sched[cs->max-1] = 0.0;
   cs->n0    = 1.0;
   cs->D0    = 10.0;        // m^2 / s
-  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,"cs_","options to continuation scheme","");CHKERRQ(ierr);
+  ierr = PetscOptionsBegin(PETSC_COMM_WORLD,optprefix,"options to continuation scheme","");CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "initial (and representative?) value of diffusivity; in m^2/s",
       NULL,cs->D0,&cs->D0,NULL);CHKERRQ(ierr);

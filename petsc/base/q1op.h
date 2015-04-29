@@ -5,8 +5,8 @@
 #ifndef Q1OP_H_
 #define Q1OP_H_
 
-#include <petscvec.h>
-#include "mahaffyctx.h"  // for Grad only
+#include <petsc.h>
+#include "appctx.h"  // for Grad only
 
 /*
 In the following functions

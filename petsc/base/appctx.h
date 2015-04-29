@@ -2,8 +2,8 @@
 
 /* Structs which are used by mahaffy.c. */
 
-#ifndef MAHAFFYCTX_H_
-#define MAHAFFYCTX_H_
+#ifndef APPCTX_H_
+#define APPCTX_H_
 
 #include <sys/time.h>
 #include <petscdmda.h>
@@ -76,5 +76,7 @@ typedef struct {
   DiagnosticScheme   ds;
 } AppCtx;
 
-#endif // MAHAFFYCTX_H_
+PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user);
+
+#endif // APPCTX_H_
 

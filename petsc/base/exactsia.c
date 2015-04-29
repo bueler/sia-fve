@@ -3,7 +3,6 @@
 #include <petscdmda.h>
 #include <petscvec.h>
 
-#include "mahaffyctx.h"
 #include "exactsia.h"
 
 

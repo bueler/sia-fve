@@ -7,7 +7,7 @@ Also utilities for computing stats, viewing at stdout, and viewing with X. */
 #define IO_H_
 
 #include <petscvec.h>
-#include "mahaffyctx.h"  // for AppCtx & DiagnosticScheme
+#include "appctx.h"  // for AppCtx & DiagnosticScheme
 
 // useful utility; note that VecChop() in PETSc chops any *absolute values*
 // below tol

@@ -3,7 +3,7 @@
 #ifndef CONTINUATIONSCHEME_H_
 #define CONTINUATIONSCHEME_H_
 
-#include <petscvec.h>
+#include <petsc.h>
 
 #define CSMAX 13
 typedef struct {
@@ -15,7 +15,7 @@ typedef struct {
             sched[CSMAX];
 } ContinuationScheme;
 
-PetscErrorCode SetFromOptionsCS(ContinuationScheme *cs);
+PetscErrorCode SetFromOptionsCS(const char *optprefix, ContinuationScheme *cs);
 
 /* first and one-after-last values of index for CS loop */
 PetscInt startCS(const ContinuationScheme *cs);

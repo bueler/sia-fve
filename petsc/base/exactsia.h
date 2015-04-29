@@ -6,7 +6,7 @@
 #define EXACTSIACTX_H_
 
 #include <petscvec.h>
-#include "mahaffyctx.h"  // for AppCtx
+#include "appctx.h"
 
 PetscErrorCode DomeCMB(Vec,const AppCtx*);
 PetscErrorCode DomeExactThickness(Vec,const AppCtx*);

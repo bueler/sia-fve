@@ -1,3 +1,4 @@
+all: mahaffy
 
 # for maint branch:
 #include ${PETSC_DIR}/conf/variables
@@ -7,7 +8,7 @@
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-base := exactsia.o io.o q1op.o sia.o continuationscheme.o solver.o
+base := appctx.o continuationscheme.o sia.o exactsia.o io.o q1op.o solver.o
 base := $(addprefix base/, $(base))
 
 mahaffy: mahaffy.o $(base) chkopts

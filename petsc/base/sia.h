@@ -6,7 +6,7 @@
 #define SIA_H_
 
 #include <petsc.h>
-#include "mahaffyctx.h"  // for Grad and AppCtx
+#include "appctx.h"  // for Grad and AppCtx
 
 /*
 Evaluate a component of the flux from gradients and thickness.  Note:
