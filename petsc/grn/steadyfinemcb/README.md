@@ -27,11 +27,11 @@ Then do in this directory:
 
     $ ./setup1500m.sh
 
-To view the resulting files do
+To view the resulting files do something like this:
 
     $ ncecat mcb1500mS?.nc foo.nc && ncview foo.nc && rm foo.nc
 
-Do
+Do the runs:
 
-    $ ./study.sh
+    $ ./study1500m.sh
 
