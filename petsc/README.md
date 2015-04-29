@@ -3,7 +3,7 @@ petsc/
 
 The code `mahaffy.c` tests classical Mahaffy and improved (M*) finite volume
 element methods for the shallow ice approximation (SIA) on a structured Q1 grid.
-We use PETSc DMDA and SNESVI to solve the steady SIA free boundary problem.
+We use PETSc DMDA and SNESVI to solve the steady-state SIA free boundary problem.
 
 This code is documented by manuscript `../paper/siafve.tex`.
 
@@ -19,8 +19,9 @@ Some quick verification runs are also used as regression tests:
 
     $ make test
 
-In addition, `mahaffy.c` can read real data and model real ice sheets.  See
-the `grn/` and `grn/mcb/` subdirectories for Greenland ice sheet examples.
+In addition, `mahaffy.c` can read real data and model real ice sheets.  Also
+it can do backward-Euler time-stepping.  See the `grn/`, `grn/robust/`, and
+`grn/mcb/` subdirectories for Greenland ice sheet examples.
 
 Usage help and major run modes
 ------------------------------

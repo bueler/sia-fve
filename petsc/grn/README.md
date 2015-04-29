@@ -124,18 +124,18 @@ This run only takes a few minutes.
 More optional steps
 -------------------
 
-  * _Do "manual" time steps after divergence, to approach steady state._  If we
-  do
+  * _Do "manual" time steps after divergence, to get even closer to steady state._
+  If we do
 
         $ ./quickstart.sh "-mah_notry"
 
   then we get a run that diverges at step 11 of the continuation scheme, i.e.
   it stops with a state that converges with eps=4.64e-4.  Thus it is not at
-  steady state with the full SIA model.  Now do 1000 a of time steps to head
+  steady state with the full SIA model.  Now do 100 a of time-stepping to head
   toward steady state:
 
         $ mkdir testcont/
-        $ mpiexec -n 6 ../mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 9 -mah_steps 100 -mah_dt 10.0 -mah_notry -mah_dump testcont/
+        $ mpiexec -n 6 ../mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 9 -mah_dt 10.0 -mah_T 100.0 -mah_dump testcont/
 
   * _Generate figures._  Generate `.pdf` and `.png` figures:
 

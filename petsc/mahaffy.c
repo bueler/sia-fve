@@ -75,7 +75,6 @@ int main(int argc,char **argv) {
   ContinuationScheme  cs;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
-  PetscInt            l;
   SNESConvergedReason reason;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -203,10 +202,14 @@ int main(int argc,char **argv) {
   ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
 
-  myPrintf(&user,    "solving %s problem by %s method ...\n",
-           (user.dtres > 0.0) ? "single time-step" : "steady-state",
+  myPrintf(&user,    "solving %s by %s method ...\n",
+           (user.dtres > 0.0) ? "backward-Euler time-step problems" : "steady-state problem",
            (user.mtrue) ? "true Mahaffy" :
                ((user.lambda == 0.0) ? "M*-without-upwinding" : "M*"));
+  if (user.dtres > 0.0) {
+      myPrintf(&user,"  time-stepping on interval [0.0 a,%.2f a] with initial step %.2f a\n",
+               user.T/user.secpera,user.dtres/user.secpera);
+  }
 
   ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
 
@@ -214,12 +217,17 @@ int main(int argc,char **argv) {
 
   if (user.dtres > 0.0) {  // time-stepping
       // note "Hinitial" is really "H^{l-1}", the solution at the last time step
-      for (l = 0; l < user.numsteps; l++) {
+      PetscReal  tcurrent = 0.0,
+                 dtgoal   = user.dtres;
+      while (tcurrent < user.T) {
+          user.dtres = PetscMin(user.T - tcurrent, dtgoal);
+          user.dtjac = user.dtres;
           ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);
           if (reason >= 0) {
-              myPrintf(&user,"t = %.2f a: completed time step %d of %d\n",
-                       (l+1)*user.dtres/user.secpera,l+1,user.numsteps);
               ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
+              tcurrent += user.dtres;
+              myPrintf(&user,"t = %.2f a: completed time step of duration %.2f a in interval [0.0 a,%.2f a]\n",
+                       tcurrent/user.secpera,user.dtres/user.secpera,user.T/user.secpera);
           } else
               break;
       }

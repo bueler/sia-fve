@@ -40,7 +40,7 @@ for LEV in $LEVELS; do
     PREV="-mah_readinitial ${DUMP}unnamed.dat"
     DUMP=result${LEV}/
     mkdir -p $DUMP
-    mpiexec -n $NN ../../mahaffy -mah_steps 10 -mah_dt 0.1 -mah_read $DAT $PREV $STDOPTS -mah_notry -mah_dump $DUMP
+    mpiexec -n $NN ../../mahaffy -mah_T 1.0 -mah_dt 0.1 -mah_read $DAT $PREV $STDOPTS -mah_notry -mah_dump $DUMP
     head -n 1 $DUMP/history.txt >> $OUT
     cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
     cat $DUMP/history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT

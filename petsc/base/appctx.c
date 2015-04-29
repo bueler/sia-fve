@@ -16,7 +16,7 @@ PetscErrorCode initialize(AppCtx *user) {
 
   user->lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence difficulties on refined grid (=125m); earlier M* used 0.5
 
-  user->numsteps   = -1;
+  user->T          = -1.0;
   user->dtres      = 0.0;
   user->dtjac      = 0.0;
   user->dtrecovery = 1.0 * user->secpera;  // default 1 year time step for Backward Euler
@@ -50,7 +50,7 @@ PetscErrorCode initialize(AppCtx *user) {
 
 PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
   PetscErrorCode ierr;
-  PetscBool      domechosen, dtflg, notryset;
+  PetscBool      domechosen, dtflg, notryset, Tset;
   char           histprefix[512];
 
   ierr = initialize(user); CHKERRQ(ierr);
@@ -74,15 +74,15 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       "-dome", "use dome exact solution by Bueler (2003) [default]",
       NULL,user->dome,&user->dome,&domechosen);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-dtjac", "use this time step (years) in Jacobian evaluation, even in steady-state",
+      "-dtjac", "in steady-state, use this time step (years) in Jacobian evaluation",
       NULL,user->dtjac/user->secpera,&user->dtjac,&dtflg);CHKERRQ(ierr);
   if (dtflg)  user->dtjac *= user->secpera;
   ierr = PetscOptionsReal(
-      "-dtrecovery", "use this time step (years) in recovery",
+      "-dtrecovery", "in steady-state, use this time step (years) in recovery",
       NULL,user->dtrecovery/user->secpera,&user->dtrecovery,&dtflg);CHKERRQ(ierr);
   if (dtflg)  user->dtrecovery *= user->secpera;
   ierr = PetscOptionsReal(
-      "-dt", "use this time step (years) FOR TIME-STEPPING; overrides -mah_dtjac,-mah_dtrecovery",
+      "-dt", "use this time step (years) when possible FOR TIME-STEPPING; overrides -mah_dtjac,-mah_dtrecovery",
       NULL,user->dtres/user->secpera,&user->dtres,&dtflg);CHKERRQ(ierr);
   if (dtflg) {
       user->dtres *= user->secpera;
@@ -114,7 +114,7 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       "-nodiag", "do not store, generate, or output diagnostic D and Wmag fields",
       NULL,user->nodiag,&user->nodiag,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
-      "-notry", "on SNES diverge, DO NOT try again with recovery",
+      "-notry", "in steady-state, on SNES diverge, DO NOT try again with recovery",
       NULL,!user->divergetryagain,&user->divergetryagain,&notryset);CHKERRQ(ierr);
   if (notryset) user->divergetryagain = PETSC_FALSE;
   ierr = PetscOptionsString(
@@ -129,25 +129,31 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
   ierr = PetscOptionsBool(
       "-silent", "run silent (print nothing)",
       NULL,user->silent,&user->silent,NULL);CHKERRQ(ierr);
-  ierr = PetscOptionsInt(
-      "-steps", "number of Backward Euler time-steps to take; default=1 is for steady-state",
-      NULL,user->numsteps,&user->numsteps,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-T", "use Backward Euler time-stepping to reach this time (years); i.e. solve for 0 <= t <= T",
+      NULL,user->T/user->secpera,&user->T,&Tset);CHKERRQ(ierr);
+  if (Tset)  user->T *= user->secpera;
   ierr = PetscOptionsBool(
       "-true", "use true Mahaffy method, not default M*",
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if (user->numsteps > 0) {
+  if (Tset) {
       if ((user->dtres <= 0.0) || (user->dtjac <= 0.0) || (user->dtres != user->dtjac)) {
         SETERRQ(PETSC_COMM_WORLD,4,
-           "OPTION CONFLICT: Backward Euler time-steps requested but dtres and dtjac are inconsistent; -mah_dt not set?\n");
+           "OPTION CONFLICT: Backward Euler time-steppping requested (-mah_T set) but dtres and dtjac are inconsistent; -mah_dt not set?\n");
       }
-  }
-  if ((user->numsteps <= 0) && (user->dtres > 0.0)) {
-      SETERRQ(PETSC_COMM_WORLD,5,"OPTION CONFLICT: dtres > 0  but no steps requested\n");
+      if (user->T <= 0) {
+          SETERRQ(PETSC_COMM_WORLD,6,"OPTION CONFLICT: -mah_T value must be positive\n");
+      }
+      if (user->T < user->dtres) {
+          SETERRQ(PETSC_COMM_WORLD,7,"OPTION CONFLICT: -mah_T value must be at least as large as -mah_dt value\n");
+      }
+  } else if (user->dtres > 0.0) {
+      SETERRQ(PETSC_COMM_WORLD,5,"OPTION CONFLICT: dtres > 0  but no time-stepping not requested; set -mah_T?\n");
   }
   if ((user->averr) || (user->maxerr))
       user->silent = PETSC_TRUE;

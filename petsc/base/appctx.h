@@ -44,12 +44,12 @@ typedef struct {
             eps,    // current continuation parameter for n and D
             delta,  // dimensionless regularization for slope in SIA formulas
             lambda, // amount of upwinding; lambda=0 is none and lambda=1 is "full"
-            dtres,  // time step for backward Euler used in residual
-            dtjac,  //     ...                      used in Jacobian
-            dtrecovery,//  ...                      used in recovery
+            T,      // time-stepping is on [0,T]
+            dtres,  // time step for backward Euler used in residual FOR REAL TIME STEPPING
+            dtjac,  //     ...                      used in steady-state for Jacobian eval
+            dtrecovery,//  ...                      used in steady-state recovery
             initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
   PetscInt  Nx, Ny, // grid has Nx x Ny nodes
-            numsteps,// number of time-steps to take; is set to 1 if steady-state
             recoverycount,// number of steps of recovery taken; zero if recovery did not happen
             luzeropvterr, // error handler sets this if it "intercepts" zero pivot error
             goodm;  // last continuation scheme level where convergence happened (not counting recovery)
