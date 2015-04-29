@@ -22,8 +22,9 @@ NAMEROOT="mcb1500mS"
 DAT=${NAMEROOT}3.dat
 ../../nc2petsc.py ${NAMEROOT}3.nc $DAT
 DUMP=result3/
+mkdir -p $DUMP
 mpiexec -n $NN ../../mahaffy -mah_read $DAT $STDOPTS -mah_notry -mah_dump $DUMP
-cat $DAT >> $OUT
+head -n 1 $DUMP/history.txt >> $OUT
 cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
 cat $DUMP/history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
 cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
@@ -32,17 +33,18 @@ cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
 # we already know that continuation scheme fails on the steady state problem
 # on the resolved-bed cases
 LEVELS="2 1"
-PREV=
+
 for LEV in $LEVELS; do
     DAT=${NAMEROOT}${LEV}.dat
     ../../nc2petsc.py ${NAMEROOT}${LEV}.nc $DAT
+    PREV="-mah_readinitial ${DUMP}unnamed.dat"
     DUMP=result${LEV}/
-    mpiexec -n $NN ../../mahaffy -cs_start 8 -mah_steps 10 -mah_dt 100.0 -mah_read $DAT $PREV $STDOPTS -mah_notry -mah_dump $DUMP
-    cat $DAT >> $OUT
+    mkdir -p $DUMP
+    mpiexec -n $NN ../../mahaffy -mah_steps 10 -mah_dt 0.1 -mah_read $DAT $PREV $STDOPTS -mah_notry -mah_dump $DUMP
+    head -n 1 $DUMP/history.txt >> $OUT
     cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
     cat $DUMP/history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
     cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
-    PREV="-mah_readinitial ${DUMP}/unnamed.dat"
 done
 
 set +x
