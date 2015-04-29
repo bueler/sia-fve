@@ -16,7 +16,7 @@ PetscErrorCode initialize(AppCtx *user) {
 
   user->lambda = 0.25;  // amount of upwinding; some trial-and-error with bedstep soln; 0.1 gives some Newton convergence difficulties on refined grid (=125m); earlier M* used 0.5
 
-  user->numsteps   = 1;                   // steady state does one step
+  user->numsteps   = -1;
   user->dtres      = 0.0;
   user->dtjac      = 0.0;
   user->dtrecovery = 1.0 * user->secpera;  // default 1 year time step for Backward Euler
@@ -140,11 +140,14 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       NULL,user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   // enforce consistency of cases
-  if (user->numsteps > 1) {
+  if (user->numsteps > 0) {
       if ((user->dtres <= 0.0) || (user->dtjac <= 0.0) || (user->dtres != user->dtjac)) {
         SETERRQ(PETSC_COMM_WORLD,4,
            "OPTION CONFLICT: Backward Euler time-steps requested but dtres and dtjac are inconsistent; -mah_dt not set?\n");
       }
+  }
+  if ((user->numsteps <= 0) && (user->dtres > 0.0)) {
+      SETERRQ(PETSC_COMM_WORLD,5,"OPTION CONFLICT: dtres > 0  but no steps requested\n");
   }
   if ((user->averr) || (user->maxerr))
       user->silent = PETSC_TRUE;
@@ -169,6 +172,9 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       user->history = PETSC_TRUE; // history is part of dump
   else if (user->history)
       strcpy(user->figsprefix,histprefix); // store path to history file in figsprefix
+
+  // derived constant computed after n,A get set
+  user->Gamma = 2.0 * PetscPowReal(user->rho*user->g,user->n) * user->A / (user->n+2.0);
 
   PetscFunctionReturn(0);
 }
