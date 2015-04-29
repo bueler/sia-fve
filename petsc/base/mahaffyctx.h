@@ -51,7 +51,8 @@ typedef struct {
   PetscInt  Nx, Ny, // grid has Nx x Ny nodes
             numsteps,// number of time-steps to take; is set to 1 if steady-state
             recoverycount,// number of steps of recovery taken; zero if recovery did not happen
-            luzeropvterr; // error handler sets this if it "intercepts" zero pivot error
+            luzeropvterr, // error handler sets this if it "intercepts" zero pivot error
+            goodm;  // last continuation scheme level where convergence happened (not counting recovery)
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
             readinitial,// use read initial H instead of generating guess in usual way

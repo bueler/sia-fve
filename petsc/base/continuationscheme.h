@@ -9,8 +9,7 @@
 typedef struct {
   PetscInt  max;   // total number of levels:  eps_0, eps_1, ..., eps_{max-1}
   PetscInt  start, // first level to actually use:  eps_start, ..., eps_{end-1}
-            end,   // one beyond last level to actually use:  eps_start, ..., eps_{end-1}
-            goodm; // last level where convergence happened (not counting recovery)
+            end;   // one beyond last level to actually use:  eps_start, ..., eps_{end-1}
   PetscReal n0,    // initial value of Glen exponent
             D0,    // initial (and representative?) value of diffusivity
             sched[CSMAX];

@@ -94,6 +94,7 @@ int main(int argc,char **argv) {
   user.dtres      = 0.0;
   user.dtjac      = 0.0;
   user.dtrecovery = 1.0 * user.secpera;  // default 1 year time step for Backward Euler
+  user.goodm      = -1;
   user.recoverycount = 0;
 
   user.mtrue      = PETSC_FALSE;
@@ -281,7 +282,7 @@ int main(int argc,char **argv) {
                   user.dtres = user.dtrecovery;
                   user.dtjac = user.dtrecovery;
                   user.recoverycount = 1;
-                  user.cs.goodm = m-1;
+                  user.goodm = m-1;
                   ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);      
                   ierr = VecCopy(H,Htry); CHKERRQ(ierr);
                   ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
@@ -297,7 +298,7 @@ int main(int argc,char **argv) {
           ierr = VecCopy(Htry,H); CHKERRQ(ierr);
           ierr = StdoutReport(H,&user); CHKERRQ(ierr);
           if (user.recoverycount == 0)
-              user.cs.goodm = m;
+              user.goodm = m;
       }  // for m
       if (reason >= 0) {
           if (user.dtres > 0.0)
