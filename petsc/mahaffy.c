@@ -220,16 +220,24 @@ int main(int argc,char **argv) {
       PetscReal  tcurrent = 0.0,
                  dtgoal   = user.dtres;
       while (tcurrent < user.T) {
+          PetscInt reducecount = 10;
           user.dtres = PetscMin(user.T - tcurrent, dtgoal);
           user.dtjac = user.dtres;
           ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);
-          if (reason >= 0) {
-              ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
-              tcurrent += user.dtres;
-              myPrintf(&user,"t = %.2f a: completed time step of duration %.2f a in interval [0.0 a,%.2f a]\n",
-                       tcurrent/user.secpera,user.dtres/user.secpera,user.T/user.secpera);
-          } else
-              break;
+          while (reason < 0) {
+              if (reducecount == 0) {
+                  SETERRQ(PETSC_COMM_WORLD,1,"ERROR:  time-step failure ... giving up on reducing time step\n");
+              }
+              reducecount--;
+              ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
+              user.dtres /= 2.0;
+              user.dtjac = user.dtres;
+              ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);
+          }
+          ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
+          tcurrent += user.dtres;
+          myPrintf(&user,"t = %.2f a: completed time step of duration %.2f a in interval [0.0 a,%.2f a]\n",
+                   tcurrent/user.secpera,user.dtres/user.secpera,user.T/user.secpera);
       }
   } else { // steady-state
       ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);

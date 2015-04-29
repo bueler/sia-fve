@@ -135,7 +135,7 @@ More optional steps
   toward steady state:
 
         $ mkdir testcont/
-        $ mpiexec -n 6 ../mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 9 -mah_dt 10.0 -mah_T 100.0 -mah_dump testcont/
+        $ mpiexec -n 6 ../mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 9 -mah_dt 50.0 -mah_T 500.0 -mah_dump testcont/
 
   * _Generate figures._  Generate `.pdf` and `.png` figures:
 
