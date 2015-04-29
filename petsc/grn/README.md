@@ -30,7 +30,7 @@ This stage requires a copy of [PISM](http://www.pism-docs.org).  In the PISM
 
 Of course, we need an executable:
 
-    $ (cd ../ && make mahaffy)
+    $ (cd ../ && make)
 
 
 Quick start

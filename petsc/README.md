@@ -12,7 +12,7 @@ Quickstart
 
 To build the executable and run a minimal verification case do:
 
-    $ make mahaffy
+    $ make
     $ ./mahaffy
 
 Some quick verification runs are also used as regression tests:
