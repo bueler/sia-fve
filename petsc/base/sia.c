@@ -12,7 +12,7 @@ from values of thickness and surface gradient:
 Also applies power-regularization part of continuation scheme.
 */
 PetscReal getdelta(Grad gH, Grad gb, const AppCtx *user) {
-    const PetscReal n = nCS(user->n,user->eps,&(user->cs));
+    const PetscReal n = nCS(user->n,user->eps,user->cs);
     if (n > 1.0) {
         const PetscReal sx = gH.x + gb.x,
                         sy = gH.y + gb.y,
@@ -33,9 +33,9 @@ Grad getW(PetscReal delta, Grad gb) {
 PetscReal getfluxDIAGNOSTIC(Grad gH, Grad gb, PetscReal H, PetscReal Hup,
                   PetscBool xdir, const AppCtx *user,
                   PetscReal *D, PetscReal *Wmag) {
-  const PetscReal n     = nCS(user->n,user->eps,&(user->cs)),
+  const PetscReal n     = nCS(user->n,user->eps,user->cs),
                   delta = getdelta(gH,gb,user),
-                  myD   = DCS(delta,H,n,user->eps,&(user->cs));
+                  myD   = DCS(delta,H,n,user->eps,user->cs);
   const Grad      myW   = getW(delta,gb);
   if (D)     *D    = myD;
   if (Wmag)  *Wmag = PetscSqrtReal(myW.x * myW.x + myW.y * myW.y);
@@ -67,7 +67,7 @@ surface gradient gH+gb is zero or tiny.
 PetscReal DdeltaDl(Grad gH, Grad gb, Grad dgHdl, const AppCtx *user) {
     const PetscReal sx  = gH.x + gb.x,
                     sy  = gH.y + gb.y,
-                    n   = nCS(user->n,user->eps,&(user->cs)),
+                    n   = nCS(user->n,user->eps,user->cs),
                     slopesqr = sx * sx + sy * sy + user->delta * user->delta,
                     tmp = user->Gamma * (n-1) * PetscPowReal(slopesqr,(n-3.0)/2);
     return tmp * sx * dgHdl.x + tmp * sy * dgHdl.y;
@@ -81,7 +81,7 @@ point (x,y) on element u,v.  Since  Dcont = (1-eps) delta H^{n+2} + eps D0:
 */
 PetscReal DDcontDl(PetscReal delta, PetscReal ddeltadl, PetscReal H, PetscReal dHdl,
                    const AppCtx *user) {
-    const PetscReal n = nCS(user->n,user->eps,&(user->cs));
+    const PetscReal n = nCS(user->n,user->eps,user->cs);
     const PetscReal Hpow = PetscPowReal(PetscAbsReal(H),n+1.0);
     return (1.0-user->eps) * Hpow * ( ddeltadl * H + delta * (n+2.0) * dHdl );
 }
@@ -103,9 +103,9 @@ Grad DWDl(PetscReal ddeltadl, Grad gb) {
 PetscReal DfluxDl(Grad gH, Grad gb, Grad dgHdl,
                   PetscReal H, PetscReal dHdl, PetscReal Hup, PetscReal dHupdl,
                   PetscBool xdir, const AppCtx *user) {
-    const PetscReal n        = nCS(user->n,user->eps,&(user->cs)),
+    const PetscReal n        = nCS(user->n,user->eps,user->cs),
                     delta    = getdelta(gH,gb,user),
-                    D        = DCS(delta,H,n,user->eps,&(user->cs));
+                    D        = DCS(delta,H,n,user->eps,user->cs);
     const Grad      W        = getW(delta,gb);
     const PetscReal ddeltadl = DdeltaDl(gH,gb,dgHdl,user),
                     dDdl     = DDcontDl(delta,ddeltadl,H,dHdl,user),

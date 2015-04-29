@@ -71,6 +71,7 @@ int main(int argc,char **argv) {
   SNES                snes;
   Vec                 H, Htry;
   AppCtx              user;
+  ContinuationScheme  cs;
   DMDALocalInfo       info;
   PetscReal           dx,dy;
   PetscInt            l, m;
@@ -78,7 +79,8 @@ int main(int argc,char **argv) {
   PetscInitialize(&argc,&argv,(char*)0,help);
 
   ierr = SetFromOptionsAppCtx("mah_",&user); CHKERRQ(ierr);
-  ierr = SetFromOptionsCS("cs_",&(user.cs)); CHKERRQ(ierr);
+  ierr = SetFromOptionsCS("cs_",&cs); CHKERRQ(ierr);
+  user.cs = &cs;
 
   // derived constant computed after n,A get set
   user.Gamma = 2.0 * PetscPowReal(user.rho*user.g,user.n) * user.A / (user.n+2.0);
@@ -224,8 +226,8 @@ int main(int argc,char **argv) {
   for (l = 0; l < user.numsteps; l++) {
       ierr = VecCopy(user.Hinitial,H); CHKERRQ(ierr);
       // continuation loop
-      for (m = user.cs.start; m<user.cs.end; m++) {
-          user.eps = epsCS(m,&(user.cs));
+      for (m = startCS(&cs); m < endCS(&cs); m++) {
+          user.eps = epsCS(m,&cs);
           ierr = VecCopy(H,Htry); CHKERRQ(ierr);
           ierr = SNESAttempt(&snes,Htry,m,&reason,&user);CHKERRQ(ierr);
           if (reason < 0) {
@@ -245,7 +247,7 @@ int main(int argc,char **argv) {
               }
               if (reason < 0) {
                   if (m>0) // record last successful eps
-                      user.eps = epsCS(m-1,&(user.cs));
+                      user.eps = epsCS(m-1,&cs);
                   break;
               }
           } else if (user.recoverycount > 0)

@@ -72,7 +72,7 @@ typedef struct {
             readname[512],
             readinitialname[512];
   struct timeval     starttime, endtime;
-  ContinuationScheme cs;
+  ContinuationScheme *cs;
   DiagnosticScheme   ds;
 } AppCtx;
 
