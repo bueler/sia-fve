@@ -5,6 +5,16 @@
 
 #include "exactsia.h"
 
+#define domeL  750.0e3 // radius of exact ice sheet
+#define domeH0 3600.0  // center thickness of exact ice sheet
+
+PetscErrorCode DomeDefaultGrid(AppCtx *user) {
+  user->Nx = -18;        // so DMDACreate2d() defaults to 18x18
+  user->Ny = -18;
+  user->Lx = 900.0e3;    // m
+  user->Ly = 900.0e3;    // m
+  PetscFunctionReturn(0);
+}
 
 PetscErrorCode GetCoordArray(DMDACoor2d ***acoord, const AppCtx *user) {
   PetscErrorCode ierr;
@@ -29,10 +39,6 @@ PetscErrorCode RestoreCoordArray(DMDACoor2d ***acoord, const AppCtx *user) {
   ierr = DMDAVecRestoreArray(coordDA, coordinates, acoord); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
-
-#define domeL  750.0e3 // radius of exact ice sheet
-#define domeH0 3600.0  // center thickness of exact ice sheet
 
 PetscReal radialcoord(const DMDACoor2d c) {
   PetscReal r;
@@ -73,7 +79,6 @@ PetscErrorCode DomeCMB(Vec m, const AppCtx *user) {
   ierr = RestoreCoordArray(&coords, user); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
 PetscErrorCode DomeExactThickness(Vec H, const AppCtx *user) {
   PetscErrorCode ierr;
@@ -116,6 +121,14 @@ PetscErrorCode DomeExactThickness(Vec H, const AppCtx *user) {
 #define bedstepb0 500.0
 #define bedstepm0 2.0/secpera
 
+PetscErrorCode BedStepDefaultGrid(AppCtx *user) {
+  user->Nx = -30;
+  user->Ny = -30;
+  user->Lx = 30.0e3;    // m
+  user->Ly = 30.0e3;    // m
+  PetscFunctionReturn(0);
+}
+
 // formula (45) in Jarosch et al (2013)
 PetscErrorCode BedStepBed(Vec b, const AppCtx *user) {
   PetscErrorCode ierr;
@@ -144,7 +157,6 @@ PetscErrorCode BedStepBed(Vec b, const AppCtx *user) {
   ierr = RestoreCoordArray(&coords, user); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
 // formula (54) in Jarosch et al (2013)
 PetscErrorCode BedStepCMB(Vec m, const AppCtx *user) {
@@ -175,7 +187,6 @@ PetscErrorCode BedStepCMB(Vec m, const AppCtx *user) {
   ierr = RestoreCoordArray(&coords, user); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
-
 
 // formulas (56)--(59) in Jarosch et al (2013)
 // Note  "h_{s+}(x)" in (58) is really  h_{s+} = lim_{x \to x_s^+} h(x), so it does

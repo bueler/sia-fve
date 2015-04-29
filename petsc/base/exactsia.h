@@ -8,9 +8,11 @@
 #include <petscvec.h>
 #include "appctx.h"
 
+PetscErrorCode DomeDefaultGrid(AppCtx*);
 PetscErrorCode DomeCMB(Vec,const AppCtx*);
 PetscErrorCode DomeExactThickness(Vec,const AppCtx*);
 
+PetscErrorCode BedStepDefaultGrid(AppCtx*);
 PetscErrorCode BedStepBed(Vec,const AppCtx*);
 PetscErrorCode BedStepCMB(Vec,const AppCtx*);
 PetscErrorCode BedStepExactThickness(Vec,const AppCtx*);
