@@ -91,7 +91,7 @@ Optional actions
 
   or
 
-        $ ./run.sh 10 1500m 6 "-snes_max_it 200 -mah_dtBE 10.0"
+        $ ./run.sh 10 1500m 6 "-snes_max_it 200 -mah_dtrecovery 10.0"
 
   * _Apply sweeps to remove bed dips._  This is immoral:
 
