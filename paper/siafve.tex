@@ -69,7 +69,7 @@
 
 \begin{document}
 
-\title[Stable FVE schemes for the shallow ice approximation]{Stable finite volume element schemes \\ for the shallow ice approximation}
+\title[Stable schemes for the shallow ice approximation]{Stable finite volume element schemes \\ for the shallow ice approximation}
 
 \abstract{The isothermal, non-sliding shallow ice approximation, combined with mass conservation, is a fundamental model for ice sheet and glacier flow.  It determines the ice geometry and extent by the solution of a free-boundary problem.  We solve the steady state form of this problem directly, without time-stepping, thereby demonstrating a fully-implicit scheme with no stability restrictions.  We first re-interpret the \cite{Mahaffy1976} finite difference method as a ``finite volume element'' (FVE) scheme.  Such a scheme uses both an everywhere-defined approximate thickness function and a flux integral form of the conservation equation.  On the basis of this re-interpretation we build an improved scheme which has both better quadrature in the integral and upwinding on that part of the flux which is proportional to the bed gradient.  The discrete equations are then solved by parallel Newton schemes which respect the constraint that ice thickness is nonnegative.  The results show both convergence of the Newton iteration and superior accuracy to any published results on both flat bed and bedrock-step exact solutions.  We then apply the method at various high resolutions, including sub-1km grids, to model the steady-state geometry of the Greenland ice sheet, using only bedrock elevation and present-day surface mass balance as input data.  While convergence problems arise with highly-resolved bed topography in the Greenland applications, convergence is restored by switching the problem to taking long (10 to 1000 year) fully-implicit time steps.}
 
@@ -298,15 +298,15 @@ Mahaffy's scheme thus approximates each integral on the right in \eqref{eq:fluxi
 
 \section{Improved scheme}  \label{sec:star}
 
-So we return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique, and we do so.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on $\bW H^{n+2}$, because $\bW$ is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme.
+Let us return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique by improving quadrature.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on the bed gradient term $\bW H^{n+2}$.  Together these improvements define the ``\Mstar'' scheme.
 
-Because $H^h$ and $b^h$ live in the space of continuous piecewise-bilinear functions $S_h$, the numerical approximation $\bq^h$ from formula \eqref{eq:siaflux} is defined and smooth on the interior of each element, but $\bq^h$ is discontinuous across the element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts and use the midpoint rule, the optimal one-point rule, on each half.  For example, we break the first integral at $y=y_k$:
+Because $H^h$ and $b^h$ live in $S_h$, the numerical approximation $\bq^h$ from \eqref{eq:fluxform} is defined and smooth on the interior of each element, but discontinuous across element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts and use the midpoint rule, the optimal one-point rule, on each half.  For example, we break the first integral at $y=y_k$:
 \begin{align}
 &\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy  \label{eq:starbreakfirst} \\
   &\quad= \int_{y_k^-}^{y_k} q^x(x_j^+,y)\,dy + \int_{y_k}^{y_k^+} q^x(x_j^+,y)\,dy \notag \\
   &\quad\approx \frac{\Delta y}{2} \left(q^x(x_j^+,y_k-\tfrac{\Delta y}{4}) + q^x(x_j^+,y_k+\tfrac{\Delta y}{4})\right). \notag
 \end{align}
-Recalling notation \eqref{eq:definexypm}, we see that values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are simply evaluations of $\bq^h$ at points of continuity: $(x_j^+,y_k+\tfrac{\Delta y}{4})$ is inside element $\square_{j,k}$ while $(x_j^+,y_k-\tfrac{\Delta y}{4})$ is inside $\square_{j,k-1}$.  Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.
+Recalling notation \eqref{eq:definexypm}, values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are simply evaluations of $\bq^h$ at points of continuity.  Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.
 
 Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}.  At each quadrature point we evaluate the $x$- or $y$-component of $\bq^h$ and then multiply by a constant to get the appropriate integral.  Thus we can write our approximation of \eqref{eq:siafve} as
 \begin{equation}
@@ -327,8 +327,6 @@ x_j^2 &= x_j^5 = x_j - \tfrac{\Delta x}{4}, & y_k^4 &= y_k^7 = y_k - \tfrac{\Del
 x_j^3 &= x_j^4 = x_j - \tfrac{\Delta x}{2}, & y_k^5 &= y_k^6 = y_k - \tfrac{\Delta y}{2}. \notag
 \end{align}
 
-Clearly, implementing equation \eqref{eq:siamstar} requires evaluating the piecewise-bilinear function $\bq^h(x,y)$ at a given quadrature point, which means finding the correct element from the indices $s,x,y$.  Let $\eta(t)$ be the Heaviside step function, so that $\eta(t)=0$ if $t<0$ and $\eta(t)=1$ if $t>0$.  In our indexing, point $(x_j^s,y_k^s)$ is in element $\square_{u,v}$ if and only if $u = j-\eta(x_j^s-x_j)$ and $v=k-\eta(y_k^s-y_k)$.
-
 \begin{figure}[ht]
 \begin{center}
 \input{fig3.tikz}
@@ -337,39 +335,37 @@ Clearly, implementing equation \eqref{eq:siamstar} requires evaluating the piece
 \label{fig:improvequadrature}
 \end{figure}
 
-The number of flux-evaluations for the improved method is twice that for the classical method, but the stencils are the same because the algebraic equation for the point $(x_j,y_k)$ uses the same nine nodal values of $H^h$.  (In fact both the improved and classical methods evaluate $\bq^h(x,y)$ at only four locations \emph{in each element}, the former at the midpoint of every side of every element.)
+Implementing equation \eqref{eq:siamstar} requires evaluating the piecewise-bilinear function $\bq^h(x,y)$ at eight quadrature points, twice the number for the classical method, but the stencils are the same because the equation for the point $(x_j,y_k)$ uses the same nine nodal values of $H^h$.  One could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre), and our $Q^1$ elements could be replaced by higher-order (e.g.~$Q^2$) elements.  Though such methods have not been tested, note that the largest numerical SIA errors occur near the ice margin where the solution $H$ has unbounded gradient \citep{Bueleretal2005}.  Thus higher-order quadrature and interpolation will probably not give much advantage.  We believe our improved method represents a measurable accuracy and Newton-iteration-convergence improvement over the classical Mahaffy method (Results section) primarily because it evaluates $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed in the classical scheme.
 
-Eight half-edges make up $\partial V_{j,k}$, with each half-edge inside an element.  Thus one could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre).  Also, the $Q^1$ elements here could be replaced by higher-order $Q^2$ elements.  Though such methods have not been tested, even in the flat bed case the largest numerical SIA errors occur near the free boundary (margin) where the exact solution $H$ has low regularity \citep{Bueleretal2005}.  Thus higher-order quadrature and interpolation degree will probably not give much advantage.  Our improved method represents a measurable accuracy and Newton-method-convergence improvement over the classical Mahaffy method---see Results section---primarily because the improved method evaluates the flux approximation $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed in the classical scheme.
+\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation.  In such cases, wherein the bed gradient dominates the flux, the mass conservation equation has ``hyperbolic'' character so they use a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}.  They show reduced mass conservation errors in the sense of giving numerical solutions which are closer in volume to an exact solution.  On the other hand, their scheme, which solves the time-dependent problem \eqref{eq:siaevolution} using explicit time-stepping, expands the stencil because it needs values two grid spaces away.
 
-\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation.  In such cases, wherein the bed gradient dominates the thickness gradient, the mass conservation equation has ``hyperbolic'' character.  They implement a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}.  They show reduced mass conservation errors in the sense of giving numerical solutions which are closer in volume to an exact solution.  Their scheme expands the stencil, with equation \eqref{eq:siasteadyfd} at point $(x_j,y_k)$ involving thickness $H_{j+2,k}$, two cells away.  Note they solve the time-dependent problem, using explicit time-stepping.
+By comparison, we now propose using minimal first-order upwinding based on form \eqref{eq:fluxform} of the flux, even though upwinding is not required for linear stability or non-oscillation of our implicit scheme \citep{MortonMayers2005}.  We believe upwinding is effective in our case because it improves the conditioning of the Jacobian matrix used in the Newton iteration (next section).
 
-By comparison, we now propose a minimal amount of first-order upwinding based on form \eqref{eq:fluxform} of the flux, but we do use their bedrock-step exact solution for accuracy-testing our implicit scheme.  Note that upwinding is not required for linear stability or non-oscillation of an implicit scheme, in the senses that apply to an explicit scheme \citep{MortonMayers2005}.  In \eqref{eq:fluxform} we denote the transport part by $\tilde \bq = \bW H^{n+2}$, where $\bW$ is computed by formula \eqref{eq:siaWdefine}.  So far we have evaluated the whole flux $\bq$ at each quadrature point, but to upwind we change the location where $H^{n+2}$ is evaluated according to the direction of $\bW$; evaluation of $D\grad H$ and $\bW$ at quadrature points is unchanged.
-
-To be specific, let $0\le \lambda \le 1$.  Our upwind modification at $(x_j^0,y_k^0)$ uses the sign of
+So we now change how the transport flux $\tilde \bq = \bW H^{n+2}$ is evaluated.  We upwind by evaluating $H^{n+2}$ at a location different from the quadrature point, according to the direction of $\bW$ evaluated at the quadrature point.  For instance, our upwind modification at $(x_j^0,y_k^0)$---see Figure \ref{fig:improvequadrature}---uses the sign of
 \begin{equation}
 W^x_* = W^x(x_j^0,y_k^0),
 \end{equation}
-where $\bW=(W^x,W^y)$.  Note that the sign of $W_x^*$ is opposite that of the $x$-component of the bed gradient.  We shift the evaluation of $H$ in $\tilde \bq$ upwind by a quarter of an element width:
+where $\bW=(W^x,W^y)$.  Note that the sign of $W_x^*$ is opposite that of the $x$-component of the discrete bed gradient at $(x_j^0,y_k^0)$.  We shift the evaluation of $H$ upwind by a fraction $0\le \lambda \le 1$ of an element width:
 \begin{align}
 &\tilde \bq^x(x_j^0,y_k^0)  \label{eq:upwindschemex} \\
 &\quad = W^x_* \begin{cases}
-                 H(x_j-\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* \ge 0, \\
-                 H(x_j+\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* < 0.
+                 H(x_j^0-\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* \ge 0, \\
+                 H(x_j^0+\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* < 0.
              \end{cases} \notag
 \end{align}
-Noting that $\lambda=0$ corresponds to no upwinding and $\lambda=1$ is the maximum amount of upwinding that does not expand the stencil, after experimentation we chose $\lambda=1/4$; see Figure \ref{fig:upwindterm}.  This value of $\lambda$ is seen to be large enough to improve the convergence of the Newton solver but also to be small enough to generate substantial improvements in solution accuracy in the bedrock-step exact solution (Results section).  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) is achieved by similar formulas.
+Observe that $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwinding that does not expand the stencil.  After experimentation (Results section) we chose $\lambda=1/4$ (Figure \ref{fig:upwindterm}).  This value is seen to be large enough to improve the convergence of the Newton iteration but also to be small enough to generate substantial improvements in solution accuracy in the bedrock-step exact solution.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) uses similar formulas.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig4.tikz}
 \end{center}
-\caption{On element $\square_{j,k}$, when computing the flux at quadrature points (circles), upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ evaluates the thicknesses $H$ at locations shown with ``$+$'', which are $\lambda=1/4$ of the way to the element boundary, according to the sign of a component of $\bW$.}
+\caption{On element $\square_{j,k}$, when computing the flux at quadrature points (circles), upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ evaluates the thicknesses $H$ at locations shown with ``$+$'', one quarter of the way to the element boundary.}
 \label{fig:upwindterm}
 \end{figure}
 
-This form of upwinding does not expand the stencil.  It is most important at locations of low regularity of the solution.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the reported results for the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.
+This form of upwinding is most important at locations of low regularity of the solution.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the reported results for the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013} at the location of the bedrock step.
 
-We call the method which combines both improve-ments---i.e.~more quadrature points and a bit of upwinding---the ``\Mstar'' scheme.  The convergence of the Newton method for solving the equations from this scheme is greatly improved in both verification cases and for real ice sheet geometries, compared to the classical Mahaffy scheme (Results section).
+We call the method which combines both improve-ments---i.e.~better quadrature and a bit of upwinding---the ``\Mstar'' scheme.  The convergence of the Newton method for solving the equations from this scheme is greatly improved compared to the classical Mahaffy scheme (Results section).
 
 
 \section{Solution of the equations} \label{sec:solution}
@@ -529,7 +525,7 @@ FIXME: conclude that rougher bed is harder because, with exception of the coarse
 
 \begin{figure}[ht]
 \onecol{grnwinset.pdf} % FIXME placeholder
-\caption{FIXME: what 600 m resolution means for resolving margin}
+\caption{Our method computes high-resolution ice sheet margins at the locations uniquely-determined by the surface mass balance, bedrock topography, and the simplified-dynamics SIA model.  Here: 600 m model resolution and MCB bed topography data.}
 \label{fig:grnmargindetail}
 \end{figure}
 
