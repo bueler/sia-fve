@@ -165,7 +165,7 @@ Equation \eqref{eq:siasteady}, or \eqref{eq:siaasconservation}, is a boundary-va
 
 To be more precise about boundary conditions, if the surface mass balance $m$ is sufficiently-negative near the boundary of the computational domain $\Omega$ on which \eqref{eq:siasteady} is solved then $H\to 0$ at locations inside $\Omega$, namely at the ice margin or free boundary, at which $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  Because of the factor $H^{n+2}$ in formula \eqref{eq:siafluxdiffusion} for the diffusivity $D$, the problem has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
 
-Thus the problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siaasconservation}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on a larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by ice-free areas.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice, the corresponding surface elevation $s(x,y)=H(x,y)+b(x,y)$, and the location of the ice margin where $H\to 0$.
+Thus the problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siaasconservation}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on a larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by ice-free areas.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice.
 
 
 \section{The classical Mahaffy scheme}   \label{sec:mahaffyfd}
@@ -191,29 +191,28 @@ At $(x_j,y_k^+)$ the scheme computes
 \begin{equation}
 q^y_{j,k+\half} = - \Gamma (\hat H_{j,k+\half})^{\,n+2} \alphaup^{\,n-1} \frac{s_{j,k+1} - s_{j,k}}{\Delta y}  \label{eq:mahaffyqy}
 \end{equation}
-where $\hat H_{j,k+\half}$ and $\alphaup$ are defined by swapping the roles of $j$ and $k$, and $\Delta x$ and $\Delta y$, in equations \eqref{eq:mahaffyHav} and \eqref{eq:mahaffyalphax}, respectively.  The slope approximation in \eqref{eq:mahaffyalphax}, and the corresponding formula for $\alphaup$, is perhaps the least-obvious aspect of the Mahaffy scheme, but it is easy to check that these FD formulas are consistent \citep{MortonMayers2005}.
+where $\hat H_{j,k+\half}$ and $\alphaup$ are defined by swapping the roles of $j$ and $k$, and $\Delta x$ and $\Delta y$, in equations \eqref{eq:mahaffyHav} and \eqref{eq:mahaffyalphax}, respectively.  The slope approximation in \eqref{eq:mahaffyalphax}, and the corresponding formula for $\alphaup$, is perhaps the least-obvious aspect of the Mahaffy scheme, but one may check that these FD formulas are consistent \citep{MortonMayers2005}.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{\textbf{a.}~A structured FD grid with regular points (dots) and staggered points (triangles).  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and Mahaffy-scheme flux-evaluation locations (circles).  Corners $\ell=0,1,2,3$ of the element are where each basis function $\chi_\ell$ equals one.}
+\caption{\textbf{a.}~A structured FD grid with regular points (dots) and staggered points (triangles).  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and Mahaffy-scheme flux-evaluation locations (circles).  The corners of element $\square_{j,k}$ are indexed by $\ell$.}
 \label{fig:fdfemgrids}
 \end{figure}
 
-The discretization of mass conservation equation \eqref{eq:siasteady} itself is straightforward.  In the steady case the scheme uses centered-differences \citep{MortonMayers2005}:
+The discretization of mass conservation equation \eqref{eq:siasteady} itself uses straightforward centered-differences \citep{MortonMayers2005}:
 \begin{equation}
 \frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}.  \label{eq:siasteadyfd}
 \end{equation}
-
-Equation \eqref{eq:siasteadyfd}, combined with equations \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy}, gives one equation in an algebraic system which determines all values $H_{j,k}$ simultaneously.  Equation \eqref{eq:siasteadyfd} relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil''  \citep{MortonMayers2005} of the scheme.
+Equation \eqref{eq:siasteadyfd}, which relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil'' of the scheme, is combined with \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy} to give an equation in an algebraic system.  This system is intended to determine all values $H_{j,k}$ simultaneously.  We address the solution of this system after re-interpreting and improving the Mahaffy scheme.
 
 
 \section{An FVE re-interpretation} \label{sec:fveinterpretation}
 
-The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  As Figure \ref{fig:fdfemgrids} suggests, our re-interpretation uses the same structured grid, but the regular grid points are now nodes (degrees of freedom) for a continuous space of trial functions.  In fact, an FVE method supposes that the approximation $H^h$ of the solution lies in a finite-dimensional space of continuous functions which are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere and can be integrated along $\partial V$ in \eqref{eq:siaasconservation}.  However, as in an FV method, integral equation \eqref{eq:siaasconservation} is only required to hold for a finite set of node-centered control volumes $V$ which together tile $\Omega$.  This generates a finite system of nonlinear algebraic equations.
+The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  As Figure \ref{fig:fdfemgrids} suggests, our re-interpretation uses the same structured grid, but the regular grid points are now nodes (degrees of freedom) for a continuous space of trial functions.  An FE method supposes that an approximation $H^h$ of the solution lies in a finite-dimensional space of continuous functions which are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere.  Then, as in an FV method, integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of control volumes $V$ which together tile $\Omega$, which generates a finite system of nonlinear algebraic equations.
 
-In Figure \ref{fig:fdfemgrids}b, element $\square_{j,k}$ is the rectangle with lower-left corner at $(x_j,y_k)$.  When associated with bilinear functions this rectangle is a $Q^1$ finite element \citep{Elmanetal2005}.  A basis for bilinear functions on $\square_{j,k}$ is the set
+In Figure \ref{fig:fdfemgrids}b, element $\square_{j,k}$ is the rectangle with lower-left corner at $(x_j,y_k)$.  When associated with bilinear functions this rectangle is a $Q^1$ FE \citep{Elmanetal2005}.  A basis for bilinear functions on $\square_{j,k}$ is the set
 \begin{equation}
 \chi_\ell \left(\frac{x-x_j}{\Delta x},\frac{y-y_k}{\Delta y}\right), \label{eq:elementbasis}
 \end{equation}
@@ -224,33 +223,29 @@ for $\ell=0,1,2,3$, where
 \end{align*}
 With this order, $\chi_\ell=1$ on element corners traversed in counter-clockwise order (Figure \ref{fig:fdfemgrids}b).  
 
-Let
-\begin{equation}
-S_h = \{u \text{ is bilinear on each $\square_{j,k}$}\}
-\end{equation}
-be the trial space.  Functions in $S_h$ have a gradient which is defined almost everywhere, but the gradient is discontinuous along the element edges (solid lines in Figure \ref{fig:fdfemgrids}b).  We seek an approximate solution $H^h$ from $S_h$.  Also let $b^h$ be the piecewise-bilinear interpolant of the bed elevation $b$, and let $s^h=H^h+b^h$, so both $b^h$ and $s^h$ are in $S_h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:siaflux} or \eqref{eq:fluxform} using $H^h$ and $b^h$, so $\bq^h$ is well-defined on the interior of each element.
-
-Let $V_{j,k}$ be the control volume with center at $(x_j,y_j)$ (Figure \ref{fig:fdfemgrids}b).  In the FVE method we require \eqref{eq:siaasconservation} to hold for $\bq=\bq^h$ and $V$ equal to each $V_{j,j}$.  We will use a periodic grid with $N_x$ rectangles in the $x$-direction and $N_y$ in the $y$ direction, so there are $N=N_xN_y$ distinct control volumes  and thus $N$ equations in the resulting algebraic system.
+Let $S_h$ be the trial space of functions which are continuous on the whole computational domain $\Omega$ and which are bilinear on each element $\square_{j,k}$.  Functions in $S_h$ have a gradient which is defined almost everywhere, but the gradient is discontinuous along the element edges (solid lines in Figure \ref{fig:fdfemgrids}b).  We write $\psi_{j,k}(x,y)$ for the unique function in $S_h$ so that $\psi_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$ (Figure \ref{fig:fembases}a); such functions form a basis of $S_h$.
 
 \begin{figure}[ht]
 \begin{center}
 \input{fig2a.tikz} \quad \input{fig2b.tikz}
 \end{center}
-\caption{\textbf{a.}~A continuous ``hat'' basis function $\psi_{j,k}(x,y)$ in the trial space $S_h$.  \textbf{b.}~A discontinuous, piecewise-constant basis function $\omega_{j,k}(x,y)$ in the test space $S_h^*$.}
+\caption{\textbf{a.}~A continuous ``hat'' basis function $\psi_{j,k}$ in the trial space $S_h$.  \textbf{b.}~A full FE interpretation would use piecewise-constant basis functions $\omega_{j,k}$ from the test space $S_h^*$.}
 \label{fig:fembases}
 \end{figure}
 
-Instead of control volumes we could introduce test functions.  Let
-\begin{equation}
-S_h^* = \{u \text{ is constant on each $V_{j,k}$}\}
-\end{equation}
-be functions which are piecewise-constant and discontinuous only along the control volume edges (dashed lines in Figure \ref{fig:fdfemgrids}b).  Note that bases of $S_h$ and $S_h^*$ are formed by those functions which take value one at a single node, and zero at all other nodes.  We write $\psi_{j,k}(x,y)$ for the unique function in $S_h$ so that $\psi_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$, while $\omega_{j,k}(x,y)$ is the unique function in $S_h^*$ so that $\omega_{j,k}(x_r,y_s) = \delta_{jr} \delta_{ks}$; see Figure \ref{fig:fembases}.  Requiring \eqref{eq:siaasconservation} to hold for each control volume, as in the FVE method, is equivalent to multiplying \eqref{eq:siasteady} by $\omega_{j,k}$ and then integrating-by-parts.  Such a calculation requires the generalized-function idea that the derivative of a step function is a Dirac delta function.  From now on, however, we will use the FVE interpretation, and thus not need test functions or $S_h^*$.
+We seek an approximate solution $H^h$ from $S_h$.  Also let $b^h$ in $S_h$ be the interpolant of the bed elevation $b$, and let $s^h=H^h+b^h$.  We denote by $\bq^h$ the flux computed from formula \eqref{eq:fluxform} using $H^h$, $b^h$, and $s^h$, so that $\bq^h$ is well-defined on the interior of each element.
 
-Both the classical Mahaffy scheme, and our improved scheme below, assume midpoint quadrature on the right-hand integral in \eqref{eq:siaasconservation}.  Thus the FVE method is this: we seek $H^h$ in $S_h$ satisfying
+Let $V_{j,k}$ be the control volume with center at $(x_j,y_k)$ shown in Figure \ref{fig:fdfemgrids}b.  In the FVE method we require \eqref{eq:siaasconservation} to hold for $\bq=\bq^h$ and $V$ equal to each $V_{j,k}$.  We will use a periodic grid with $N_x$ rectangles in the $x$-direction and $N_y$ in the $y$-direction, so there are $N=N_xN_y$ nodes, $N$ distinct control volumes, and $N$ equations in the algebraic system.
+
+Instead of control volumes, in a full FE interpretation we would introduce test functions, as follows.  Let $S_h^*$ be the space of functions which are constant on each control volume $V_{j,k}$.  These functions are piecewise-constant and (generally) discontinuous only along the control volume edges.  Bases of both spaces $S_h$ and $S_h^*$ are formed by those functions which are one at a single node and zero at all other nodes; Figure \ref{fig:fembases}b shows such a function $\omega_{j,k}$.  Requiring \eqref{eq:siaasconservation} to hold for each control volume in our FVE method is equivalent to multiplying \eqref{eq:siasteady} by $\omega_{j,k}$ and then integrating-by-parts.  (Showing the equivalence requires generalized functions: the derivative of a step function is a Dirac delta function.)  We adopt the FVE interpretation, however, so we have no further need for test functions or $S_h^*$.
+
+Both the classical Mahaffy scheme, and our improved scheme below, assume midpoint quadrature on the right-hand integral in \eqref{eq:siaasconservation}.  We seek $H^h$ in $S_h$ satisfying
 \begin{equation}
-  \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y, \label{eq:siafve}
+  \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds = m_{j,k}\, \Delta x \Delta y \label{eq:siafve}
 \end{equation}
-for all $j,k$.  It remains to choose a quadrature rule on the left, however.
+for all $j,k$.
+
+FIXME It remains to choose a quadrature rule on the left, however.
 
 We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$:
 \begin{align}
