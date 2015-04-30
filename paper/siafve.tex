@@ -252,37 +252,37 @@ It remains to do quadrature on the left in \eqref{eq:siafve}, however.  We decom
 &\quad - \int_{y_k^-}^{y_k^+} q^x(x_j^-,y)\,dy \notag \\
 &\quad - \int_{x_j^-}^{x_j^+} q^y(x,y_k^-)\,dx. \notag
 \end{align}
-Though $\bq^h$ is a well-defined, bounded function, it is discontinuous across element boundaries.  For example, in the first integral on the right in \eqref{eq:fluxintdecomp} the integrand $f(y) = q^x(x_j^+,y)$ has a jump discontinuity at the midpoint $y=y_k$ of the interval of integration because $s^h_y$ is discontinuous there.  On the other hand, formula \eqref{eq:mahaffyqx} in the Mahaffy FD scheme computes the normal component of $\bq^h$ exactly at $y=y_k$.
+The flux $\bq^h$ is an almost-everywhere-defined, bounded function which is discontinuous across element boundaries.  For example, in the first right-hand integral (above) the integrand $f(y) = q^x(x_j^+,y)$ has a jump discontinuity at the midpoint of the interval of integration because $\partial s^h/\partial y = s^h_y$ is discontinuous there.  On the other hand, formula \eqref{eq:mahaffyqx} in the Mahaffy FD scheme computes the normal component of $\bq^h$ exactly at that midpoint (i.e.~at $y=y_k$), and thus the value of $s^h_y$ is needed there.
 
-The key to the Mahaffy scheme is that it computes each integral in \eqref{eq:fluxintdecomp} by the midpoint method, but by \emph{averaging the discontinuous component of the surface gradient across its jump discontinuity}.  Mahaffy does not use a true quadrature because the integrand $\bq^h\cdot \bn$ does not have a value at the quadrature point.
+The key to the Mahaffy scheme is that it computes each integral in \eqref{eq:fluxintdecomp} by the midpoint method but using \emph{averages of the discontinuous surface gradient across its jump discontinuities}.  Said another way, Mahaffy does not use true quadrature because the integrand $\bq^h\cdot \bn$ does not have a value at the quadrature point.
 
-To turn this idea into formulas, observe that the thickness $H^h$ and the $x$-derivative $\partial s^h/\partial x = s^h_x$ are continuous along the edge between elements $\square_{j,k}$ and $\square_{j,k-1}$.  Indeed, using the element basis \eqref{eq:elementbasis} the surface gradient on $\square_{j,k}$ has components
+To turn this idea into formulas, observe that both the thickness $H^h$ and the $x$-derivative $\partial s^h/\partial x = s^h_x$ are continuous along the edge between elements $\square_{j,k}$ and $\square_{j,k-1}$.  Furthermore, using the element basis \eqref{eq:elementbasis} the surface gradient on $\square_{j,k}$ has components
 \begin{align}
 s^h_x(x,y) &= \frac{s_{j+1,k}-s_{j,k}}{\Delta x} \left(1-\frac{y-y_k}{\Delta y}\right)  \label{eq:grads} \\
    &\quad + \frac{s_{j+1,k+1}-s_{j,k+1}}{\Delta x} \left(\frac{y-y_k}{\Delta y}\right), \notag \\
 s^h_y(x,y) &= \frac{s_{j,k+1}-s_{j,k}}{\Delta y} \left(1-\frac{x-x_j}{\Delta x}\right) \notag \\
    &\quad + \frac{s_{j+1,k+1}-s_{j+1,k}}{\Delta y} \left(\frac{x-x_j}{\Delta x}\right). \notag
 \end{align}
-The same functions on $\square_{j,k-1}$ can be calculated by shifting the index $k$ to $k-1$.  Thus the continuous function $s^h_x(x,y)$ has value
+(These functions on $\square_{j,k-1}$ can be calculated by shifting the index $k$ to $k-1$.)  Thus the continuous function $s^h_x(x,y)$ has value
 \begin{equation}
 s^h_x(x_j^+,y_k) = \frac{s_{j+1,k}-s_{j,k}}{\Delta x} \label{eq:femsxstag}
 \end{equation}
-at the midpoint in the first integral in \eqref{eq:fluxintdecomp}.  Similarly, writing-out $H^h(x,y)$ using the element basis \eqref{eq:elementbasis} gives
+at the midpoint $y=y_k$ in the first integral in \eqref{eq:fluxintdecomp}.  Similarly, writing-out $H^h(x,y)$ using the element basis \eqref{eq:elementbasis} gives
 \begin{equation}
 H^h(x_j^+,y_k) = \frac{H_{j,k}+H_{j+1,k}}{2} \label{eq:femHstag}
 \end{equation}
-at the midpoint, which is \eqref{eq:mahaffyHav}.  But the $y$-derivative $\partial s^h/\partial y = s^h_y$ has different values above (on $\square_{j,k}$) and below (on $\square_{j,k-1}$) the element boundary at $y = y_k$; the limits are:
+at the midpoint, which is \eqref{eq:mahaffyHav}.  But the $y$-derivative $s^h_y$ has different values above (on $\square_{j,k}$) and below (on $\square_{j,k-1}$) the element boundary at $y = y_k$.  The limits at that point are:
 \begin{align}
 s^h_y(x_j^+,y_k\!+\!0) = \frac{s_{j,k+1}-s_{j,k} + s_{j+1,k+1}-s_{j+1,k}}{2\Delta y}, \\
 s^h_y(x_j^+,y_k\!-\!0) = \frac{s_{j,k}-s_{j,k-1} + s_{j+1,k}-s_{j+1,k-1}}{2\Delta y}. \notag
 \end{align}
-The average of these values is not a value of $s_y^h$, but a re-construction thereof:
+The average of these values is not a value of $s_y^h$, but a re-construction:
 \begin{equation}
 \widehat{s^h_y}(x_j^+,y_k) = \frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4\Delta y}. \label{eq:femsystagcrime}
 \end{equation}
 Formula \eqref{eq:femsystagcrime} is exactly the estimate of $\partial s/\partial y$ which appears in Mahaffy's FD formula \eqref{eq:mahaffyalphax}.
 
-In our FVE interpretation, the Mahaffy scheme uses \eqref{eq:femsxstag}, \eqref{eq:femHstag}, and \eqref{eq:femsystagcrime} in the midpoint rule:
+Thus, in our FVE re-interpretation, the Mahaffy scheme uses \eqref{eq:femsxstag}, \eqref{eq:femHstag}, and \eqref{eq:femsystagcrime} in the midpoint rule for the first integral in \eqref{eq:fluxintdecomp}
 \begin{align}
 &\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy  \label{eq:femmahaffyfirstint} \\
   &\quad\approx - \Delta y\, \Gamma H^h(x_j^+,y_k)^{n+2} \,\alpharight^{\,(n-1)/2} s^h_x(x_j^+,y_k). \notag 
@@ -293,7 +293,7 @@ where
 \end{equation}
 is the same as in \eqref{eq:mahaffyalphax}.
 
-Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Recognizing the Mahaffy choice as quadrature-like in this FVE context allows us to do it better.
+Mahaffy's scheme thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which averages across a discontinuity to reconstruct a slope.  Recognizing the Mahaffy choice as quadrature-like, in this FVE context, is beneficial because it allows us to do it better.
 
 
 \section{Improved scheme}  \label{sec:star}
