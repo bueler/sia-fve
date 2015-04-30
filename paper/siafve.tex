@@ -107,7 +107,7 @@ Because we also successfully solve the whole free-boundary problem at once by a 
 Our paper is organized as follows.  We start with a statement of the steady, isothermal SIA model.  We then recall the classical Mahaffy scheme in FD form before re-interpreting it as an FVE scheme and identifying its non-standard midpoint rule application in the flux integral.  Building off this re-interpretation we identify better quadrature in the flux integral, and we then add a bit of first-order upwinding on the part of the flux that comes from the bedrock slope.  The resulting improved scheme, which has the same stencil as the classical Mahaffy scheme, is called ``\Mstar.''  Next we describe the Newton solver which we apply to the discrete equations and constraints.  Results are then given in verification cases.  They are at least as good as those from higher-resolution upwind schemes when applied to the \cite{JaroschSchoofAnslow2013} bedrock-step exact solution.  Then we show how the method is applied to real ice sheets by computing, without time-stepping but at very 1 km high resolution, the steady state shape of the Greenland ice sheet in a present-day modeled climate.  An Appendix addresses the analytical calculation of the Jacobian in the \Mstar scheme.
 
 
-\section*{The continuum model}
+\section*{Continuum model}
 
 The time-dependent evolution equation for the ice thickness $H$ is a statement of mass conservation:
 \begin{equation}
@@ -168,7 +168,7 @@ To be more precise about boundary conditions, if the surface mass balance $m$ is
 Thus the problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siaasconservation}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on a larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by ice-free areas.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice.
 
 
-\section{The classical Mahaffy scheme}   \label{sec:mahaffyfd}
+\section{Classical Mahaffy scheme}   \label{sec:mahaffyfd}
 
 Consider the rectangular structured FD grid, with spacing $\Delta x,\Delta y$, shown in Figure \ref{fig:fdfemgrids}a.  The \cite{Mahaffy1976} scheme calculates one flux component at each of the staggered grid points marked by triangles.  For these points we introduce notation
 \begin{equation}
@@ -208,7 +208,7 @@ The discretization of mass conservation equation \eqref{eq:siasteady} itself use
 Equation \eqref{eq:siasteadyfd}, which relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil'' of the scheme, is combined with \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy} to give an equation in an algebraic system.  This system is intended to determine all values $H_{j,k}$ simultaneously.  We address the solution of this system after re-interpreting and improving the Mahaffy scheme.
 
 
-\section{An FVE re-interpretation} \label{sec:fveinterpretation}
+\section{FVE re-interpretation} \label{sec:fveinterpretation}
 
 The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  As Figure \ref{fig:fdfemgrids} suggests, our re-interpretation uses the same structured grid, but the regular grid points are now nodes (degrees of freedom) for a continuous space of trial functions.  An FE method supposes that an approximation $H^h$ of the solution lies in a finite-dimensional space of continuous functions which are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere.  Then, as in an FV method, integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of control volumes $V$ which together tile $\Omega$, which generates a finite system of nonlinear algebraic equations.
 
@@ -245,9 +245,7 @@ Both the classical Mahaffy scheme, and our improved scheme below, assume midpoin
 \end{equation}
 for all $j,k$.
 
-FIXME It remains to choose a quadrature rule on the left, however.
-
-We decompose the integral in \eqref{eq:siafve} into the four edges which form $\partial V_{j,k}$:
+It remains to do quadrature on the left in \eqref{eq:siafve}, however.  We decompose the integral over the four edges of $\partial V_{j,k}$:
 \begin{align}
 \int_{\partial V_{j,k}} \bq^h \cdot \bn\,ds &= \int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy \label{eq:fluxintdecomp} \\
 &\quad + \int_{x_j^-}^{x_j^+} q^y(x,y_k^+)\,dx \notag \\
@@ -298,7 +296,7 @@ is the same as in \eqref{eq:mahaffyalphax}.
 Mahaffy thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which uses averaging across a discontinuity to reconstruct a slope.  Recognizing the Mahaffy choice as quadrature-like in this FVE context allows us to do it better.
 
 
-\section{An improved scheme}  \label{sec:star}
+\section{Improved scheme}  \label{sec:star}
 
 So we return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique, and we do so.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on $\bW H^{n+2}$, because $\bW$ is proportional to the bed gradient $\grad b$.  Together these improvements define the ``\Mstar'' scheme.
 
