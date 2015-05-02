@@ -76,8 +76,8 @@ axins.imshow(rgb, extent=(0,len(x),0,len(y)), interpolation='nearest')
 
 #x1, x2, y1, y2 = -1.5, -0.9, -2.5, -1.9
 aspect = 1.5
-ox = 0.13 * len(x)
-oy = 0.32 * len(y)
+ox = 0.20 * len(x)
+oy = 0.30 * len(y)
 width = 0.12 * len(x)
 axins.set_xlim(ox, ox+width)
 axins.set_ylim(oy, oy+aspect*width)
