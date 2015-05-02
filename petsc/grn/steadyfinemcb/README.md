@@ -12,7 +12,7 @@ Coarsen the 150m MCB data
 #   1=4500m, 2=3000m, 3=1500m, 4=750m
 -->
 First generate sufficient `mcb?.nc` files if they are not already present (takes
-about 15 minutes):
+about 30 minutes):
 
     $ ln -s ../mcb/MCdataset-2014-11-19.nc    # or download with ../mcb/getmcb.sh
     $ ./generate.sh
@@ -54,7 +54,7 @@ _Warning: requires at least 12 Gb and probably more._
 
 Setup and view:
 
-    $ ./setup750m.sh    # maybe 30 minutes?
+    $ ./setup750m.sh    # maybe 60 minutes?
     $ ncecat mcb750mS?.nc foo.nc && ncview foo.nc && rm foo.nc
 
 Do this for NN processors:
