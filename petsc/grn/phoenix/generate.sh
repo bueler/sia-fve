@@ -20,7 +20,8 @@ ncks -O -v x1,y1,thk,topg,climatic_mass_balance,mapping ../pism_Greenland_5km_v1
 $PISM/util/nc2cdo.py searise5km.nc
 
 # correspond to 12000m, 6000m, 3000m, 1500m, 750m grids
-BLOCKLEVELS="80 40 20 10 5"
+BLOCKLEVELS="80 40 20"
+#BLOCKLEVELS="80 40 20 10 5"
 COUNTER=0
 for LEV in $BLOCKLEVELS; do
   ../mcb/average.py --block $LEV tmp${COUNTER}.nc
