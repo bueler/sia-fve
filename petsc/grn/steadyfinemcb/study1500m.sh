@@ -37,7 +37,7 @@ LEVELS="2 1"
 for LEV in $LEVELS; do
     DAT=${NAMEROOT}${LEV}.dat
     ../../nc2petsc.py ${NAMEROOT}${LEV}.nc $DAT
-    PREV="-mah_readinitial ${DUMP}unnamed.dat"
+    PREV="-mah_readinitialsurface ${DUMP}unnamed.dat"
     DUMP=r1500m${LEV}/
     mkdir -p $DUMP
     mpiexec -n $NN ../../mahaffy -mah_T 10.0 -mah_dt 0.1 -cs_start 5 -mah_read $DAT $PREV $STDOPTS -mah_dump $DUMP

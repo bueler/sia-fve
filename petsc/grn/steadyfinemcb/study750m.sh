@@ -36,7 +36,7 @@ LEVELS="4 3 2 1"
 for LEV in $LEVELS; do
     DAT=${NAMEROOT}${LEV}.dat
     ../../nc2petsc.py ${NAMEROOT}${LEV}.nc $DAT
-    PREV="-mah_readinitial ${DUMP}unnamed.dat"
+    PREV="-mah_readinitialsurface ${DUMP}unnamed.dat"
     DUMP=r750m${LEV}/
     mkdir -p $DUMP
     # two-week time steps for 1.0 year
