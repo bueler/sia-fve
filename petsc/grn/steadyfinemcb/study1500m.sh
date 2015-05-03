@@ -21,7 +21,7 @@ NAMEROOT="mcb1500mS"
 
 DAT=${NAMEROOT}3.dat
 ../../nc2petsc.py ${NAMEROOT}3.nc $DAT
-DUMP=result3/
+DUMP=r1500m3/
 mkdir -p $DUMP
 mpiexec -n $NN ../../mahaffy -mah_read $DAT $STDOPTS -mah_notry -mah_dump $DUMP
 head -n 1 $DUMP/history.txt >> $OUT
@@ -38,7 +38,7 @@ for LEV in $LEVELS; do
     DAT=${NAMEROOT}${LEV}.dat
     ../../nc2petsc.py ${NAMEROOT}${LEV}.nc $DAT
     PREV="-mah_readinitial ${DUMP}unnamed.dat"
-    DUMP=result${LEV}/
+    DUMP=r1500m${LEV}/
     mkdir -p $DUMP
     mpiexec -n $NN ../../mahaffy -mah_T 10.0 -mah_dt 0.1 -cs_start 5 -mah_read $DAT $PREV $STDOPTS -mah_dump $DUMP
     head -n 1 $DUMP/history.txt >> $OUT

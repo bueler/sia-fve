@@ -49,7 +49,7 @@ _Warning: requires at least 12 Gb and probably more._
 
 <!---
 # re 750 m grid blocks
-#   5 | 30, 20, 10, 5
+#   5 | 60, 30, 20, 10, 5
 -->
 
 Setup and view:
