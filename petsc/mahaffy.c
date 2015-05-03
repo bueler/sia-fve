@@ -212,7 +212,7 @@ int main(int argc,char **argv) {
            (user.mtrue) ? "true Mahaffy" :
                ((user.lambda == 0.0) ? "M*-without-upwinding" : "M*"));
   if (user.dtres > 0.0) {
-      myPrintf(&user,"  time-stepping on interval [0.0 a,%.2f a] with initial step %.2f a\n",
+      myPrintf(&user,"  time-stepping on interval [0.0 a,%.4f a] with initial step %.4f a\n",
                user.T/user.secpera,user.dtres/user.secpera);
   }
 
@@ -241,7 +241,7 @@ int main(int argc,char **argv) {
           }
           ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
           tcurrent += user.dtres;
-          myPrintf(&user,"t = %.2f a: completed time step of duration %.2f a in interval [0.0 a,%.2f a]\n",
+          myPrintf(&user,"t = %.4f a: completed time step of duration %.4f a in interval [0.0 a,%.4f a]\n",
                    tcurrent/user.secpera,user.dtres/user.secpera,user.T/user.secpera);
       }
   } else { // steady-state

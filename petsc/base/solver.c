@@ -345,7 +345,7 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
            user->eps,kspits,its);
   if (user->dtres > 0.0)
-      myPrintf(user,"       (on equations for backward Euler time step of %.3f a)\n",
+      myPrintf(user,"       (on equations for backward Euler time step of %.4f a)\n",
                user->dtres / user->secpera);
   PetscFunctionReturn(0);
 }
