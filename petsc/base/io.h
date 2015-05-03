@@ -25,6 +25,7 @@ PetscErrorCode ReadAndReshape2DVec(Vec v, PetscViewer viewer, AppCtx *user);
 // NOTE: order in which data is read must match order in which nc2petsc.py writes
 PetscErrorCode ReadDataVecs(AppCtx *user);
 PetscErrorCode ReadInitialHVec(AppCtx *user);
+PetscErrorCode GenerateInitialHFromReadSurfaceVec(AppCtx *user);
 
 // write a special format PETSc binary .dat output file like the one we read
 PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user);

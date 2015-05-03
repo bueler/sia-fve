@@ -51,9 +51,11 @@ PetscErrorCode initialize(AppCtx *user) {
 PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
   PetscErrorCode ierr;
   PetscBool      domechosen, dtflg, notryset, Tset;
-  char           histprefix[512];
+  char           histprefix[512], initHname[512], initsname[512];
 
   ierr = initialize(user); CHKERRQ(ierr);
+  strcpy(initHname,"FILENAME");
+  strcpy(initsname,"FILENAME");
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,optprefix,"options to mahaffy","");CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-A", "set value of ice softness A in units Pa-3 s-1",
@@ -82,7 +84,7 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       NULL,user->dtrecovery/user->secpera,&user->dtrecovery,&dtflg);CHKERRQ(ierr);
   if (dtflg)  user->dtrecovery *= user->secpera;
   ierr = PetscOptionsReal(
-      "-dt", "use this time step (years) when possible FOR TIME-STEPPING; overrides -mah_dtjac,-mah_dtrecovery",
+      "-dt", "use this time step (years); overrides -mah_dtjac,-mah_dtrecovery",
       NULL,user->dtres/user->secpera,&user->dtres,&dtflg);CHKERRQ(ierr);
   if (dtflg) {
       user->dtres *= user->secpera;
@@ -121,8 +123,11 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       "-read", "read grid and data from special-format PETSc binary file; see README.md",
       NULL,user->readname,user->readname,512,&user->read); CHKERRQ(ierr);
   ierr = PetscOptionsString(
-      "-readinitial", "read grid initial H from this special-format PETSc binary file",
-      NULL,user->readinitialname,user->readinitialname,512,&user->readinitial); CHKERRQ(ierr);
+      "-readinitial", "read initial thickness H from this special-format PETSc binary file",
+      NULL,initHname,initHname,512,&user->readinitial); CHKERRQ(ierr);
+  ierr = PetscOptionsString(
+      "-readinitialsurface", "generate initial H by reading surface s from this file",
+      NULL,initsname,initsname,512,&user->readinitialsurface); CHKERRQ(ierr);
   ierr = PetscOptionsBool(
       "-showdata", "use PETSc X viewers to show b, m, and exact/observed H",
       NULL,user->showdata,&user->showdata,NULL);CHKERRQ(ierr);
@@ -133,7 +138,7 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       "-swapxy", "swap coordinates x and y when building bedrock step exact solution",
       NULL,user->swapxy,&user->swapxy,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
-      "-T", "use Backward Euler time-stepping to reach this time (years); i.e. solve for 0 <= t <= T",
+      "-T", "use Backward Euler time-stepping to reach this time (years)",
       NULL,user->T/user->secpera,&user->T,&Tset);CHKERRQ(ierr);
   if (Tset)  user->T *= user->secpera;
   ierr = PetscOptionsBool(
@@ -172,8 +177,16 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
   if ((user->read) && (user->bedstep)) {
       SETERRQ(PETSC_COMM_WORLD,3,"ERROR option conflict: both -mah_bedstep and -mah_read not allowed\n");
   }
+  if (user->readinitial) {
+      if (user->readinitialsurface) {
+          SETERRQ(PETSC_COMM_WORLD,8,
+              "ERROR option conflict: both -mah_readinitial and -mah_readinitialsurface not allowed\n");
+      }
+      strcpy(user->readinitialname,initHname);
+  } else if (user->readinitialsurface)
+      strcpy(user->readinitialname,initsname);
   if (user->mtrue)
-      user->lambda = 0.0; // force no upwinding
+      user->lambda = 0.0; // force no upwinding if user wants true Mahaffy
   if (user->dump)
       user->history = PETSC_TRUE; // history is part of dump
   else if (user->history)

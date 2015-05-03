@@ -55,7 +55,8 @@ typedef struct {
             goodm;  // last continuation scheme level where convergence happened (not counting recovery)
   PetscBool mtrue,  // use true Mahaffy method instead of M*
             read,   // read grid and data from special-format PETSc binary file
-            readinitial,// use read initial H instead of generating guess in usual way
+            readinitial,// read initial thickness H from a given file
+            readinitialsurface,// generate initial H by reading surface s from a given file
             dome,   // use dome exact solution ("Bueler profile")
             bedstep,// use bedrock step exact solution from Jarosch, Schoof, Anslow (2013)
             swapxy, // swap x and y axes in building exact solution

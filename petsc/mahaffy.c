@@ -173,10 +173,15 @@ int main(int argc,char **argv) {
       }
   }
 
-  // fill user.Hinitial according to either -mah_readinitial foo.dat or chop-scale-SMB
+  // fill user.Hinitial according to either -mah_readinitial{surface} foo.dat or chop-scale-SMB
   if (user.readinitial) {
       myPrintf(&user,"  reading Hinitial from %s ...\n", user.readinitialname);
       ierr = ReadInitialHVec(&user); CHKERRQ(ierr);
+  } else if (user.readinitialsurface) {
+      myPrintf(&user,"  generating Hinitial by reading surface from %s\n"
+                     "    and subtracting bed which was from %s ...\n",
+               user.readinitialname, user.readname);
+      ierr = GenerateInitialHFromReadSurfaceVec(&user); CHKERRQ(ierr);
   } else {
       myPrintf(&user,"  generating Hinitial by chop-and-scale of SMB ...\n");
       ierr = ChopScaleSMBforInitial(user.Hinitial,&user); CHKERRQ(ierr);
