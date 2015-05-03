@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # (C) 2015 Ed Bueler
-#
-# Generate PETSc binary format file from Greenland NetCDF file.
-# See README.md.
 
 import argparse
 import sys
@@ -28,7 +25,7 @@ except:
     print "need link to petsc/bin/petsc-pythonscripts/petsc_conf.py?"
     sys.exit(2)
 
-parser = argparse.ArgumentParser(description='Generate PETSc binary format file from Greenland NetCDF file.')
+parser = argparse.ArgumentParser(description='Generate PETSc binary file from NetCDF file.  Files have ice-sheet specific variables.')
 parser.add_argument('inname', metavar='INNAME',
                     help='input NetCDF file with x1,y1,topg,cmb,thk variables (e.g. grn.nc)')
 parser.add_argument('outname', metavar='OUTNAME',
@@ -40,7 +37,7 @@ args = parser.parse_args()
 try:
     nc = NC(args.inname, 'r')
 except:
-    print "ERROR: can't read from file %s ..." % args.inname
+    print "ERROR: can't open NetCDF file %s for reading  ..." % args.inname
     sys.exit(11)
 
 print "reading axes x1,y1 and fields topg,cmb,thk_obs ..."
