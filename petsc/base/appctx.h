@@ -11,11 +11,6 @@
 
 #include "continuationscheme.h"
 
-// holds value of gradient at point
-typedef struct {
-    PetscReal x,y;
-} Grad;
-
 typedef struct {
   Vec       Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
             Wmagnodemax;// maximum value of the magnitude of the pseudo-velocity W at the
@@ -32,9 +27,8 @@ typedef struct {
             Hexact, // the exact or observed thickness (verification or data, resp.)
             Hinitial,// holds initial state (if read from file) and used when doing time step
             bloc;   // copy of bed elevation with ghosts
-  PetscReal dx,     // fixed grid spacing; dx = dy
-            Lx,     // domain is [-Lx,Lx] x [-Ly,Ly]
-            Ly,
+  PetscReal dx, dy, // grid spacings
+            Lx, Ly, // domain is [-Lx,Lx] x [-Ly,Ly]
             n,      // Glen exponent for SIA flux term
             g,      // acceleration of gravity
             rho,    // ice density

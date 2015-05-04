@@ -74,7 +74,6 @@ int main(int argc,char **argv) {
   AppCtx              user;
   ContinuationScheme  cs;
   DMDALocalInfo       info;
-  PetscReal           dx,dy;
   SNESConvergedReason reason;
 
   PetscInitialize(&argc,&argv,(char*)0,help);
@@ -107,14 +106,15 @@ int main(int argc,char **argv) {
   ierr = DMDAGetLocalInfo(user.da,&info); CHKERRQ(ierr);
   if (user.read == PETSC_FALSE) {
       user.dx = 2.0 * user.Lx / (PetscReal)(info.mx);
+      user.dy = 2.0 * user.Ly / (PetscReal)(info.my);
   }
-  dx = user.dx; // for now,
-  dy = user.dx; // square elements
-  ierr = DMDASetUniformCoordinates(user.da, -user.Lx+dx/2, user.Lx+dx/2, -user.Ly+dy/2, user.Ly+dy/2,
+  ierr = DMDASetUniformCoordinates(user.da,
+                                   -user.Lx+user.dx/2, user.Lx+user.dx/2,
+                                   -user.Ly+user.dy/2, user.Ly+user.dy/2,
                                    0.0,1.0); CHKERRQ(ierr);
   myPrintf(&user,"solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
-                 "grid of  %d x %d  points with spacing  dx = %.6f km ...\n",
-           user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,dx/1000.0);
+                 "grid of  %d x %d  points with spacing  dx = %.6f km  and  dy = %.6f km ...\n",
+           user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0,user.dy/1000.0);
 
   // this DMDA is used for evaluating fluxes at 4 quadrature points on each element
   ierr = DMDACreate2d(PETSC_COMM_WORLD,

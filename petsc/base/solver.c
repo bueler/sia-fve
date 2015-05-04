@@ -67,7 +67,7 @@ at "%":
 */
 PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscScalar **FF, AppCtx *user) {
   PetscErrorCode  ierr;
-  const PetscReal dx = user->dx, dy = dx;
+  const PetscReal dx = user->dx, dy = user->dy;
   FLUXINTCOEFFS
   const PetscBool upwind = (user->lambda > 0.0);
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
@@ -203,7 +203,7 @@ For examples see $PETSC_DIR/src/snes/examples/tutorials/ex5.c or ex9.c.
 */
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user) {
   PetscErrorCode  ierr;
-  const PetscReal dx = user->dx, dy = dx;
+  const PetscReal dx = user->dx, dy = user->dy;
   FLUXINTCOEFFS
   const PetscBool upwind = (user->lambda > 0.0);
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
@@ -307,7 +307,6 @@ PetscErrorCode PetscIgnoreZEROPIVOTErrorHandler(MPI_Comm comm,int line,const cha
    if ((n == PETSC_ERR_MAT_LU_ZRPVT) || (p == PETSC_ERR_MAT_LU_ZRPVT)) {
       int rank;
       MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-      //PetscPrintf(PETSC_COMM_SELF,"---- WARNING: intercepted PETSC_ERR_MAT_LU_ZRPVT on rank %d ----\n",rank);
       AppCtx* user = (AppCtx*)ctx;
       user->luzeropvterr = 1;
       return 0;

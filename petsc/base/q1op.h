@@ -6,7 +6,11 @@
 #define Q1OP_H_
 
 #include <petsc.h>
-#include "appctx.h"  // for Grad only
+
+// holds value of gradient at point
+typedef struct {
+    PetscReal x,y;
+} Grad;
 
 /*
 In the following functions

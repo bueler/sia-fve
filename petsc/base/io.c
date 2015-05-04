@@ -29,11 +29,25 @@ void myPrintf(const AppCtx *user, const char format[], ...) {
     }
 }
 
+PetscErrorCode AxisExtractSizes(Vec a, PetscInt *N, PetscReal *delta, PetscReal *L) {
+    PetscErrorCode ierr;
+    PetscReal *aa, fulllength;
+    ierr = VecGetSize(a,N); CHKERRQ(ierr);
+    if (*N < 4) {  // 4 is somewhat arbitrary
+        SETERRQ(PETSC_COMM_WORLD,1,"read axis Vec has size too small\n");
+    }
+    ierr = VecGetArray(a, &aa);CHKERRQ(ierr);
+    *delta = PetscAbsReal(aa[1] - aa[0]);
+    fulllength = PetscAbsReal(aa[*N-1] - aa[0]) + *delta;
+    *L = fulllength / 2.0;
+    ierr = VecRestoreArray(a, &aa);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ReadDimensions(AppCtx *user) {
     PetscErrorCode ierr;
     PetscViewer viewer;
     Vec x, y;
-    PetscReal *ax, *ay, fulllengthx, fulllengthy;
 
     PetscFunctionBeginUser;
     ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,user->readname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
@@ -42,29 +56,14 @@ PetscErrorCode ReadDimensions(AppCtx *user) {
     ierr = VecSetType(x, VECSEQ); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)x,"x-axis from file"); CHKERRQ(ierr);
     ierr = VecLoad(x,viewer); CHKERRQ(ierr);
-    ierr = VecGetSize(x,&user->Nx); CHKERRQ(ierr);
-    if (user->Nx < 4) {  // 4 is somewhat arbitrary
-        SETERRQ(PETSC_COMM_WORLD,1,"read Vec x has size too small\n");
-    }
-    ierr = VecGetArray(x, &ax);CHKERRQ(ierr);
-    user->dx = PetscAbsReal(ax[1] - ax[0]);
-    fulllengthx = PetscAbsReal(ax[user->Nx-1] - ax[0]) + user->dx;
-    user->Lx = fulllengthx / 2.0;
-    ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
+    ierr = AxisExtractSizes(x,&user->Nx,&user->dx,&user->Lx); CHKERRQ(ierr);
     ierr = VecDestroy(&x); CHKERRQ(ierr);
 
     ierr = VecCreate(PETSC_COMM_SELF,&y); CHKERRQ(ierr);
     ierr = VecSetType(y, VECSEQ); CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)y,"y-axis from file"); CHKERRQ(ierr);
     ierr = VecLoad(y,viewer); CHKERRQ(ierr);
-    ierr = VecGetSize(y,&user->Ny); CHKERRQ(ierr);
-    if (user->Ny < 4) {  // 4 is somewhat arbitrary
-        SETERRQ(PETSC_COMM_WORLD,2,"read Vec y has size too small\n");
-    }
-    ierr = VecGetArray(y, &ay);CHKERRQ(ierr);
-    fulllengthy = PetscAbsReal(ay[user->Ny-1] - ay[0]) + user->dx;
-    user->Ly = fulllengthy / 2.0;
-    ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
+    ierr = AxisExtractSizes(y,&user->Ny,&user->dy,&user->Ly); CHKERRQ(ierr);
     ierr = VecDestroy(&y); CHKERRQ(ierr);
 
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
@@ -206,7 +205,7 @@ PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
     ierr = VecRestoreArray(x, &ax);CHKERRQ(ierr);
     ierr = VecGetArray(y, &ay);CHKERRQ(ierr);
     for (k=0; k<info.my; k++) {
-        ay[k] = -user->Ly + user->dx/2.0 + k * user->dx;
+        ay[k] = -user->Ly + user->dy/2.0 + k * user->dy;
     }
     ierr = VecRestoreArray(y, &ay);CHKERRQ(ierr);
 
@@ -237,9 +236,9 @@ PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
 
 PetscErrorCode GetVolumeArea(Vec H, AppCtx *user, PetscReal *volH, PetscReal *volHexact, PetscReal *areaH) {
   PetscErrorCode  ierr;
-  const PetscReal darea = user->dx * user->dx;
-  PetscReal      *aH;
-  PetscInt       n, i, loccount=0, count;
+  const PetscReal darea = user->dx * user->dy;
+  PetscReal       *aH;
+  PetscInt        n, i, loccount=0, count;
 
   ierr = VecSum(H,volH); CHKERRQ(ierr);
   *volH *= darea;
@@ -339,7 +338,7 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in x-direction (m)  %.6f\n",(double)user->Lx); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"domain half-width in y-direction (m)  %.6f\n",(double)user->Ly); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"spacing in x-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
-    ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",(double)user->dx); CHKERRQ(ierr);
+    ierr = PetscViewerASCIIPrintf(viewer,"spacing in y-direction (m)  %.6f\n",(double)user->dy); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"last successful value of eps  %.6e\n",(double)user->eps); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"last c.s. level where convergence happened  %d\n",user->goodm); CHKERRQ(ierr);
     ierr = PetscViewerASCIIPrintf(viewer,"count of recovery steps (zero if no recovery)  %d\n",user->recoverycount); CHKERRQ(ierr);
