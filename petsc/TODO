@@ -2,15 +2,5 @@
 * compute time-step restriction for BE recovery using layer-conserve theory;
   just print it; this requires saving W or div W
 
-* have schedule of recovery time steps 1,10,100,1000,10000 ?
-
 * to compare sea and mcb runs, explain/show maps of D or just show maxD versus dx
 
-* in new grn/blocking/:  we are interested in MCB not BM1.  we use rsls because
-  ssls inferior.  can we generated better steady state than (e.g.) \eps_5 result
-  on 900m grid?  one way: fix 900m computational grid but first compute on
-  bilinearly-interpolated 4500m (30) averages of MCB, then 3000m averages (20)
-  then 2250m averages (15) then 1500m averages (10) then 1200m averages (8),
-  and finally 900m averages (6) as before
-
-* only after above is done, try time-stepping on full 900m MCB problem
