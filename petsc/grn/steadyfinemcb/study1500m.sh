@@ -15,7 +15,7 @@ touch $OUT
 mv -f $OUT SAFE_$OUT
 
 # perform robustness study
-STDOPTS="-cs_D0 10.0 -snes_monitor -snes_max_it 200 -pc_type asm -sub_pc_type lu"
+STDOPTS="-cs_D0 30.0 -snes_monitor -snes_max_it 200 -pc_type asm -sub_pc_type lu"
 
 NAMEROOT="mcb1500mS"
 
