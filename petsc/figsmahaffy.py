@@ -59,8 +59,8 @@ from petsc2numpy import readvecs
 print "reading from file %s ..." % args.i
 d = readvecs(args.i,num=2,metaname='dimension variable',names=['x','y'])
 x,y = d[0],d[1]
-v = readvecs(args.i,num=7,skip=2,shape=(len(y),len(x)),names=['b','m','Hexact','H','residual'])
-b,m,Hexact,H,residual = v[0],v[1],v[2],v[3],v[4]
+v = readvecs(args.i,num=6,skip=2,shape=(len(y),len(x)),names=['b','m','Hexact','H'])
+b,m,Hexact,H = v[0],v[1],v[2],v[3]
 
 figdebug = False
 def figsave(name):
@@ -197,15 +197,18 @@ if args.profile:
 if args.map:
     print "generating map-plane figures ..."
 
-    plt.figure(figsize=fsize)
-    plt.pcolormesh(x,y,H)
-    plt.axis('tight')
-    plt.colorbar()
-    plt.title('thickness solution H (m) with min=%.2f, max=%.2f' % (H.min(),H.max()))
-    figsave('H.png')
+    if H.max() == H.min():
+        print "  ... not generating H figure because H is constant"
+    else:
+        plt.figure(figsize=fsize)
+        plt.pcolormesh(x,y,H)
+        plt.axis('tight')
+        plt.colorbar()
+        plt.title('thickness solution H (m) with min=%.2f, max=%.2f' % (H.min(),H.max()))
+        figsave('H.png')
 
     if b.max() == b.min():
-        print "  ... not generating b figure because field is identically zero"
+        print "  ... not generating b figure because b is constant"
     else:
         plt.figure(figsize=fsize)
         plt.pcolormesh(x,y,b)
@@ -214,13 +217,16 @@ if args.map:
         plt.title('bed elevation b (m) with min=%.2f, max=%.2f' % (b.min(),b.max()))
         figsave('b.png')
 
-    plt.figure(figsize=fsize)
     s = gets(H,b)
-    plt.pcolormesh(x,y,s)
-    plt.axis('tight')
-    plt.colorbar()
-    plt.title('surface elevation s (m) with min=%.2f, max=%.2f' % (s.min(),s.max()))
-    figsave('s.png')
+    if s.max() == s.min():
+        print "  ... not generating s figure because s is constant"
+    else:
+        plt.figure(figsize=fsize)
+        plt.pcolormesh(x,y,s)
+        plt.axis('tight')
+        plt.colorbar()
+        plt.title('surface elevation s (m) with min=%.2f, max=%.2f' % (s.min(),s.max()))
+        figsave('s.png')
 
     plt.figure(figsize=fsize)
     m = m * 31556926.0
@@ -230,24 +236,30 @@ if args.map:
     plt.title('surface mass balance m (m/a) with min=%.2f, max=%.2f' % (m.min(),m.max()))
     figsave('m.png')
 
-    plt.figure(figsize=fsize)
-    Herror = H - Hexact
-    plt.pcolormesh(x,y,Herror)
-    plt.axis('tight')
-    plt.colorbar()
-    plt.title('thickness error H-Hexact (m) with min=%.2f, max=%.2f' % (Herror.min(),Herror.max()))
-    figsave('Herror.png')
+    if H.max() == H.min():
+        print "  ... not generating Herror figure because H is constant"
+    else:
+        plt.figure(figsize=fsize)
+        Herror = H - Hexact
+        plt.pcolormesh(x,y,Herror)
+        plt.axis('tight')
+        plt.colorbar()
+        plt.title('thickness error H-Hexact (m) with min=%.2f, max=%.2f' % (Herror.min(),Herror.max()))
+        figsave('Herror.png')
 
-    plt.figure(figsize=fsize)
-    ar = ma.array(abs(residual),mask=(H<=0.0))
-    chopr = np.maximum(ar,1.0e-6*ar.max())  # show 6 orders of magnitude range only
-    plt.pcolormesh(x,y,np.log10(chopr))
-    plt.axis('tight')
-    plt.colorbar()
-    plt.title('residual log magnitude (log10|r|); H<=0 masked-out')
-    figsave('residual.png')
+    print "reading residual, D, Wmag if present ..."
 
-    print "reading D and Wmag if present ..."
+    v = readvecs(args.i,num=7,skip=6,shape=(len(y),len(x)),names=['residual'],failonmissing=False)
+    if (v != None) & (len(v) > 0):
+        residual = v[0]
+        plt.figure(figsize=fsize)
+        ar = ma.array(abs(residual),mask=(H<=0.0))
+        chopr = np.maximum(ar,1.0e-6*ar.max())  # show 6 orders of magnitude range only
+        plt.pcolormesh(x,y,np.log10(chopr))
+        plt.axis('tight')
+        plt.colorbar()
+        plt.title('residual log magnitude (log10|r|); H<=0 masked-out')
+        figsave('residual.png')
 
     v = readvecs(args.i,num=8,skip=7,shape=(len(y),len(x)),names=['D'],failonmissing=False)
     if (v != None) & (len(v) > 0):
