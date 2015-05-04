@@ -223,10 +223,11 @@ int main(int argc,char **argv) {
   if (user.dtres > 0.0) {  // time-stepping
       // note "Hinitial" is really "H^{l-1}", the solution at the last time step
       PetscReal  tcurrent = 0.0,
-                 dtgoal   = user.dtres;
-      while (tcurrent < user.T) {
+                 dtgoal   = user.dtres,
+                 epsdt    = 1.0e-4 * dtgoal;
+      while (tcurrent < user.T - epsdt) {
           PetscInt reducecount = 10;
-          user.dtres = PetscMin(user.T - tcurrent, dtgoal);
+          user.dtres = PetscMin(user.T - tcurrent, dtgoal); // note this exceeds epsdt
           user.dtjac = user.dtres;
           ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);
           while (reason < 0) {
