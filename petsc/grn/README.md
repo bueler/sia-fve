@@ -131,11 +131,11 @@ More optional steps
 
   then we get a run that diverges at step 11 of the continuation scheme, i.e.
   it stops with a state that converges with eps=4.64e-4.  Thus it is not at
-  steady state with the full SIA model.  Now do 100 a of time-stepping to head
+  steady state with the full SIA model.  Now do 500 a of time-stepping to head
   toward steady state:
 
         $ mkdir testcont/
-        $ mpiexec -n 6 ../mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 9 -mah_dt 50.0 -mah_T 500.0 -mah_dump testcont/
+        $ mpiexec -n 6 ../mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 11 -mah_dt 25.0 -mah_T 500.0 -mah_dump testcont/
 
   * _Generate figures._  Generate `.pdf` and `.png` figures:
 
