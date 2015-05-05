@@ -62,7 +62,7 @@ Do "manual" time steps after divergence, to approach steady state:
 #include "base/io.h"
 #include "base/solver.h"
 
-extern PetscErrorCode ChopScaleSMBforInitial(Vec,AppCtx*);
+extern PetscErrorCode ChopScaleSMBforInitialH(Vec,AppCtx*);
 extern PetscErrorCode FormBounds(SNES,Vec,Vec);
 extern PetscErrorCode Step(Vec,SNES*,ContinuationScheme*,SNESConvergedReason*,AppCtx*);
 
@@ -176,15 +176,15 @@ int main(int argc,char **argv) {
   // fill user.Hinitial according to either -mah_readinitial{surface} foo.dat or chop-scale-SMB
   if (user.readinitial) {
       myPrintf(&user,"  reading Hinitial from %s ...\n", user.readinitialname);
-      ierr = ReadInitialHVec(&user); CHKERRQ(ierr);
+      ierr = ReadInitialH(&user); CHKERRQ(ierr);
   } else if (user.readinitialsurface) {
       myPrintf(&user,"  generating Hinitial by reading surface from %s\n"
                      "    and subtracting bed which was from %s ...\n",
                user.readinitialname, user.readname);
-      ierr = GenerateInitialHFromReadSurfaceVec(&user); CHKERRQ(ierr);
+      ierr = GenerateInitialHFromReadSurface(&user); CHKERRQ(ierr);
   } else {
       myPrintf(&user,"  generating Hinitial by chop-and-scale of SMB ...\n");
-      ierr = ChopScaleSMBforInitial(user.Hinitial,&user); CHKERRQ(ierr);
+      ierr = ChopScaleSMBforInitialH(user.Hinitial,&user); CHKERRQ(ierr);
   }
 
   if (user.showdata) {
@@ -295,7 +295,7 @@ int main(int argc,char **argv) {
 }
 
 // set initial H by chop & scale SMB
-PetscErrorCode ChopScaleSMBforInitial(Vec Hinitial, AppCtx *user) {
+PetscErrorCode ChopScaleSMBforInitialH(Vec Hinitial, AppCtx *user) {
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
   ierr = VecCopy(user->m,Hinitial); CHKERRQ(ierr);

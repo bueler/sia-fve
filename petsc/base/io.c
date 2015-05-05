@@ -4,6 +4,8 @@
 #include <sys/time.h>
 #include "io.h"
 
+// set v = tol where v < tol
+// (compare VecChop(), which sets v = 0 where abs(v) < tol)
 PetscErrorCode VecTrueChop(Vec v, PetscReal tol) {
   PetscErrorCode  ierr;
   PetscReal       *a;
@@ -15,6 +17,24 @@ PetscErrorCode VecTrueChop(Vec v, PetscReal tol) {
       if (a[i] < tol)  a[i] = tol;
   }
   ierr = VecRestoreArray(v, &a); CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+// set v = 0 where w < tol
+// v and w must have same layout
+PetscErrorCode VecZeroWhereVecSmall(Vec v, Vec w, PetscReal tol) {
+  PetscErrorCode  ierr;
+  PetscReal       *av, *aw;
+  PetscInt        n, i;
+
+  ierr = VecGetLocalSize(v, &n); CHKERRQ(ierr);
+  ierr = VecGetArray(v, &av); CHKERRQ(ierr);
+  ierr = VecGetArray(w, &aw); CHKERRQ(ierr);
+  for (i = 0; i < n; ++i) {
+      if (aw[i] < tol)  av[i] = 0.0;
+  }
+  ierr = VecRestoreArray(v, &av); CHKERRQ(ierr);
+  ierr = VecRestoreArray(w, &aw); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -138,7 +158,7 @@ PetscErrorCode ReadDataVecs(AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ReadInitialHVec(AppCtx *user) {
+PetscErrorCode ReadInitialH(AppCtx *user) {
     PetscErrorCode ierr;
     PetscViewer    viewer;
 
@@ -152,11 +172,10 @@ PetscErrorCode ReadInitialHVec(AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode GenerateInitialHFromReadSurfaceVec(AppCtx *user) {
+PetscErrorCode GenerateInitialHFromReadSurface(AppCtx *user) {
     PetscErrorCode ierr;
     PetscViewer    viewer;
-    Vec            tmpb, tmps;
-
+    Vec            tmpb, tmpH;
     ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF,user->readinitialname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
     ierr = DiscardDimensions(viewer); CHKERRQ(ierr);
     // read b into tmpb
@@ -164,21 +183,21 @@ PetscErrorCode GenerateInitialHFromReadSurfaceVec(AppCtx *user) {
     ierr = ReadAndReshape2DVec(tmpb, viewer, user); CHKERRQ(ierr);
     // read and discard m and Hexact
     ierr = DiscardVecs(2,viewer,user); CHKERRQ(ierr);
-    // read H into tmps
-    ierr = VecDuplicate(user->b,&tmps); CHKERRQ(ierr);
-    ierr = ReadAndReshape2DVec(tmps, viewer, user); CHKERRQ(ierr);
-    // add tmpb so it is really s
-    ierr = VecAXPY(tmps,1.0,tmpb); CHKERRQ(ierr);  // tmps <- 1.0*tmpb + tmps
-    // subtract previously-read b to create new Hinitial, but note this is
-    //   nonsense in ice-free areas; it is just the difference of beds
-
-//    ierr = VecWAXPY(user->Hinitial,-1.0,user->b,tmps); CHKERRQ(ierr);  // Hinitial <- -1.0*b + tmps
-    ierr = VecAXPY(tmps,-1.0,user->b); CHKERRQ(ierr);  // tmps <- -1.0*b + tmps
-FIXME: now go though tmps and zero it out everywhere user->Hinitial is zero
-    ierr = VecCopy(tmps,user->Hinitial); CHKERRQ(ierr);
-
+    // read H into tmpH
+    ierr = VecDuplicate(user->Hinitial,&tmpH); CHKERRQ(ierr);
+    ierr = ReadAndReshape2DVec(tmpH, viewer, user); CHKERRQ(ierr);
+    // add tmpb so Hinitial is really s
+    ierr = VecWAXPY(user->Hinitial,1.0,tmpb,tmpH); CHKERRQ(ierr);  // Hinitial <- 1.0*tmpb + tmpH
+    // subtract previously-read b to create new thickness, but note this is
+    //   nonsense in ice-free areas; it is just the difference of beds;
+    //   and it can come out negative even where tmpH > 0
+    ierr = VecAXPY(user->Hinitial,-1.0,user->b); CHKERRQ(ierr);  // Hinitial <- -1.0*b + Hinitial
+    // now go though Hinitial and zero it out everywhere read tmpH is nearly zero (tmpH<1.0)
+    ierr = VecZeroWhereVecSmall(user->Hinitial,tmpH,1.0); CHKERRQ(ierr);
+    // zero out negative values
+    ierr = VecTrueChop(user->Hinitial,0.0); CHKERRQ(ierr);
     ierr = VecDestroy(&tmpb); CHKERRQ(ierr);
-    ierr = VecDestroy(&tmps); CHKERRQ(ierr);
+    ierr = VecDestroy(&tmpH); CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
