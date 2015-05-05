@@ -169,8 +169,14 @@ PetscErrorCode GenerateInitialHFromReadSurfaceVec(AppCtx *user) {
     ierr = ReadAndReshape2DVec(tmps, viewer, user); CHKERRQ(ierr);
     // add tmpb so it is really s
     ierr = VecAXPY(tmps,1.0,tmpb); CHKERRQ(ierr);  // tmps <- 1.0*tmpb + tmps
-    // subtract previously-read b to create Hinitial
-    ierr = VecWAXPY(user->Hinitial,-1.0,user->b,tmps); CHKERRQ(ierr);  // Hinitial <- -1.0*b + tmps
+    // subtract previously-read b to create new Hinitial, but note this is
+    //   nonsense in ice-free areas; it is just the difference of beds
+
+//    ierr = VecWAXPY(user->Hinitial,-1.0,user->b,tmps); CHKERRQ(ierr);  // Hinitial <- -1.0*b + tmps
+    ierr = VecAXPY(tmps,-1.0,user->b); CHKERRQ(ierr);  // tmps <- -1.0*b + tmps
+FIXME: now go though tmps and zero it out everywhere user->Hinitial is zero
+    ierr = VecCopy(tmps,user->Hinitial); CHKERRQ(ierr);
+
     ierr = VecDestroy(&tmpb); CHKERRQ(ierr);
     ierr = VecDestroy(&tmps); CHKERRQ(ierr);
     ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
