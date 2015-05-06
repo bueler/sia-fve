@@ -1,6 +1,6 @@
 \NeedsTeXFormat{LaTeX2e}
-\documentclass[twocolumn]{igs}
-%\documentclass[twocolumn,letterpaper]{igs}
+%\documentclass[twocolumn]{igs}
+\documentclass[twocolumn,letterpaper]{igs}
 %\documentclass[review,letterpaper]{igs}
 
 \usepackage{stfloats}
@@ -124,7 +124,7 @@ The flux $\bq$ has multiple functional forms which are equivalent to \eqref{eq:s
 \end{equation}
 Diffusion interpretation \eqref{eq:siafluxdiffusion} is appropriate in the flat-bed case because \eqref{eq:siaevolution} and \eqref{eq:siaflux} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}, but a diffusion interpretation is obscured by the bed gradient $\grad b$, which is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012}.
 
-Essentially, if the bed is not flat then $\grad s$ and $\grad H$ are different.  Thus the flux $\bq$ is not strictly diffusive because it is not oppositely-directed to the gradient of the conserved quantity, namely $H$.  To avoid the diffusion form one can instead compute a vertically-averaged velocity $\bV$, and then treat the flux as arising from the transport of $H$ by $\bV$, that is,
+If the bed is not flat then $\grad s$ and $\grad H$ are different.  Thus the flux $\bq$ is not strictly diffusive because it is not oppositely-directed to the gradient of the conserved quantity, namely $H$.  As an alternative to the diffusion form one can instead compute a vertically-averaged velocity $\bV$, and then treat the flux as arising from the transport of $H$ by $\bV$, that is,
 \begin{equation}
 \bq = \bV H \quad \text{where} \quad \bV = - \Gamma H^{n+1} |\grad s|^{n-1} \grad s. \label{eq:siafluxvelocity}
 \end{equation}
@@ -158,7 +158,7 @@ By the divergence theorem, applied to any subregion $V$ of $\Omega$, we get the 
 \end{equation}
 Here $\partial V$ denotes the boundary of $V$, $\bn$ is the outward normal unit vector, and $ds$ is the length element on the closed curve $\partial V$.  Our numerical schemes will be based on \eqref{eq:siaasconservation}.
 
-Equation \eqref{eq:siasteady}, or \eqref{eq:siaasconservation}, is a boundary-value problem in which the location where the boundary conditions $H=0$ and $\bq=0$ apply is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}.  The ice-covered domain where \eqref{eq:siasteady} applies cannot be treated as a small modification of a known boundary, though that is the approach taken in explicit time-stepping schemes for equation \eqref{eq:siaevolution} \citep{Bueleretal2005,Huybrechtsetal1996}.
+Equation \eqref{eq:siasteady} represents a boundary-value problem in which the location where the boundary conditions $H=0$ and $\bq=0$ apply is unknown \citep{JaroschSchoofAnslow2013,JouvetBueler2012}.  The ice-covered domain where \eqref{eq:siasteady} applies cannot be treated as a small modification of a known boundary, though that is the approach taken in explicit time-stepping schemes for equation \eqref{eq:siaevolution} \citep{Bueleretal2005,Huybrechtsetal1996}.
 
 To be more precise about boundary conditions, if the surface mass balance $m$ is sufficiently-negative near the boundary of the computational domain $\Omega$ on which \eqref{eq:siasteady} is solved then $H\to 0$ at locations inside $\Omega$, namely at the ice margin or free boundary, at which $\bq \to 0$ simultaneously \citep{JouvetBueler2012}.  Because of the factor $H^{n+2}$ in formula \eqref{eq:siafluxdiffusion} for the diffusivity $D$, the problem has degenerate diffusivity, i.e.~also $D \to 0$ at the free boundary.  Solving equation \eqref{eq:siasteady}, or computing a time-step of \eqref{eq:siaevolution}, as such a free-boundary problem, without a boundary flux applied along any part of the boundary of $\Omega$, is usually called a ``whole'' ice sheet model.  We restrict our attention to such whole ice sheet models.
 
@@ -498,24 +498,31 @@ Thus we see good results from our implicit, first-order upwinding \Mstar scheme.
 
 \subsection{Greenland: bed topography and robustness}
 
-While we have demonstrated its effectiveness on verification cases, the success of our method depends on robust convergence when the data of the problem, especially the bed topography $b$, are realistically non-smooth.  To test robustness and scalability to high-resolution and many processors, we use two Greenland ice sheet bed topography data sets of different degrees of smoothness.  We show convergence on rough beds at sub-1 km resolution if care is taken in constructing the iteration.
+While we have demonstrated its effectiveness on verification cases, the success of our method depends on robust convergence when the data of the problem, especially the bed topography $b$, are realistically non-smooth.  To test robustness, and scalability to high-resolution, we use two Greenland ice sheet bed topography data sets of different degrees of smoothness.  Runs at high resolution (600--2000 m) converge only imperfectly on the rougher beds, but implicit time-steps can be used to get closer to steady-state.
 
-The smoother bed is the older BEDMAP1 topography on a 5 km data grid \citep{Bamberetal2001}; we call this bed data ``BM1''.  This data, and a gridded model for present-day surface mass balance \citep{Ettemaetal2009} are included in the 5 km SeaRISE data \citep{Bindschadleretal2013}.  All of our experiments use the \cite{Ettemaetal2009} surface mass balance, or a reprojected and interpolated version thereof.  The much finer resolution, and thus much rougher, bed data are on a 150 m grid from \cite{Morlighemetal2014}, generated by mass-conservation methods from additional ice-penetrating radar flightlines, i.e.~since 2001, and based on surface velocity measurements; we call this bed data ``MCB''.
+\newcommand{\BM}{\textsf{BM1}\xspace}
+\newcommand{\MCB}{\textsf{MCB}\xspace}
+\newcommand{\virs}{\textsf{RS}\xspace}
+\newcommand{\viss}{\textsf{SS}\xspace}
 
-Considering the BM1 bed first, we compute the \Mstar steady-state solution on 5000, 2500, 1667, 1250, 1000, and 625 meter grids.  In all cases except the first we refine the 5 km grid using bilinear interpolation, so these beds effectively become smoother under grid refinement.  Figure \ref{fig:grnrobusteps} shows that in each case the Newton solver does not converge at the $\eps_{12}=0$ level, but that the better levels ($\eps_9$--$\eps_{11}$) of the continuation scheme are reached in all cases.
+The smoother bed is the older BEDMAP1 topography on a 5 km data grid \citep{Bamberetal2001}; we call this bed data ``\BM''.  This data, and a gridded model for present-day surface mass balance \citep{Ettemaetal2009}, are included in the 5 km SeaRISE data \citep{Bindschadleretal2013}, and all of our experiments use this surface mass balance data.  The newer, finer-resolution, and much rougher bed data are on a 150 m grid from \cite{Morlighemetal2014}; we call this bed data ``\MCB''.  It is generated by mass-conservation methods from a larger collection of ice-penetrating radar flightlines, and by using additional surface velocity measurements.
+
+Considering the \BM bed first, we solved the problem on 5000, 2500, 1667, 1250, 1000, and 625 meter grids.  Except for the 5 km grid case itself, we refined the 5 km grid data using bilinear interpolation so the bed became smoother under grid refinement.  Figure \ref{fig:grnrobusteps} shows that, though the Newton solver does not converge at the final $\eps_{12}=0$ level, the next-best level $\eps_{11}$ is reached by the continuation scheme using the \virs solver on the finer ($<2000$ m) grids.
 
 \begin{figure}[ht]
 \onecol{grnrobusteps.pdf}
-\caption{Smallest successful value of $\eps_i$ for which the Newton iteration converges on the steady-state problem; lower is better.  Different bed data sources (BM1 or MCB) and complementarity solvers (rs or ss) are compared.}
+\caption{Smallest successful value of $\eps_i$ for which the Newton iteration converges on the steady-state problem; lower is better.  Different bed data sources (\BM or \MCB) and complementarity-problem solvers (\virs or \viss) are compared.}
 \label{fig:grnrobusteps}
 \end{figure}
 
-The runs using the MCB data were on 4500, 3000, 1500, 1200, 900, and 600 meter grids.  The bed elevations were averaged from the 150 m given data, from 30$\times$30 blocks for the 9 km grid to 4$\times$4 blocks for the 600 m grid.  (We did not attempt the computation at 150 m.)  Because this process reveals more and more detail under grid refinement, in this case the bed effectively becomes rougher under grid refinement.  In this case, except on the coarsest and most-averaged grid, the continuation scheme fails to generate convergent Newton solves beyond the middle stages $\eps_4$--$\eps_6$.  It is clear that highly-resolved bed, which causes large and irregular values of $D$ and $\bW$ to arise from formulas \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine}, limits the success of the Newton iteration.
+The runs using the \MCB data were on 4500, 3000, 1500, 1200, 900, and 600 meter grids.  The bed elevations were averaged, on 30$\times$30 blocks for the 9 km grid down to 4$\times$4 blocks for the 600 m grid, from the original 150 m postings.  Because this process reveals more and more detail under grid refinement, the bed effectively became rougher under grid refinement.  Except on the coarsest and most-averaged grid, the continuation scheme fails to generate convergent Newton solves beyond the middle stages ($\eps_4$--$\eps_6$).  Thus it is clear that highly-resolved bed, which causes large and irregular values of $D$ and $\bW$ to arise from formulas \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine}, limits the success of our continuation/Newton approach.
 
 % ./robustfigs.py --ratios study.robust
-Because of a lack of theoretical guidance on the choice of complementarity problem solver in our context (compare \cite{BensonMunson2006,JouvetGraeser2013}), and because the two available choices gave comparable results on verification cases, we also compared the reduced-space (``rs'') and semi-smooth (``ss'') methods for solving complementarity problem \eqref{eq:nonlincomplementarity} in these realistic Greenland ice sheet cases.  From Figure \ref{fig:grnrobusteps} it is clear that the convergence of the two methods is comparable, with the rs method possibly having an edge.  However, because the ss method is, on average over all the runs, a factor of three slower, it is easy to recommend the rs solver for these problems.
+Though theoretical guidance on the choice of complementarity-problem solver is lacking in this context  \citep[compare][]{BensonMunson2006}, these Greenland cases are realistic and challenging ones on which to compare the two available methods for solving \eqref{eq:nonlincomplementarity}.  From Figure \ref{fig:grnrobusteps} it is clear that the convergence of the reduced-space (``\virs'') and semi-smooth (``\viss'') methods is comparable, with the \virs method slightly-better in the high-resolution cases.  Because the \viss method is a factor of three slower, on average over all runs in Figure \ref{fig:grnrobusteps}, it is easy to recommend the \virs solver for this application.
 
-FIXME  not prepared to give up entirely.  approach problem by solving steady state on 750 m grid but with highly-averaged bed (onto 9000 m); this succeeds to $\eps_{11}$.  then do time-stepping on 750 m grids with less and less averaging of the bed till it is also 750 m.  result in Figure \ref{fig:grnwinset}
+Returning to the goal of computing the full SIA steady-state using the more-accurate \MCB bed data, we propose the following strategy.  On a given (high) resolution computational grid, we start by computing the steady state using a strongly-smoothed version of the bed data.  Based on results like those in Figure \ref{fig:grnrobusteps} we expect that this computation converges at a ``good'' continuation level (e.g.~$\eps_{10}$--$\eps_{12}$).  We then extract the surface elevation from the result of this computation and construct an initial thickness from it using a less-smoothed version of the bed data.  Though we have no reason to expect the steady-state continuation/Newton scheme to fully-converge from this new initial state, we can at least expect a backward Euler time step \eqref{eq:backwardeuler} to converge.  Thus we start time stepping on the better bed, so that the Newton solver converges at each time step, and so that we further approach steady state on the better bed.  These implicit time steps are chosen sufficiently-short so that the continuation scheme fully converges (i.e.~to the $\eps_{12}$ level).  This bed-resolving strategy can be iterated as needed until the steady-state problem has been fully-solved using the desired un-smoothed bed data.
+
+FIXME:  We did this and got Figure \ref{fig:grnwinset}.
 
 \begin{figure}[ht]
 \onecol{grnwinset.pdf} % FIXME placeholder

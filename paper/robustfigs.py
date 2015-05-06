@@ -90,9 +90,9 @@ for k in rsi+ssi:
         else:
             DT = 'MCB'
         if vitype[k] == 'rsls':
-            VI = 'rs'
+            VI = 'RS'
         else:
-            VI = 'ss'
+            VI = 'SS'
         line.set_label(DT + ' ' + VI)
 dxmin, dxmax = 380.0, 6250.0
 # lines at \eps_0 ... \eps_11:
