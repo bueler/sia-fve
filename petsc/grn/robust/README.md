@@ -11,10 +11,6 @@ The purpose of these scripts is to study robustness.  The cases studied have:
   * either reduced-set (`-snes_type vinewtonrsls`) or semi-smooth (`vinewtonssls`)
     solution method
 
-FIXME:  Other parameters which could be studied include especially `-cs_D0 XX`.
-
-FIXME:  Study duration `-mah_dtBE` which allows convergence, perhaps only with rsls.
-
 Run a quickish version
 ----------------------
 
