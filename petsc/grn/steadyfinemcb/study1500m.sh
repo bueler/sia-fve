@@ -24,10 +24,10 @@ DAT=${NAMEROOT}4.dat
 DUMP=r1500m4/
 mkdir -p $DUMP
 mpiexec -n $NN ../../mahaffy -mah_read $DAT $STDOPTS -mah_notry -mah_dump $DUMP
-head -n 1 $DUMP/history.txt >> $OUT
-cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
-cat $DUMP/history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
-cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
+head -n 1 ${DUMP}history.txt >> $OUT
+cat ${DUMP}history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
+cat ${DUMP}history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
+cat ${DUMP}history.txt | grep "total time" | sed 's/.* //g' >> $OUT
 
 # runs below are time-stepping because
 # we already know that continuation scheme fails on the steady state problem
@@ -40,11 +40,11 @@ for LEV in $LEVELS; do
     PREV="-mah_readinitialsurface ${DUMP}unnamed.dat"
     DUMP=r1500m${LEV}/
     mkdir -p $DUMP
-    mpiexec -n $NN ../../mahaffy -mah_T 10.0 -mah_dt 0.1 -cs_start 5 -mah_read $DAT $PREV $STDOPTS -mah_dump $DUMP
-    head -n 1 $DUMP/history.txt >> $OUT
-    cat $DUMP/history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
-    cat $DUMP/history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
-    cat $DUMP/history.txt | grep "total time" | sed 's/.* //g' >> $OUT
+    mpiexec -n $NN ../../mahaffy -mah_T 1.0 -mah_dt 0.05 -cs_start 11 -mah_read $DAT $PREV $STDOPTS -mah_dump $DUMP -mah_showdata -draw_pause 5
+    head -n 1 ${DUMP}history.txt >> $OUT
+    cat ${DUMP}history.txt | grep "last successful value of eps" | sed 's/.* //g' >> $OUT
+    cat ${DUMP}history.txt | grep "maximum solution diffusivity" | sed 's/.* //g' >> $OUT
+    cat ${DUMP}history.txt | grep "total time" | sed 's/.* //g' >> $OUT
 done
 
 set +x
