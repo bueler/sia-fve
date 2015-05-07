@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# generate 4 different versions of the 1800m MCB bed, with
+# generate 4 different versions of the 1800m bed, with
 #   S4 interpolated from the 9000m grid mbc0.nc
 #   S3 interpolated from the 5400m grid mbc1.nc
 #   S2 interpolated from the 3600m grid mbc2.nc

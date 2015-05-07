@@ -42,5 +42,5 @@ Setup and view:
 
 Do this for NN processors:
 
-    $ ./study.sh NN fine
+    $ FINE=1 ./study.sh NN
 

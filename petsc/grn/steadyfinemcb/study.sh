@@ -5,15 +5,15 @@ set -x
 
 if [ -z ${1+x} ]; then
   NN=6
-else
+else  # this case if a first argument is given
   NN=$1
 fi
 
-if [ -z ${2+x} ]; then
+if [ -z ${FINE+x} ]; then
   RES=1800
   START=4
   LEVELS="3 2 1"
-else  # note argument 2 is *any* nonempty string
+else  # this case if FINE is *any* nonempty string
   RES=900
   START=5
   LEVELS="4 3 2 1"
