@@ -515,7 +515,7 @@ Considering the \BM bed first, we solved the problem on 5000, 2500, 1667, 1250, 
 The runs using the \MCB data were on 4500, 3000, 1500, 1200, 900, and 600 meter grids.  The bed elevations were averaged, on 30$\times$30 blocks for the 9 km grid down to 4$\times$4 blocks for the 600 m grid, from the original 150 m postings.  Because this process reveals more and more detail under grid refinement, the bed effectively became rougher under grid refinement.  Except on the coarsest and most-averaged grid, the continuation scheme fails to generate convergent Newton solves beyond the middle stages ($\eps_4$--$\eps_6$).  Thus it is clear that highly-resolved bed, which causes large and irregular values of $D$ and $\bW$ to arise from formulas \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine}, limits the success of our continuation/Newton approach.
 
 % ./robustfigs.py --ratios study.robust
-Though theoretical guidance on the choice of complementarity-problem solver is lacking in this context  \citep[compare][]{BensonMunson2006}, these Greenland cases are realistic and challenging ones on which to compare the two available methods for solving \eqref{eq:nonlincomplementarity}.  From Figure \ref{fig:grnrobusteps} it is clear that the convergence of the reduced-space (``\virs'') and semi-smooth (``\viss'') methods is comparable, with the \virs method slightly-better in the high-resolution cases.  Because the \viss method is a factor of three slower, on average over all runs in Figure \ref{fig:grnrobusteps}, it is easy to recommend the \virs solver for this application.
+Though theoretical guidance on the choice of comp\-lementarity-problem solver is lacking in this context  \citep[compare][]{BensonMunson2006}, these Greenland cases are realistic and challenging ones on which to compare the two available methods for solving \eqref{eq:nonlincomplementarity}.  From Figure \ref{fig:grnrobusteps} it is clear that the convergence of the reduced-space (``\virs'') and semi-smooth (``\viss'') methods is comparable, with the \virs method slightly-better in the high-resolution cases.  Because the \viss method is a factor of three slower, on average over all runs in Figure \ref{fig:grnrobusteps}, it is easy to recommend the \virs solver for this application.
 
 Returning to the goal of computing the full SIA steady-state using the more-accurate \MCB bed data, we propose the following strategy.  On a given (high) resolution computational grid, we start by computing the steady state using a strongly-smoothed version of the bed data.  Based on results like those in Figure \ref{fig:grnrobusteps} we expect that this computation converges at a ``good'' continuation level (e.g.~$\eps_{10}$--$\eps_{12}$).  We then extract the surface elevation from the result of this computation and construct an initial thickness from it using a less-smoothed version of the bed data.  Though we have no reason to expect the steady-state continuation/Newton scheme to fully-converge from this new initial state, we can at least expect a backward Euler time step \eqref{eq:backwardeuler} to converge.  Thus we start time stepping on the better bed, so that the Newton solver converges at each time step, and so that we further approach steady state on the better bed.  These implicit time steps are chosen sufficiently-short so that the continuation scheme fully converges (i.e.~to the $\eps_{12}$ level).  This bed-resolving strategy can be iterated as needed until the steady-state problem has been fully-solved using the desired un-smoothed bed data.
 
@@ -523,7 +523,7 @@ FIXME:  We did this and got Figure \ref{fig:grnwinset}.
 
 \begin{figure}[ht]
 \onecol{grnwinset.pdf} % FIXME placeholder
-\caption{Our method computes high-resolution ice sheet margins at the locations uniquely-determined by the surface mass balance, bedrock topography, and the simplified-dynamics SIA model.  Here: 750 m model resolution and MCB bed topography data.}
+\caption{Our method computes high-resolution ice sheet margins at the locations determined only by the surface mass balance, bedrock topography, and the steady-state, simplified-dynamics SIA model.  Here: 900 m model resolution using the \MCB (see text) bed topography data.}
 \label{fig:grnwinset}
 \end{figure}
 
@@ -531,11 +531,18 @@ FIXME:  We did this and got Figure \ref{fig:grnwinset}.
 
 \section{Discussion and Conclusion} \label{sec:conclusion}
 
-FIXME: The first idea in the paper is that a FVE interpretation is compatible with the original Mahaffy FD scheme.  The second idea is that the classical method's flux approximation is discontinuous along element edges.  We improve the method by doubling the number of quadrature points.  For nonflat beds we also add a bit of upwinding, and tests show the effectiveness.  The new \Mstar method is more accurate and its Newton iterations converge better, than the classical scheme.  We have applied the method at large scale and high resolution on real data, and it converges.  The computed examples using this method are novel, except for \cite{JouvetBueler2012}, by going directly to steady state from zero ice.
+The problem solved in this paper is fundamentally different from most prior ice sheet modeling.  We compute the steady-state geometry and extent of an ice sheet as a function of two data sets, namely the bed topography and surface mass balance.  Though this function has not been proved to be well-defined, even in the elevation-independent surface mass balance cases here---compare the elevation-dependent case studied by \cite{Jouvetetal2011}---there is some theoretical support for well-posedness \citep{JouvetBueler2012} and nothing seen in our calculations suggests otherwise.
 
-FIXME: Greenland result like \cite{JouvetBueler2012} result but much higher res and replacing fixed-point iteration by continuation 
+Our numerical methods are based on both new and old ideas.  Because the problem is of free-boundary type, we formulate it as a complementarity problem and apply a parallel Newton solver for such problems.  The numerical discretization of the SIA mass conservation equation is based on a classical structured-grid FD scheme \citep{Mahaffy1976}, but we make two improvements which seem to be essential for reliable convergence of the Newton iteration, namely
+\renewcommand{\labelenumi}{\emph{(\roman{enumi})}}
+\begin{enumerate}
+\item improved quadrature in the flux integral, and
+\item a small amount of first-order upwinding for the part of the ice flux which is proportional to the bed gradient.
+\end{enumerate}
+Both of these improvements are based on re-interpreting the Mahaffy scheme as an FVE method.
 
-FIXME: conclude that rougher bed is harder because convergence is worse for MCB than BM1
+The resulting \Mstar method is more accurate than the classical scheme, as shown in verification cases.  We also show that the method can succeed at large scale and high resolution on real, highly-irregular data.  In fact our steady-state Greenland examples, which avoid time-stepping, are novel except for the precedent of a previous 5 km resolution calculation by \cite{JouvetBueler2012}.  Compared to that work, our calculations here increase the number of unknowns by more than an order of magnitude and replace a fixed-point iteration by a direct application of the Newton method after using continuation to get a high-quality initial iterate.  Though improved convergence of the Newton iteration in the presence of finely-resolved, and thus rough, bed is an area where further research is needed.
+
 
 FIXME: We have been basically flux-agnostic.  The same basic FVE works as long as there is a way of computing $\bq^h(x_j^s,y_k^s)$ from the current $\bH$.  Thus our methods can be extended to include sliding and flow models based on membrane stress balances. 
 
