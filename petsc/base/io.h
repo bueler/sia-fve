@@ -28,7 +28,7 @@ PetscErrorCode ReadInitialH(AppCtx *user);
 PetscErrorCode GenerateInitialHFromReadSurface(AppCtx *user);
 
 // write a special format PETSc binary .dat output file like the one we read
-PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user);
+PetscErrorCode DumpToFile(Vec H, Vec r, const char name[], AppCtx *user);
 
 // utilities to compute quantities in reports and history files
 // volH and volHexact have units m^3; areaH has units m^2
@@ -42,7 +42,7 @@ PetscErrorCode DiffusivityReduce(AppCtx *user, PetscReal *avD, PetscReal *maxD);
 PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv, AppCtx *user);
 
 // use X viewers to show b,m,Hexact
-PetscErrorCode ShowOne(Vec v, PetscInt xdim, PetscInt ydim, const char *title);
+PetscErrorCode ShowOne(Vec v, PetscInt xdim, PetscInt ydim, const char title[]);
 PetscErrorCode ShowFields(AppCtx *user);
 
 #endif // IO_H_

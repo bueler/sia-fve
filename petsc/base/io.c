@@ -202,13 +202,13 @@ PetscErrorCode GenerateInitialHFromReadSurface(AppCtx *user) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode DumpToFile(Vec H, Vec r, AppCtx *user) {
+PetscErrorCode DumpToFile(Vec H, Vec r, const char name[], AppCtx *user) {
     PetscErrorCode ierr;
     DMDALocalInfo  info;
     Vec            x, y;
     PetscInt       j, k;
     PetscReal      *ax, *ay;
-    char           filename[1024], name[1024]="unnamed.dat";
+    char           filename[1024];
     int            strerr;
     PetscViewer    viewer;
 
