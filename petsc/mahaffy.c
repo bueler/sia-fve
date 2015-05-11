@@ -224,7 +224,8 @@ int main(int argc,char **argv) {
       // note "Hinitial" is really "H^{l-1}", the solution at the last time step
       PetscReal  tcurrent = 0.0,
                  dtgoal   = user.dtres,
-                 epsdt    = 1.0e-4 * dtgoal;
+                 epsdt    = 1.0e-4 * dtgoal,
+                 dumpdtlast = 0.0;
       while (tcurrent < user.T - epsdt) {
           PetscInt reducecount = 10;
           user.dtres = PetscMin(user.T - tcurrent, dtgoal); // note this exceeds epsdt
@@ -244,6 +245,19 @@ int main(int argc,char **argv) {
           tcurrent += user.dtres;
           myPrintf(&user,"t = %.4f a: completed time step of duration %.4f a in interval [0.0 a,%.4f a]\n",
                    tcurrent/user.secpera,user.dtres/user.secpera,user.T/user.secpera);
+          if ((user.dumpdt > 0.0) && (tcurrent >= dumpdtlast + user.dumpdt)) {
+              Vec  r;
+              char name[64];
+              int  strerr;
+              ierr = SNESGetFunction(snes,&r,NULL,NULL); CHKERRQ(ierr);
+              strerr = sprintf(name,"step%.6f.dat",tcurrent/user.secpera);
+              if (strerr < 0) {
+                  SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
+              }
+              myPrintf(&user,"writing current state into %s%s ...\n",user.figsprefix,name);
+              ierr = DumpToFile(H,r,name,&user); CHKERRQ(ierr);
+              dumpdtlast = tcurrent;
+          }
       }
   } else { // steady-state
       ierr = Step(H,&snes,&cs,&reason,&user); CHKERRQ(ierr);

@@ -23,6 +23,8 @@ PetscErrorCode initialize(AppCtx *user) {
   user->goodm      = -1;
   user->recoverycount = 0;
 
+  user->dumpdt     = -user->secpera;
+
   user->mtrue      = PETSC_FALSE;
 
   user->dome       = PETSC_TRUE;  // defaults to this case
@@ -92,8 +94,12 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       user->dtrecovery = user->dtres;
   }
   ierr = PetscOptionsString(
-      "-dump", "dump fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
+      "-dump", "dump final fields into PETSc binary files [x,y,b,m,H,Herror].dat with this prefix",
       NULL,user->figsprefix,user->figsprefix,512,&user->dump); CHKERRQ(ierr);
+  ierr = PetscOptionsReal(
+      "-dumpdt", "period between dumping states when time-stepping, in years; setting positive activates",
+      NULL,user->dumpdt/user->secpera,&user->dumpdt,&dtflg);CHKERRQ(ierr);
+  if (dtflg)  user->dumpdt *= user->secpera;
   ierr = PetscOptionsReal(
       "-initmagic", "constant, in years, used to multiply SMB to get initial iterate for thickness",
       NULL,user->initmagic,&user->initmagic,NULL);CHKERRQ(ierr);

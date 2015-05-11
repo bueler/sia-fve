@@ -42,6 +42,7 @@ typedef struct {
             dtres,  // time step for backward Euler used in residual FOR REAL TIME STEPPING
             dtjac,  //     ...                      used in steady-state for Jacobian eval
             dtrecovery,//  ...                      used in steady-state recovery
+            dumpdt, // period between dumping state when time-stepping
             initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
   PetscInt  Nx, Ny, // grid has Nx x Ny nodes
             recoverycount,// number of steps of recovery taken; zero if recovery did not happen
@@ -57,7 +58,7 @@ typedef struct {
             showdata,// show b and m with X viewer
             checkadmissible,// in FormFunctionLocal(), stop if H < 0.0
             divergetryagain,// on SNES diverge, try again with eps *= 1.5
-            dump,   // dump fields into individual PETSc binary files
+            dump,   // dump fields into a special-format PETSc binary file
             silent, // run silent
             averr,  // only display average error at end
             maxerr, // only display maximum error at end
