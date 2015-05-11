@@ -254,7 +254,6 @@ int main(int argc,char **argv) {
               if (strerr < 0) {
                   SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr);
               }
-              myPrintf(&user,"writing current state into %s%s ...\n",user.figsprefix,name);
               ierr = DumpToFile(H,r,name,&user); CHKERRQ(ierr);
               dumpdtlast = tcurrent;
           }
