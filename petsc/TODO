@@ -1,3 +1,5 @@
+* run on 900m grid, from r900m1/unnamed.dat, for as long as seems reasonable,
+  using new -mah_dumpdt ability
 
 * compute time-step restriction for BE recovery using layer-conserve theory;
   just print it; this requires saving W or div W
