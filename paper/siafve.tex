@@ -162,7 +162,9 @@ To be more precise about boundary conditions, if the surface mass balance $m$ is
 Thus the problem we solve combines equations \eqref{eq:fluxform} and \eqref{eq:siaasconservation}, where $D$ and $\bW$ are defined in \eqref{eq:siafluxdiffusion} and \eqref{eq:siaWdefine} respectively.  The input data consists of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  Both of these input fields are defined on a larger domain $\Omega$ than the ice-covered set, and we assume $m$ sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by ice-free areas.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ but zero where there is no ice.
 
 
-\section{Classical Mahaffy scheme}   \label{sec:mahaffyfd}
+\section{Methods}   \label{sec:methods}
+
+\subsection{Classical Mahaffy scheme}   \label{subsec:mahaffyfd}
 
 Consider the rectangular structured FD grid, with spacing $\Delta x,\Delta y$, shown in Figure \ref{fig:fdfemgrids}a.  The \cite{Mahaffy1976} scheme calculates one flux component at each of the staggered grid points marked by triangles.  For these points we introduce notation
 \begin{equation}
@@ -202,7 +204,7 @@ The discretization of mass conservation equation \eqref{eq:siasteady} itself use
 Equation \eqref{eq:siasteadyfd}, which relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil'' of the scheme, is combined with \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy} to give an equation in an algebraic system.  This system is intended to determine all values $H_{j,k}$ simultaneously.  We address the solution of this system after re-interpreting and improving the Mahaffy scheme.
 
 
-\section{FVE re-interpretation} \label{sec:fveinterpretation}
+\subsection{FVE re-interpretation} \label{subsec:fveinterpretation}
 
 The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FE \emph{and} FV perspective.  As Figure \ref{fig:fdfemgrids} suggests, our re-interpretation uses the same structured grid, but the regular grid points are now nodes (degrees of freedom) for a continuous space of trial functions.  An FE method supposes that an approximation $H^h$ of the solution lies in a finite-dimensional space of continuous functions which are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost everywhere.  Then, as in an FV method, integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of control volumes $V$ which together tile $\Omega$, which generates a finite system of nonlinear algebraic equations.
 
@@ -290,7 +292,7 @@ is the same as in \eqref{eq:mahaffyalphax}.
 Mahaffy's scheme thus approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which averages across a discontinuity to reconstruct a slope.  Recognizing the Mahaffy choice as quadrature-like, in this FVE context, is beneficial because it allows us to do it better.
 
 
-\section{Improved scheme}  \label{sec:star}
+\subsection{Improved scheme}  \label{subsec:star}
 
 Let us return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique by improving quadrature.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on the bed gradient term $\bW H^{n+2}$.  Together these improvements define the ``\Mstar'' scheme.
 
@@ -360,7 +362,7 @@ Observe that $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwindin
 We call the method which combines both improve-ments---i.e.~better quadrature and a bit of upwinding---the ``\Mstar'' scheme.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the reported results for the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.  The evidence suggests that our form of upwinding is most important at locations of low regularity of the solution.  The convergence of the Newton iteration is also improved compared to the classical Mahaffy scheme.
 
 
-\section{Solution of the equations} \label{sec:solution}
+\subsection{Solution of the equations} \label{subsec:solution}
 
 We are ready to write down a system of nonlinear algebraic equations.  It remains to describe the numerical solution of this system.  This is nontrivial because inequality constraints apply to each unknown.
 
@@ -435,7 +437,7 @@ If a Newton iteration fails to converge in the steady-state case, we might hope 
 
 \section{Results}
 
-In this section we first apply our method in two examples where exact solutions are known.  We compare the performance of the \Mstar scheme \eqref{eq:siamstar} to the classical Mahaffy scheme.  We use the exact solutions to evaluate the convergence of the discrete solution to the continuum solution under grid refinement (verification).  Also, because our method has a regularization \eqref{eq:nonlinregularization}, a continuation scheme \eqref{eq:continuationND}, and a constraint-adapted Newton solver from PETSc to solve the system, we evaluate the convergence of the Newton iteration in an exact solution case.  After that we apply the method in an extended Greenland ice sheet example using high-resolution bedrock topography.  All computations in this section are in two horizontal variables, but we show verification results along flow lines for clarity.
+In this section we first apply our method in two examples where exact solutions are known.  We compare the performance of the \Mstar scheme \eqref{eq:siamstar} to the classical Mahaffy scheme.  We use the exact solutions to evaluate the convergence of the discrete solution to the continuum solution under grid refinement (verification).  Also, because our method has a regularization \eqref{eq:nonlinregularization}, a continuation scheme \eqref{eq:continuationND}, and a constraint-adapted Newton solver from PETSc to solve the system, we evaluate the convergence of the Newton iteration in an exact solution case.  After that we apply the method in an extended Greenland ice sheet example using high-resolution bedrock topography.  All computations in this section are in two horizontal variables, though we show verification results along flow lines for clarity, and all use physical parameters from EISMINT I \citep{Huybrechtsetal1996}.
 
 \subsection{Verification cases}
 
@@ -519,7 +521,7 @@ Though theoretical guidance on the choice of a solver for complementarity proble
 
 Based on these considerations, we implemented the following strategy for computing the steady-state solution using the \MCB bed data averaged onto a 900 m grid:  Generate five smoothed versions of the bed data, with successively greater averaging before interpolating to the same 900 m grid; the least-smoothed of these data is the simple average of 6$\times$6 blocks of the original 150 m data.  At the first stage, compute the steady state using the most-smoothed version of the bed data, for which we expect convergence to a ``good'' level (e.g.~$\eps_{10}$--$\eps_{12}$ as in Figure \ref{fig:grnrobusteps}).  Extract the surface elevation from the result and construct a new initial thickness from it using the next less-smoothed version of the bed data.  Though the steady-state continuation/Newton scheme will not converge from this new initial thickness, as convergence is quite insensitive to initial iterate but is blocked by bed roughness (Figure \ref{fig:grnrobusteps}), one can expect a backward Euler time step \eqref{eq:backwardeuler} to converge.  Thus we start time-stepping.  These implicit time steps are chosen sufficiently-short so that the continuation scheme fully converges (i.e.~to the $\eps_{12}$ level), and thus we further approach steady state on the better bed.  Iterate this bed-resolving strategy through the stages until one is using the least-smoothed bed, i.e.~the fully-resolved bed on the 900 m grid.  Then continue time-stepping so as to approach steady-state as closely as desired.
 
-The result of this strategy is shown in Figure \ref{fig:grnwinset}.  In particular, this result came from a nearly-converged steady-state computation ($\eps_{11}$ level) on the most-smoothed bed, then running the five-step bed resolving process using very short ($\sim10^{-3}$ a) backward Euler time steps, and then 30 model years of additional backward Euler time steps where the last 20 years used one week time steps ($0.02$ a).  Though the average diffusivity over the whole ice sheet was small ($D\approx 0.5\,\text{m}^2\,\text{s}^{-1}$), there are maximum values in the interiors of highly-resolved outlet glaciers of $D\approx 7\times 10^3$.  This highly-variable $D=D(x,y)$ map at steady-state apparently represents a barrier to the convergence of the continuation/Newton scheme for steady-state computations.  Presumably it is also a barrier for the convergence of longer time steps, but this was not studied quantitatively.
+The result of this strategy is shown in Figure \ref{fig:grnwinset}.  The first step was a nearly-converged steady-state computation ($\eps_{11}$ level) on the most-smoothed bed.  Then the five-step bed-resolving process in the last paragraph was applied, using very short ($\sim10^{-3}$ a) backward Euler time steps.  Then 50 model years of additional backward Euler time steps were run, with one-month time steps ($0.1$ a) for the last 20 years.  The result in Figure \ref{fig:grnwinset} has modeled volume $3.48\times 10^6\,\text{km}^3$ compared to observed value $2.95\times 10^6\,\text{km}^3$, and the average absolute thickness error was 139 m.  This error is dominated by large errors from mis-locating the ice margin in fjord-like coastal areas.  Though the average diffusivity over the whole ice sheet was small ($D\approx 0.5\,\text{m}^2\,\text{s}^{-1}$), there are maximum values in the interiors of highly-resolved outlet glaciers of $D\approx 7\times 10^3$.
 
 \begin{figure}[ht]
 \onecol{grnwinset.pdf}
@@ -527,12 +529,10 @@ The result of this strategy is shown in Figure \ref{fig:grnwinset}.  In particul
 \label{fig:grnwinset}
 \end{figure}
 
-We do not claim the model in question---namely isothermal SIA---is sufficiently-complete to represent the all of the important physics.  (Shallow hybrid models are, however, capable of very-high-quality match to the observations \citep{Aschwandenetal2015}.)  The result in Figure \ref{fig:grnwinset} has modeled volume $3.48\times 10^6\,\text{km}^3$ compared to observed value $2.95\times 10^6\,\text{km}^3$, and the average absolute thickness error was 139 m.  This error is dominated by large errors from mis-locating the ice margin in fjord-like coastal areas.
-
 
 \section{Discussion and Conclusion} \label{sec:conclusion}
 
-The problem solved in this paper is fundamentally different from most prior ice sheet modeling.  We compute the steady-state geometry and extent of an ice sheet as a function of two data sets, namely the bed topography and surface mass balance.  Though this function has not been proved to be well-defined, even in the elevation-independent surface mass balance cases here---compare the elevation-dependent case studied by \cite{Jouvetetal2011}---there is some theoretical support for well-posedness \citep{JouvetBueler2012} and nothing seen in our calculations suggests otherwise.
+The problem solved in this paper is fundamentally different from most prior ice sheet modeling.  We compute the steady-state geometry and extent of an ice sheet as a function of only two data sets, namely the bed topography and surface mass balance.  Though this function has not been proved to be well-defined, even in the elevation-independent surface mass balance cases here---compare the elevation-dependent case studied by \cite{Jouvetetal2011}---there is theoretical support for well-posedness \citep{JouvetBueler2012}.  Nothing seen in our calculations suggests otherwise than well-posedness.  However, though shallow hybrid models are capable of very-high-quality match to the observations \citep{Aschwandenetal2015}, we do not claim that the model here, an untuned isothermal SIA model using EISMINT I parameter values, is sufficiently-complete to represent the important physics of the Greenland ice sheet.
 
 Our numerical methods are based on both new and old ideas.  Because the problem is of free-boundary type, we formulate it as a complementarity problem and apply a parallel Newton solver for such problems.  The numerical discretization of the SIA mass conservation equation is based on a classical structured-grid FD scheme \citep{Mahaffy1976}, but we make two improvements which seem to be essential for reliable convergence of the Newton iteration, namely
 \renewcommand{\labelenumi}{\emph{(\roman{enumi})}}
@@ -542,7 +542,9 @@ Our numerical methods are based on both new and old ideas.  Because the problem 
 \end{enumerate}
 Both of these improvements are based on re-interpreting the Mahaffy scheme as an FVE method.
 
-The resulting \Mstar method is more accurate than the classical scheme, as shown in verification cases.  We also show that the method can succeed at large scale and high resolution on real, highly-irregular data.  In fact our steady-state Greenland examples, which avoid time-stepping, are novel except for the precedent of a previous 5 km resolution calculation by \cite{JouvetBueler2012}.  Compared to that work, our calculations here increase the number of unknowns by more than an order of magnitude and replace a fixed-point iteration by a direct application of the Newton method after using continuation to get a high-quality initial iterate.  Though improved convergence of the Newton iteration in the presence of finely-resolved, and thus rough, bed is an area where further research is needed.
+The resulting \Mstar method is more accurate than the classical scheme, as shown in verification cases.  We also show that the method can succeed at large scale and high resolution on real, highly-irregular data.  In fact our steady-state Greenland examples, which avoid time-stepping, are novel except for the precedent of a previous 5 km resolution calculation by \cite{JouvetBueler2012}.  Compared to that work, our calculations here increase the number of unknowns by more than an order of magnitude and replace a fixed-point iteration by a direct application of the Newton method after using continuation to get a high-quality initial iterate.
+
+Convergence of the Newton iteration in the presence of finely-resolved, and thus rough, bed is not guaranteed.  The highly-variable values of diffusivity $D$ from the result in Figure \ref{fig:grnwinset} (not shown) apparently represents part of the observed barrier to the convergence of the continuation/Newton scheme for steady-state computations.  Presumably it is also a barrier for the convergence of longer time steps, but this was not studied quantitatively.  Any complete or precise understanding of the reason for the failure of convergence of the Newton iteration on the steady-state problem on rough beds is a topic for further research.
 
 Though we have not tested this extension, we believe the same \Mstar ideas can be extended to Delaunay/Voronoi meshes such as those used by \cite{EgholmNielsen2010} and the MPAS Land Ice model \citep{MPASLandIce2013,Ringleretal2013}.  These models use $P^1$ finite elements on a Delaunay triangulation and flux-integral quadrature on the dual Voronoi-cell edges.  The improved quadrature idea \emph{(i)} would split the cell edges where the element (i.e.~triangle) boundaries cross them, while the upwinding idea \emph{(ii)} would require interpretation as first-order reconstruction after advection.  Such a method could improve on that of \cite{EgholmNielsen2010}, in particular, by exploiting an underlying $P^1$ element flux approximation, instead of using a highly-averaging and stencil-expanding least squares method.
 
@@ -550,7 +552,7 @@ The most important extension of our work, however, depends on the reader noticin
 
 
 \section*{Acknowledgements}
-This work was supported by NASA grant \#NNX13AM16G and a grant of high-performance computing resources from the Arctic Region Supercomputing Center.
+This work was supported by NASA grant \#NNX13AM16G and a grant of high-performance computing resources from the Arctic Region Supercomputing Center.  Thanks to Barry Smith of Argonne National Laboratory for key maintenance on the solvers.
 
 
 %         References
