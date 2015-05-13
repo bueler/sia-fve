@@ -32,9 +32,9 @@ newtonconv.txt:
 grnrobusteps.pdf: study.robust
 	./robustfigs.py -o grnrobusteps.pdf study.robust
 
-# make a link to best Greenland result as "bestgrn.dat"
-grnwinset.pdf:
-	../petsc/shadesurf.py -o grnwinset.pdf bestgrn.dat
+grnwinset.pdf: bestgrn/unnamed.dat.gz
+	(cd bestgrn/ && gunzip -kf unnamed.dat.gz)
+	../petsc/shadesurf.py -o grnwinset.pdf bestgrn/unnamed.dat
 
 TMP = ../petsc/tmp/
 
