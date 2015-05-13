@@ -37,7 +37,7 @@ EXEC=../../mahaffy
 STDOPTS="-cs_D0 30.0 -snes_monitor -pc_type asm -sub_pc_type lu"
 
 mkdir -p $DUMP
-mpiexec -n $NN $EXEC -mah_read $INFILE -mah_readinitialsurface $INFILE \
+mpiexec -n $NN $EXEC -mah_read $INFILE -mah_readinitial $INFILE \
         $STDOPTS -mah_T $RUNT -mah_dt $RUNDT -cs_start 12 \
         -mah_dumpdt $RUNDUMPDT -mah_dump $DUMP
 

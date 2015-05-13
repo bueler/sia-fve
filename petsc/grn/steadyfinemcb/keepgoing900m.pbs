@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#PBS -q standard_16
+#PBS -l walltime=48:00:00 
+#PBS -l nodes=24:ppn=8
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+#FINE=1 ./study.sh 192
+
+#RUNT=20.0 RUNDT=0.02 RUNDUMPDT=1.0 ./keepgoing.sh 192 keepmore/unnamed.dat finish/
+RUNT=20.0 RUNDT=0.1 RUNDUMPDT=2.0 ./keepgoing.sh 192 finish/step17.240000.dat finishmore/
