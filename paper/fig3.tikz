@@ -48,10 +48,8 @@
 
   % indicate coordinates of quadrature points
   \draw[dotted] (4.5,-0.25) -- (4.5, 0.8);
-  \draw (4.5,-0.55) node {$x_j^0=x_j^7$};
+  \draw (4.5,-0.55) node {$x_j^0$};
   \draw[dotted] (4.8,2.5) -- (6.3, 2.5);
   \draw (6.5,2.5) node {$y_k^0$};
-  \draw[dotted] (4.8,1.5) -- (6.3, 1.5);
-  \draw (6.5,1.5) node {$y_k^7$};
 
 \end{tikzpicture}

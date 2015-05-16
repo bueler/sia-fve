@@ -292,17 +292,25 @@ is the same as in \eqref{eq:mahaffyalphax}.  Thus Mahaffy's scheme approximates 
 
 \subsection{Improved scheme}  \label{subsec:star}
 
-Let us return to the goal of accurately-generating an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$.  From this point of view it is easy to improve upon the Mahaffy technique by improving quadrature.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on the bed gradient term $\bW H^{n+2}$.  Together these improvements define the ``\Mstar'' scheme.
+If the goal is to accurately-generate an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$ then it is easy to improve upon the Mahaffy technique by improving quadrature.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on the bed gradient term $\bW H^{n+2}$.  Together these improvements define the ``\Mstar'' scheme.
 
-Because $H^h$ and $b^h$ live in $S_h$, the numerical approximation $\bq^h$ from \eqref{eq:fluxform} is defined and smooth on the interior of each element, but discontinuous across element boundaries.  So now we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts and use the midpoint rule, the optimal one-point rule, on each half.  For example, we break the first integral at $y=y_k$:
+As already noted, the numerical approximation $\bq^h$ from \eqref{eq:fluxform} is defined and smooth on the interior of each element, but discontinuous across element boundaries.  So we break each interval of integration on the right side of \eqref{eq:fluxintdecomp} into two parts and use the midpoint rule, the optimal one-point rule, on each half.  For example, we break the first integral at $y=y_k$:
 \begin{align}
 &\int_{y_k^-}^{y_k^+} q^x(x_j^+,y)\,dy  \label{eq:starbreakfirst} \\
   &\quad= \int_{y_k^-}^{y_k} q^x(x_j^+,y)\,dy + \int_{y_k}^{y_k^+} q^x(x_j^+,y)\,dy \notag \\
   &\quad\approx \frac{\Delta y}{2} \left(q^x(x_j^+,y_k-\tfrac{\Delta y}{4}) + q^x(x_j^+,y_k+\tfrac{\Delta y}{4})\right). \notag
 \end{align}
-Recalling notation \eqref{eq:definexypm}, values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are simply evaluations of $\bq^h$ at points of continuity.  Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.
+Recalling notation \eqref{eq:definexypm}, values $q^x(x_j^+,y_k\pm\tfrac{\Delta y}{4})$ are evaluations of $\bq^h$ at points of continuity.  Similar formulas to \eqref{eq:starbreakfirst} apply to the other three integrals on the right side of \eqref{eq:fluxintdecomp}.
 
-Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}.  At each quadrature point we evaluate the $x$- or $y$-component of $\bq^h$ and then multiply by a constant to get the appropriate integral.  Thus we can write our approximation of \eqref{eq:siafve} as
+\begin{figure}[ht]
+\begin{center}
+\input{fig3.tikz}
+\end{center}
+\caption{For equation \eqref{eq:siamstar} we evaluate $\bq^h(x,y)$ at eight quadrature points (numbered circles) along $\partial V_{j,k}$ (dashed).}
+\label{fig:improvequadrature}
+\end{figure}
+
+Figure \ref{fig:improvequadrature} shows all eight quadrature points needed to compute the full integral over $\partial V_{j,k}$ in \eqref{eq:siafve}.  At each quadrature point we evaluate the $x$- or $y$-component of $\bq^h$ and multiply by a constant to get the appropriate integral.  Our approximation of \eqref{eq:siafve} is
 \begin{equation}
 \sum_{s=0}^7 \bc_s \cdot \bq^h(x_j^s,y_k^s) = m_{j,k}\,\Delta x\,\Delta y  \label{eq:siamstar}
 \end{equation}
@@ -321,33 +329,25 @@ x_j^2 &= x_j^5 = x_j - \tfrac{\Delta x}{4}, & y_k^4 &= y_k^7 = y_k - \tfrac{\Del
 x_j^3 &= x_j^4 = x_j - \tfrac{\Delta x}{2}, & y_k^5 &= y_k^6 = y_k - \tfrac{\Delta y}{2}. \notag
 \end{align}
 
-\begin{figure}[ht]
-\begin{center}
-\input{fig3.tikz}
-\end{center}
-\caption{For equation \eqref{eq:siamstar} we evaluate $\bq^h(x,y)$ at eight quadrature points (numbered circles) along $\partial V_{j,k}$ (dashed).}
-\label{fig:improvequadrature}
-\end{figure}
+Implementing equation \eqref{eq:siamstar} requires evaluating $\bq^h$ at eight quadrature points, twice the number for the classical method, but the stencils are the same because we use the same nine nodal values of $H^h$.  One could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre).  Also, our $Q^1$ elements could be replaced by higher-order (e.g.~$Q^2$) elements.  Though such methods have not been tested, in fact the largest numerical SIA errors occur near the ice margin where the solution $H$ has unbounded gradient \citep{Bueleretal2005}.  Thus higher-order quadrature and interpolation will not give much advantage.  We believe our improved method represents a measurable accuracy and Newton-iteration-convergence improvement over the classical Mahaffy method (Results section) because it evaluates $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed in the classical scheme.
 
-Implementing equation \eqref{eq:siamstar} requires evaluating the piecewise-bilinear function $\bq^h(x,y)$ at eight quadrature points, twice the number for the classical method, but the stencils are the same because the equation for the point $(x_j,y_k)$ uses the same nine nodal values of $H^h$.  One could propose further-improved quadrature, replacing the midpoint rule by higher-order methods (e.g.~2-point Gauss-Legendre), and our $Q^1$ elements could be replaced by higher-order (e.g.~$Q^2$) elements.  Though such methods have not been tested, note that the largest numerical SIA errors occur near the ice margin where the solution $H$ has unbounded gradient \citep{Bueleretal2005}.  Thus higher-order quadrature and interpolation will probably not give much advantage.  We believe our improved method represents a measurable accuracy and Newton-iteration-convergence improvement over the classical Mahaffy method (Results section) primarily because it evaluates $\bq^h$ at points of continuity, not because the order of quadrature or interpolation is flawed in the classical scheme.
+\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation.  In such cases where the bed gradient dominates the flux, the mass conservation equation has ``hyperbolic'' character.  Thus they use a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}.  They show reduced mass conservation errors in the sense of giving numerical solutions which are closer in volume to an exact solution.  On the other hand, their scheme, which solves the time-dependent problem \eqref{eq:siaevolution} using explicit time-stepping, expands the stencil because it needs values two grid spaces away.
 
-\cite{JaroschSchoofAnslow2013} show that the Mahaffy scheme can suffer from significant mass conservation errors at locations of abrupt change in the bed elevation.  In such cases, wherein the bed gradient dominates the flux, the mass conservation equation has ``hyperbolic'' character so they use a high-resolution upwind scheme \citep{LeVeque2002} based on flux form \eqref{eq:siafluxjsa}.  They show reduced mass conservation errors in the sense of giving numerical solutions which are closer in volume to an exact solution.  On the other hand, their scheme, which solves the time-dependent problem \eqref{eq:siaevolution} using explicit time-stepping, expands the stencil because it needs values two grid spaces away.
+By comparison, we propose using minimal first-order upwinding based on form \eqref{eq:fluxform} of the flux, even though upwinding is not required for linear stability or non-oscillation of our implicit scheme \citep{MortonMayers2005}.  Numerical testing suggests upwinding is effective in our case because it improves the conditioning of the Jacobian matrix used in the Newton iteration (not shown).
 
-By comparison, we now propose using minimal first-order upwinding based on form \eqref{eq:fluxform} of the flux, even though upwinding is not required for linear stability or non-oscillation of our implicit scheme \citep{MortonMayers2005}.  We believe upwinding is effective in our case because it improves the conditioning of the Jacobian matrix used in the Newton iteration (next section).
-
-So we now change how the transport flux $\tilde \bq = \bW H^{n+2}$ is evaluated.  We upwind by evaluating $H^{n+2}$ at a location different from the quadrature point, according to the direction of $\bW$ evaluated at the quadrature point.  For instance, our upwind modification at $(x_j^0,y_k^0)$---see Figure \ref{fig:improvequadrature}---uses the sign of
+In our improved scheme the transport flux $\tilde \bq = \bW H^{n+2}$ uses $H$ evaluated at a location different from the quadrature point, according to the direction of $\bW$ evaluated at the quadrature point.  For instance, our upwind modification at $(x_j^0,y_k^0)$---see Figure \ref{fig:improvequadrature}---uses the sign of
 \begin{equation}
 W^x_* = W^x(x_j^0,y_k^0),
 \end{equation}
-where $\bW=(W^x,W^y)$.  Note that the sign of $W_x^*$ is opposite that of the $x$-component of the discrete bed gradient at $(x_j^0,y_k^0)$.  We shift the evaluation of $H$ upwind by a fraction $0\le \lambda \le 1$ of an element width:
+where $\bW=(W^x,W^y)$.  Note that the sign of $W_x^*$ is opposite that of the $x$-component of $\grad b^h$ at $(x_j^0,y_k^0)$.  We shift the evaluation of $H$ upwind by a fraction $0\le \lambda \le 1$ of an element width,
 \begin{align}
 &\tilde \bq^x(x_j^0,y_k^0)  \label{eq:upwindschemex} \\
 &\quad = W^x_* \begin{cases}
                  H(x_j^0-\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* \ge 0, \\
-                 H(x_j^0+\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* < 0.
+                 H(x_j^0+\lambda \tfrac{\Delta x}{2},y_k^0)^{n+2}, & W^x_* < 0,
              \end{cases} \notag
 \end{align}
-Observe that $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwinding that does not expand the stencil.  After experimentation (Results section) we chose $\lambda=1/4$ (Figure \ref{fig:upwindterm}).  This value is seen to be large enough to improve the convergence of the Newton iteration but also to be small enough to generate substantial improvements in solution accuracy in the bedrock-step exact solution.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) uses similar formulas.
+where $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwinding that does not expand the stencil.  After experimentation (Results section) we chose $\lambda=1/4$ (Figure \ref{fig:upwindterm}).  This value is seen to be large enough to improve the convergence of the Newton iteration but also small enough to generate substantial improvements in accuracy for the bedrock-step exact solution.  Upwinding at the other seven points along $\partial V_{j,k}$ (Figure \ref{fig:improvequadrature}) uses similar formulas.
 
 \begin{figure}[ht]
 \begin{center}
@@ -357,18 +357,18 @@ Observe that $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwindin
 \label{fig:upwindterm}
 \end{figure}
 
-We call the method which combines both improve-ments---i.e.~better quadrature and a bit of upwinding---the ``\Mstar'' scheme.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the reported results for the higher-resolution explicit scheme of \citep{JaroschSchoofAnslow2013}.  The evidence suggests that our form of upwinding is most important at locations of low regularity of the solution.  The convergence of the Newton iteration is also improved compared to the classical Mahaffy scheme.
+The ``\Mstar'' scheme combines both improvements, namely better quadrature and a bit of upwinding.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the higher-resolution explicit advection scheme of \cite{JaroschSchoofAnslow2013}.  (As our Newton solver needs a differentiable residual function, the additional non-smoothness of high-resolution flux methods suggests caution.)  Convergence of the Newton iteration is also improved compared to the classical Mahaffy scheme.  The evidence suggests that our form of upwinding is most important at locations of low regularity of the solution.
 
 
 \subsection{Solution of the equations} \label{subsec:solution}
 
-We are ready to write down a system of nonlinear algebraic equations.  It remains to describe the numerical solution of this system.  This is nontrivial because inequality constraints apply to each unknown.
+We are ready to write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because inequality constraints apply to each unknown.
 
-Each equation in the \Mstar scheme is simply \eqref{eq:siamstar} with an upwind modification like \eqref{eq:upwindschemex} at the quadrature points.  The resulting highly-nonlinear system of $N=N_x N_y$ equations
+Each equation from the \Mstar scheme is simply \eqref{eq:siamstar} with an upwind modification like \eqref{eq:upwindschemex} at the quadrature points.  The resulting highly-nonlinear system of $N=N_x N_y$ equations is
 \begin{equation}
-F_{j,k}(\bH) = 0   \label{eq:nonlinsystem}
+F_{j,k}(\bH) = 0.   \label{eq:nonlinsystem}
 \end{equation}
-determines $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note $H^h(x,y)$ and $\bH$ are actually two representations of the same discrete thickness approximation.  System \eqref{eq:nonlinsystem} is not adequate by itself, however, because each unknown thickness $H_{j,k}$ must be nonnegative, i.e.
+This determines $N$ unknowns, a vector $\bH=\{H_{j,k}\}$; note $H^h(x,y)$ and $\bH$ are actually two representations of the same discrete thickness approximation.  System \eqref{eq:nonlinsystem} is not adequate by itself, however, because each unknown thickness $H_{j,k}$ must be nonnegative, i.e.
 \begin{equation}
 \bH \ge 0.  \label{eq:nonlinconstraints}
 \end{equation}
@@ -377,7 +377,7 @@ Requirements \eqref{eq:nonlinsystem} and \eqref{eq:nonlinconstraints} can be com
 \begin{equation}
 \bH \ge 0, \quad \bF(\bH) \ge 0, \quad \bH \cdot \bF(\bH) = 0.  \label{eq:nonlincomplementarity}
 \end{equation}
-We solve \eqref{eq:nonlincomplementarity} by a ``constrained'' Newton solver, specifically by either the reduced-space or semi-smooth methods \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.  Our open-source C code\footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve} and then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.} contains residual and Jacobian (below) evaluation subroutines, but parallel grid management, Newton solver, iterative linear solver, and linear preconditioning are all consigned to PETSc.  Both multigrid \citep{Briggsetal2000} and additive-Schwarz-type domain decomposition \citep{Smithetal1996} preconditioning are found to work, but the latter is more robust and thus is used in all runs in the Results section.
+We will solve \eqref{eq:nonlincomplementarity} by a ``constrained'' Newton solver, specifically by either the reduced-space or semi-smooth methods \citep{BensonMunson2006} implemented in PETSc \citep{Balayetal2014}.  Our open-source C code\footnote{Clone the repository at \texttt{https://github.com/bueler/sia-fve}.  Then see \texttt{README.md} in directory \texttt{petsc/} to compile \texttt{mahaffy.c} and run the examples.} contains residual and Jacobian evaluation subroutines, but parallel grid management, Newton solver, iterative linear solver, and linear preconditioning are all consigned to PETSc choices made at runtime.  Both multigrid \citep{Briggsetal2000} and additive-Schwarz-type domain decomposition \citep{Smithetal1996} preconditioning are found to work, but the latter is more robust and is used in all runs in the Results section.
 
 The Jacobian of system \eqref{eq:nonlinsystem}, i.e.~the $N\times N$ matrix
 \begin{equation}
@@ -385,7 +385,7 @@ J = \left(\,\frac{\partial F_{j,k}}{\partial H_{p,q}}\,\right), \label{eq:nonlin
 \end{equation}
 can be computed via hand-calculated derivatives.  This additional effort (Appendix) gives a speed-up by a rough factor of 1.5 over the alternative, namely finite-difference (FD) computation of Jacobian entries coming from additional residual (i.e.~$F$) evaluations.  Such FD Jacobians are efficiently-implemented in PETSc using ``coloring'' of the nodes \citep{CurtisPowellReid1974} so that, from the nine-point stencil, only ten residual evaluations are needed to approximate $J$.
 
-In the standard theory of convergence of Newton's method, quadratic convergence should occur if $J$ is Lipshitz-continuous as a function of the unknowns \citep[and references therein]{Kelley2003}.  However, the flux $\bq$ here is generally not that smooth as a function of $\grad H$.  In particular, for $1<n<3$ the flux has a second derivative which is not Lipshitz-continuous with respect to changes in $\grad H$.  Because equations \eqref{eq:siamstar} already involve differentiating $\bq$, at least in the limit where the control volume shrinks to zero, the behavior of second derivatives of $\bq$ determines the smoothness of $J$ and thus the convergence of the solver.  Nonsmoothness is best seen in one dimension where equation \eqref{eq:siaflux} is
+In the standard theory of convergence of Newton's method, quadratic convergence should occur if $J$ is Lipshitz-continuous as a function of the unknowns \citep{Kelley2003}.  However, the flux $\bq$ here is generally not that smooth as a function of $\grad H$.  In particular, for $1<n<3$ the flux has a second derivative which is not Lipshitz-continuous with respect to changes in $\grad H$.  Because equations \eqref{eq:siamstar} already involve differentiating $\bq$, in the limit where the control volume shrinks to zero, the behavior of second derivatives of $\bq$ determines the smoothness of $J$ and thus the convergence of the solver.  Nonsmoothness is best seen in one dimension where equation \eqref{eq:siaflux} is
 \begin{equation}
 q(H,H') = - \Gamma H^{n+2} \left|H'+b'\right|^{n-1} (H'+b'). \label{eq:flux1d}
 \end{equation}
@@ -393,13 +393,13 @@ When $n>1$,
 \begin{equation}
 \frac{\partial^2 q}{\partial H'^2} = - C H^{n+2} \left|H'+b'\right|^{n-3} (H'+b') \label{eq:ddflux1d}
 \end{equation}
-for $C>0$.  When $n=2$, for example, this function undergoes a step at $H'=-b'$, and thus is not Lipshitz.  In fact, \eqref{eq:ddflux1d} is not Lipshitz-continuous for $1<n<3$.
+for $C>0$.  If $n=2$, for example, this function undergoes a step at $H'=-b'$, and thus is not Lipshitz.  In fact, \eqref{eq:ddflux1d} is not Lipshitz-continuous for $1<n<3$.
 
 Because we want methods that work for all exponents $n\ge 1$, we regularize by replacing
 \begin{equation}
 |\grad s| \to \left(|\grad s|^2 + \delta^2\right)^{1/2}, \label{eq:nonlinregularization}
 \end{equation}
-with $\delta = 10^{-4}$, from now on when we compute the flux $\bq$ and its derivatives.  This regularization, which makes little difference when the surface slope is of order $10^{-3}$ or larger, is similar to that used in regularizing the viscosity in the Stokes equations \citep{GreveBlatter2009}, and other distributed stress balance models \citep[for example]{BrownSmithAhmadia2013,BuelerBrown2009}.
+with $\delta = 10^{-4}$, in computing $\bq$ and its derivatives.  This regularization, which makes little difference when the surface slope is of order $10^{-3}$ or larger, is similar to that used in regularizing the viscosity in the Stokes equations \citep{GreveBlatter2009}, and other distributed stress balance models \citep[for example]{BrownSmithAhmadia2013,BuelerBrown2009}.
 
 A Newton solver requires an initial iterate $H^{(0)}$.  We generate it by a heuristic which seems to work adequately-well for both ice sheet- and glacier-scale problems, and which is suggested by \cite{JouvetGraeser2013} in a time-stepping context.  From the steady surface mass balance data $m_{j,k}$, in meters per year, we compute
 \begin{equation}
@@ -491,7 +491,7 @@ The second, third, and fourth columns are from the same three versions of the \M
   \label{tab:bedstepvol}
 \end{table}
 
-Thus we see good results from our implicit, first-order upwinding \Mstar scheme.  As our Newton solver needs a differentiable residual function, the additional non-smoothness of high-resolution flux methods, like those used in \cite{JaroschSchoofAnslow2013}, suggests caution.  Our bit of upwinding seems adequately helpful to Newton convergence, and the accuracy is satisfactory.
+Thus we see good results from our implicit, first-order upwinding \Mstar scheme.  FIXME  Our bit of upwinding seems adequately helpful to Newton convergence, and the accuracy is satisfactory.
 
 \subsection{Greenland: bed topography and robustness}
 
