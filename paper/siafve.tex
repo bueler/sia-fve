@@ -411,7 +411,7 @@ Additionally we apply a simple ``parameter continuation'' scheme, to aid in the 
 \begin{equation}
 n(\eps) = (1\!-\eps) n + \eps n_0 \text{ and } D(\eps) = (1\!-\eps) D + \eps D_0  \label{eq:continuationND}
 \end{equation}
-where $n$ is the original exponent, $D$ is computed in \eqref{eq:siaflux}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.  We then consecutively solve free-boundary problems corresponding to thirteen values of $\eps$:
+where $n$ is the original exponent, $D$ is computed in \eqref{eq:siafluxdiffusion}, $n_0=1$, and $D_0$ is a typical scale of diffusivities for the problem (e.g.~$D_0=0.01$ $\text{m}^2\,\text{s}^{-1}$ for a glacier problem or $D_0=10$ $\text{m}^2\,\text{s}^{-1}$ for an ice sheet).  Note $n(1)=n_0$ and $D(1)=D_0$ while $n(0)=n$ and $D(0)=D$.  We then consecutively solve free-boundary problems corresponding to thirteen values of $\eps$:
 \begin{equation}
 \eps_i = \begin{cases}
            (0.1)^{i/3}, & \text{for } i=0,\dots,11, \\
@@ -420,17 +420,22 @@ where $n$ is the original exponent, $D$ is computed in \eqref{eq:siaflux}, $n_0=
 \end{equation}
 so that, until the last stage $\eps_{12}=0$, the parameter $\eps_i$ is reduce by an order of magnitude as $i$ increases by three.
 
-We start with $\eps_0=1$ so we are solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once this first stage converges, the ice margin has moved from the equilibrium line---the margin of initial iterate \eqref{eq:nonlininitialheuristic}---into the ablation zone as expected.  The solution is then used as the initial iterate for problem \eqref{eq:nonlincomplementarity} with the second value $\eps_1=(0.1)^{1/3}\approx 0.46$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.  The first twelve stages $\eps_0,\dots,\eps_{11}$ generate a very high-quality initial iterate for the un-modified SIA calculation ($\eps_{12}=0$). 
+We start with $\eps_0=1$ so we are solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once this first stage converges, the ice margin has moved from the equilibrium line---the margin of initial iterate \eqref{eq:nonlininitialheuristic}---into the ablation zone as expected.  The solution is then used as the initial iterate for problem \eqref{eq:nonlincomplementarity} with the second value $\eps_1=(0.1)^{1/3}\approx 0.46$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.  The first twelve stages $\eps_0,\dots,\eps_{11}$ generate a high-quality initial iterate for the un-modified SIA calculation ($\eps_{12}=0$). 
 
-The relationship between our steady-state computations and fully-implicit time-stepping methods for equation \eqref{eq:siaevolution} deserves examination.  We can exploit the relationship to make the Newton solver robust for real-data cases.  Observe that by solving for steady state we effectively take infinite-duration implicit time steps in the time-dependent problem.  Indeed, the backward-Euler \citep{MortonMayers2005} approximation of equation \eqref{eq:siaevolution} is
+
+\subsection{Time-stepping} \label{subsec:timestepping}
+
+The relationship between our steady-state computations and fully-implicit time-stepping methods for equation \eqref{eq:siaevolution} deserves examination.  We will be able to exploit such time-steps to make the Newton solver for the steady-state problem more robust for rough-bed cases.
+
+The backward-Euler \citep{MortonMayers2005} approximation of equation \eqref{eq:siaevolution} is
 \begin{equation}
 \frac{H^\ell - H^{\ell-1}}{\Delta t} + \Div \bq^\ell = m \label{eq:backwardeuler}
 \end{equation}
-where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known from the previous time-step, and $\bq^\ell$ is the flux computed from \eqref{eq:siaflux} using $H^\ell$.
+where $H^\ell(x,y) \approx H(t_\ell,x,y)$ is the unknown thickness, $H^{\ell-1}$ is known from the previous time-step, and $\bq^\ell$ is the flux computed using $H^\ell$.  Our methods extend easily from solving \eqref{eq:nonlincomplementarity} to solving \eqref{eq:backwardeuler}, subject as before to the constraint $H^\ell\ge 0$.
 
-Our method extends easily from solving \eqref{eq:nonlincomplementarity} to solving each time-step of \eqref{eq:backwardeuler}, subject as before to the constraint $H^\ell\ge 0$.  For finite $\Delta t$, problem \eqref{eq:backwardeuler} is practically easier because the initial iterate can be taken to be the initial value, or the solution at the previous time step, and because the continuation sequence can be avoided or truncated to only include small $\eps$ values.  More important than that, however, is the key fact is that solving \eqref{eq:backwardeuler} gets easier as $\Delta t\to 0$, essentially because the Jacobian $J$ has a more-positive diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.
+Observe that by solving for steady state we effectively take infinite-duration implicit time steps in \eqref{eq:backwardeuler}.  For finite $\Delta t$, solving problem \eqref{eq:backwardeuler} is easier than the steady-state problem because the initial iterate can be taken to be the solution at the previous time step, and because the continuation sequence can either be avoided entirely or truncated to only include small $\eps$ values.  More important than that, however, is the key fact that solving \eqref{eq:backwardeuler} gets easier as $\Delta t\to 0$, because the Jacobian $J$ has a more-dominant diagonal due to the $H^\ell/\Delta t$ term in \eqref{eq:backwardeuler}.
 
-If a Newton iteration fails to converge in the steady-state case, we might hope that the same scheme would still solve \eqref{eq:backwardeuler} successfully for finite $\Delta t$, and this is what we see in practice.  Switching from the steady state problem to long (e.g.~0.1 to 100 year depending on resolution) backward-Euler time steps is a ``recovery strategy'' for dealing with Newton solver difficulties when dealing with highly-irregular bed topography data in the steady state problem (Results section).
+If a Newton iteration fails to converge in the steady-state case, we might hope that it would still converge for \eqref{eq:backwardeuler} using finite $\Delta t$.  This is what we see in practice.  As we see in the next section, switching from the steady state problem to long (e.g.~0.1 to 100 year depending on resolution) backward-Euler time steps is a ``recovery strategy'' for dealing with Newton solver difficulties when dealing with highly-irregular bed topography data in the steady state problem.
 
 
 \section{Results}
