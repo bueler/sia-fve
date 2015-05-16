@@ -8,7 +8,8 @@ see high accuracy, including in non-flat bed applicaiton, and no stability
 restrictions whatsoever.
 
 To build `siafve.pdf`, the IGS classes are needed, specifically `igs.cls`,
-`igs.bst`, and `igsnatbib.sty` fro the v2 version of the IGS Latex class.
+`igs.bst`, `igsnatbib.sty`, and `lineno.sty` from the v3.02 (May 2015) version
+of the IGS Latex class.
 
 Then do
 
