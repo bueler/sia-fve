@@ -109,19 +109,21 @@ The time-dependent evolution equation for the ice thickness $H$ is a statement o
 \end{equation}
 Here $\bq$ denotes the vertically-integrated flux and $m$ is the surface mass balance, also called the accumulation/ablation function.
 
-The shallow ice approximation (SIA) is the simplest relationship between $H$ and $\bq$ in common use in glaciology.  It is the lubrication approximation \citep{Fowler1997} of the Stokes equations for slow-flowing ice, in non-sliding contact with the bed.  We only consider the isothermal, Glen-power-law \citep{GreveBlatter2009} case.  Let $b$ be the bed and $s = H+b$ the ice surface elevation.  The flux $\bq$ is then given by
+The shallow ice approximation (SIA) is the simplest relationship between $H$ and $\bq$ in common use in glaciology, a lubrication approximation \citep{Fowler1997} of the Stokes equations for ice in non-sliding contact with the bed.  We only consider the isothermal, Glen-law \citep{GreveBlatter2009} case.  Let $b$ be the bed elevation and $s = H+b$ the ice surface elevation.  The flux $\bq$ is given by
 \begin{equation}
 \bq = - \Gamma H^{n+2} |\grad s|^{n-1} \grad s  \label{eq:siaflux}
 \end{equation}
 where $\Gamma = 2 A (\rho g)^n / (n+2)$ is a positive constant derived from the power $n\ge 1$, ice softness $A$, ice density $\rho$, and gravity $g$.
 
-The flux $\bq$ has multiple functional forms which are equivalent to \eqref{eq:siaflux}.  For instance, because it is common to combine equations \eqref{eq:siaevolution} and \eqref{eq:siaflux} into a nonlinear diffusion equation \citep{Huybrechtsetal1996}, one may write
+The flux $\bq$ has multiple functional forms equivalent to \eqref{eq:siaflux}.  For instance, because it is common to combine equations \eqref{eq:siaevolution} and \eqref{eq:siaflux} into a nonlinear diffusion equation \citep{Huybrechtsetal1996}, one may write
 \begin{equation}
 \bq = - D \grad s \quad \text{where} \quad D =  \Gamma H^{n+2} |\grad s|^{n-1}. \label{eq:siafluxdiffusion}
 \end{equation}
-Diffusion interpretation \eqref{eq:siafluxdiffusion} is appropriate in the flat-bed case because \eqref{eq:siaevolution} and \eqref{eq:siaflux} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}, but a diffusion interpretation is obscured by the bed gradient $\grad b$, which is a barrier to theoretical progress on proving the existence and uniqueness of solutions \citep{JouvetBueler2012}.
+Diffusion interpretation \eqref{eq:siafluxdiffusion} is appropriate in the flat-bed case because \eqref{eq:siaevolution} and \eqref{eq:siaflux} can be transformed to a $p$-Laplacian diffusion equation \citep{Calvoetal2002}, but a diffusion interpretation is obscured by the bed gradient $\grad b$.
 
-If the bed is not flat then $\grad s$ and $\grad H$ are different.  Thus the flux $\bq$ is not strictly diffusive because it is not oppositely-directed to the gradient of the conserved quantity, namely $H$.  As an alternative to the diffusion form one can instead compute a vertically-averaged velocity $\bV$, and then treat the flux as arising from the transport of $H$ by $\bV$, that is,
+If the bed is not flat then $\grad s$ and $\grad H$ are different, so the flux $\bq$ is not strictly diffusive because it is not oppositely-directed to the gradient of the conserved quantity, namely $H$.  Non-flat beds are also a barrier to proving the uniqueness of solutions to the steady SIA  \citep{JouvetBueler2012}.
+
+As an alternative to the diffusion form one can instead compute a vertically-averaged velocity $\bV$, and then treat the flux as arising from the transport of $H$ by $\bV$, that is,
 \begin{equation}
 \bq = \bV H \quad \text{where} \quad \bV = - \Gamma H^{n+1} |\grad s|^{n-1} \grad s. \label{eq:siafluxvelocity}
 \end{equation}
