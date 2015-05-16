@@ -84,7 +84,7 @@ E-mail: \emph{\texttt{elbueler\@@alaska.edu}}}
 \sectionsize
 
 
-\section*{Introduction}
+\section{Introduction}
 
 The first successful numerical approach to modeling ice sheet flow and geometry evolution in two horizontal dimensions was the classical finite difference (FD) scheme introduced by \cite{Mahaffy1976}.  This scheme numerically solves the shallow ice approximation (SIA; Hutter, 1983)\nocite{Hutter1983} by computing the ice flux at staggered-grid points using particular choices when evaluating the ice thickness and surface slope.  An advantage of the scheme is its relatively-small stencil, which reduces memory usage in implicit or semi-implicit implementations \citep{HindmarshPayne1996} and interprocess communication in parallel implementations.
 
@@ -101,7 +101,7 @@ The first part of the paper has a historical side.  We re-interpret the classica
 The paper is organized as follows.  We start with a statement of the steady, isothermal SIA model.  We then recall the classical Mahaffy scheme in FD form before re-interpreting it as an FVE scheme.  We then propose better quadrature in the flux integral, and we add a bit of first-order upwinding on the part of the flux that comes from the bedrock slope.  The resulting improved scheme, which has the same stencil as the classical Mahaffy scheme, is called ``\Mstar.''  Next we describe the Newton solver for the discrete equations and constraints, formulated as a nonlinear complementarity problem.  First numerical results in verification cases are excellent for a flat-bed dome exact solution and at least as good as those from higher-resolution upwind schemes on a bedrock-step exact solution.  Then we show how the method is applied to real ice sheets by computing the steady state shape of the Greenland ice sheet, in a present-day modeled climate, at high resolution including grids down to 600 m.  An Appendix addresses the analytical calculation of the Jacobian in the \Mstar scheme.
 
 
-\section*{Continuum model}
+\section{Continuum model}
 
 The time-dependent evolution equation for the ice thickness $H$ is a statement of mass conservation:
 \begin{equation}
@@ -164,9 +164,9 @@ To be more precise about boundary conditions, if the surface mass balance $m$ is
 Thus we solve coupled equations \eqref{eq:siafluxdiffusion}, \eqref{eq:fluxform}, \eqref{eq:siaWdefine}, and \eqref{eq:siaasconservation}.  The input data consist of the bed elevation $b(x,y)$ and the (steady) surface mass balance $m(x,y)$.  These input data must be defined on a larger domain $\Omega$ than the ice-covered set.  We assume $m$ is sufficiently-negative near the boundary of $\Omega$ so that the ice-covered set is surrounded by ice-free areas.  Any contact with the ocean must be modeled as strongly negative values of $m$, and there is no modeled floating ice.  The solution is the nonnegative thickness function $H(x,y)$, defined everywhere in $\Omega$ and equal to zero where there is no ice.
 
 
-\section{Methods}   \label{sec:methods}
+\section{Methods}
 
-\subsection{Classical Mahaffy scheme}   \label{subsec:mahaffyfd}
+\subsection{Classical Mahaffy scheme}
 
 \begin{figure}[ht]
 \begin{center}
@@ -206,7 +206,7 @@ The discretization of mass conservation equation \eqref{eq:siasteady} itself use
 Equation \eqref{eq:siasteadyfd}, which relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil'' of the scheme, is combined with \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy} to give an equation in an algebraic system.
 
 
-\subsection{FVE re-interpretation} \label{subsec:fveinterpretation}
+\subsection{FVE re-interpretation}
 
 The above description of the Mahaffy FD method is familiar to numerical ice sheet modelers, but we now re-derive the scheme from an FVE perspective.  Our re-interpretation uses the same structured grid, but the regular grid points are now nodes (degrees of freedom) for a continuous space of trial functions.  Any FE method supposes that an approximation $H^h$ of the solution lies in a finite-dimensional space of functions which are sufficiently well-behaved so that the approximate flux $\bq^h$ is defined almost-everywhere.  In an FV method integral equation \eqref{eq:siaasconservation} is required to hold for a finite set of control volumes $V$ which together tile $\Omega$, which generates a finite system of nonlinear algebraic equations.
 
@@ -290,7 +290,7 @@ where
 is the same as in \eqref{eq:mahaffyalphax}.  Thus Mahaffy's scheme approximates each integral on the right in \eqref{eq:fluxintdecomp} by a perfectly-reasonable quadrature ``crime'' \citep[compare][]{Strang1972} which averages across a discontinuity to reconstruct a slope.  Recognizing the Mahaffy choice as quadrature-like, in this FVE context, is beneficial because it allows us to do it better.
 
 
-\subsection{Improved scheme}  \label{subsec:star}
+\subsection{Improved scheme}
 
 If the goal is to accurately-generate an algebraic equation from \eqref{eq:siafve} by quadrature along $\partial V_{j,k}$ then it is easy to improve upon the Mahaffy technique by improving quadrature.  We also use flux decomposition \eqref{eq:fluxform} with an upwind-type discretization on the bed gradient term $\bW H^{n+2}$.  Together these improvements define the ``\Mstar'' scheme.
 
@@ -360,7 +360,7 @@ where $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwinding that 
 The ``\Mstar'' scheme combines both improvements, namely better quadrature and a bit of upwinding.  We will see in verification (Results section) that it achieves higher solution accuracy than either the apparently second-order Mahaffy scheme or the higher-resolution explicit advection scheme of \cite{JaroschSchoofAnslow2013}.  (As our Newton solver needs a differentiable residual function, the additional non-smoothness of high-resolution flux methods suggests caution.)  Convergence of the Newton iteration is also improved compared to the classical Mahaffy scheme.  The evidence suggests that our form of upwinding is most important at locations of low regularity of the solution.
 
 
-\subsection{Solution of the equations} \label{subsec:solution}
+\subsection{Solution of the equations}
 
 We are ready to write down a system of nonlinear algebraic equations, but it remains to describe the numerical solution of this system.  This is nontrivial because inequality constraints apply to each unknown.
 
@@ -423,7 +423,7 @@ so that, until the last stage $\eps_{12}=0$, the parameter $\eps_i$ is reduce by
 We start with $\eps_0=1$ so we are solving \eqref{eq:nonlincomplementarity} with values $n=n_0$ and $D=D_0$ and initial iterate $H^{(0)}$ from \eqref{eq:nonlininitialheuristic}.  Once this first stage converges, the ice margin has moved from the equilibrium line---the margin of initial iterate \eqref{eq:nonlininitialheuristic}---into the ablation zone as expected.  The solution is then used as the initial iterate for problem \eqref{eq:nonlincomplementarity} with the second value $\eps_1=(0.1)^{1/3}\approx 0.46$ in \eqref{eq:continuationND}.  Continuing in this way we eventually solve the unregularized $n(0)=n$ and $D(0)=D$ problem.  The first twelve stages $\eps_0,\dots,\eps_{11}$ generate a high-quality initial iterate for the un-modified SIA calculation ($\eps_{12}=0$). 
 
 
-\subsection{Time-stepping} \label{subsec:timestepping}
+\subsection{Time-stepping}
 
 The relationship between our steady-state computations and fully-implicit time-stepping methods for equation \eqref{eq:siaevolution} deserves examination.  We will be able to exploit such time-steps to make the Newton solver for the steady-state problem more robust for rough-bed cases.
 
@@ -533,7 +533,7 @@ The result of this strategy is shown in Figure \ref{fig:grnwinset}.  The first s
 \end{figure}
 
 
-\section{Discussion and Conclusion} \label{sec:conclusion}
+\section{Discussion and Conclusion}
 
 The problem solved in this paper is fundamentally different from most prior ice sheet modeling.  We compute the steady-state geometry and extent of an ice sheet as a function of only two data sets, namely the bed topography and surface mass balance.  Though this function has not been proved to be well-defined, even in the elevation-independent surface mass balance cases here---compare the elevation-dependent case studied by \cite{Jouvetetal2011}---there is theoretical support for well-posedness \citep{JouvetBueler2012}.  Nothing seen in our calculations suggests otherwise than well-posedness.  However, though shallow hybrid models are capable of very-high-quality match to the observations \citep{Aschwandenetal2015}, we do not claim that the model here, an untuned isothermal SIA model using EISMINT I parameter values, is sufficiently-complete to represent the important physics of the Greenland ice sheet.
 
@@ -563,7 +563,7 @@ This work was supported by NASA grant \#NNX13AM16G and a grant of high-performan
 \bibliographystyle{igs}
 
 \appendix
-\section{Appendix. Analytical Jacobian}  \label{sec:app}
+\section{Appendix. Analytical Jacobian}
 
 To sketch the calculation of the analytical Jacobian for the \Mstar method, we first recall that each algebraic equation \eqref{eq:nonlinsystem} comes from equation \eqref{eq:siamstar},
 \begin{equation}
