@@ -27,7 +27,7 @@ newtonconv.pdf: newtonconv.txt
 	./newtonconvshow.py -o newtonconv.pdf newtonconv.txt
 
 newtonconv.txt:
-	../petsc/mahaffy -da_refine 2 -mah_D0 1.0 -snes_type vinewtonssls -snes_monitor -snes_rtol 1.0e-10 > newtonconv.txt
+	../petsc/mahaffy -da_refine 2 -cs_D0 1.0 -snes_type vinewtonssls -snes_monitor -snes_rtol 1.0e-10 > newtonconv.txt
 
 grnrobusteps.pdf: study.robust
 	./robustfigs.py -o grnrobusteps.pdf study.robust

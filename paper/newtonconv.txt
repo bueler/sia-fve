@@ -1,0 +1,186 @@
+solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=900.000 km  and  Ly=900.000 km
+grid of  72 x 72  points with spacing  dx = 25.000000 km  and  dy = 25.000000 km ...
+generating b, m, Hexact from dome formulas in Bueler (2003) ...
+  generating Hinitial by chop-and-scale of SMB ...
+solving steady-state problem by M* method ...
+  0 SNES Function norm 1.467781755647e+03 
+  1 SNES Function norm 1.407311803723e+03 
+  2 SNES Function norm 1.234230155280e+03 
+  3 SNES Function norm 1.129206644485e+03 
+  4 SNES Function norm 1.066194609989e+03 
+  5 SNES Function norm 9.343146181295e+02 
+  6 SNES Function norm 7.285232054284e+02 
+  7 SNES Function norm 4.925179806902e+02 
+  8 SNES Function norm 3.387828721767e+02 
+  9 SNES Function norm 1.946995209246e+02 
+ 10 SNES Function norm 7.274969226288e+01 
+ 11 SNES Function norm 1.445754570175e+01 
+ 12 SNES Function norm 2.522223126674e+00 
+ 13 SNES Function norm 2.812181316569e-01 
+ 14 SNES Function norm 2.903797863818e-02 
+ 15 SNES Function norm 9.514368319041e-04 
+ 16 SNES Function norm 1.171996327106e-06 
+ 17 SNES Function norm 1.887556576197e-11 
+  0. CONVERGED_FNORM_RELATIVE   with   eps=1.00e+00 ...  23 KSP (last) iters and  17 Newton iters
+       vol = 1.41e+06 km3,  area = 1.70e+06 km2;  diagnostics:  max D = 1.0000,  av D = 1.0000 m^2 s-1
+       errors:  max = 1614.98 m,  av =  715.91 m,  voldiff% = 62.21
+  0 SNES Function norm 3.133515548494e+02 
+  1 SNES Function norm 2.695402441722e+02 
+  2 SNES Function norm 2.003192798253e+02 
+  3 SNES Function norm 9.427690890866e+01 
+  4 SNES Function norm 4.891720522467e+01 
+  5 SNES Function norm 7.684532208156e+00 
+  6 SNES Function norm 1.277813775041e+00 
+  7 SNES Function norm 7.466669044592e-02 
+  8 SNES Function norm 2.172428497242e-03 
+  9 SNES Function norm 2.678755055276e-06 
+ 10 SNES Function norm 3.376106598849e-11 
+  1. CONVERGED_FNORM_RELATIVE   with   eps=4.64e-01 ...  23 KSP (last) iters and  10 Newton iters
+       vol = 2.66e+06 km3,  area = 1.71e+06 km2;  diagnostics:  max D = 0.9474,  av D = 0.5255 m^2 s-1
+       errors:  max = 1218.19 m,  av =  394.56 m,  voldiff% = 28.77
+  0 SNES Function norm 1.317679056403e+03 
+  1 SNES Function norm 1.061085326618e+03 
+  2 SNES Function norm 9.934315382858e+02 
+  3 SNES Function norm 2.177750959522e+02 
+  4 SNES Function norm 1.780846594049e+01 
+  5 SNES Function norm 4.370096572383e+00 
+  6 SNES Function norm 1.034344309353e+00 
+  7 SNES Function norm 1.490561177872e-01 
+  8 SNES Function norm 5.425692814593e-03 
+  9 SNES Function norm 6.708155474268e-06 
+ 10 SNES Function norm 9.162655755145e-11 
+  2. CONVERGED_FNORM_RELATIVE   with   eps=2.15e-01 ...  26 KSP (last) iters and  10 Newton iters
+       vol = 3.18e+06 km3,  area = 1.71e+06 km2;  diagnostics:  max D = 1.4191,  av D = 0.4613 m^2 s-1
+       errors:  max =  930.54 m,  av =  218.77 m,  voldiff% = 14.83
+  0 SNES Function norm 6.639723280456e+02 
+  1 SNES Function norm 5.953963355177e+02 
+  2 SNES Function norm 5.264352101686e+02 
+  3 SNES Function norm 3.990109024079e+02 
+  4 SNES Function norm 3.052127430032e+02 
+  5 SNES Function norm 4.290284360955e+01 
+  6 SNES Function norm 2.581380111148e+00 
+  7 SNES Function norm 1.034256749772e+00 
+  8 SNES Function norm 2.969935126158e-01 
+  9 SNES Function norm 1.244837159603e-02 
+ 10 SNES Function norm 1.547397233586e-05 
+ 11 SNES Function norm 3.227915502298e-10 
+  3. CONVERGED_FNORM_RELATIVE   with   eps=1.00e-01 ...  25 KSP (last) iters and  11 Newton iters
+       vol = 3.40e+06 km3,  area = 1.72e+06 km2;  diagnostics:  max D = 1.6453,  av D = 0.4704 m^2 s-1
+       errors:  max =  724.24 m,  av =  122.04 m,  voldiff% =  8.88
+  0 SNES Function norm 3.269260145011e+02 
+  1 SNES Function norm 2.918812115758e+02 
+  2 SNES Function norm 2.610602010757e+02 
+  3 SNES Function norm 2.202932677977e+02 
+  4 SNES Function norm 1.474162978864e+02 
+  5 SNES Function norm 8.263499500131e+01 
+  6 SNES Function norm 7.295290395854e+00 
+  7 SNES Function norm 1.387317622273e+00 
+  8 SNES Function norm 5.582000437724e-02 
+  9 SNES Function norm 5.073803336858e-05 
+ 10 SNES Function norm 2.277523631322e-09 
+  4. CONVERGED_FNORM_RELATIVE   with   eps=4.64e-02 ...  26 KSP (last) iters and  10 Newton iters
+       vol = 3.53e+06 km3,  area = 1.72e+06 km2;  diagnostics:  max D = 1.7545,  av D = 0.4847 m^2 s-1
+       errors:  max =  563.05 m,  av =   68.86 m,  voldiff% =  5.34
+  0 SNES Function norm 1.759801006565e+02 
+  1 SNES Function norm 1.569483220994e+02 
+  2 SNES Function norm 1.370723091868e+02 
+  3 SNES Function norm 1.047040778373e+02 
+  4 SNES Function norm 5.010910422325e+01 
+  5 SNES Function norm 1.072974788553e+01 
+  6 SNES Function norm 7.650828131848e-01 
+  7 SNES Function norm 1.461037623171e-01 
+  8 SNES Function norm 7.381975122131e-04 
+  9 SNES Function norm 5.298132414150e-08 
+ 10 SNES Function norm 1.093102328256e-10 
+  5. CONVERGED_FNORM_RELATIVE   with   eps=2.15e-02 ...  34 KSP (last) iters and  10 Newton iters
+       vol = 3.62e+06 km3,  area = 1.71e+06 km2;  diagnostics:  max D = 1.8091,  av D = 0.4956 m^2 s-1
+       errors:  max =  528.79 m,  av =   37.02 m,  voldiff% =  2.94
+  0 SNES Function norm 9.092677340719e+01 
+  1 SNES Function norm 8.111716625806e+01 
+  2 SNES Function norm 6.535141069692e+01 
+  3 SNES Function norm 3.459446649763e+01 
+  4 SNES Function norm 9.550474426044e+00 
+  5 SNES Function norm 2.666856141031e+00 
+  6 SNES Function norm 1.734751189063e+00 
+  7 SNES Function norm 1.409629858236e+00 
+  8 SNES Function norm 9.242414563894e-01 
+  9 SNES Function norm 5.215428828026e-02 
+ 10 SNES Function norm 1.075312926769e-04 
+ 11 SNES Function norm 1.292872121946e-08 
+ 12 SNES Function norm 1.026516433353e-10 
+  6. CONVERGED_FNORM_RELATIVE   with   eps=1.00e-02 ...  36 KSP (last) iters and  12 Newton iters
+       vol = 3.67e+06 km3,  area = 1.72e+06 km2;  diagnostics:  max D = 1.8365,  av D = 0.5024 m^2 s-1
+       errors:  max =  491.63 m,  av =   18.87 m,  voldiff% =  1.48
+  0 SNES Function norm 4.523180835074e+01 
+  1 SNES Function norm 3.079743537593e+01 
+  2 SNES Function norm 1.371119611482e+01 
+  3 SNES Function norm 5.223151201929e+00 
+  4 SNES Function norm 1.783592948350e+00 
+  5 SNES Function norm 2.541711365412e-01 
+  6 SNES Function norm 7.636792960018e-03 
+  7 SNES Function norm 8.603647488248e-07 
+  8 SNES Function norm 1.122825175740e-10 
+  7. CONVERGED_FNORM_RELATIVE   with   eps=4.64e-03 ...  30 KSP (last) iters and   8 Newton iters
+       vol = 3.70e+06 km3,  area = 1.72e+06 km2;  diagnostics:  max D = 1.8484,  av D = 0.5052 m^2 s-1
+       errors:  max =  478.22 m,  av =   11.03 m,  voldiff% =  0.87
+  0 SNES Function norm 2.186483291345e+01 
+  1 SNES Function norm 2.008119826625e+01 
+  2 SNES Function norm 3.957693408314e+00 
+  3 SNES Function norm 2.737214991112e+00 
+  4 SNES Function norm 2.546027816285e+00 
+  5 SNES Function norm 2.133592040729e+00 
+  6 SNES Function norm 1.877873020598e+00 
+  7 SNES Function norm 1.597976474700e+00 
+  8 SNES Function norm 1.056368328851e+00 
+  9 SNES Function norm 6.718534893021e-01 
+ 10 SNES Function norm 1.452492215699e-02 
+ 11 SNES Function norm 4.135614600482e-05 
+ 12 SNES Function norm 3.813796719162e-09 
+ 13 SNES Function norm 1.125476797945e-10 
+  8. CONVERGED_FNORM_RELATIVE   with   eps=2.15e-03 ...  45 KSP (last) iters and  13 Newton iters
+       vol = 3.71e+06 km3,  area = 1.73e+06 km2;  diagnostics:  max D = 1.8537,  av D = 0.5064 m^2 s-1
+       errors:  max =  412.68 m,  av =    7.87 m,  voldiff% =  0.58
+  0 SNES Function norm 1.049419682525e+01 
+  1 SNES Function norm 9.684711949723e+00 
+  2 SNES Function norm 9.429511259604e+00 
+  3 SNES Function norm 1.165914494243e+00 
+  4 SNES Function norm 5.105534638125e-02 
+  5 SNES Function norm 1.098273340782e-04 
+  6 SNES Function norm 9.574409630307e-09 
+  7 SNES Function norm 1.106430281144e-10 
+  9. CONVERGED_FNORM_RELATIVE   with   eps=1.00e-03 ...  36 KSP (last) iters and   7 Newton iters
+       vol = 3.71e+06 km3,  area = 1.73e+06 km2;  diagnostics:  max D = 1.8564,  av D = 0.5071 m^2 s-1
+       errors:  max =  412.68 m,  av =    6.69 m,  voldiff% =  0.42
+  0 SNES Function norm 4.715794119833e+00 
+  1 SNES Function norm 9.217016820601e-01 
+  2 SNES Function norm 1.654415698303e-02 
+  3 SNES Function norm 3.764687632101e-06 
+  4 SNES Function norm 1.727771402144e-10 
+ 10. CONVERGED_FNORM_RELATIVE   with   eps=4.64e-04 ...  29 KSP (last) iters and   4 Newton iters
+       vol = 3.72e+06 km3,  area = 1.73e+06 km2;  diagnostics:  max D = 1.8576,  av D = 0.5074 m^2 s-1
+       errors:  max =  412.68 m,  av =    6.46 m,  voldiff% =  0.35
+  0 SNES Function norm 2.176971445939e+00 
+  1 SNES Function norm 2.650496964447e-01 
+  2 SNES Function norm 1.089401552600e-01 
+  3 SNES Function norm 9.194752572703e-02 
+  4 SNES Function norm 8.634260646588e-02 
+  5 SNES Function norm 8.109371307743e-02 
+  6 SNES Function norm 6.861450437101e-02 
+  7 SNES Function norm 4.419160139252e-02 
+  8 SNES Function norm 6.181975492169e-03 
+  9 SNES Function norm 3.307834042422e-05 
+ 10 SNES Function norm 1.284935759210e-08 
+ 11 SNES Function norm 1.163886346010e-10 
+ 11. CONVERGED_FNORM_RELATIVE   with   eps=2.15e-04 ...  58 KSP (last) iters and  11 Newton iters
+       vol = 3.72e+06 km3,  area = 1.74e+06 km2;  diagnostics:  max D = 1.8582,  av D = 0.5075 m^2 s-1
+       errors:  max =  412.68 m,  av =    6.32 m,  voldiff% =  0.31
+  0 SNES Function norm 1.947465723609e+00 
+  1 SNES Function norm 1.714930620392e+00 
+  2 SNES Function norm 1.026853499417e+00 
+  3 SNES Function norm 1.011784641425e-01 
+  4 SNES Function norm 1.105182942410e-03 
+  5 SNES Function norm 2.232729241190e-07 
+  6 SNES Function norm 1.136251645356e-10 
+ 12. CONVERGED_FNORM_RELATIVE   with   eps=0.00e+00 ...  37 KSP (last) iters and   6 Newton iters
+       vol = 3.72e+06 km3,  area = 1.74e+06 km2;  diagnostics:  max D = 1.8587,  av D = 0.5076 m^2 s-1
+       errors:  max =  412.68 m,  av =    6.20 m,  voldiff% =  0.28
