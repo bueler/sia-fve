@@ -5,7 +5,8 @@ The code `mahaffy.c` tests classical Mahaffy and improved (M*) finite volume
 element methods for the shallow ice approximation (SIA) on a structured Q1 grid.
 We use PETSc DMDA and SNESVI to solve the steady-state SIA free boundary problem.
 
-This code is documented by manuscript `../paper/siafve.tex`.
+This code is documented by the paper in `../paper/`, which was submitted to
+the *Journal of Glaciology*.
 
 Quickstart
 ----------
@@ -34,7 +35,7 @@ are two collections of options, with prefixes `mah_` (for "mahaffy") and `cs_`
     $ ./mahaffy -help |grep cs_
 
 Note there are basically these three problem cases.  The first two are
-verification cases documented in the manuscript and in `base/exactsia.{h|c}`.
+verification cases documented in the paper and in `base/exactsia.{h|c}`.
 
   1. "Dome" exact solution (the default problem, so `-mah_dome` is optional):
 
