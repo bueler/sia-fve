@@ -89,20 +89,24 @@ The PETSc binary file written with option `-mah_dump` includes the
 thickness, so we can read it and restart.  Continuing the previous:
 
     $ cd ..
-    $ ./mahaffy -mah_read test/unnamed.dat -mah_readinitial -cs_start 10
+    $ ./mahaffy -mah_read test/unnamed.dat -mah_readinitial test/unnamed.dat -cs_start 10
 
 
 On viewing the solution process
 -------------------------------
 
-A helpful graphical view of the solution process comes from adding one of
+A helpful graphical view of the solution process comes from adding one of these
+options
 
-    -snes_monitor_solution -snes_monitor_residual -snes_monitor_solution_update
+    -snes_monitor_solution
+    -snes_monitor_residual
+    -snes_monitor_solution_update
 
-to the options.  For example, with `-snes_monitor_solution` you see that the
-solution `H` starts out too diffuse because the continuation method
-over-regularizes at the beginning.  These options all use X windows, and
-often `-draw_pause s`, with `s` in seconds, will be needed.
+These options all use X windows, and often `-draw_pause s`, with `s` in seconds,
+will be needed.
+
+For example, with `-snes_monitor_solution` you see that the solution `H` starts
+out too diffuse because the continuation method over-regularizes at the beginning.
 
 However, recall we are solving the variational inequality version of equations
 `F(H)=0`, with constraint `H>=0`.  With `-snes_monitor_residual` you see that
