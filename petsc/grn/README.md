@@ -63,6 +63,26 @@ mass balance to be very negative; this simulates strong calving:
     $ ./inplace.py --oceanfix --ranges grn.nc
 
 
+Convert to PETSC binary
+-----------------------
+
+This stage uses the links to PETSc scripts setup in `../README.md`:
+
+    $ ../nc2petsc.py grn.nc grn.dat
+
+
+Run the model
+-------------
+
+Run on the 5km grid; the `-mah_showdata` option means that the data is viewed
+with PETSc's X viewer:
+
+    $ mkdir test/
+    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -cs_D0 10.0 -snes_monitor -mah_showdata -draw_pause 2 -pc_type asm -sub_pc_type lu -mah_dump test/
+
+This run only takes a few minutes.
+
+
 Optional preprocessing
 ----------------------
 
@@ -99,26 +119,6 @@ Optional preprocessing
   by 3.  But we trim the `x1` dimension:
 
       $ ncks -O -d x1,0,299 grn.nc grn.nc
-
-
-Convert to PETSC binary
------------------------
-
-This stage uses the links to PETSc scripts setup in `../README.md`:
-
-    $ ../nc2petsc.py grn.nc grn.dat
-
-
-Run the model
--------------
-
-Run on the 5km grid; the `-mah_showdata` option means that the data is viewed
-with PETSc's X viewer:
-
-    $ mkdir test/
-    $ mpiexec -n 6 ../mahaffy -mah_read grn.dat -cs_D0 10.0 -snes_monitor -mah_showdata -draw_pause 2 -pc_type asm -sub_pc_type lu -mah_dump test/
-
-This run only takes a few minutes.
 
 
 More optional steps
