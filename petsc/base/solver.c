@@ -302,45 +302,21 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode PetscIgnoreZEROPIVOTErrorHandler(MPI_Comm comm,int line,const char *fun,
-                   const char *file,PetscErrorCode n,PetscErrorType p,const char *mess,void *ctx) {
-   if ((n == PETSC_ERR_MAT_LU_ZRPVT) || (p == PETSC_ERR_MAT_LU_ZRPVT)) {
-      int rank;
-      MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-      AppCtx* user = (AppCtx*)ctx;
-      user->luzeropvterr = 1;
-      return 0;
-   } else {
-      return PetscTraceBackErrorHandler(comm,line,fun,file,n,p,mess,ctx);
-   }
-}
-
-// try a SNES solve and get feedback on the result; H is modified
+// try a SNES solve, print a summary line, and get feedback on the result
+// H is modified
 PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
                            SNESConvergedReason *reason, AppCtx *user) {
   PetscErrorCode ierr;
   KSP            ksp;
-  PetscInt       its, kspits, luzeropvterr;
-  const PetscInt lureason = -99;
-  const char     lureasons[30] = "DIVERGED_LU_ZERO_PIVOT";
-  char           reasonstr[30];
+  PetscInt       its, kspits;
 
   PetscFunctionBeginUser;
-  user->luzeropvterr = 0;
-  PetscPushErrorHandler(PetscIgnoreZEROPIVOTErrorHandler,user);
   SNESSolve(*s, NULL, H);
-  PetscPopErrorHandler();
-  ierr = MPI_Allreduce(&user->luzeropvterr,&luzeropvterr,1,MPI_INT,MPI_MAX,
-                       PETSC_COMM_WORLD); CHKERRQ(ierr);
-  if (luzeropvterr > 0)
-      *reason = lureason;
-  else
-      ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
+  ierr = SNESGetConvergedReason(*s,reason);CHKERRQ(ierr);
   ierr = SNESGetIterationNumber(*s,&its);CHKERRQ(ierr);
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
-  strcpy(reasonstr,(*reason==lureason) ? lureasons : SNESConvergedReasons[*reason]);
-  myPrintf(user,"%3d. %s   with   ",m,reasonstr);
+  myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
   myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
            user->eps,kspits,its);
   if (user->dtres > 0.0)
