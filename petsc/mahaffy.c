@@ -41,8 +41,8 @@ Fully converges for these levels:
 
 Divergence:
    ./mahaffy -da_refine 2                   # DIVERGED_LINE_SEARCH at 10
-   ./mahaffy -da_refine 2 -snes_type vinewtonssls # DIVERGED       at 12
-   ./mahaffy -mah_bedstep -mah_notry        # DIVERGED_LU_ZERO_PIVOT at 12
+   ./mahaffy -da_refine 2 -snes_type vinewtonssls # DIVERGED_LINEAR_SOLVE at 12
+   ./mahaffy -mah_bedstep                   # DIVERGED_LINEAR_SOLVE at 12
 
 Do "manual" time steps after divergence, to approach steady state:
    mkdir teststeps/
