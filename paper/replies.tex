@@ -134,21 +134,102 @@ width=#3in]{#1.eps}}
 
 
 
-I want to thank both reviewers and the editor for positive and helpful comments on the manuscript.  I hope that I can address all of them to everyone's satisfaction.
+I want to thank both reviewers and the Scientific Editor for positive and helpful comments on the manuscript.  I hope that I can address all of satisfactorily.
 
 
 \subsection*{Reviewer \#1}  \begin{itemize}
-\reply{}
+\reply{This paper revisits the classical Mahaffy finite difference scheme to solve the steady
+non-sliding shallow ice approximation (SIA) combined with the mass conservation equation.  The aim is two-fold: First, this allows us to get new insights of Mahaffy's
+scheme, which can be reinterpreted by finite element and finite volume. Second, this
+re-interpretation allows us to improve substantially the original Mahaffy scheme by
+choosing for better quadrature (however, without impacting the stencil) and by up-winding the most ``advective'' part, which involves the gradient of the bed.
+This is a very well written and very instructive paper, which presents an original
+method to solve one of the most useful ice flow models. Although the paper is restricted
+to a simple case (steady, non-sliding, isothermal SIA), the ideas presented here can be
+easily generalized to more physical situations. Thus, I have no doubt it will interest the
+community of glacier and ice sheet modellers. Beyond its originality, I found the paper
+enjoyable reading, and especially didactic. This is even more remarkable considering
+the technical and mathematical nature of the paper. \medskip \\
+\indent I have reported below [a] few points of discussion, which could lead to some possible
+improvements. However, none of those points are critical, and I believe that the paper
+can be published as it is.}
+{This summary is accurate and appreciated, and the recommendation appreciated.}
+
+\reply{The scheme $M^\star$ presents two major improvements to original Mahaffy's scheme.
+Fig.~6 shows strong evidences of improvements in term of convergence under
+refinement due to improved quadratures. In contrast, the evidences for the up-
+winding sound weaker since restricted to the step-bedrock case. I'm wondering
+if an additional experiment with non flat bed but smooth (even with a constant
+bed slope), could further highlight the advantages of treating the part involving
+$\grad b$ by an upwinding strategy through splitting (6).  In this experiment, one could
+compare the method performances of both methods with and without splitting
+(6) while increasing the bed slope. In addition, it would interesting to check what
+value of $\lambda$ is optimal in another case (I was left wondering how much the amount
+of upwinding $\lambda$ is case-dependent, is $\lambda = 1/4$ a robust value?).}
 {FIXME}
 
-\reply{}
+\reply{Continuing with this aspect, I would find interesting to see how the upwinding
+improves the conditioning of the Jacobian matrix, as said line 256.}
 {FIXME}
 
-\reply{}
+\reply{I understand the ``step-by-step'' motivation of the continuation method proposed
+in the paper.  However, I find it hard to justify since only the last solution ($\epsilon_{12}$)
+has a physical meaning.  In contrast the time-stepping is meaningful.  Maybe,
+it would be beneficial to argue why the conclusions based on solutions obtained
+with the continuation method remain valid when computing physical solutions
+(like time-stepping solutions).}
 {FIXME}
 
-\reply{}
+\reply{Alternatively to the continuation method, one could first use Picard iterations,
+and switch to Newton iterations after getting sufficiently close to the solution.
+It seems that this has become a common practise in recent models. Have you
+considered this approach? In [1], we have proposed a simple continuation scheme
+between Picard and Newton, which allows to switch from to Picard to the Newton
+by varying a simple parameter $\gamma$ from 0 to 1, considering that Newton’s scheme
+can be seen as Picard’s scheme, however with additional terms, which involve
+higher derivatives. For instance, in the case of the simple $p$-Laplace problem with
+zero Dirichlet boundary condition, one can solve the non-linear problem \medskip \\
+\phantom{foobar} [\emph{variational equation for $p$-laplacian Poisson equation}] \medskip \\
+by solving instead the sequence of linearized problems: \medskip \\
+\phantom{foobar} [\emph{a linearization equation}] \medskip \\
+which [is] Picard's method when $\gamma=0$, Newton’s method when $\gamma=1$,
+and an hybrid combination Picard-Newton when $\gamma \in (0,1)$.  Maybe, varying $\gamma$
+continuously from 0 to 1 could be an interesting alternative to the continuation
+method presented in the paper?}
 {FIXME}
+
+\reply{l. 42 Gauss-Seidel}
+{FIXME}
+
+\reply{eq. (15) I think that m j,k was not introduced at that point.}
+{FIXME}
+
+\reply{eq. (22) y k + 0 and y k − 0?}
+{FIXME}
+
+\reply{l. 299,301,306,307 Lips\textbf{c}hitz}
+{FIXME}
+
+\reply{Fig. 6 Can the little convergence circles be drawn further visible? I can hardly see them
+when printed in black and white.}
+{FIXME}
+
+\reply{l. 394,395 ”However, maximum errors ... norm convergence”, this is probably a hard sentence for most of JOG readers, but I don’t know how to better explain.}
+{FIXME}
+
+\reply{2l. 396 ”suggest” ⇒ ”ensure”?}
+{FIXME}
+
+\reply{Fig. 8, caption I would recall in the caption the meaning of M ? , M ? no and M ? full, but also that
+the thick line is the step-bedrock.}
+{FIXME}
+
+\reply{l. 437 to 450 Just an idea: what about summarizing the steps into a scheme/table instead of
+a paragraph? I think that would be clearer.}
+{FIXME}
+
+%\reply{}
+%{FIXME}
 \end{itemize}
 
 
