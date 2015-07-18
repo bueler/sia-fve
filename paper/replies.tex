@@ -1,0 +1,208 @@
+\documentclass[11pt,reqno]{amsart}
+%prepared in AMSLaTeX, under LaTeX2e
+\addtolength{\oddsidemargin}{-.65in}
+\addtolength{\evensidemargin}{-.65in}
+\addtolength{\topmargin}{-.3in}
+\addtolength{\textwidth}{1.5in}
+\addtolength{\textheight}{.6in}
+
+\renewcommand{\baselinestretch}{1.1}
+
+\usepackage{verbatim} % for "comment" environment
+
+\usepackage[pdftex, colorlinks=true, plainpages=false, linkcolor=blue, citecolor=red, urlcolor=blue]{hyperref}
+
+\newtheorem*{thm}{Theorem}
+\newtheorem*{defn}{Definition}
+\newtheorem*{example}{Example}
+\newtheorem*{problem}{Problem}
+\newtheorem*{remark}{Remark}
+
+\newcommand{\mtt}{\texttt}
+\usepackage{alltt,xspace}
+\usepackage[normalem]{ulem}
+\newcommand{\mfile}[1]
+{\medskip\begin{quote}\scriptsize \begin{alltt}\input{#1.m}\end{alltt} \normalsize\end{quote}\medskip}
+
+\usepackage[final]{graphicx}
+\newcommand{\mfigure}[1]{\includegraphics[height=2.5in,
+width=3.5in]{#1.eps}}
+\newcommand{\regfigure}[2]{\includegraphics[height=#2in,
+keepaspectratio=true]{#1.eps}}
+\newcommand{\widefigure}[3]{\includegraphics[height=#2in,
+width=#3in]{#1.eps}}
+
+% macros
+\usepackage{amssymb}
+
+\usepackage[T1, OT1]{fontenc}
+\renewcommand{\dh}{\fontencoding{T1}\selectfont{\symbol{240}}}
+
+\newcommand{\bod}{B\"o\dh varsson\xspace}
+\newcommand{\bods}{B\"o\dh varsson's}
+\newcommand{\citebod}{B\"o\dh varsson (1955)\xspace}
+\newcommand{\citepbod}{(B\"o\dh varsson, 1955)\xspace}
+
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\hbi}{\mathbf{\hat i}}
+\newcommand{\hbj}{\mathbf{\hat j}}
+\newcommand{\hbk}{\mathbf{\hat k}}
+\newcommand{\hbn}{\mathbf{\hat n}}
+\newcommand{\hbr}{\mathbf{\hat r}}
+\newcommand{\hbt}{\mathbf{\hat t}}
+\newcommand{\hbx}{\mathbf{\hat x}}
+\newcommand{\hby}{\mathbf{\hat y}}
+\newcommand{\hbz}{\mathbf{\hat z}}
+\newcommand{\hbphi}{\mathbf{\hat \phi}}
+\newcommand{\hbtheta}{\mathbf{\hat \theta}}
+\newcommand{\complex}{\mathbb{C}}
+\newcommand{\ppr}[1]{\frac{\partial #1}{\partial r}}
+\newcommand{\ppt}[1]{\frac{\partial #1}{\partial t}}
+\newcommand{\ppx}[1]{\frac{\partial #1}{\partial x}}
+\newcommand{\ppy}[1]{\frac{\partial #1}{\partial y}}
+\newcommand{\ppz}[1]{\frac{\partial #1}{\partial z}}
+\newcommand{\pptheta}[1]{\frac{\partial #1}{\partial \theta}}
+\newcommand{\ppphi}[1]{\frac{\partial #1}{\partial \phi}}
+\newcommand{\pp}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\ppp}[2]{\frac{\partial^2 #1}{\partial^2 #2}}
+\newcommand{\pppp}[3]{\frac{\partial^2 #1}{\partial #2 \partial #3}}
+\newcommand{\Div}{\ensuremath{\nabla\cdot}}
+\newcommand{\Curl}{\ensuremath{\nabla\times}}
+\newcommand{\curl}[3]{\ensuremath{\begin{vmatrix} \hbi & \hbj & \hbk \\ \partial_x & \partial_y & \partial_z \\ #1 & #2 & #3 \end{vmatrix}}}
+\newcommand{\cross}[6]{\ensuremath{\begin{vmatrix} \hbi & \hbj & \hbk \\ #1 & #2 & #3 \\ #4 & #5 & #6 \end{vmatrix}}}
+\newcommand{\eps}{\epsilon}
+\newcommand{\grad}{\nabla}
+\newcommand{\image}{\operatorname{im}}
+\newcommand{\integers}{\mathbb{Z}}
+\newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
+\newcommand{\lam}{\lambda}
+\newcommand{\lap}{\triangle}
+\newcommand{\Matlab}{\textsc{Matlab}\xspace}
+\newcommand{\exers}[1]{\bigskip\noindent\textbf{Exercises} #1}
+\newcommand{\fexer}[2]{\bigskip\noindent\textbf{Lesson #1, \##2}\quad }
+\newcommand{\prob}[1]{\bigskip\noindent\textbf{#1} }
+\newcommand{\pts}[1]{(\emph{#1 pts}) }
+\newcommand{\epart}[1]{\medskip\noindent\textbf{(#1)}\quad }
+\newcommand{\ppart}[1]{\,\textbf{(#1)}\quad }
+\newcommand{\note}[1]{[\scriptsize #1 \normalsize]}
+\newcommand{\MatIN}[1]{\mtt{>> #1}}
+\newcommand{\onull}{\operatorname{null}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\range}{\operatorname{range}}
+\renewcommand{\P}{\mathcal{P}}
+\newcommand{\real}{\mathbb{R}}
+\newcommand{\trace}{\operatorname{tr}}
+\renewcommand{\Re}{\operatorname{Re}}
+\renewcommand{\Im}{\operatorname{Im}}
+\newcommand{\Arg}{\operatorname{Arg}}
+
+\newcommand{\comm}[2]{\item \emph{#1}:\, #2}
+
+\renewcommand{\ln}[2]{\comm{line #1}{#2}}
+\newcommand{\lnpage}[3]{\comm{line #1 \underline{on page #2}}{#3}}
+\newcommand{\lns}[2]{\comm{lines #1}{#2}}
+\newcommand{\lnspage}[3]{\comm{lines #1 \underline{on page #2}}{#3}}
+\newcommand{\fg}[2]{\comm{Figure #1}{#2}}
+\newcommand{\eqn}[2]{\comm{equation #1}{#2}}
+
+\newcommand{\reply}[2]{
+\medskip\medskip
+\item  \begin{quote}
+\emph{#1}
+\end{quote}
+
+\medskip
+\noindent #2}
+
+
+\title[Author's replies to reviews of \emph{Stable finite volume element schemes \dots}]{Author's replies to reviews of \\ \emph{Stable finite volume element schemes} \\ \emph{for the shallow ice approximation}}
+
+\author{Ed Bueler}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\thispagestyle{empty}
+
+
+
+I want to thank both reviewers and the editor for positive and helpful comments on the manuscript.  I hope that I can address all of them to everyone's satisfaction.
+
+
+\subsection*{Reviewer \#1}  \begin{itemize}
+\reply{}
+{FIXME}
+
+\reply{}
+{FIXME}
+
+\reply{}
+{FIXME}
+
+\reply{}
+{FIXME}
+\end{itemize}
+
+
+\subsection*{Reviewer \#2}  \begin{itemize}
+\reply{The manuscript at hand presents a significantly improved numerical scheme for shallow ice models. It is based on a re-interpretation of the classical existing numerics and an novel, elegant extension into ``finite volume elements'' that allows for an efficient solving routine of the discrete equations that are constrained for non-negative ice thicknesses. The new scheme proofs itself to be stable by being fully implicit, performs outstandingly well in comparison to exact solution (with and without bed topography) and is able to solve large scale, real world examples (e.g.~Greenland) efficiently. Especially noteworthy is the inclusion of the ice thickness constraint ($H\ge 0$), that is tackled by a parallel Newton scheme, as it allows for prognostic modeling that generates realistic ice margins without any mass violations.  A ``feature'' that almost none of the currently available ice flow models include. \medskip \\
+The manuscript is very well written and presents the science in a concise and detailed manner, which is easily comprehensible to the wider audience. Thus I have only a few minor comments to make, \dots}
+{FIXME}
+
+\reply{Line \# 8: As this is a single author paper, I was surprised to read ``we'' throughout the manuscript. This might just be me, being a non-native English speaking person, but it strikes me as rather awkward.}
+{Right.  I must have become comfortable with the ``we'' style from frequently reading it in mathematics textbooks.  For a discussion and explanation of the style, including a recommendation that ``we'' is the default style when a personal pronoun is needed, see\begin{quote}
+\href{http://academia.stackexchange.com/questions/2945/choice-of-personal-pronoun-in-single-author-papers}{\texttt{academia.stackexchange.com/questions/2945/\\ \phantom{foobar} choice-of-personal-pronoun-in-single-author-papers}}
+\end{quote}
+This discussion includes this core advice from Paul Halmos, an authority on writing mathematics in English: \begin{quote} \medskip
+There is nothing wrong with the editorial ``we'', but if you like it, do not misuse it.  Let ``we'' mean ``the author and the reader''\dots  \, Thus, it is fine to say ``Using Lemma 2 we can generalize Theorem 1,'' or ``Lemma 3 gives us a technique for proving Theorem 4.''  It is not good to say ``Our work on this result was done in 1969'' (unless the voice is that of two authors, or more, speaking in unison), \dots \medskip \\
+\indent The use of ``I,'' and especially its overuse, sometimes has a repellent effect, as arrogance or ex-cathedra preaching, and, for that reason, I like to avoid it whenever possible. \dots \medskip
+\end{quote}
+Based on this and similar advice I have received over time, I would like to stick with the ``we'' style.  I recognize that the \emph{Journal of Glaciology} is not a mathematics textbook, but I also recognize the readers of the \emph{Journal} rarely see a single-author paper (!) and may come to assume ``we'' means the multiple authors. \medskip \\
+\indent However, I have reviewed the paper for the unnecessary use of personal pronouns and have removed several instances of ``we''.  FIXME: DO SO}
+
+\reply{Line \# 88: Maybe replace ``Glen-law'' with ``Glen's flow law'' or something like that to not confuse the ``freshman'' generation to ice flow modeling.}
+{FIXME}
+
+\reply{Line \# 90: ``ice softness A'' is fine, as is ``power n'', but again a quick reference to Glen's law might help the newcomers.}
+{FIXME}
+
+\reply{Equations (3),(4),(5),(6) are all stating different ways to calculate the flux q. It might be worthwhile to denote those with different indices or ``add-on'' symbols like $q'$, $q'$, etc. and only leave the $q$ in (6). This might help to avoid confusion in the uncareful reader who might wonder which $q$ is meant in Line \# 112. A reference to eq (6) might do the trick as well.}
+{FIXME}
+
+\reply{Line \# 137. Again the unmindful reader might wonder, why equation (3) is solved as there is a flux definition in the novel eq.~(6), not realizing that the diffusivity ``D'' is still required and defined in (3). Maybe change to: ``solve coupled equations (6), (7), and (9) with D from (3).''}
+{FIXME}
+
+\reply{Equation (12): It might be worthwhile to state that this is the ``classical'' M2 scheme as classified by Hindmarsh and Payne 1996. This might help the wider audience to realize that a specific, yet very common scheme for calculating the ice thickness at the flux boundary is chosen here.}
+{FIXME}
+
+\reply{Equation (24): If I am not completely mistaken here (due to the lack of coffee) the $\alpha_\triangle$ should have the power ($n-1)$ as in eq.~(11) and not $(n-1)/2$.}
+{FIXME}
+
+\reply{Line \# 260: $W^*_x$ should be $W^x_*$ as in eq.~(30) and the rest of the text.}
+{FIXME}
+
+\reply{Line \# 391--400 (including Fig.~8 and Table 1): It is nice to see that the exact solution from Jarosch et al.~2013 turns out to be useful.  The author details here why thickness errors (max and average) are not converging with grid refinement and that is the same reason why Jarosch et al.~2013 did not report such error norms, which in hindsight might have been a useful measure.  Based on the weaker volume error measure, it is again very nice to see that the M* scheme outperforms the overly complex MUSCL-superbee scheme of Jarosch et al.~2013.}
+{FIXME}
+
+\reply{Figure 9: There should be a label on the y-axis, $\epsilon_i$ maybe?}
+{FIXME}
+
+\reply{Line \# 434: Maybe add a reference that explains the ``RS'' and ``SS'' methods for the less numerically inclined readers.}
+{FIXME}
+
+\reply{Line \# 442: There is no $\epsilon_{12}$ displayed in Figure 9.  Did you mean $\epsilon_{11}$?}
+{FIXME}
+
+\reply{I hope the newly presented scheme becomes soon a feature in PISM to facilitate the wider use of an inequality constraint (ice thickness), mass conserving, stable and elegant scheme like this one. I also highly appreciate (as should the glaciological community as a whole) that the author instantly publishes his code on which the presented research is based on along with the manuscript on Github for open access, reproducibility and transparency!}
+{FIXME}
+\end{itemize}
+
+\end{document}
