@@ -234,56 +234,71 @@ a paragraph? I think that would be clearer.}
 
 
 \subsection*{Reviewer \#2}  \begin{itemize}
-\reply{The manuscript at hand presents a significantly improved numerical scheme for shallow ice models. It is based on a re-interpretation of the classical existing numerics and an novel, elegant extension into ``finite volume elements'' that allows for an efficient solving routine of the discrete equations that are constrained for non-negative ice thicknesses. The new scheme proofs itself to be stable by being fully implicit, performs outstandingly well in comparison to exact solution (with and without bed topography) and is able to solve large scale, real world examples (e.g.~Greenland) efficiently. Especially noteworthy is the inclusion of the ice thickness constraint ($H\ge 0$), that is tackled by a parallel Newton scheme, as it allows for prognostic modeling that generates realistic ice margins without any mass violations.  A ``feature'' that almost none of the currently available ice flow models include. \medskip \\
-The manuscript is very well written and presents the science in a concise and detailed manner, which is easily comprehensible to the wider audience. Thus I have only a few minor comments to make, \dots}
-{FIXME}
+\reply{The manuscript at hand presents a significantly improved numerical scheme for shallow ice models. It is based on a re-interpretation of the classical existing numerics and an novel, elegant extension into ``finite volume elements'' that allows for an efficient solving routine of the discrete equations that are constrained for non-negative ice thicknesses. The new scheme proofs itself to be stable by being fully implicit, performs outstandingly well in comparison to exact solution (with and without bed topography) and is able to solve large scale, real world examples (e.g.~Greenland) efficiently. Especially noteworthy is the inclusion of the ice thickness constraint ($H\ge 0$), that is tackled by a parallel Newton scheme, as it allows for prognostic modeling that generates realistic ice margins without any mass violations.  A ``feature'' that almost none of the currently available ice flow models include.}
+{This summary is accurate and appreciated.
 
-\reply{Line \# 8: As this is a single author paper, I was surprised to read ``we'' throughout the manuscript. This might just be me, being a non-native English speaking person, but it strikes me as rather awkward.}
-{Right.  I must have become comfortable with the ``we'' style from frequently reading it in mathematics textbooks.  For a discussion and explanation of the style, including a recommendation that ``we'' is the default style when a personal pronoun is needed, see\begin{quote}
+I do want to be careful with the reviewer's phrase ``ice margins without any mass violations,'' as I do not claim this in the paper.  The schemes I describe are indeed all locally mass-conserving in the sense that the numerical flux out of one ice-filled cell is exactly equal to the flux into the ice-filled cell which shares a face with it.  However, in steady state, such a condition cannot be true between an ice-filled cell and an adjacent ice-free cell, something most easily seen by considering a one-dimensional FV-type steady state.  (I am writing a separate paper about such issues---e.g.~inevitable conservation errors in discretized free-boundary models---and their consequences.)
+
+Again, my main point regarding the reviewer's comment is that I do not claim that the margins are violation-free when it comes to mass conservation.  I \emph{do} claim to give a good numerical approximation of what I believe is the correct (well-posed) steady SIA \emph{continuum} problem, which includes the positive thickness constraint, and which has a free-boundary.}
+
+\reply{The manuscript is very well written and presents the science in a concise and detailed manner, which is easily comprehensible to the wider audience.  Thus I have only a few minor comments to make, which I list below:
+\medskip \\
+Line \# 8: As this is a single author paper, I was surprised to read ``we'' throughout the manuscript. This might just be me, being a non-native English speaking person, but it strikes me as rather awkward.}
+{I have apparently become comfortable with the ``we'' style from frequently reading it in mathematics textbooks.  For a discussion and explanation of the style, including a recommendation that ``we'' is the default style when a personal pronoun is needed, see\begin{quote}
 \href{http://academia.stackexchange.com/questions/2945/choice-of-personal-pronoun-in-single-author-papers}{\texttt{academia.stackexchange.com/questions/2945/\\ \phantom{foobar} choice-of-personal-pronoun-in-single-author-papers}}
 \end{quote}
 This discussion includes this core advice from Paul Halmos, an authority on writing mathematics in English: \begin{quote} \medskip
 There is nothing wrong with the editorial ``we'', but if you like it, do not misuse it.  Let ``we'' mean ``the author and the reader''\dots  \, Thus, it is fine to say ``Using Lemma 2 we can generalize Theorem 1,'' or ``Lemma 3 gives us a technique for proving Theorem 4.''  It is not good to say ``Our work on this result was done in 1969'' (unless the voice is that of two authors, or more, speaking in unison), \dots \medskip \\
 \indent The use of ``I,'' and especially its overuse, sometimes has a repellent effect, as arrogance or ex-cathedra preaching, and, for that reason, I like to avoid it whenever possible. \dots \medskip
 \end{quote}
-Based on this and similar advice I have received over time, I would like to stick with the ``we'' style.  I recognize that the \emph{Journal of Glaciology} is not a mathematics textbook, but I also recognize the readers of the \emph{Journal} rarely see a single-author paper (!) and may come to assume ``we'' means the multiple authors. \medskip \\
-\indent However, I have reviewed the paper for the unnecessary use of personal pronouns and have removed several instances of ``we'', especially in the abstract where it may be most distracting.}
+Based on this and similar advice I have received over time, I would like to stick with the ``we'' style.  I recognize that the \emph{Journal of Glaciology} is not a mathematics textbook.  Readers of the \emph{Journal} rarely see a single-author paper (!) and may have come to assume ``we'' means the multiple authors.
+
+However, I have reviewed the paper for the unnecessary use of personal pronouns and have removed several instances of ``we'', especially in the abstract where it may be most distracting.}
 
 \reply{Line \# 88: Maybe replace ``Glen-law'' with ``Glen's flow law'' or something like that to not confuse the ``freshman'' generation to ice flow modeling.}
-{FIXME}
+{Done.}
 
 \reply{Line \# 90: ``ice softness A'' is fine, as is ``power n'', but again a quick reference to Glen's law might help the newcomers.}
-{FIXME}
+{Done.}
 
 \reply{Equations (3),(4),(5),(6) are all stating different ways to calculate the flux q. It might be worthwhile to denote those with different indices or ``add-on'' symbols like $q'$, $q'$, etc. and only leave the $q$ in (6). This might help to avoid confusion in the uncareful reader who might wonder which $q$ is meant in Line \# 112. A reference to eq (6) might do the trick as well.}
-{FIXME}
+{I want to emphasize that formulas (3), (4), (5), and (6) all compute the \emph{same} flux.  Thus I \emph{do not} want to use different symbols for the ``$\mathbf{q}$'' they compute; it is the \emph{same} flux!  The $\mathbf{q}$ in line 112 is the same flux as everywhere else.  Whether the flux is diffusive is \emph{not} about which choice you have made for its appearance, e.g.~among the four formulas, but rather it is intrinsic to it.  The only question is whether the flux is always anti-parallel to the gradient of the conserved quantity; in that case it is diffusive.
+
+I have amplified this point in the text.  I have also combined formula (7) into (6) so the four flux forms are described in more similar ways.}
 
 \reply{Line \# 137. Again the unmindful reader might wonder, why equation (3) is solved as there is a flux definition in the novel eq.~(6), not realizing that the diffusivity ``D'' is still required and defined in (3). Maybe change to: ``solve coupled equations (6), (7), and (9) with D from (3).''}
-{FIXME}
+{I have changed the text to indicate that (3) only supplies $D$.}
 
 \reply{Equation (12): It might be worthwhile to state that this is the ``classical'' M2 scheme as classified by Hindmarsh and Payne 1996. This might help the wider audience to realize that a specific, yet very common scheme for calculating the ice thickness at the flux boundary is chosen here.}
-{FIXME}
+{Yes, good point.  I have cited H\&P 1996.}
 
 \reply{Equation (24): If I am not completely mistaken here (due to the lack of coffee) the $\alpha_\triangle$ should have the power ($n-1)$ as in eq.~(11) and not $(n-1)/2$.}
-{FIXME}
+{Fixed.}
 
 \reply{Line \# 260: $W^*_x$ should be $W^x_*$ as in eq.~(30) and the rest of the text.}
-{FIXME}
+{Fixed.}
 
 \reply{Line \# 391--400 (including Fig.~8 and Table 1): It is nice to see that the exact solution from Jarosch et al.~2013 turns out to be useful.  The author details here why thickness errors (max and average) are not converging with grid refinement and that is the same reason why Jarosch et al.~2013 did not report such error norms, which in hindsight might have been a useful measure.  Based on the weaker volume error measure, it is again very nice to see that the M* scheme outperforms the overly complex MUSCL-superbee scheme of Jarosch et al.~2013.}
-{FIXME}
+{I definitely appreciate this explanation!
+
+I think higher-resolution flux schemes, such as MUSCL, based on the ``hyperbolic'' flux factorizations (4), (5), or (6), are a promising idea.  I do not know \emph{why} the compact stencil version here performs better.  The exact solution from Jarosch et al.~(2013) was the first precise tool with which to examine the issue; I wish there were more such tools!
+
+I have the idea that a FEM-style streamline diffusion explanation may be illuminating, \emph{a la} the discussion of that topic in the book Elman et al.~(2005).  This is outside the scope of my paper, however.}
 
 \reply{Figure 9: There should be a label on the y-axis, $\epsilon_i$ maybe?}
-{FIXME}
+{Yes, that's reasonable.  Done.}
 
 \reply{Line \# 434: Maybe add a reference that explains the ``RS'' and ``SS'' methods for the less numerically inclined readers.}
-{FIXME}
+{Good point.  It is the same Benson \& Munson (2006) paper cited elsewhere, but indeed this is a good place for a citation.}
 
 \reply{Line \# 442: There is no $\epsilon_{12}$ displayed in Figure 9.  Did you mean $\epsilon_{11}$?}
-{FIXME}
+{I have clarified in the text that a ``good'' level might mean $\epsilon_i<10^{-3}$, so $\epsilon_{10}$--$\epsilon_{12}$ is the appropriate range.  I no longer mention Figure 9 here; that was not the point.}
 
-\reply{I hope the newly presented scheme becomes soon a feature in PISM to facilitate the wider use of an inequality constraint (ice thickness), mass conserving, stable and elegant scheme like this one. I also highly appreciate (as should the glaciological community as a whole) that the author instantly publishes his code on which the presented research is based on along with the manuscript on Github for open access, reproducibility and transparency!}
-{FIXME}
+\reply{I hope the newly presented scheme becomes soon a feature in PISM to facilitate the wider use of an inequality constraint (ice thickness), mass conserving, stable and elegant scheme like this one.}
+{What we really want with PISM is a version of this work, e.g.~a steady-state and/or fully-implicit free-boundary scheme, suitable for the combination of the SIA+SSA hybrid stress balance and the mass-conservation equation.  Or suitable for the hydrostatic/Blatter-Pattyn equations.  We are not there yet, unfortunately.}
+
+\reply{\dots  I also highly appreciate (as should the glaciological community as a whole) that the author instantly publishes his code on which the presented research is based on along with the manuscript on Github for open access, reproducibility and transparency!}
+{Thanks!}
 \end{itemize}
 
 \end{document}
