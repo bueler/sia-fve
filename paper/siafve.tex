@@ -450,7 +450,7 @@ If a Newton iteration fails to converge in the steady-state case, we might hope 
 
 \section{Results}
 
-We first apply our method in two examples where exact solutions are known, comparing performance of the \Mstar and classical Mahaffy schemes.  We use the exact solutions to evaluate the convergence of the discrete solution to the continuum solution under grid refinement (verification), and we evaluate the convergence of the continuation scheme and Newton iteration in these cases.  After that we apply the method to high-resolution Greenland ice sheet bedrock topography.  All computations in this section use physical parameters from EISMINT I \citep{Huybrechtsetal1996} and are in two horizontal variables, though we show verification results along flow lines for clarity.
+We first apply our \Mstar method in two examples where exact solutions are known.  We use the exact solutions to evaluate the convergence of the discrete solution to the continuum solution under grid refinement (verification), and we evaluate the convergence of the continuation scheme and Newton iteration in these cases.  After that we apply the method to high-resolution Greenland ice sheet bedrock topography.  All computations in this section use physical parameters from EISMINT I \citep{Huybrechtsetal1996} and are in two horizontal variables, though we show some results along flow lines for clarity.
 
 \subsection{Verification cases}
 
@@ -462,17 +462,15 @@ An angularly-symmetric steady-state exact solution exists in the flat bed case \
 \label{fig:domeprofile}
 \end{figure}
 
-Figure \ref{fig:domeprofile} also suggests that, because of unbounded gradient at the margin, thickness errors decay slowly under grid refinement \citep{Bueleretal2005}.  Thus we measure the maximum and average thickness errors from both classical Mahaffy and \Mstar methods in Figure \ref{fig:domeverif}.  Both methods show expected slow convergence of maximum error.  The decay of the average error for \Mstar, to about 1 m for the three finest grids, is better than for classical Mahaffy.  However, because of unbounded gradient at the margin, the measured \Mstar decay rate of $O(\Delta x^{1.47})$ is less good than the theoretical $O(\Delta x^2)$ convergence rate expected from both methods.
-
-Improved convergence of the Newton iteration for the \Mstar scheme, which differs from the classical scheme only by improved quadrature in this flat bed case, is seen in all cases.  As indicated in the figure by gray circles, the classical Mahaffy scheme fails to converge for all grids except the coarsest.  Though the \Mstar method fails to converge at the $\eps_{12}=0$ stage on the two finest grids, these cases fully-converge if the problem is changed to a backward Euler step \eqref{eq:backwardeuler} of duration $100.0$ years (not shown).
+However, because of unbounded gradient at the margin, thickness errors decay slowly under grid refinement \citep{Bueleretal2005}.  Thus we measure the maximum and average thickness errors from both classical Mahaffy and \Mstar methods in Figure \ref{fig:domeverif}.  Both methods show expected slow convergence of maximum error.  The decay of the average error for \Mstar, to about 1 m for the three finest grids, is better than for classical Mahaffy.  However, because of unbounded gradient at the margin, the measured \Mstar decay rate of $O(\Delta x^{1.47})$ is less good than the theoretical $O(\Delta x^2)$ convergence rate expected from truncation-error analysis.
 
 \begin{figure}[ht]
 \onecol{domeverif.pdf}
-\caption{Average and maximum error under grid refinement using the dome exact solution, for the \Mstar (stars) and classical Mahaffy (squares) methods.  Gray circles indicate runs where the Newton method diverged before the last $\eps_{12}=0$ stage of continuation sequence \eqref{eq:continuationseq}.}
+\caption{Average and maximum error under grid refinement using the dome exact solution, for the \Mstar (stars) and classical Mahaffy (squares) methods.  Gray circles indicate runs where the Newton method diverged before the last $\eps_{12}=0$ continuation stage.}
 \label{fig:domeverif}
 \end{figure}
 
-Figure \ref{fig:newtonconv} shows clear evidence of quadratic, or at least superlinear, convergence from the Newton solver, in runs where the relative tolerance (i.e.~residual 2-norm reduction factor) is $10^{-10}$.  That is, at each stage $\eps_i$ of the continuation scheme, the computed residual shows the characteristic curved drop on such semi-log axes \citep{Kelley2003}.
+Improved convergence of the Newton iteration for the \Mstar scheme, which in this flat bed case differs from the classical scheme only by improved quadrature, is seen in all cases.  As indicated in the Figure by gray circles, Newton iteration for the classical Mahaffy scheme fails to converge for all grids except the coarsest.  Though the \Mstar Newton iteration fails to converge at the $\eps_{12}=0$ stage on the two finest grids, these cases fully-converge if the problem is changed to a backward Euler step \eqref{eq:backwardeuler} of duration $100.0$ years (not shown).  Figure \ref{fig:newtonconv} shows clear evidence of quadratic, or at least superlinear, convergence from the Newton solver, in runs where the relative tolerance (i.e.~residual 2-norm reduction factor) is set to $10^{-10}$.  That is, at each stage $\eps_i$ of the continuation scheme, the computed residual shows the characteristic curved drop of quadratic convergence on such semi-log axes \citep{Kelley2003}.
 
 \begin{figure}[ht]
 \onecol{newtonconv.pdf}
@@ -480,27 +478,29 @@ Figure \ref{fig:newtonconv} shows clear evidence of quadratic, or at least super
 \label{fig:newtonconv}
 \end{figure}
 
-To test performance on non-flat and non-smooth beds, we use a glacier-scale bedrock-step exact solution by \cite{JaroschSchoofAnslow2013}.  As shown in Figure \ref{fig:bedstepprofiles}, the exact thickness is discontinuous at the cliff, because the thickness goes to zero on the uphill side and has a nonzero value on the downhill side.  Note that our computation uses two horizontal dimensions but is constant in the $y$-direction.  The Figure shows results from \Mstar calculations without upwinding (i.e.~$\lambda=0$ in formula \eqref{eq:upwindschemex}; ``\Mstarnoup'') and using the maximum upwind that does not expand the stencil ($\lambda=1$; ``\Mstarfullup'').  These results explain why we have chosen $\lambda=1/4$.  In fact, for $\lambda=0$ there are large errors on the downhill side of the cliff, while for $\lambda=1$ the uphill thickness is too large.  Just a bit of upwinding captures the flux at the cliff so that both uphill and downhill thicknesses are good.
+To test performance on non-flat and non-smooth beds, we use a glacier-scale bedrock-step exact solution by \cite{JaroschSchoofAnslow2013}.  As shown in Figure \ref{fig:bedstepprofiles}, the exact thickness is discontinuous at the cliff, as it goes to zero on the uphill side and has a nonzero value on the downhill side.  Note that our computation uses two horizontal dimensions, but it is constant in the $y$-direction (not shown).
+
+The Figure shows results both from \Mstar calculations and additional calculations without upwinding (``$\lambda=0$'') and using the maximum upwind that does not expand the stencil (``$\lambda=1$''); see formula \eqref{eq:upwindschemex}.  These results suggest why we have chosen $\lambda=1/4$ in \Mstar.  For $\lambda=0$ there are large errors on the downhill side of the cliff, while for $\lambda=1$ the uphill thickness is too large.  Just a bit of upwinding captures the flux at the cliff so that both uphill and downhill thicknesses are good.
 
 \begin{figure}[ht]
 \onecol{bedstepprofiles.pdf}
-\caption{Results from \Mstar method, and it upwinding variations, compared to the bedrock-step exact solution ($\Delta x=1000$ m).}
+\caption{Results from \Mstar method, and it upwinding variations with different $\lambda$ values in formula \eqref{eq:upwindschemex}, compared to the bedrock-step exact solution, on a $\Delta x=1000$ m grid.  The bedrock itself is shown with a thick solid line.}
 \label{fig:bedstepprofiles}
 \end{figure}
 
-To compare to results in \citep{JaroschSchoofAnslow2013}, we applied the \Mstar method on grids with $\Delta x=\Delta y = 1000,500,250,125$ m.  When we measure maximum thickness errors, there is \emph{no} evidence of convergence as the grid is refined, and for average thickness errors the evidence of convergence is unconvincing (not shown).  However, maximum errors are not expected to decay because even an interpolant of the discontinuous exact solution will not exhibit maximum norm convergence.  The theory of FE methods also does not suggest convergence in average error, because of the extremely-low regularity of the exact solution \citep{Elmanetal2005}.  However, error norms are not reported by \cite{JaroschSchoofAnslow2013}, so we cannot compare.
+To compare to results in \citep{JaroschSchoofAnslow2013}, we applied the \Mstar method on grids with $\Delta x=\Delta y = 1000,500,250,125$ m.  When we measure maximum thickness errors (not shown), there is \emph{no} evidence of convergence as the grid is refined.  However, maximum errors are not expected to decay.  (This is because merely interpolating a discontinuous function like the exact solution with piecewise-linear functions generates large errors in the maximum norm.)  For average thickness errors the evidence of convergence is unconvincing (not shown).  The standard theory of FE methods also does not ensure convergence in average error, because of the extremely-low regularity of the exact solution \citep{Elmanetal2005}.  In any case, error norms are not reported by \cite{JaroschSchoofAnslow2013}, so we cannot compare to that source.
 
-Like \cite{JaroschSchoofAnslow2013} we can examine relative volume error, a weak quality measure, in addition to the visual evidence from Figure \ref{fig:bedstepprofiles}.  Table \ref{tab:bedstepvol} shows the value
+However, like \cite{JaroschSchoofAnslow2013} we can examine relative volume error, a weak quality measure, in addition to the visual evidence from Figure \ref{fig:bedstepprofiles}.  Table \ref{tab:bedstepvol} shows the value
 \begin{equation}
 100\, \frac{V_{\text{numerical}} - V_{\text{exact}}}{V_{\text{exact}}}. \label{eq:volrel}
 \end{equation}
 The second, third, and fourth columns are from the same three versions of the \Mstar method shown in Figure \ref{fig:bedstepprofiles}.  Again we see why $\lambda=1/4$ is preferred to the upwinding alternatives.  The last two columns of Table \ref{tab:bedstepvol} show the results reported by \cite{JaroschSchoofAnslow2013} for their best ``Superbee''-limited MUSCL scheme and for their implementation of the classical Mahaffy scheme (``M2'').  Thus we see that results from our implicit, first-order-upwinding \Mstar scheme are highly-satisfactory in this case.
 
 \begin{table}[ht]
-  \caption{Relative volume differences \eqref{eq:volrel} on the bedrock-step exact solution.  ``\Mstar'' columns show three upwinding variations (see text).  ``NC'' indicates a Newton-iteration convergence failure.  ``Superbee'' and ``M2'' columns are from \cite{JaroschSchoofAnslow2013}.}
+  \caption{Relative volume difference percentages \eqref{eq:volrel} on the bedrock-step exact solution.  ``\Mstar,'' ``$\lambda=0$,'' and ``$\lambda=1$'' columns show the same three upwinding variations as in Figure \ref{fig:bedstepprofiles}.  ``NC'' indicates a Newton-iteration convergence failure.  ``Superbee'' and ``M2'' columns are from \cite{JaroschSchoofAnslow2013}.}
   \vskip4mm \centering
   \begin{tabular}{lccccc}
-    $\Delta x$ (m) & \Mstar & \Mstarnoup & \Mstarfullup & Superbee & M2 \\  \hline
+    $\Delta x$ (m) & \Mstar & $\lambda=0$ & $\lambda=1$ & Superbee & M2 \\  \hline
 \input{bedsteptable.tex}
   \end{tabular}
   \label{tab:bedstepvol}
