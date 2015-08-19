@@ -134,7 +134,7 @@ width=#3in]{#1.eps}}
 
 
 
-I want to thank both reviewers and the Scientific Editor for positive and helpful comments on the manuscript.  I hope I have addressed them all satisfactorily.
+I want to thank both reviewers and the Scientific Editor for encouraging and helpful comments on, and questions about, the manuscript.  I hope I have addressed them all satisfactorily.
 
 
 \subsection*{Reviewer \#1}  \begin{itemize}
@@ -226,38 +226,39 @@ My primary concern here is not about efficiency but instead robustness with resp
 
 Alternatively, one could only implement the Picard matrix but then use it as a preconditioner for the Newton-Krylov iteration.  This strategy is advocated by Knoll \& Keyes (2004), and PETSc facilitates it, but for my application the full analytical Jacobian was not excessive work.  This may, however, be a good strategy when the steady-state free-boundary problem for the mass-conservation equation is using a membrane-stress-resolving stress balance, and one already has an implemented separate Picard method for the stress balance alone.}
 
-\reply{l. 42 Gauss-Seidel}
-{FIXME}
+\reply{l.~42 Gauss-Seidel}
+{Fixed.}
 
-\reply{eq. (15) I think that m j,k was not introduced at that point.}
-{FIXME}
+\reply{eq.~(15) I think that $m_{j,k}$ was not introduced at that point.}
+{It is now defined.}
 
-\reply{eq. (22) y k + 0 and y k − 0?}
-{FIXME}
+\reply{eq.~(22) $y_{k} + 0$ and $y_k − 0$?}
+{I tried to get away with it, but that did not work.  I now use standard limit notation in (22).}
 
-\reply{l. 299,301,306,307 Lips\textbf{c}hitz}
-{FIXME}
+\reply{l.~299,301,306,307 Lips\textbf{c}hitz}
+{Right!  No more ``shit''; sorry about that.}
 
 \reply{Fig. 6 Can the little convergence circles be drawn further visible? I can hardly see them
 when printed in black and white.}
-{FIXME}
+{Good point.  The circles have been made much more visible.}
 
-\reply{l. 394,395 ”However, maximum errors ... norm convergence”, this is probably a hard sentence for most of JOG readers, but I don’t know how to better explain.}
-{FIXME}
+\reply{l.~394,395 ``However, maximum errors ... norm convergence,'' this is probably a hard sentence for most of JOG readers, but I don't know how to better explain.}
+{I agree with the comment, that many \emph{J.~Glaciol.} readers will not be used to this kind of sentence.  However, it transmits an important idea, so I tried to rewrite it for clarity.  It now says:
+\begin{quote}
+However, maximum errors are not expected to decay.  (This is because merely interpolating a discontinuous function like the exact solution with piecewise-linear functions generates large errors in the maximum norm.)
+\end{quote}}
 
-\reply{2l. 396 ”suggest” ⇒ ”ensure”?}
-{FIXME}
+\reply{l.~396 ``suggest'' $\implies$ ``ensure''?}
+{Good idea.  Done.}
 
-\reply{Fig. 8, caption I would recall in the caption the meaning of M ? , M ? no and M ? full, but also that
-the thick line is the step-bedrock.}
-{FIXME}
+\reply{Fig.~8, caption I would recall in the caption the meaning of $M^\star$, $M_{no}^\star$ and $M_{full}^\star$, but also that the thick line is the step-bedrock.}
+{Agreed.  In fact, the labels ``$M_{no}^\star$'' and ``$M_{full}^\star$'' used in Figure 8, Table 1, and the text, are now gone.  I use ``$\lambda=0$'' and ``$\lambda=1$'' for these concepts, with an appropriate mention of equation (31) to explain.  And the fact that the thick line is the bedrock is now stated in the caption.}
 
-\reply{l. 437 to 450 Just an idea: what about summarizing the steps into a scheme/table instead of
+\reply{l.~437 to 450 Just an idea: what about summarizing the steps into a scheme/table instead of
 a paragraph? I think that would be clearer.}
-{FIXME}
+{This suggestion makes sense because the narrative description in this paragraph is not elegant.
 
-%\reply{}
-%{FIXME}
+However, it is sufficiently heteromorphous and heterogeneous so that turning it into a table may not even be possible.  It could be written as a ``recipe'' with enumerated steps, but I would not want to do that because the reader might assume its details are strongly recommended in some sense.  This awkward paragraph documents what was done, e.g.~for reproducability and so as to make errors diagnosable, but this paragraph is \emph{not} stating a recommended recipe.}
 \end{itemize}
 
 

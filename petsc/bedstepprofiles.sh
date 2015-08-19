@@ -14,5 +14,5 @@ otheropts="-mah_bedstep -cs_D0 0.001 -da_refine 1 -snes_max_it 400 -pc_type lu -
 
 ./mahaffy -mah_dump $1 $otheropts
 
-(cd $1 && ../figsmahaffy.py --profile --half --exactbed -extra_H noupwind.dat,upwindfull.dat -extra_H_labels M*,M*no,M*full)
+(cd $1 && ../figsmahaffy.py --profile --half --exactbed -extra_H noupwind.dat,upwindfull.dat -extra_H_labels M*,\$\\lambda=0\$,\$\\lambda=1\$)
 

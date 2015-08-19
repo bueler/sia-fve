@@ -93,13 +93,12 @@ for infile in infilelist:
     notconv = (lasteps > 0.0)
     plt.figure(figsize=(7,5))
     plt.hold(True)
-    plt.loglog(dx[notconv],maxerr[notconv],'ok',markersize=16.0,
-               markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
+    for thedata in [maxerr,averr]:
+        plt.loglog(dx[notconv],thedata[notconv],'ok',markersize=20.0,
+                   markerfacecolor='w',alpha=0.3,markeredgewidth=3.0)
     plt.loglog(dx,maxerr,'*k',label=r'max. error M$^\bigstar$',markersize=10.0,
                markerfacecolor='w',markeredgewidth=1.0)
-    plt.loglog(dx[notconv],averr[notconv],'ok',markersize=16.0,
-               markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
-    plt.loglog(dx,averr,'*k',label=r'av. error M$^\bigstar$',markersize=8.0)
+    plt.loglog(dx,averr,'*k',label=r'av. error M$^\bigstar$',markersize=10.0)
     if args.dome:
         cav = np.polyfit(np.log(dx[:5]),np.log(averr[:5]),1)
         pav = np.poly1d(cav)
@@ -110,12 +109,11 @@ for infile in infilelist:
     if len(args.true)>0:
         dx, maxerr, averr, lasteps = extract(readveriffile(args.true))
         notconv = (lasteps > 0.0)
-        plt.loglog(dx[notconv],maxerr[notconv],'ok',markersize=16.0,
-                   markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
+        for thedata in [maxerr,averr]:
+            plt.loglog(dx[notconv],thedata[notconv],'ok',markersize=20.0,
+                       markerfacecolor='w',alpha=0.3,markeredgewidth=3.0)
         plt.loglog(dx,maxerr,'sk',label='max. error Mahaffy',markersize=7.0,
                    markerfacecolor='w',markeredgewidth=1.0)
-        plt.loglog(dx[notconv],averr[notconv],'ok',markersize=16.0,
-                   markerfacecolor='w',alpha=0.3,markeredgewidth=0.5)
         plt.loglog(dx,averr,'sk',label='av. error Mahaffy',markersize=7.0)
         cav = np.polyfit(np.log(dx[:5]),np.log(averr[:5]),1)
         pav = np.poly1d(cav)
