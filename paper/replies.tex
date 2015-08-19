@@ -134,28 +134,31 @@ width=#3in]{#1.eps}}
 
 
 
-I want to thank both reviewers and the Scientific Editor for positive and helpful comments on the manuscript.  I hope that I can address all of satisfactorily.
+I want to thank both reviewers and the Scientific Editor for positive and helpful comments on the manuscript.  I hope I have addressed them all satisfactorily.
 
 
 \subsection*{Reviewer \#1}  \begin{itemize}
 \reply{This paper revisits the classical Mahaffy finite difference scheme to solve the steady
-non-sliding shallow ice approximation (SIA) combined with the mass conservation equation.  The aim is two-fold: First, this allows us to get new insights of Mahaffy's
+non-sliding shallow ice approximation (SIA) combined with the mass conservation equation.  The aim is two-fold: First, this allows us to get new insights [into] Mahaffy's
 scheme, which can be reinterpreted by finite element and finite volume. Second, this
 re-interpretation allows us to improve substantially the original Mahaffy scheme by
-choosing for better quadrature (however, without impacting the stencil) and by up-winding the most ``advective'' part, which involves the gradient of the bed.
+choosing for better quadrature (however, without impacting the stencil) and by up-winding the most ``advective'' part, which involves the gradient of the bed.\\
 This is a very well written and very instructive paper, which presents an original
 method to solve one of the most useful ice flow models. Although the paper is restricted
 to a simple case (steady, non-sliding, isothermal SIA), the ideas presented here can be
 easily generalized to more physical situations. Thus, I have no doubt it will interest the
 community of glacier and ice sheet modellers. Beyond its originality, I found the paper
 enjoyable reading, and especially didactic. This is even more remarkable considering
-the technical and mathematical nature of the paper. \medskip \\
-\indent I have reported below [a] few points of discussion, which could lead to some possible
+the technical and mathematical nature of the paper.}
+{This summary is accurate, and appreciated!}
+
+\reply{I have reported below [a] few points of discussion, which could lead to some possible
 improvements. However, none of those points are critical, and I believe that the paper
 can be published as it is.}
-{This summary is accurate and appreciated, and the recommendation appreciated.}
+{This recommendation is also appreciated.}
 
-\reply{The scheme $M^\star$ presents two major improvements to original Mahaffy's scheme.
+\reply{General comments: \medskip \\
+The scheme $M^\star$ presents two major improvements to original Mahaffy's scheme.
 Fig.~6 shows strong evidences of improvements in term of convergence under
 refinement due to improved quadratures. In contrast, the evidences for the up-
 winding sound weaker since restricted to the step-bedrock case. I'm wondering
@@ -166,24 +169,45 @@ compare the method performances of both methods with and without splitting
 (6) while increasing the bed slope. In addition, it would interesting to check what
 value of $\lambda$ is optimal in another case (I was left wondering how much the amount
 of upwinding $\lambda$ is case-dependent, is $\lambda = 1/4$ a robust value?).}
-{FIXME}
+{The evidence for good performance in the bedrock-step case \emph{is} weaker, compared to the flat bed case, for two reasons: (1) There is only Jarosch et al.'s exact solution to use as a precise tool.  (2) The Jarosch exact solution has extraordinarily low regularity (e.g.~not even continuity!) so even convergence in $L^\infty$ and $L^1$ norms is not expected.  I believe the paper explains this adequately; see Reviewer Jarosch's comment below which confirms the situation.
 
-\reply{Continuing with this aspect, I would find interesting to see how the upwinding
-improves the conditioning of the Jacobian matrix, as said line 256.}
-{FIXME}
+It is a good question, which could be explored, of how robust is $\lambda=1/4$ is.  Of course one could construct further experiments, with smooth non-flat beds as suggested by Reviewer Jouvet.  However, explaining these experiments would require other numerical approximations, I think, because only benchmark solutions would be available, not exact solutions.  (For example, the non-flat, smooth-bed solution used by Jouvet \& Bueler (2012) requires an admittedly-highly-accurate ODE solution.)  Explaining the experiments would also add length to the paper.  In this regard, in designing this paper I prioritized having scalability, demonstrated on the Greenland examples, over further verification.
+
+On the other hand, let me point out that I \emph{do} show that smoother nonflat beds give better convergence of the Newton iteration than rougher.  Namely, in the ``BM1'' Greenland runs at the higher resolutions (1250m, 1000m, 625m) the bed is quite smooth on the small scale because, as explained in the text, the gridded bed comes from bilinear interpolation of the original 5 km data.  The consequence shown in Figure 9 is clear: Newton-iteration convergence is much better on the BM1-based smoother beds than on the rough ``MCB'' beds at comparable resolutions (e.g.~1200m,900m,600m).}
+
+\reply{Continuing with this aspect, I would find interesting to see how the upwinding improves the conditioning of the Jacobian matrix, as said line 256.}
+{This is an excellent point, but I have not made a careful study of this issue.  A discussion of this is beyond the scope of a \emph{J.~Glaciol.} article I believe.  
+
+It is my hope that a good SIAM paper can/should be written about this problem looking at two things that are mentioned here referee comments and in my replies: (1) attempt to analyze and/or improve the $M^\star$ FVE method by looking at streamline diffusion applied to the un-upwinded method, (2) examination of conditioning of the Jacobian it relates to bed and surface roughness.  I suspect these go together.}
 
 \reply{I understand the ``step-by-step'' motivation of the continuation method proposed
 in the paper.  However, I find it hard to justify since only the last solution ($\epsilon_{12}$)
-has a physical meaning.  In contrast the time-stepping is meaningful.  Maybe,
+has a physical meaning. \dots}
+{There is a literature on continuation as a Newton globalization strategy.  I am using continuation in exactly the way it is used across a large area of scientific computing.  See Kelley (2003), cited in my paper, but also see the modern review by Knoll \& Keyes (2004).\footnote{D.~Knoll and D.~Keyes (2004). \emph{Jacobian-free Newton-Krylov methods: a survey of approaches and applications.} J.~Computational Phys., 193(2), 357--397.}
+
+The idea behind continuation is indeed that only the final ``parameter $=0$'' result is desired, but of course the ball of quadratic convergence for the Newton iteration may be small.  In time-stepping, as mentioned by the Reviewer below, this is not an issue.  The difficulty in the steady-state case is that a simple initial iterate construction, like in formula (39) here, does not bring one close to the ball of quadratic convergence.  A continuation strategy is a globalization; it gets to a point inside the ball of quadratic convergence by a fixed amount of work, such as my strategy of a fixed number of continuation levels.
+
+I assert this strategy is preferred to a only-linearly-convergent fixed-point iteration.  By contrast, the Picard strategy suggested by the Reviewer (below) would either require either abandoning quadratic convergence as a goal, or implementing two matrix-evaluation routines (one for Picard and one for the Jacobian) and using the Picard iteration as a globalization strategy.  Note that the continuation strategy only requires the implementation of one parameterized Newton solver, with residual- and Jacobian-evaluation routines, which are both used in the continuation stages ($\epsilon>0$) and the final stage ($\epsilon=0$).}
+
+\reply{\dots  In contrast the time-stepping is meaningful.  Maybe,
 it would be beneficial to argue why the conclusions based on solutions obtained
 with the continuation method remain valid when computing physical solutions
 (like time-stepping solutions).}
-{FIXME}
+{This is a bit confused, I think.
+
+The problem here is that the bed-roughness-caused-low-regularity plus free-boundary-caused-low-regularity, of the (unknown) exact continuum solution or of the continuum equations which define that exact solution, makes the ball of quadratic convergence for the Newton solver very small.  Time-stepping is a poor way to approach steady state, that is, it is a poor globalization strategy for trying to get an iterate inside that ball (Knoll \& Keyes, 2004).  Almost any other Newton globalization strategy is better; I used continuation.
+
+Maybe the best way to address the Reviewer's concern is to point out that once I ``give up'' and turn to time-stepping, the continuation strategy is not really important.  In particular, I say in lines 446--448, about the high-resolution Greenland simulation on the roughest beds, that ``These implicit time-steps are chosen sufficiently-short so that the continuation scheme fully converges (i.e.~to the $\epsilon_{12}=0$ level), \dots'', and it is later stated that these are 0.1 year steps on this very fine 900m grid.  One could shorten the time steps further and skip the continuation entirely, but I recommend using continuation to lengthen the (low-regularity-caused) time-step restriction; it is more efficient.}
 
 \reply{Alternatively to the continuation method, one could first use Picard iterations,
 and switch to Newton iterations after getting sufficiently close to the solution.
 It seems that this has become a common practise in recent models. Have you
-considered this approach? In [1], we have proposed a simple continuation scheme
+considered this approach?  \dots}
+{Yes, this approach has been considered.  The fact that a lot of people do Picard is not compelling here because I find the finite-diffence evaluation of Jacobians quite effective, so I drafted my PETSc-using code by just writing a residual-evaluation routine.  This was easier than implementing a Picard strategy, and it did most of the job, including giving quadratic convergence on all the lower-resolution cases.  As mentioned in the paper, I also implemented the full analytical Jacobian, and it gives small benefits (e.g.~1.5 times faster and more robustness with respect to bed roughness at higher resolutions).
+
+Now simply repeating my comment above, the Picard strategy would either require either abandoning quadratic convergence as a goal, or implementing two matrix-evaluation routines (one for Picard and one for the Jacobian) and using the Picard iteration as a globalization strategy.  Note that the continuation strategy only requires the implementation of one parameterized Newton solver, with residual- and Jacobian-evaluation routines, which are both used in the continuation stages ($\epsilon>0$) and the final stage ($\epsilon=0$).}
+
+\reply{\dots In [1], we have proposed a simple continuation scheme
 between Picard and Newton, which allows to switch from to Picard to the Newton
 by varying a simple parameter $\gamma$ from 0 to 1, considering that Newton’s scheme
 can be seen as Picard’s scheme, however with additional terms, which involve
@@ -196,7 +220,11 @@ which [is] Picard's method when $\gamma=0$, Newton’s method when $\gamma=1$,
 and an hybrid combination Picard-Newton when $\gamma \in (0,1)$.  Maybe, varying $\gamma$
 continuously from 0 to 1 could be an interesting alternative to the continuation
 method presented in the paper?}
-{FIXME}
+{This is indeed an interesting alternative, and I am aware of it, but I did not try it.
+
+My primary concern here is not about efficiency but instead robustness with respect to bed roughness.  In this suggested alternative, are the Picard-like end cases ($\gamma\approx 0$) less sensitive to the bed gradient, as are the larger-$\epsilon$ cases in my continuation strategy?  Does $0<\gamma<1$ generate a larger region of superlinear convergence when the problem is not a minimization (e.g.~the $p$-Laplacian shown here) but instead like the non-flat-bed SIA?
+
+Alternatively, one could only implement the Picard matrix but then use it as a preconditioner for the Newton-Krylov iteration.  This strategy is advocated by Knoll \& Keyes (2004), and PETSc facilitates it, but for my application the full analytical Jacobian was not excessive work.  This may, however, be a good strategy when the steady-state free-boundary problem for the mass-conservation equation is using a membrane-stress-resolving stress balance, and one already has an implemented separate Picard method for the stress balance alone.}
 
 \reply{l. 42 Gauss-Seidel}
 {FIXME}
