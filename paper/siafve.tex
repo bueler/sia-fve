@@ -183,38 +183,38 @@ In this paper we solve coupled equations \eqref{eq:fluxform} and \eqref{eq:siaas
 \begin{center}
 \input{fig1a.tikz} \quad \input{fig1b.tikz}
 \end{center}
-\caption{\textbf{a.}~A structured FD grid with regular (dots) and staggered (triangles) points.  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and Mahaffy's flux-evaluation locations (circles).  The corners of element $\square_{j,k}$ are indexed by $\ell$.}
+\caption{\textbf{a.}~A structured FD grid with regular (dots) and staggered (triangles) points.  \textbf{b.}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and Mahaffy's flux-evaluation locations (circles).  The corners of element $\square_{j,k}$ are locally-indexed by $\ell$.}
 \label{fig:fdfemgrids}
 \end{figure}
 
-Consider the rectangular structured FD grid, with spacing $\Delta x,\Delta y$, shown in Figure \ref{fig:fdfemgrids}a.  The \cite{Mahaffy1976} scheme calculates a flux component at each of the staggered grid points (triangles) based on values of other fields at regular points (dots).  For the staggered grid we introduce notation
+Consider the rectangular structured FD grid, with spacing $\Delta x,\Delta y$, shown in Figure \ref{fig:fdfemgrids}a.  The \cite{Mahaffy1976} scheme, which is also ``method 2'' in \citep{HindmarshPayne1996}, calculates a flux component at each of the staggered grid points based on values at regular points $(x_j,y_k)$.  For the staggered grid we introduce notation
 \begin{equation}
 x_j^\pm = x_j \pm \dxtwo, \qquad y_k^\pm = y_k \pm \dytwo. \label{eq:definexypm}
 \end{equation}
 At $(x_j^+,y_k)$ the scheme computes the $x$-component of the flux by
 \begin{equation}
-q^x_{j+\half,k} = - \Gamma (\hat H_{j+\half,k})^{\,n+2} \alpharight^{\,n-1} \frac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyqx}
+q^x_{j+\half,k} = - \Gamma \left(\hat H_{j+\half,k}\right)^{\,n+2} \left(\alpharight\right)^{\,n-1} \frac{s_{j+1,k} - s_{j,k}}{\Delta x}  \label{eq:mahaffyqx}
 \end{equation}
 where $s_{j,k} = H_{j,k} + b_{j,k}$,
 \begin{equation}
   \hat H_{j+\half,k} = \frac{H_{j,k} + H_{j+1,k}}{2},  \label{eq:mahaffyHav}
 \end{equation}
-and ``$\alpharight$\!'' is an estimate of $|\grad s|$:
+and ``$\alpharight$\!'' is an estimate of the slope $|\grad s|$ at $(x_j^+,y_k)$ given by
 \begin{align}
-\alpharight^{\,2} &= \left(\frac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2  \label{eq:mahaffyalphax} \\
+\left(\alpharight\right)^{\,2} &= \left(\frac{s_{j+1,k} - s_{j,k}}{\Delta x}\right)^2  \label{eq:mahaffyalphax} \\
   &\quad + \left(\frac{s_{j,k+1} + s_{j+1,k+1} - s_{j,k-1} - s_{j+1,k-1}}{4 \Delta y}\right)^2. \notag
 \end{align}
 At $(x_j,y_k^+)$ the scheme computes
 \begin{equation}
-q^y_{j,k+\half} = - \Gamma (\hat H_{j,k+\half})^{\,n+2} \alphaup^{\,n-1} \frac{s_{j,k+1} - s_{j,k}}{\Delta y}  \label{eq:mahaffyqy}
+q^y_{j,k+\half} = - \Gamma \left(\hat H_{j,k+\half}\right)^{\,n+2} \left(\alphaup\right)^{\,n-1} \frac{s_{j,k+1} - s_{j,k}}{\Delta y}  \label{eq:mahaffyqy}
 \end{equation}
 where $\hat H_{j,k+\half}$ and $\alphaup$ are defined by swapping the roles of $j$ and $k$, and $\Delta x$ and $\Delta y$, in equations \eqref{eq:mahaffyHav} and \eqref{eq:mahaffyalphax}.  The slope approximation in \eqref{eq:mahaffyalphax} is perhaps the least-obvious aspect of the Mahaffy scheme, but one may check that these FD formulas are consistent \citep{MortonMayers2005} with \eqref{eq:siaflux}.
 
 The discretization of mass conservation equation \eqref{eq:siasteady} itself uses straightforward centered-differences \citep{MortonMayers2005}:
 \begin{equation}
-\frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}.  \label{eq:siasteadyfd}
+\frac{q^x_{j+1/2,k} - q^x_{j-1/2,k}}{\Delta x} + \frac{q^y_{j,k+1/2}- q^y_{j,k-1/2}}{\Delta y} = m_{j,k}  \label{eq:siasteadyfd}
 \end{equation}
-Equation \eqref{eq:siasteadyfd}, which relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, the ``stencil'' of the scheme, is combined with \eqref{eq:mahaffyqx} and \eqref{eq:mahaffyqy} to give an equation in an algebraic system.
+where $m_{j,k}=m(x_j,y_k)$.  Equation \eqref{eq:siasteadyfd} relates the nine unknown values of $H$ at the regular grid points in Figure \ref{fig:fdfemgrids}a, thus giving the ``stencil'' of the scheme.  It is required to hold at all regular grid points, thus forming a (generally) large, but finite, nonlinear algebraic system.
 
 
 \subsection{FVE re-interpretation}

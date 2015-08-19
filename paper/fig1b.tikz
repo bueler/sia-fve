@@ -41,11 +41,11 @@
   \draw (5.25,3.5) node {$\square_{j,k}$};
   \draw (4,2.5) node {$V_{j,k}$};
 
-  % dimensions \Delta x, \Delta y
-  \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
-  \draw (4.5,5.0) node {$\Delta x$};
-  \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
-  \draw (7.0,3) node {$\Delta y$};
+%  % dimensions \Delta x, \Delta y
+%  \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
+%  \draw (4.5,5.0) node {$\Delta x$};
+%  \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
+%  \draw (7.0,3) node {$\Delta y$};
 
   % label center point and dims
   \draw (3,-1.0) node {$x_j$};
