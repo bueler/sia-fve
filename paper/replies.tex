@@ -38,11 +38,6 @@ width=#3in]{#1.eps}}
 \usepackage[T1, OT1]{fontenc}
 \renewcommand{\dh}{\fontencoding{T1}\selectfont{\symbol{240}}}
 
-\newcommand{\bod}{B\"o\dh varsson\xspace}
-\newcommand{\bods}{B\"o\dh varsson's}
-\newcommand{\citebod}{B\"o\dh varsson (1955)\xspace}
-\newcommand{\citepbod}{(B\"o\dh varsson, 1955)\xspace}
-
 \newcommand{\bA}{\mathbf{A}}
 \newcommand{\bB}{\mathbf{B}}
 \newcommand{\bE}{\mathbf{E}}
@@ -169,25 +164,25 @@ compare the method performances of both methods with and without splitting
 (6) while increasing the bed slope. In addition, it would interesting to check what
 value of $\lambda$ is optimal in another case (I was left wondering how much the amount
 of upwinding $\lambda$ is case-dependent, is $\lambda = 1/4$ a robust value?).}
-{The evidence for good performance in the bedrock-step case \emph{is} weaker, compared to the flat bed case, for two reasons: (1) There is only Jarosch et al.'s exact solution to use as a precise tool.  (2) The Jarosch exact solution has extraordinarily low regularity (e.g.~not even continuity!) so even convergence in $L^\infty$ and $L^1$ norms is not expected.  I believe the paper explains this adequately; see Reviewer Jarosch's comment below which confirms the situation.
+{The evidence for good performance in the bedrock-step case \emph{is} weaker, compared to the flat bed case, for two reasons: (1) There is only Jarosch et al.'s exact solution to use as a precise tool.  (2) The Jarosch exact solution has extraordinarily low regularity (e.g.~not even continuity!) so convergence in $L^\infty$ and $L^1$ norms is not expected.  I believe the paper explains this adequately; see Reviewer Jarosch's comment below which confirms the situation.
 
-It is a good question, which could be explored, of how robust is $\lambda=1/4$ is.  Of course one could construct further experiments, with smooth non-flat beds as suggested by Reviewer Jouvet.  However, explaining these experiments would require other numerical approximations, I think, because only benchmark solutions would be available, not exact solutions.  (For example, the non-flat, smooth-bed solution used by Jouvet \& Bueler (2012) requires an admittedly-highly-accurate ODE solution.)  Explaining the experiments would also add length to the paper.  In this regard, in designing this paper I prioritized having scalability, demonstrated on the Greenland examples, over further verification.
+It is a good question, which could be explored, of how robust is $\lambda=1/4$ is.  Of course one could construct further experiments, with smooth non-flat beds as suggested by Reviewer Jouvet.  However, explaining these experiments would require other numerical approximations, I think, because only benchmark solutions would be available, not exact solutions.  (For example, the non-flat, smooth-bed solution used by Jouvet \& Bueler (2012) requires a numerical ODE solution.)  Explaining the experiments would also add length to the paper.  In this regard, in designing this paper I prioritized scalability, demonstrated on the Greenland examples, over further verification.
 
-On the other hand, let me point out that I \emph{do} show that smoother nonflat beds give better convergence of the Newton iteration than rougher.  Namely, in the ``BM1'' Greenland runs at the higher resolutions (1250m, 1000m, 625m) the bed is quite smooth on the small scale because, as explained in the text, the gridded bed comes from bilinear interpolation of the original 5 km data.  The consequence shown in Figure 9 is clear: Newton-iteration convergence is much better on the BM1-based smoother beds than on the rough ``MCB'' beds at comparable resolutions (e.g.~1200m,900m,600m).}
+I do show that smoother nonflat beds give better convergence of the Newton iteration than rougher.  Namely, in the ``BM1'' Greenland runs at the higher resolutions (1250m, 1000m, 625m) the bed is quite smooth on the small scale because, as explained in the text, the gridded bed comes from bilinear interpolation of the original 5 km data.  The consequence shown in Figure 9 is clear: Newton-iteration convergence is much better on the BM1-based smoother beds than on the rough ``MCB'' beds at comparable resolutions (1200m,900m,600m).}
 
 \reply{Continuing with this aspect, I would find interesting to see how the upwinding improves the conditioning of the Jacobian matrix, as said line 256.}
-{This is an excellent point, but I have not made a careful study of this issue.  A discussion of this is beyond the scope of a \emph{J.~Glaciol.} article I believe.  
+{This is another good question, but I have not made a careful study of this issue.  A discussion of this is beyond the scope of a \emph{J.~Glaciol.} article I believe.  
 
-It is my hope that a good SIAM paper can/should be written about this problem looking at two things that are mentioned here referee comments and in my replies: (1) attempt to analyze and/or improve the $M^\star$ FVE method by looking at streamline diffusion applied to the un-upwinded method, (2) examination of conditioning of the Jacobian it relates to bed and surface roughness.  I suspect these go together.}
+It is my hope that a good SIAM paper can be written about this problem looking at two things that are mentioned here in referee comments and my replies: (1) attempt to analyze and/or improve the $M^\star$ FVE method by looking at streamline diffusion applied to the un-upwinded method, (2) examination of conditioning of the Jacobian it relates to bed and surface roughness.  I suspect these go together.}
 
 \reply{I understand the ``step-by-step'' motivation of the continuation method proposed
 in the paper.  However, I find it hard to justify since only the last solution ($\epsilon_{12}$)
 has a physical meaning. \dots}
 {There is a literature on continuation as a Newton globalization strategy.  I am using continuation in exactly the way it is used across a large area of scientific computing.  See Kelley (2003), cited in my paper, but also see the modern review by Knoll \& Keyes (2004).\footnote{D.~Knoll and D.~Keyes (2004). \emph{Jacobian-free Newton-Krylov methods: a survey of approaches and applications.} J.~Computational Phys., 193(2), 357--397.}
 
-The idea behind continuation is indeed that only the final ``parameter $=0$'' result is desired, but of course the ball of quadratic convergence for the Newton iteration may be small.  In time-stepping, as mentioned by the Reviewer below, this is not an issue.  The difficulty in the steady-state case is that a simple initial iterate construction, like in formula (39) here, does not bring one close to the ball of quadratic convergence.  A continuation strategy is a globalization; it gets to a point inside the ball of quadratic convergence by a fixed amount of work, such as my strategy of a fixed number of continuation levels.
+The idea behind continuation is indeed that only the final ``parameter $=0$'' result is desired.  One uses continuation because the ball of quadratic convergence for the Newton iteration may be small.  In time-stepping, e.g.~as mentioned by the Reviewer below, this is not so much of an issue.  The difficulty in the steady-state case is that a simple initial iterate construction, like formula (39) here, does not bring one close enough to the ball of quadratic convergence.  A continuation strategy is a globalization; it gets to a point inside the ball of quadratic convergence by a fixed amount of work, such as my strategy of a fixed number of continuation levels.
 
-I assert this strategy is preferred to a only-linearly-convergent fixed-point iteration.  By contrast, the Picard strategy suggested by the Reviewer (below) would either require either abandoning quadratic convergence as a goal, or implementing two matrix-evaluation routines (one for Picard and one for the Jacobian) and using the Picard iteration as a globalization strategy.  Note that the continuation strategy only requires the implementation of one parameterized Newton solver, with residual- and Jacobian-evaluation routines, which are both used in the continuation stages ($\epsilon>0$) and the final stage ($\epsilon=0$).}
+I assert this strategy is preferred to a only-linearly-convergent fixed-point iteration.  The Picard strategy suggested by the Reviewer (below) would require either abandoning quadratic convergence as a goal, or implementing two matrix-evaluation routines (one for Picard and one for the Jacobian) and using the Picard iteration as a globalization strategy.  Note that continuation only requires the implementation of one $\epsilon$-parameterized Newton solver which is used both in the continuation stages ($\epsilon>0$) and the final stage ($\epsilon=0$).}
 
 \reply{\dots  In contrast the time-stepping is meaningful.  Maybe,
 it would be beneficial to argue why the conclusions based on solutions obtained
@@ -195,17 +190,17 @@ with the continuation method remain valid when computing physical solutions
 (like time-stepping solutions).}
 {This is a bit confused, I think.
 
-The problem here is that the bed-roughness-caused-low-regularity plus free-boundary-caused-low-regularity, of the (unknown) exact continuum solution or of the continuum equations which define that exact solution, makes the ball of quadratic convergence for the Newton solver very small.  Time-stepping is a poor way to approach steady state, that is, it is a poor globalization strategy for trying to get an iterate inside that ball (Knoll \& Keyes, 2004).  Almost any other Newton globalization strategy is better; I used continuation.
+The problem here is that the bed-roughness-caused-low-regularity plus free-boundary-caused-low-regularity, of the continuum equations, makes the ball of quadratic convergence for the Newton solver very small.  Time-stepping is a poor way to approach steady state, that is, it is a poor globalization strategy for trying to get an iterate inside that ball (Knoll \& Keyes, 2004).  Almost any other Newton globalization strategy is better; I used continuation.
 
-Maybe the best way to address the Reviewer's concern is to point out that once I ``give up'' and turn to time-stepping, the continuation strategy is not really important.  In particular, I say in lines 446--448, about the high-resolution Greenland simulation on the roughest beds, that ``These implicit time-steps are chosen sufficiently-short so that the continuation scheme fully converges (i.e.~to the $\epsilon_{12}=0$ level), \dots'', and it is later stated that these are 0.1 year steps on this very fine 900m grid.  One could shorten the time steps further and skip the continuation entirely, but I recommend using continuation to lengthen the (low-regularity-caused) time-step restriction; it is more efficient.}
+Maybe the best way to address the Reviewer's concern is to point out that once I ``give up'' and turn to time-stepping, the continuation strategy is not really needed.  In particular, I say in lines 446--448, about the high-resolution Greenland simulation on the roughest beds, that ``These implicit time-steps are chosen sufficiently-short so that the continuation scheme fully converges (i.e.~to the $\epsilon_{12}=0$ level), \dots'', and it is later stated that these are 0.1 year steps on this very fine 900m grid.  One could shorten the time steps further and skip the continuation entirely, but I recommend using continuation to lengthen the time-step; it is more efficient.}
 
 \reply{Alternatively to the continuation method, one could first use Picard iterations,
 and switch to Newton iterations after getting sufficiently close to the solution.
 It seems that this has become a common practise in recent models. Have you
 considered this approach?  \dots}
-{Yes, this approach has been considered.  The fact that a lot of people do Picard is not compelling here because I find the finite-diffence evaluation of Jacobians quite effective, so I drafted my PETSc-using code by just writing a residual-evaluation routine.  This was easier than implementing a Picard strategy, and it did most of the job, including giving quadratic convergence on all the lower-resolution cases.  As mentioned in the paper, I also implemented the full analytical Jacobian, and it gives small benefits (e.g.~1.5 times faster and more robustness with respect to bed roughness at higher resolutions).
+{Yes, this approach has been considered.  The fact that a lot of people do Picard is not compelling here because I find the finite-difference evaluation of Jacobians quite effective, so I drafted my PETSc-using code by just writing a residual-evaluation routine.  This was easier than implementing a Picard strategy, and it did most of the job, including giving quadratic convergence on all the lower-resolution cases.  As mentioned in the paper, I then also implemented the full analytical Jacobian, and it gives small benefits (e.g.~1.5 times faster and more robustness with respect to bed roughness at higher resolutions) compared to the finite-difference Jacobians.
 
-Now simply repeating my comment above, the Picard strategy would either require either abandoning quadratic convergence as a goal, or implementing two matrix-evaluation routines (one for Picard and one for the Jacobian) and using the Picard iteration as a globalization strategy.  Note that the continuation strategy only requires the implementation of one parameterized Newton solver, with residual- and Jacobian-evaluation routines, which are both used in the continuation stages ($\epsilon>0$) and the final stage ($\epsilon=0$).}
+Note my comment above about the extra work needed to implement a Picard globalization strategy.}
 
 \reply{\dots In [1], we have proposed a simple continuation scheme
 between Picard and Newton, which allows to switch from to Picard to the Newton
@@ -224,7 +219,7 @@ method presented in the paper?}
 
 My primary concern here is not about efficiency but instead robustness with respect to bed roughness.  In this suggested alternative, are the Picard-like end cases ($\gamma\approx 0$) less sensitive to the bed gradient, as are the larger-$\epsilon$ cases in my continuation strategy?  Does $0<\gamma<1$ generate a larger region of superlinear convergence when the problem is not a minimization (e.g.~the $p$-Laplacian shown here) but instead like the non-flat-bed SIA?
 
-Alternatively, one could only implement the Picard matrix but then use it as a preconditioner for the Newton-Krylov iteration.  This strategy is advocated by Knoll \& Keyes (2004), and PETSc facilitates it, but for my application the full analytical Jacobian was not excessive work.  This may, however, be a good strategy when the steady-state free-boundary problem for the mass-conservation equation is using a membrane-stress-resolving stress balance, and one already has an implemented separate Picard method for the stress balance alone.}
+Alternatively, one could only implement the Picard matrix but then use it as a preconditioner for the Newton-Krylov iteration.  This strategy is advocated by Knoll \& Keyes (2004), and PETSc facilitates it, but for my application the full analytical Jacobian was not excessive work.  This may, however, be a good strategy when the steady-state free-boundary problem for the mass-conservation equation is using a membrane-stress-resolving stress balance, and one already has an implemented a separate Picard method for the stress balance alone.}
 
 \reply{l.~42 Gauss-Seidel}
 {Fixed.}
@@ -232,8 +227,8 @@ Alternatively, one could only implement the Picard matrix but then use it as a p
 \reply{eq.~(15) I think that $m_{j,k}$ was not introduced at that point.}
 {It is now defined.}
 
-\reply{eq.~(22) $y_{k} + 0$ and $y_k − 0$?}
-{I tried to get away with it, but that did not work.  I now use standard limit notation in (22).}
+\reply{eq.~(22) $y_{k} + 0$ and $y_k - 0$?}
+{I tried to get away with lazy notation, but that did not work!  I now use standard limit notation in (22).}
 
 \reply{l.~299,301,306,307 Lips\textbf{c}hitz}
 {Right!  No more ``shit''; sorry about that.}
@@ -258,17 +253,17 @@ However, maximum errors are not expected to decay.  (This is because merely inte
 a paragraph? I think that would be clearer.}
 {This suggestion makes sense because the narrative description in this paragraph is not elegant.
 
-However, it is sufficiently heteromorphous and heterogeneous so that turning it into a table may not even be possible.  It could be written as a ``recipe'' with enumerated steps, but I would not want to do that because the reader might assume its details are strongly recommended in some sense.  This awkward paragraph documents what was done, e.g.~for reproducability and so as to make errors diagnosable, but this paragraph is \emph{not} stating a recommended recipe.}
+However, my narration is sufficiently heterogeneous and heteromorphous so that turning it into a table may not even be possible.  It could be written as a ``recipe'' with enumerated steps, but I would not want to do that because the reader might assume its details are strongly recommended in some sense.  This awkward paragraph documents what was done, e.g.~for reproducability and so as to make errors diagnosable, but this paragraph is \emph{not} stating a recommended recipe of any universality.}
 \end{itemize}
 
 
 \subsection*{Reviewer \#2}  \begin{itemize}
 \reply{The manuscript at hand presents a significantly improved numerical scheme for shallow ice models. It is based on a re-interpretation of the classical existing numerics and an novel, elegant extension into ``finite volume elements'' that allows for an efficient solving routine of the discrete equations that are constrained for non-negative ice thicknesses. The new scheme proofs itself to be stable by being fully implicit, performs outstandingly well in comparison to exact solution (with and without bed topography) and is able to solve large scale, real world examples (e.g.~Greenland) efficiently. Especially noteworthy is the inclusion of the ice thickness constraint ($H\ge 0$), that is tackled by a parallel Newton scheme, as it allows for prognostic modeling that generates realistic ice margins without any mass violations.  A ``feature'' that almost none of the currently available ice flow models include.}
-{This summary is accurate and appreciated.
+{This summary is generally accurate and much appreciated.
 
-I do want to be careful with the reviewer's phrase ``ice margins without any mass violations,'' as I do not claim this in the paper.  The schemes I describe are indeed all locally mass-conserving in the sense that the numerical flux out of one ice-filled cell is exactly equal to the flux into the ice-filled cell which shares a face with it.  However, in steady state, such a condition cannot be true between an ice-filled cell and an adjacent ice-free cell, something most easily seen by considering a one-dimensional FV-type steady state.  (I am writing a separate paper about such issues---e.g.~inevitable conservation errors in discretized free-boundary models---and their consequences.)
+I do want to be careful with the reviewer's phrase ``ice margins without any mass violations.''  I do not claim this in the paper.  The schemes I describe are indeed all \emph{locally} mass-conserving in the sense that the numerical flux out of one ice-filled cell is exactly equal to the flux into the ice-filled cell which shares a face with it.  However, in steady state, such a condition cannot be true between an ice-filled cell and an adjacent ice-free cell, something most easily seen by considering a one-dimensional FV-type steady state.  I am writing a separate paper about such issues---i.e.~about inevitable conservation errors in discretized free-boundary models.
 
-Again, my main point regarding the reviewer's comment is that I do not claim that the margins are violation-free when it comes to mass conservation.  I \emph{do} claim to give a good numerical approximation of what I believe is the correct (well-posed) steady SIA \emph{continuum} problem, which includes the positive thickness constraint, and which has a free-boundary.}
+Thus, regarding the reviewer's comment, I do not claim that the margins are violation-free when it comes to mass conservation.  I \emph{do} claim to give a good numerical approximation of what I believe is the correct (well-posed) steady SIA \emph{continuum} problem, which includes the positive thickness constraint, and which has a free-boundary.}
 
 \reply{The manuscript is very well written and presents the science in a concise and detailed manner, which is easily comprehensible to the wider audience.  Thus I have only a few minor comments to make, which I list below:
 \medskip \\
@@ -276,13 +271,13 @@ Line \# 8: As this is a single author paper, I was surprised to read ``we'' thro
 {I have apparently become comfortable with the ``we'' style from frequently reading it in mathematics textbooks.  For a discussion and explanation of the style, including a recommendation that ``we'' is the default style when a personal pronoun is needed, see\begin{quote}
 \href{http://academia.stackexchange.com/questions/2945/choice-of-personal-pronoun-in-single-author-papers}{\texttt{academia.stackexchange.com/questions/2945/\\ \phantom{foobar} choice-of-personal-pronoun-in-single-author-papers}}
 \end{quote}
-This discussion includes this core advice from Paul Halmos, an authority on writing mathematics in English: \begin{quote} \medskip
+This discussion includes the following core advice from Paul Halmos, an authority on writing mathematics in English: \begin{quote} \medskip
 There is nothing wrong with the editorial ``we'', but if you like it, do not misuse it.  Let ``we'' mean ``the author and the reader''\dots  \, Thus, it is fine to say ``Using Lemma 2 we can generalize Theorem 1,'' or ``Lemma 3 gives us a technique for proving Theorem 4.''  It is not good to say ``Our work on this result was done in 1969'' (unless the voice is that of two authors, or more, speaking in unison), \dots \medskip \\
 \indent The use of ``I,'' and especially its overuse, sometimes has a repellent effect, as arrogance or ex-cathedra preaching, and, for that reason, I like to avoid it whenever possible. \dots \medskip
 \end{quote}
-Based on this and similar advice I have received over time, I would like to stick with the ``we'' style.  I recognize that the \emph{Journal of Glaciology} is not a mathematics textbook.  Readers of the \emph{Journal} rarely see a single-author paper (!) and may have come to assume ``we'' means the multiple authors.
+Based on this and similar advice I have received over time, I would like to stick with the ``we'' style.
 
-However, I have reviewed the paper for the unnecessary use of personal pronouns and have removed several instances of ``we'', especially in the abstract where it may be most distracting.}
+I recognize that the \emph{Journal of Glaciology} is not a mathematics textbook.  Readers of the \emph{Journal} rarely see a single-author paper (!) and may have come to assume ``we'' means the multiple authors.  In any case, I have reviewed the paper for the unnecessary use of personal pronouns and have removed several instances of ``we'', especially in the abstract where it may be most distracting.}
 
 \reply{Line \# 88: Maybe replace ``Glen-law'' with ``Glen's flow law'' or something like that to not confuse the ``freshman'' generation to ice flow modeling.}
 {Done.}
@@ -324,7 +319,7 @@ I have the idea that a FEM-style streamline diffusion explanation may be illumin
 {I have clarified in the text that a ``good'' level might mean $\epsilon_i<10^{-3}$, so $\epsilon_{10}$--$\epsilon_{12}$ is the appropriate range.  I no longer mention Figure 9 here; that was not the point.}
 
 \reply{I hope the newly presented scheme becomes soon a feature in PISM to facilitate the wider use of an inequality constraint (ice thickness), mass conserving, stable and elegant scheme like this one.}
-{What we really want with PISM is a version of this work, e.g.~a steady-state and/or fully-implicit free-boundary scheme, suitable for the combination of the SIA+SSA hybrid stress balance and the mass-conservation equation.  Or suitable for the hydrostatic/Blatter-Pattyn equations.  We are not there yet, unfortunately.}
+{What we really want with PISM is a version of this approach, e.g.~a steady-state and/or fully-implicit free-boundary scheme, suitable for the SIA+SSA hybrid stress balance (combined with the mass-conservation equation).  Or suitable for the hydrostatic/Blatter-Pattyn equations.  We are not there yet, unfortunately.}
 
 \reply{\dots  I also highly appreciate (as should the glaciological community as a whole) that the author instantly publishes his code on which the presented research is based on along with the manuscript on Github for open access, reproducibility and transparency!}
 {Thanks!}
