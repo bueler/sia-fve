@@ -3,9 +3,12 @@ all: siafve.pdf
 figures = domeverif.pdf bedstepverif.pdf domeprofile.pdf bedstepprofiles.pdf newtonconv.pdf grnrobusteps.pdf grnwinset.pdf
 tikzfigs = fig1a.tikz fig1b.tikz fig2a.tikz fig2b.tikz fig3.tikz
 
+#siafve.pdf: siafve.aux
+#	bibtex siafve
+#	pdflatex siafve
+#	pdflatex siafve
+#	pdflatex siafve
 siafve.pdf: siafve.aux
-	bibtex siafve
-	pdflatex siafve
 	pdflatex siafve
 	pdflatex siafve
 
