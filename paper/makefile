@@ -11,7 +11,8 @@ siafve.pdf: siafve.aux
 	pdflatex siafve
 	pdflatex siafve
 
-siafve.aux: siafve.tex bedsteptable.tex $(figures)
+#siafve.aux: siafve.tex bedsteptable.tex $(figures)
+siafve.aux: siafve.tex $(figures)
 	pdflatex siafve
 
 VERIF = ../petsc/verif/
@@ -22,8 +23,8 @@ domeverif.pdf: convfigs.py $(VERIF)dome.verif $(VERIF)true.verif
 bedstepverif.pdf: convfigs.py $(VERIF)bedstep.verif
 	./convfigs.py --showdata -bedstep $(VERIF)bedstep.verif -o bedstepverif.pdf
 
-bedsteptable.tex: convfigs.py $(VERIF)bedstep.verif $(VERIF)bedstepnoup.verif $(VERIF)bedstepfullup.verif
-	./convfigs.py --bedsteptable -tablefiles $(VERIF)bedstep.verif,$(VERIF)bedstepnoup.verif,$(VERIF)bedstepfullup.verif > bedsteptable.tex
+#bedsteptable.tex: convfigs.py $(VERIF)bedstep.verif $(VERIF)bedstepnoup.verif $(VERIF)bedstepfullup.verif
+#	./convfigs.py --bedsteptable -tablefiles $(VERIF)bedstep.verif,$(VERIF)bedstepnoup.verif,$(VERIF)bedstepfullup.verif > bedsteptable.tex
 
 newtonconv.pdf: newtonconv.txt
 	./newtonconvshow.py -o newtonconv.pdf newtonconv.txt

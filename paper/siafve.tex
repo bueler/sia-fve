@@ -11,7 +11,6 @@
 \usepackage{igsnatbib}  % see igs2eguide.tex for example citation styles
 
 \newcommand{\onecol}[1]{\includegraphics[width=86mm]{#1}}
-\newcommand{\twocol}[1]{\includegraphics[width=178mm]{#1}}
 
 % math macros
 \newcommand\bb{\mathbf{b}}
@@ -858,7 +857,11 @@ The second, third, and fourth columns are from the same three versions of the \M
   \vskip4mm \centering
   \begin{tabular}{lccccc}
     $\Delta x$ (m) & \Mstar & $\lambda=0$ & $\lambda=1$ & Superbee & M2 \\  \hline
-\input{bedsteptable.tex}
+%\input{bedsteptable.tex}
+1000 &  -1.205 &  49.067 &   9.217 &  -7.588 & 116.912 \\
+ 500 &   0.373 &  60.826 &  10.423 &  -5.075 & 132.095 \\
+ 250 &   1.220 &  NC &  11.104 &  -3.401 & 139.384 \\
+ 125 &   1.621 &  NC &  11.424 &  -2.579 & 142.997 \\
   \end{tabular}
   \label{tab:bedstepvol}
 \end{table}
