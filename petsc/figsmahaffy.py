@@ -87,9 +87,9 @@ def gets(H,b):
     return s
 
 if args.observed:
-    Hexlabel = 'observed'
+    Hexlabel = 'Observed'
 else:
-    Hexlabel = 'exact'
+    Hexlabel = 'Exact'
 
 half = (x > 0)
 def extracthalf(f):
@@ -156,10 +156,10 @@ if args.profile:
             plt.plot(x,gets(nextHn,bn),extrastylelist[j],label=Hlabels[j+1],markersize=[12.0,10.0][j])
     # finish up with labels etc.
     plt.hold(False)
-    plt.xlabel('x  (km)')
-    plt.ylabel('z  (m)')
+    plt.xlabel('x  (km)',fontsize=16.0)
+    plt.ylabel('z  (m)',fontsize=16.0)
     plt.grid(True)
-    plt.legend(fontsize=12.0)
+    plt.legend(fontsize=16.0)
     # fill in blowup
     if args.blowup:
         if not args.exactdome:

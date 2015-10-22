@@ -96,15 +96,15 @@ for infile in infilelist:
     for thedata in [maxerr,averr]:
         plt.loglog(dx[notconv],thedata[notconv],'ok',markersize=20.0,
                    markerfacecolor='w',alpha=0.3,markeredgewidth=3.0)
-    plt.loglog(dx,maxerr,'*k',label=r'max. error M$^\bigstar$',markersize=10.0,
+    plt.loglog(dx,maxerr,'*k',label=r'Max. error M$^\bigstar$',markersize=10.0,
                markerfacecolor='w',markeredgewidth=1.0)
-    plt.loglog(dx,averr,'*k',label=r'av. error M$^\bigstar$',markersize=10.0)
+    plt.loglog(dx,averr,'*k',label=r'Av. error M$^\bigstar$',markersize=10.0)
     if args.dome:
         cav = np.polyfit(np.log(dx[:5]),np.log(averr[:5]),1)
         pav = np.poly1d(cav)
         plt.loglog(dx[:5],np.exp(pav(np.log(dx[:5]))),':k')
         ratelabel=r'$O(\Delta x^{%.2f})$' % cav[0]
-        plt.text(dx[2],0.5*averr[2],ratelabel,fontsize=16.0)
+        plt.text(1.1*dx[2],0.7*averr[2],ratelabel,fontsize=16.0)
 
     if len(args.true)>0:
         dx, maxerr, averr, lasteps = extract(readveriffile(args.true))
@@ -112,9 +112,9 @@ for infile in infilelist:
         for thedata in [maxerr,averr]:
             plt.loglog(dx[notconv],thedata[notconv],'ok',markersize=20.0,
                        markerfacecolor='w',alpha=0.3,markeredgewidth=3.0)
-        plt.loglog(dx,maxerr,'sk',label='max. error Mahaffy',markersize=7.0,
+        plt.loglog(dx,maxerr,'sk',label='Max. error Mahaffy',markersize=7.0,
                    markerfacecolor='w',markeredgewidth=1.0)
-        plt.loglog(dx,averr,'sk',label='av. error Mahaffy',markersize=7.0)
+        plt.loglog(dx,averr,'sk',label='Av. error Mahaffy',markersize=7.0)
         cav = np.polyfit(np.log(dx[:5]),np.log(averr[:5]),1)
         pav = np.poly1d(cav)
         plt.loglog(dx[:5],np.exp(pav(np.log(dx[:5]))),':k')
@@ -123,17 +123,17 @@ for infile in infilelist:
 
     plt.hold(False)
     plt.grid(True)
-    plt.ylabel('thickness error  (m)',fontsize=12.0)
+    plt.ylabel('Thickness error  (m)',fontsize=16.0)
     if args.bedstep:
         plt.axis([40.0, 3000.0, 5.0, 200.0])
         plt.xticks(np.array([62.5, 125.0, 250.0, 500.0, 1000.0, 2000.0]), ('62.5', '125','250','500','1000','2000'))
-        plt.xlabel(r'$\Delta x$  (m)',fontsize=12.0)
-        plt.legend(fontsize=12.0,loc='upper right')
+        plt.xlabel(r'$\Delta x$  (m)',fontsize=16.0)
+        plt.legend(fontsize=14.0,loc='upper right')
     else:
         plt.axis([1.0e3, 150.0e3, 0.075, 2000.0])
         plt.xticks(np.array([2.0e3, 5.0e3, 10.0e3, 25.0e3, 50.0e3, 100.0e3]), ('2','5','10','25','50','100'))
-        plt.xlabel(r'$\Delta x$  (km)',fontsize=12.0)
-        plt.legend(fontsize=12.0,loc='lower right')
+        plt.xlabel(r'$\Delta x$  (km)',fontsize=16.0)
+        plt.legend(fontsize=14.0,loc='lower right')
 
     if args.o == None:
         plt.show()

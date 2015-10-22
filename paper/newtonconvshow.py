@@ -49,7 +49,7 @@ for j in range(len(A)):
     topres = A[j][1][0]
     plt.semilogy([ishift[0],ishift[0]], [1.5*topres,7.0*topres], 'k', lw=0.5)
     if A[j][0] == 0:
-        tagfs = 16.0
+        tagfs = 20.0
         epsstr = r'$\epsilon_{%d}$' % convcount
         convcount += 1
     else:
@@ -58,7 +58,7 @@ for j in range(len(A)):
     plt.text(ishift[0]-0.2,10.0*topres,epsstr,fontsize=tagfs)
 plt.hold(False)
 plt.grid(True,axis='y')
-plt.ylabel('residual norm',fontsize=14.0)
+plt.ylabel('Residual norm',fontsize=16.0)
 plt.axis([0.0, ishift.max()+0.5, 2.0e-12, 1.0e5])
 plt.xticks([], ())
 #plt.xlabel('i',fontsize=16.0)
