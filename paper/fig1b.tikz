@@ -23,10 +23,10 @@
   \filldraw (6,4) circle (2.5pt);
 
   % some node labels
-  \draw (3-0.45,2-0.25) node {$\ell\!=\!0$};
-  \draw (6+0.45,2-0.25) node {$\ell\!=\!1$};
-  \draw (6+0.45,4+0.25) node {$\ell\!=\!2$};
-  \draw (3-0.45,4+0.25) node {$\ell\!=\!3$};
+  \draw (3-0.6,2-0.4) node {\large $\ell\!=\!0$};
+  \draw (6+0.6,2-0.4) node {\large $\ell\!=\!1$};
+  \draw (6+0.6,4+0.4) node {\large $\ell\!=\!2$};
+  \draw (3-0.6,4+0.4) node {\large $\ell\!=\!3$};
 
   % true Mahaffy "quadrature" points
   \draw (3,1)   circle (3.5pt);
@@ -38,20 +38,20 @@
   \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
 
   % label element and control volume
-  \draw (5.25,3.5) node {$\square_{j,k}$};
-  \draw (4,2.5) node {$V_{j,k}$};
+  \draw (5.25,3.5) node {\large $\square_{j,k}$};
+  \draw (4,2.5) node {\large $V_{j,k}$};
 
 %  % dimensions \Delta x, \Delta y
 %  \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
-%  \draw (4.5,5.0) node {$\Delta x$};
+%  \draw (4.5,5.0) node {\large $\Delta x$};
 %  \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
-%  \draw (7.0,3) node {$\Delta y$};
+%  \draw (7.0,3) node {\large $\Delta y$};
 
   % label center point and dims
-  \draw (3,-1.0) node {$x_j$};
-  \draw (-1.25,2) node {$y_k$};
+  \draw (3,-1.0) node {\large $x_j$};
+  \draw (-1.25,2) node {\large $y_k$};
 
   % label as "b"
   \tikzstyle{fontbf} = [font=\bf]
-  \draw (-1.5,5.5) node[fontbf] {b.};
+  \draw (-1.5,5.5) node[fontbf] {\large b};
 \end{tikzpicture}

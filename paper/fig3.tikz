@@ -26,30 +26,30 @@
 
   % mark quadrature points
 
-  \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {0};
-  \draw (3.75,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {1};
-  \draw (2.25,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {2};
-  \draw (1.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {3};
-  \draw (1.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {4};
-  \draw (2.25,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {5};
-  \draw (3.75,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {6};
-  \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {7};
+  \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 0};
+  \draw (3.75,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 1};
+  \draw (2.25,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 2};
+  \draw (1.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 3};
+  \draw (1.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 4};
+  \draw (2.25,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 5};
+  \draw (3.75,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 6};
+  \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 7};
 
   % label elements and control volume
-  \draw (3.8,2.5) node {$V_{j,k}$};
-  \draw (5.35,3.7) node {$\square_{j,k}$};
-  \draw (5.4,0.35) node {$\square_{j,k-1}$};
-  \draw (0.6,3.7) node {$\square_{j-1,k}$};
-  \draw (0.75,0.35) node {$\square_{j-1,k-1}$};
+  \draw (3.8,2.5) node {\large $V_{j,k}$};
+  \draw (5.35,3.7) node {\large $\square_{j,k}$};
+  \draw (5.4,0.35) node {\large $\square_{j,k-1}$};
+  \draw (0.8,3.7) node {\large $\square_{j-1,k}$};
+  \draw (0.95,0.35) node {\large $\square_{j-1,k-1}$};
 
   % label center point
-  \draw (3,-0.5) node {$x_j$};
-  \draw (-0.6,2) node {$y_k$};
+  \draw (3,-0.6) node {\large $x_j$};
+  \draw (-0.6,2) node {\large $y_k$};
 
   % indicate coordinates of quadrature points
   \draw[dotted] (4.5,-0.25) -- (4.5, 0.8);
-  \draw (4.5,-0.55) node {$x_j^0$};
+  \draw (4.5,-0.7) node {\large $x_j^0$};
   \draw[dotted] (4.8,2.5) -- (6.3, 2.5);
-  \draw (6.5,2.5) node {$y_k^0$};
+  \draw (6.7,2.5) node {\large $y_k^0$};
 
 \end{tikzpicture}

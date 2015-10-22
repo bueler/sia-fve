@@ -33,15 +33,15 @@
 
   % dimensions \Delta x, \Delta y
   \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
-  \draw (4.5,5.0) node {$\Delta x$};
+  \draw (4.5,5.0) node {\large $\Delta x$};
   \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
-  \draw (7.0,3) node {$\Delta y$};
+  \draw (7.0,3) node {\large $\Delta y$};
 
   % label center point and dims
-  \draw (3,-1.0) node {$x_j$};
-  \draw (-1.25,2) node {$y_k$};
+  \draw (3,-1.0) node {\large $x_j$};
+  \draw (-1.25,2) node {\large $y_k$};
 
   % label as "a"
   \tikzstyle{fontbf} = [font=\bf]
-  \draw (-1.5,5.5) node[fontbf] {a.};
+  \draw (-1.5,5.5) node[fontbf] {\large a};
 \end{tikzpicture}
