@@ -181,7 +181,113 @@ In this paper we solve coupled equations \eqref{eq:fluxform} and \eqref{eq:siaas
 
 \begin{figure}[ht]
 \begin{center}
-\input{fig1a.tikz} \quad \input{fig1b.tikz}
+%\input{fig1a.tikz}
+\begin{tikzpicture}[scale=8.6cm/9.5cm]
+% min x = -1.5, max x = 6.75  so  width = 8.25 cm, but we pad a bit
+% 8.6cm is one-column width for J Glaciol
+
+  %uncomment to see grid on which it was generated:
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
+
+  % faint grid
+  \draw[gray, dotted, thick] (-0.75,0) -- (6.75,0);
+  \draw[gray, dotted, thick] (-0.75,2) -- (6.75,2);
+  \draw[gray, dotted, thick] (-0.75,4) -- (6.75,4);
+  \draw[gray, dotted, thick] (0,-0.5) -- (0,4.5);
+  \draw[gray, dotted, thick] (3,-0.5) -- (3,4.5);
+  \draw[gray, dotted, thick] (6,-0.5) -- (6,4.5);
+
+  % regular FD points
+  \filldraw (0,0) circle (2.5pt);
+  \filldraw (3,0) circle (2.5pt);
+  \filldraw (6,0) circle (2.5pt);
+  \filldraw (0,2) circle (2.5pt);
+  \filldraw (3,2) circle (2.5pt);
+  \filldraw (6,2) circle (2.5pt);
+  \filldraw (0,4) circle (2.5pt);
+  \filldraw (3,4) circle (2.5pt);
+  \filldraw (6,4) circle (2.5pt);
+
+  % staggered FD points
+  \def\dx{0.12};
+  \filldraw (1.5-\dx,2+\dx) -- (1.5+\dx,2) -- (1.5-\dx,2-\dx) -- cycle;
+  \filldraw (4.5-\dx,2+\dx) -- (4.5+\dx,2) -- (4.5-\dx,2-\dx) -- cycle;
+  \filldraw (3-\dx,1-\dx) -- (3,1+\dx) -- (3+\dx,1-\dx) -- cycle;
+  \filldraw (3-\dx,3-\dx) -- (3,3+\dx) -- (3+\dx,3-\dx) -- cycle;
+
+  % dimensions \Delta x, \Delta y
+  \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
+  \draw (4.5,5.0) node {\large $\Delta x$};
+  \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
+  \draw (7.0,3) node {\large $\Delta y$};
+
+  % label center point and dims
+  \draw (3,-1.0) node {\large $x_j$};
+  \draw (-1.25,2) node {\large $y_k$};
+
+  % label as "a"
+  \tikzstyle{fontbf} = [font=\bf]
+  \draw (-1.5,5.5) node[fontbf] {\large a};
+\end{tikzpicture}
+ \quad
+%\input{fig1b.tikz}
+\begin{tikzpicture}[scale=8.6cm/9.5cm]
+
+  %uncomment to see grid on which it was generated:
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
+
+  % strong grid around elements
+  \draw[thick] (-0.75,0) -- (6.75,0);
+  \draw[thick] (-0.75,2) -- (6.75,2);
+  \draw[thick] (-0.75,4) -- (6.75,4);
+  \draw[thick] (0,-0.5) -- (0,4.5);
+  \draw[thick] (3,-0.5) -- (3,4.5);
+  \draw[thick] (6,-0.5) -- (6,4.5);
+
+  % nodes
+  \filldraw (0,0) circle (2.5pt);
+  \filldraw (3,0) circle (2.5pt);
+  \filldraw (6,0) circle (2.5pt);
+  \filldraw (0,2) circle (2.5pt);
+  \filldraw (3,2) circle (2.5pt);
+  \filldraw (6,2) circle (2.5pt);
+  \filldraw (0,4) circle (2.5pt);
+  \filldraw (3,4) circle (2.5pt);
+  \filldraw (6,4) circle (2.5pt);
+
+  % some node labels
+  \draw (3-0.6,2-0.4) node {\large $\ell\!=\!0$};
+  \draw (6+0.6,2-0.4) node {\large $\ell\!=\!1$};
+  \draw (6+0.6,4+0.4) node {\large $\ell\!=\!2$};
+  \draw (3-0.6,4+0.4) node {\large $\ell\!=\!3$};
+
+  % true Mahaffy "quadrature" points
+  \draw (3,1)   circle (3.5pt);
+  \draw (4.5,2) circle (3.5pt);
+  \draw (3,3)   circle (3.5pt);
+  \draw (1.5,2) circle (3.5pt);
+
+  % outline control volume
+  \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
+
+  % label element and control volume
+  \draw (5.25,3.5) node {\large $\square_{j,k}$};
+  \draw (4,2.5) node {\large $V_{j,k}$};
+
+%  % dimensions \Delta x, \Delta y
+%  \draw[latex-latex] (3.2,4.5) -- (5.8,4.5);
+%  \draw (4.5,5.0) node {\large $\Delta x$};
+%  \draw[latex-latex] (6.5,2.2) -- (6.5,3.8);
+%  \draw (7.0,3) node {\large $\Delta y$};
+
+  % label center point and dims
+  \draw (3,-1.0) node {\large $x_j$};
+  \draw (-1.25,2) node {\large $y_k$};
+
+  % label as "b"
+  \tikzstyle{fontbf} = [font=\bf]
+  \draw (-1.5,5.5) node[fontbf] {\large b};
+\end{tikzpicture}
 \end{center}
 \caption{\textbf{a}~A structured FD grid with regular (dots) and staggered (triangles) points.  \textbf{b}~The same grid as an FVE grid with rectangular elements $\square_{j,k}$ (solid), nodes (dots), a dual rectangular control volume $V_{j,k}$ (dashed), and Mahaffy's flux-evaluation locations (circles).  The corners of element $\square_{j,k}$ are locally-indexed by $\ell$.}
 \label{fig:fdfemgrids}
@@ -236,7 +342,155 @@ Let $S_h$ be the trial space of functions which are continuous on the whole comp
 
 \begin{figure}[ht]
 \begin{center}
-\input{fig2a.tikz} \quad \input{fig2b.tikz}
+%\input{fig2a.tikz}
+\begin{tikzpicture}[scale=8.6cm/16.0cm]
+% min x = 0, max x = 12  so  width = 12 cm, but we pad
+% 8.6cm is one-column width for J Glaciol
+%\begin{tikzpicture}[scale=0.5]
+
+  % strong grid around elements
+  \draw[thick] (0,0) -- (8,0);
+  \draw[thick] (2,2) -- (10,2);
+  \draw[thick] (4,4) -- (12,4);
+  \draw[thick] (0,0) -- (4,4);
+  \draw[thick] (4,0) -- (8,4);
+  \draw[thick] (8,0) -- (12,4);
+
+  \def\ytop{7};
+
+  % tent lines
+  \draw[gray,thick] (6,\ytop) -- (4,0);
+  \draw[gray,thick] (6,\ytop) -- (2,2);
+  \draw[gray,thick] (6,\ytop) -- (10,2);
+  \draw[gray,thick] (6,\ytop) -- (8,4);
+
+  \def\dx{(10.0-6.0)/6};
+  \def\dy{(2.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,very thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({4+(4/6)*\jj},0.0);
+  }
+
+  \def\dx{(4.0-6.0)/6};
+  \def\dy{(0.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,very thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({10-(2/6)*\jj},{2-(2/6)*\jj});
+  }
+
+  \def\dx{(2.0-6.0)/6};
+  \def\dy{(2.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({4-(4/6)*\jj},0.0);
+  }
+
+  \def\dx{(4.0-6.0)/6};
+  \def\dy{(0.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({2-(2/6)*\jj},{2-(2/6)*\jj});
+  }
+
+  \def\dx{(10.0-6.0)/6};
+  \def\dy{(2.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({8+(4/6)*\jj},4.0);
+  }
+
+  \def\dx{(8.0-6.0)/6};
+  \def\dy{(4.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({10+(2/6)*\jj},{2+(2/6)*\jj});
+  }
+
+  \def\dx{(2.0-6.0)/3};
+  \def\dy{(2.0-\ytop)/3};
+  \foreach \jj in {1,...,2}  % reduce clutter
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({8-(4/3)*\jj},4.0);
+  }
+
+  \def\dx{(8.0-6.0)/3};
+  \def\dy{(4.0-\ytop)/3};
+  \foreach \jj in {1,...,2}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({2+(2/3)*\jj},{2+(2/3)*\jj});
+  }
+
+  % nodes in base plane
+  \filldraw (0,0) circle (4pt);
+  \filldraw (4,0) circle (4pt);
+  \filldraw (8,0) circle (4pt);
+  \filldraw (2,2) circle (4pt);
+  %\filldraw (6,2) circle (4pt);   % (x_j,y_k) is at (6,2)
+  \filldraw (10,2) circle (4pt);
+  \filldraw (4,4) circle (4pt);
+  \filldraw (8,4) circle (4pt);
+  \filldraw (12,4) circle (4pt);
+
+  % node at tent top
+  \filldraw (6,\ytop) circle (4pt);
+
+  % annotate
+  \draw (10.5,\ytop+1.0) node {\large $\psi_{j,k}(x_j,y_k)=1$};
+  \draw[-latex] (7.2,\ytop+0.8) -- (6.1,\ytop+0.1);
+  \draw (9.5,-1.5) node {\large $\psi_{j,k}=0$ at other nodes};
+  \draw[-latex] (10,-0.8) -- (10,1.8);
+
+  % label center point
+  \draw (4,-0.8) node {\large $x_j$};
+  \draw (1.2,2) node {\large $y_k$};
+
+  % label as "a"
+  \tikzstyle{fontbf} = [font=\bf]
+  \draw (0,8) node[fontbf] {\large a};
+
+\end{tikzpicture}
+ \quad
+%\input{fig2b.tikz}
+\begin{tikzpicture}[scale=8.6cm/16.0cm]
+% min x = 0, max x = 12  so  width = 12 cm, but we pad
+% 8.6cm is one-column width for J Glaciol
+%\begin{tikzpicture}[scale=0.5]
+
+  % strong grid around elements
+  \draw[thick] (0,0) -- (8,0);
+  \draw[thick] (2,2) -- (10,2);
+  \draw[thick] (4,4) -- (12,4);
+  \draw[thick] (0,0) -- (4,4);
+  \draw[thick] (4,0) -- (8,4);
+  \draw[thick] (8,0) -- (12,4);
+
+  % dashed grid around control volume in base plane
+  \draw[thick] (0,0) -- (8,0);
+
+  % label element and control volume
+  \def\lift{4};
+  \draw[dashed, thick] (3,1) -- (7,1) -- (9,3) -- (5,3) -- cycle;
+  \draw[dashed, thick] (3,1+\lift) -- (7,1+\lift) -- (9,3+\lift) -- (5,3+\lift) -- cycle;
+  \draw[dotted, thick] (3,1) -- (3,1+\lift);
+  \draw[dotted, thick] (7,1) -- (7,1+\lift);
+  \draw[dotted, thick] (9,3) -- (9,3+\lift);
+  \draw[dotted, thick] (5,3) -- (5,3+\lift);
+
+  % annotate
+  \draw (10,\lift+4.2) node {\large $\omega_{j,k}=1$ on $V_{j,k}$};
+  \draw[-latex] (7.2,\lift+3.4) -- (6.1,\lift+2.5);
+  \draw (10,-1.0) node {\large $\omega_{j,k}=0$ elsewhere};
+  \draw[-latex] (10,-0.3) -- (8.5,1.3);
+
+  % label center point
+  \draw (4,-0.8) node {\large $x_j$};
+  \draw (1.2,2) node {\large $y_k$};
+
+  % label as "b"
+  \tikzstyle{fontbf} = [font=\bf]
+  \draw (0,8) node[fontbf] {\large b};
+
+\end{tikzpicture}
 \end{center}
 \caption{\textbf{a}~A continuous ``hat'' basis function $\psi_{j,k}$ in the trial space $S_h$.  \textbf{b}~A full FE interpretation of our scheme would use piecewise-constant basis functions $\omega_{j,k}$ from the test space $S_h^*$.}
 \label{fig:fembases}
@@ -313,7 +567,62 @@ Recalling notation \eqref{eq:definexypm}, values $q^x(x_j^+,y_k\pm\tfrac{\Delta 
 
 \begin{figure}[ht]
 \begin{center}
-\input{fig3.tikz}
+%\input{fig3.tikz}
+\begin{tikzpicture}[scale=1.1]
+  %uncomment to see grid on which it was generated:
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
+
+  % strong grid around elements
+  \draw (-0.3,0) -- (6.3,0);
+  \draw (-0.3,2) -- (6.3,2);
+  \draw (-0.3,4) -- (6.3,4);
+  \draw (0,-0.25) -- (0,4.25);
+  \draw (3,-0.25) -- (3,4.25);
+  \draw (6,-0.25) -- (6,4.25);
+
+  % nodes
+  \filldraw (0,0) circle (2.5pt);
+  \filldraw (3,0) circle (2.5pt);
+  \filldraw (6,0) circle (2.5pt);
+  \filldraw (0,2) circle (2.5pt);
+  \filldraw (3,2) circle (2.5pt);
+  \filldraw (6,2) circle (2.5pt);
+  \filldraw (0,4) circle (2.5pt);
+  \filldraw (3,4) circle (2.5pt);
+  \filldraw (6,4) circle (2.5pt);
+
+  % outline control volume
+  \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
+
+  % mark quadrature points
+
+  \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 0};
+  \draw (3.75,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 1};
+  \draw (2.25,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 2};
+  \draw (1.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 3};
+  \draw (1.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 4};
+  \draw (2.25,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 5};
+  \draw (3.75,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 6};
+  \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\normalsize 7};
+
+  % label elements and control volume
+  \draw (3.8,2.5) node {\large $V_{j,k}$};
+  \draw (5.35,3.7) node {\large $\square_{j,k}$};
+  \draw (5.4,0.35) node {\large $\square_{j,k-1}$};
+  \draw (0.8,3.7) node {\large $\square_{j-1,k}$};
+  \draw (0.95,0.35) node {\large $\square_{j-1,k-1}$};
+
+  % label center point
+  \draw (3,-0.6) node {\large $x_j$};
+  \draw (-0.6,2) node {\large $y_k$};
+
+  % indicate coordinates of quadrature points
+  \draw[dotted] (4.5,-0.25) -- (4.5, 0.8);
+  \draw (4.5,-0.7) node {\large $x_j^0$};
+  \draw[dotted] (4.8,2.5) -- (6.3, 2.5);
+  \draw (6.7,2.5) node {\large $y_k^0$};
+
+\end{tikzpicture}
 \end{center}
 \caption{For equation \eqref{eq:siamstar} we evaluate $\bq^h(x,y)$ at eight quadrature points (numbered circles) along $\partial V_{j,k}$ (dashed).}
 \label{fig:improvequadrature}
@@ -364,7 +673,55 @@ where $\lambda=0$ is no upwinding and $\lambda=1$ is the maximum upwinding that 
 
 \begin{figure}[ht]
 \begin{center}
-\input{fig4.tikz}
+%\input{fig4.tikz}
+\begin{tikzpicture}[scale=1.8]
+  %uncomment to see grid on which it was generated:
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
+
+  % strong grid around elements
+  \draw (-0.3,0) -- (3.3,0);
+  \draw (-0.3,2) -- (3.3,2);
+  \draw (0,-0.3) -- (0,2.3);
+  \draw (3,-0.3) -- (3,2.3);
+
+  % nodes
+  \filldraw (0,0) circle (1.5pt);
+  \filldraw (3,0) circle (1.5pt);
+  \filldraw (0,2) circle (1.5pt);
+  \filldraw (3,2) circle (1.5pt);
+
+  % outline control volume
+  \draw[dashed, thick] (-0.25,1) -- (1.5,1) -- (1.5,-0.25);
+
+  % mark quadrature points
+  \draw (1.5,0.5)  circle (2.0pt);
+  \draw (0.75,1.0) circle (2.0pt);
+
+  % mark upwind points
+  \draw (1.125,0.5) node {\normalsize $+$};
+  \draw (1.875,0.5) node {\normalsize $+$};
+  \draw (0.75,0.75) node {\normalsize $+$};
+  \draw (0.75,1.25) node {\normalsize $+$};
+
+  % arrows to suggest upwinding
+  %\draw[-latex] (1.6,0.4) -- (1.80,0.4);
+  %\draw[-latex] (1.4,0.4) -- (1.20,0.4);
+  %\draw[-latex] (0.65,1.05) -- (0.65,1.2);
+  %\draw[-latex] (0.65,0.95) -- (0.65,0.8);
+
+  % label elements and control volume
+  \draw (2.7,1.7) node {\large $\square_{j,k}$};
+
+  % label lower-left corner
+  \draw (0,-0.5) node {\large $x_j$};
+  \draw (-0.5,0) node {\large $y_k$};
+
+  % indicate coordinates of quadrature point
+  \draw (1.5,-0.5) node {\large $x_j^0$};
+  \draw[dotted] (2.8,0.5) -- (3.2, 0.5);
+  \draw (3.4,0.52) node {\large $y_k^0$};
+
+\end{tikzpicture}
 \end{center}
 \caption{On element $\square_{j,k}$, when computing the flux at quadrature points (circles), upwinding of the flux term $\tilde \bq = \bW H^{n+2}$ evaluates the thicknesses $H$ at locations shown with ``$+$'', one quarter of the way to the element boundary.}
 \label{fig:upwindterm}
