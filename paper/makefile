@@ -1,6 +1,6 @@
 all: siafve.pdf
 
-figures = domeverif.pdf bedstepverif.pdf domeprofile.pdf bedstepprofiles.pdf newtonconv.pdf grnrobusteps.pdf grnwinset.pdf
+figures = domeverif.pdf domeprofile.pdf bedstepprofiles.pdf newtonconv.pdf grnrobusteps.pdf grnwinset.pdf
 
 #siafve.pdf: siafve.aux
 #	bibtex siafve
