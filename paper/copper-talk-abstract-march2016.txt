@@ -1,0 +1,7 @@
+SPEAKER: Ed Bueler
+
+TITLE: Computing glacier geometry in nonlinear complementarity problem form
+
+ABSTRACT: The equations of glacier (and ice sheet) flow are those of a non-Newtonian Stokes flow.  Efforts to compute the velocity from such problems, efficiently and at scale, are relatively well-known.  But the fundamental nonlinearity associated to glacier geometry simulation and prediction in changing climates would apply even to linearly-viscous fluids!  That is because the problem of predicting glacier thickness is subject to the constraint that thicknesses are nonnegative.
+
+One may formulate this problem, of the simultaneous determination of the ice velocity and thickness in a potentially-glaciated region, given the bedrock elevation and the snowfall/melt rates as inputs, as a nonlinear complementarity problem (NCP) or variational inequality (VI).  After combining several small improvements to existing structured-grid, shallow-ice methods, I will show how one can apply a reduced-space Newton solver to the NCP/VI.  After examining performance in artificial set-ups, I will demonstrate the method as a fully-implicit, high-resolution determination of the geometry of the whole Greenland ice sheet in a steady climate.
