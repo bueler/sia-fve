@@ -97,10 +97,11 @@ width=#3in]{#1.eps}}
 \renewcommand{\Im}{\operatorname{Im}}
 \newcommand{\Arg}{\operatorname{Arg}}
 
-\newcommand{\comm}[2]{\item \emph{#1}:\, #2}
+\newcommand{\comm}[2]{\medskip \item[] \underline{\emph{#1}}:\, #2}
 
-\newcommand{\lnpagecol}[4]{\comm{\underline{line #1, page #2, #3 column}}{#4}}
-\newcommand{\lnspagecol}[4]{\comm{\underline{lines #1,page #2, #3 column}}{#4}}
+\newcommand{\lnpagecol}[4]{\comm{line #1, page #2, #3 column}{#4}}
+\newcommand{\lnspagecol}[4]{\comm{lines #1, page #2, #3 column}{#4}}
+\newcommand{\eqnpagecol}[4]{\comm{Eqn #1, page #2, #3 column}{#4}}
 
 \newcommand{\fg}[2]{\comm{Figure #1}{#2}}
 \newcommand{\eqn}[2]{\comm{equation #1}{#2}}
@@ -126,11 +127,83 @@ width=#3in]{#1.eps}}
 
 \thispagestyle{empty}
 
+I found very few errors introduced in the production process.  I have taken this last opportunity to change a few wording choices of my own, without changing meaning in any case.
 
-\subsection*{FIXME}  \begin{itemize}
-\comm{}
-\lnpagecol{38}{1}{first}{FIXME}
+\subsection*{Systematic concern(s)}
 
+\begin{itemize}
+\item  The vertical alignment of integrals is \textbf{significantly wrong}!  See below for examples and concrete description/illustration of how it should look.
+\item  The JoG math font strangely has two different appearances for ``$\ell$''.  The one in display math looks correct, whereas the one in text lines is too tilted over.  See below for examples.
+\item  The Figures I submitted had larger fonts.  The ones here are almost unreadably small, especially subscripts.  See below for examples.
+\end{itemize}
+
+
+\subsection*{Line-by-line corrections}
+
+\begin{itemize}
+\comm{title and abstract}{I could find no issues here.}
+\comm{keywords}{Should I be adding these?  Is there a website to look for standard ones?}
+\lnpagecol{38}{1}{1st}{``usage'' $\to$ ``access''}
+\lnspagecol{61--63}{1}{1st}{``extend to two-dimensional (2D), because the margin of real ice sheets is'' $\to$ ``extend to two dimensions (2D) because the margin of a real ice sheet is''}
+\lnpagecol{31}{1}{2nd}{remove ``also'':  ``is also limited'' $\to$ ``is limited''}
+\lnspagecol{48--49}{1}{2nd}{move citation to end of phrase:  ``hybrid (Winkelmann and others, 2011) ice dynamics model'' $\to$ ``hybrid ice dynamics model (Winkelmann and others, 2011)''}
+\lnpagecol{64}{1}{2nd}{add word: ``we successfully'' $\to$ ``we have successfully''}
+\lnpagecol{76}{2}{1st}{break sentence: ``aspects and it is'' $\to$ ``aspects.  It is''}
+\eqnpagecol{(8)}{2}{2nd}{Vertical alignment of integral is \textbf{significantly wrong}!  It should look like
+   $$\int_{\partial V} \mathbf{q}\cdot\mathbf{n}\,ds = \int_V m\,dx\,dy.$$
+That is, the integral symbol $\int$ and the domain of integration (i.e.~$V$ on right side) should be lower.  In particular, the domain of integration should \textbf{not} be nearly-aligned with the integrand (i.e.~$m\,dx\,dy$ on right).  Note that I typeset the line above with the following, which should not be changed (if that is what happened):}
+
+\medskip
+\begin{verbatim}
+\int_{\partial V} \mathbf{q}\cdot\mathbf{n}\,ds = \int_V m\,dx\,dy
+\end{verbatim}
+\medskip
+
+\lnpagecol{182}{3}{1st}{the indent is incorrect; ``At'' after equation (9) starts a new sentence but not a new paragraph}
+\lnpagecol{147}{3}{2nd}{remove word: ``Eqn (7), itself uses'' $\to$ ``Eqn (7), uses''}
+\lnpagecol{154}{3}{2nd}{remove unnecessary space: ``$m(x_j,\,\,\,y_k)$'' $\to$ ``$m(x_j,y_k)$''}
+\lnpagecol{168}{3}{2nd}{``lies in a finite-dimensional'' $\to$ ``lies in some finite-dimensional''}
+\lnpagecol{169}{3}{2nd}{remove unnecessary comma: ``well behaved, so that'' $\to$ ``well-behaved so that''}
+\eqnpagecol{(15)}{3}{2nd}{The ``$\ell$'' used as a subscript in this equation looks fine.}
+\lnpagecol{182}{3}{2nd}{Here is an ``$\ell$'' that is weird.  It should look like ``for $\ell=0,1,2,3$, where''.}
+\lnpagecol{187}{3}{2nd}{Another weird ``$\ell$''.}
+\comm{beside Figure 1, page 4}{The typesetter's note says ``Colour online''.  In fact this should be ``B/W online''.  There are no colour Figures in this paper, quite deliberately, and the remaining typesetter's notes correctly reflect that.}
+\comm{Figure 1, page 4}{The Figures I submitted had larger fonts.  The ones here are almost unreadably small, especially subscripts.}
+\comm{Figure 1 caption, page 4}{Another weird ``$\ell$''.  The ones that appear within the \textbf{b} part of the Figure look fine, though they are two small.}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
+\lnpagecol{}{}{}{}
 \lnpagecol{}{}{}{}
 \end{itemize}
 
