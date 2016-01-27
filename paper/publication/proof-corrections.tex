@@ -97,11 +97,11 @@ width=#3in]{#1.eps}}
 \renewcommand{\Im}{\operatorname{Im}}
 \newcommand{\Arg}{\operatorname{Arg}}
 
-\newcommand{\comm}[2]{\medskip \item[] \underline{\emph{#1}}:\, #2}
+\newcommand{\comm}[2]{\medskip \item[] \hspace{-0.5in}\underline{\emph{#1}}:\, #2}
 
-\newcommand{\lnpagecol}[4]{\comm{line #1, page #2, #3 column}{#4}}
-\newcommand{\lnspagecol}[4]{\comm{lines #1, page #2, #3 column}{#4}}
-\newcommand{\eqnpagecol}[4]{\comm{Eqn #1, page #2, #3 column}{#4}}
+\newcommand{\lnpagecol}[4]{\comm{line #1, page #2, #3 col.}{#4}}
+\newcommand{\lnspagecol}[4]{\comm{lines #1, page #2, #3 col.}{#4}}
+\newcommand{\eqnpagecol}[4]{\comm{Eqn #1, page #2, #3 col.}{#4}}
 
 \newcommand{\fg}[2]{\comm{Figure #1}{#2}}
 \newcommand{\eqn}[2]{\comm{equation #1}{#2}}
@@ -116,7 +116,7 @@ width=#3in]{#1.eps}}
 \noindent #2}
 
 
-\title{Author's corrections of proofs of 15000013 \\ \emph{Stable finite volume element schemes \dots} \\ sent 22 January 2016 by Editor Emma Pearce}
+\title[Author's corrections of proofs of 15000013]{Author's corrections of proofs of \\ \emph{Stable finite volume element schemes \dots} (15000013)}
 
 \author{Ed Bueler}
 
@@ -127,14 +127,15 @@ width=#3in]{#1.eps}}
 
 \thispagestyle{empty}
 
-I found very few errors introduced in the production process.  I have taken this last opportunity to change a few wording choices of my own, without changing meaning in any case.
+I found only a few errors introduced in the production process.\footnote{These corrections/comments refer to PDF proofs sent 22 January 2016 by Editor Emma Pearce.}  I have also taken this (last) opportunity to change a few wording choices of my own, without changing meaning in any case.
 
-\subsection*{Systematic concern(s)}
+\subsection*{Systematic/significant concern(s)}
 
 \begin{itemize}
 \item  The vertical alignment of integrals is \textbf{significantly wrong}!  See below for examples and concrete description/illustration of how it should look.
-\item  The JoG math font strangely has two different appearances for ``$\ell$''.  The one in display math looks correct, whereas the one in text lines is too tilted over.  See below for examples.
+\item  The JoG math font perhaps (strangely) has two different appearances for ``$\ell$'', the LaTeX character \verb|\ell|, or else two different commands were used to generate the symbol here.  The one in display math looks correct, whereas the one in text lines is (sometimes) too tilted over.  See below for examples.
 \item  The Figures I submitted had larger fonts.  The ones here are almost unreadably small, especially subscripts.  See below for examples.
+\item  The very first item in the Reference list, namely Aschwanden and others (2016), is to a appear very shortly in \emph{Nature Communications}.  It would be great to correct that reference/citation at the last moment before publication.
 \end{itemize}
 
 
@@ -143,9 +144,9 @@ I found very few errors introduced in the production process.  I have taken this
 \begin{itemize}
 \comm{title and abstract}{I could find no issues here.}
 \comm{keywords}{Should I be adding these?  Is there a website to look for standard ones?}
-\lnpagecol{38}{1}{1st}{``usage'' $\to$ ``access''}
-\lnspagecol{61--63}{1}{1st}{``extend to two-dimensional (2D), because the margin of real ice sheets is'' $\to$ ``extend to two dimensions (2D) because the margin of a real ice sheet is''}
-\lnpagecol{31}{1}{2nd}{remove ``also'':  ``is also limited'' $\to$ ``is limited''}
+\lnpagecol{38}{1}{1st}{replace: ``usage'' $\to$ ``access''}
+\lnspagecol{61--63}{1}{1st}{correct punctuation and words: ``extend to two-dimensional (2D), because the margin of real ice sheets is'' $\to$ ``extend to two dimensions (2D) because the margin of a real ice sheet is''}
+\lnpagecol{31}{1}{2nd}{remove word:  ``is also limited'' $\to$ ``is limited''}
 \lnspagecol{48--49}{1}{2nd}{move citation to end of phrase:  ``hybrid (Winkelmann and others, 2011) ice dynamics model'' $\to$ ``hybrid ice dynamics model (Winkelmann and others, 2011)''}
 \lnpagecol{64}{1}{2nd}{add word: ``we successfully'' $\to$ ``we have successfully''}
 \lnpagecol{76}{2}{1st}{break sentence: ``aspects and it is'' $\to$ ``aspects.  It is''}
@@ -162,49 +163,47 @@ That is, the integral symbol $\int$ and the domain of integration (i.e.~$V$ on r
 \lnpagecol{182}{3}{1st}{the indent is incorrect; ``At'' after equation (9) starts a new sentence but not a new paragraph}
 \lnpagecol{147}{3}{2nd}{remove word: ``Eqn (7), itself uses'' $\to$ ``Eqn (7), uses''}
 \lnpagecol{154}{3}{2nd}{remove unnecessary space: ``$m(x_j,\,\,\,y_k)$'' $\to$ ``$m(x_j,y_k)$''}
-\lnpagecol{168}{3}{2nd}{``lies in a finite-dimensional'' $\to$ ``lies in some finite-dimensional''}
-\lnpagecol{169}{3}{2nd}{remove unnecessary comma: ``well behaved, so that'' $\to$ ``well-behaved so that''}
-\eqnpagecol{(15)}{3}{2nd}{The ``$\ell$'' used as a subscript in this equation looks fine.}
-\lnpagecol{182}{3}{2nd}{Here is an ``$\ell$'' that is weird.  It should look like ``for $\ell=0,1,2,3$, where''.}
+\lnpagecol{168}{3}{2nd}{replace: ``in a finite-dimensional'' $\to$ ``in some finite-dimensional''}
+\lnpagecol{169}{3}{2nd}{remove unnecessary comma and add hyphen: ``well behaved, so that'' $\to$ ``well-behaved so that''}
+\eqnpagecol{(15)}{3}{2nd}{Note:  The ``$\ell$'' used as a subscript in this equation looks fine.}
+\lnpagecol{182}{3}{2nd}{Here is an ``$\ell$'' that is weird.  It should look like ``for $\ell=0,\dots$''}
 \lnpagecol{187}{3}{2nd}{Another weird ``$\ell$''.}
-\comm{beside Figure 1, page 4}{The typesetter's note says ``Colour online''.  In fact this should be ``B/W online''.  There are no colour Figures in this paper, quite deliberately, and the remaining typesetter's notes correctly reflect that.}
+\comm{beside Figure 1, page 4}{The typesetter's note says ``Colour online''.  In fact this should be ``B/W online''.  There are no colour Figures in this paper, quite deliberately.  The remaining typesetter's notes correctly reflect that.}
 \comm{Figure 1, page 4}{The Figures I submitted had larger fonts.  The ones here are almost unreadably small, especially subscripts.}
-\comm{Figure 1 caption, page 4}{Another weird ``$\ell$''.  The ones that appear within the \textbf{b} part of the Figure look fine, though they are two small.}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
-\lnpagecol{}{}{}{}
+\comm{Figure 1 caption, page 4}{Another weird ``$\ell$''.  The ones that appear within the \textbf{b} part of the Figure look fine (although they are too small).}
+\lnpagecol{212}{4}{1st}{unnecessary comma: ``in $S_h$, so that'' $\to$ ``in $S_h$ so that''}
+\eqnpagecol{(16) and (17)}{4}{2nd}{Vertical alignment of integral flaw here.}
+\lnpagecol{230}{4}{2nd}{add word: ``but is discontinuous'' $\to$ ``but it is discontinuous''}
+\eqnpagecol{(23) and (25)}{5}{2nd}{Vertical alignment of integral flaw here.}
+\lnpagecol{355}{6}{2nd}{add word: ``both the'' $\to$ ``both of the''}
+\lnspagecol{396--400}{7}{1st}{A footnote was moved into the text here, which is o.k.  However, it does not make sense to make it a parenthetical in the middle of a sentence.  I suggest these lines look like, which represents a slight simplification:
+
+\medskip
+\begin{quote}
+Our open-source C code contains the residual and Jacobian evaluation subroutines.  (To get the code and examples, clone the repository at\par
+ \texttt{https://github.com/bueler/sia-fve}.  Then see \texttt{README.md} in directory \texttt{petsc/}.)
+\end{quote}
+
+\medskip
+
+\noindent Note that teletype-style font is appropriate for text that should be typed into a computer.}
+\lnpagecol{431}{7}{1st}{Remove unnecessary parenthesis: ``the solver. (Non-smoothness'' $\to$ ``the solver.  Non-smoothness''}
+\lnpagecol{443}{7}{1st}{Remove matching parenthesis: ``$1<n<3$.)'' $\to$ ``$1<n<3$.''}
+\lnpagecol{400}{7}{2nd}{correct typo: ``piling up ka years'' $\to$ ``piling up 1000 years''.}
+\lnpagecol{403}{7}{2nd}{hyphen: ``non linear'' $\to$ ``non-linear''}
+\eqnpagecol{(40)}{7}{2nd}{Note: The superscripts ``$\ell$'' look fine here.}
+\lnspagecol{449--453}{8}{1st}{The mystery deepens.  In these five lines, ``$\ell$'' is used six times.  One case, ``$\mathbf{q}^\ell$'', it looks fine.  In all other cases it does not.}
+\lnpagecol{455}{8}{1st}{Remove words: ``Eqn (40).  Problem (40) using'' $\to$ ``Eqn (40).  Using''}
+\lnpagecol{462}{8}{1st}{Another bad ``$\ell$''.}
+\lnspagecol{540--542}{9}{2nd}{Correct/improve punctuation/words: ``The newer, finer-resolution and rougher bed data are on a 150 m grid from and Morlighem and others (2014).'' $\to$ ``The newer, finer-resolution, and rougher-bed data, on a 150 m grid, are from Morlighem and others (2014).''}
+\lnpagecol{545}{9}{2nd}{clarify: ``than into \textbf{BM1}'' $\to$ ``than were used for \textbf{BM1}''}
+\lnspagecol{568--569}{9}{2nd}{improve punctuation/words: ``arise, from formulas (3) and (6), respectively, does limit the'' $\to$ ``arise from formulas (3) and (6), respectively, limits the''}
+\lnpagecol{572}{9}{2nd}{replace word: ``Greenland cases are'' $\to$ ``Greenland datasets are''}
+\lnpagecol{607}{10}{1st}{remove Figure reference because it does not clarify meaning here: ``bed roughness (Fig 9), one can'' $\to$ ``bed roughness, one can''}
+\lnpagecol{668}{11}{1st}{update year (see below): ``others, 2015)'' $\to$ ``others, 2016)''}
+\lnspagecol{696--697}{11}{1st}{remove unneeded/unclear words: ``generated Figure 10 (not shown) apparently'' $\to$ ``generated Figure 10 apparently''}
+\lnpagecol{699}{11}{1st}{better word: ``of longer time steps'' $\to$ ``of long time steps''}
+\comm{first reference, page 11, 2nd col.}{Aschwanden and others (2016) is ``to appear'' very shortly in \emph{Nature Communications}.  It would be great to correct the citation at the last moment before publication of the current manuscript, because by then I believe a correct citation will be available.}
 \end{itemize}
 
 \end{document}
