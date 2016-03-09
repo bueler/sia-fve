@@ -5,7 +5,7 @@ The code `mahaffy.c` tests classical Mahaffy and improved (M*) finite volume
 element methods for the shallow ice approximation (SIA) on a structured Q1 grid.
 We use PETSc DMDA and SNESVI to solve the steady-state SIA free boundary problem.
 
-This code is documented by the paper in `../paper/`, which was submitted to
+This code is documented by the paper in `../paper/`, which is "to appear" in
 the *Journal of Glaciology*.
 
 Quickstart
@@ -24,8 +24,8 @@ In addition, `mahaffy.c` can read real data and model real ice sheets.  Also
 it can do backward-Euler time-stepping.  See the `grn/`, `grn/robust/`, and
 `grn/mcb/` subdirectories for Greenland ice sheet examples.
 
-Usage help and major run modes
-------------------------------
+Usage help
+----------
 
 Usage help (i.e. options) comes from the usual PETSc `-help` mechanism.  There
 are two collections of options, with prefixes `mah_` (for "mahaffy") and `cs_`
@@ -34,8 +34,12 @@ are two collections of options, with prefixes `mah_` (for "mahaffy") and `cs_`
     $ ./mahaffy -help |grep mah_
     $ ./mahaffy -help |grep cs_
 
-Note there are basically these three problem cases.  The first two are
-verification cases documented in the paper and in `base/exactsia.{h|c}`.
+
+Three problem cases
+-------------------
+
+The first two verification cases are documented in the paper and in
+`base/exactsia.{h|c}`; see also `domeconv.sh` and `bedstepconv.sh`.
 
   1. "Dome" exact solution (the default problem, so `-mah_dome` is optional):
 
@@ -50,8 +54,6 @@ verification cases documented in the paper and in `base/exactsia.{h|c}`.
   topography:
 
         $ ./mahaffy -mah_read foo.dat
-
-See also `domeconv.sh` and `bedstepconv.sh` for the verification cases.
 
 
 Link the petsc python scripts
