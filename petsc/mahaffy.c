@@ -98,7 +98,7 @@ int main(int argc,char **argv) {
                       DM_BOUNDARY_PERIODIC,DM_BOUNDARY_PERIODIC,
                       DMDA_STENCIL_BOX,
                       user.Nx,user.Ny,PETSC_DECIDE,PETSC_DECIDE,  // default grid if Nx<0, Ny<0
-                      1, (user.mtrue==PETSC_TRUE) ? 2 : 1,        // dof=1, stencilwidth=1
+                      1, (user.mtrue==PETSC_TRUE) ? 2 : 1,        // dof=1, stencilwidth=1 or 2
                       NULL,NULL,&user.da);
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
@@ -151,7 +151,7 @@ int main(int argc,char **argv) {
   ierr = VecDuplicate(H,&user.ds.Dnodemax); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject)(user.ds.Dnodemax),"maximum diffusivity D at node"); CHKERRQ(ierr);
   ierr = VecDuplicate(H,&user.ds.Wmagnodemax); CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject)(user.ds.Wmagnodemax),"maximum pseudo-velocity W magnitude at node"); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)(user.ds.Wmagnodemax),"maximum pseudo-velocity magnitude |W| at node"); CHKERRQ(ierr);
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read) {
