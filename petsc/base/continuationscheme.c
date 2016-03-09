@@ -16,16 +16,16 @@ PetscErrorCode SetFromOptionsCS(const char *optprefix, ContinuationScheme *cs) {
   ierr = PetscOptionsBegin(PETSC_COMM_WORLD,optprefix,"options to continuation scheme","");CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-D0", "initial (and representative?) value of diffusivity; in m^2/s",
-      NULL,cs->D0,&cs->D0,NULL);CHKERRQ(ierr);
+      "continuationscheme.c",cs->D0,&cs->D0,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-end", "one beyond last level to actually use:  eps_start, ..., eps_{end-1}",
-      NULL,cs->end,&cs->end,NULL);CHKERRQ(ierr);
+      "continuationscheme.c",cs->end,&cs->end,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-n0", "initial value of Glen exponent",
-      NULL,cs->n0,&cs->n0,NULL);CHKERRQ(ierr);
+      "continuationscheme.c",cs->n0,&cs->n0,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsInt(
       "-start", "first level to actually use:  eps_start, ..., eps_{end-1}",
-      NULL,cs->start,&cs->start,NULL);CHKERRQ(ierr);
+      "continuationscheme.c",cs->start,&cs->start,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
   if (cs->end > cs->max) {
       SETERRQ(PETSC_COMM_WORLD,1,"ERROR in ContinuationScheme option: -cs_end > cs.max\n");
