@@ -1,9 +1,5 @@
 all: mahaffy
 
-# for maint branch:
-#include ${PETSC_DIR}/conf/variables
-#include ${PETSC_DIR}/conf/rules
-
 # for master branch:
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
@@ -12,7 +8,7 @@ base := appctx.o continuationscheme.o sia.o exactsia.o io.o q1op.o solver.o
 base := $(addprefix base/, $(base))
 
 mahaffy: mahaffy.o $(base) chkopts
-	-${CLINKER} -o mahaffy mahaffy.o $(base) ${PETSC_SNES_LIB}
+	-${CLINKER} -o mahaffy mahaffy.o $(base) ${PETSC_LIB}
 	${RM} mahaffy.o $(base)
 
 # these targets are for regression testing
@@ -34,11 +30,10 @@ regress/unequal.short: mahaffy
 	cat tmphistory.txt | grep "av thickness error"  | sed 's/.* //g' >> regress/unequal.short
 	rm -f tmphistory.txt
 
-
 test: regress/dome.short regress/bedstep.short regress/true.short regress/noupwind.short regress/unequal.short
 	git diff regress/
 
-.PHONY: distclean texclean
+.PHONY: dirclean
 
 dirclean:
 	@rm -f *~ base/*~ grn/*~ search/*~ regress/*~ verif/*~ grn/mcb/*~ mahaffy *.pyc grn/*.pyc search/*.pyc
