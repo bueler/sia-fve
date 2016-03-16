@@ -58,5 +58,5 @@ bedstepprofiles.pdf:
 .PHONY: clean
 
 clean:
-	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz *~
+	@rm -f *.pyc *.out *.aux *.log *.bbl *.blg *.synctex.gz* *~
 
