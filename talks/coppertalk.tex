@@ -103,7 +103,7 @@
 
 
 \begin{document}
-\graphicspath{{../../layer-conserve/images/}{../../talks-public/commonfigs/}}
+\graphicspath{{../../talks-public/commonfigs/}}
 
 \begin{frame}
   \titlepage
@@ -114,11 +114,9 @@
 \end{frame}
 
 
-\section{The problem I'm worried about:}
+\section{free-boundary fluid layer models}
 
-\subsection{time-stepping free-boundary fluid layer models}
-
-\begin{frame}{A fluid layer in a climate}
+\begin{frame}{a fluid layer in a climate}
 
 \begin{center}
 \includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-wclimate}
@@ -139,37 +137,8 @@
 \end{frame}
 
 
-\begin{frame}{A fluid layer in a climate: \emph{the troubles}}
 
-\vspace{-1.2mm}
-
-\begin{center}
-\only<1>{\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-sensitive-three}}
-\only<2>{\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-sensitive-one}}
-\only<3>{\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-sensitive-two}}
-\end{center}
-
-\vspace{-18mm}
-$$h_t + \Div\bq = f$$
-
-  \begin{itemize}
-  \item<1-> $h=0$ \emph{and what else} at free boundary?
-     \begin{itemize}
-     \item<1->[$\circ$] shape at free boundary depends on both $\bq$ and $f$
-     \end{itemize}
-  \item<2-> $f<0$ not ``detected'' by model where $h=0$
-     \begin{itemize}
-     \item<2->[$\circ$] how to do mass conservation accounting?
-     \end{itemize}
-  \item<3> $f\approx 0$ threshold behavior
-     \begin{itemize}
-     \item<3>[$\circ$] $h>0$ as soon as $f<0$ switches to $f>0$
-     \end{itemize}
-  \end{itemize}
-\end{frame}
-
-
-\begin{frame}{Examples}
+\begin{frame}{examples}
 
 \includegraphics[width=0.4\textwidth,keepaspectratio=true]{polaris}
 \hfill
@@ -222,57 +191,12 @@ $$h_t + \Div\bq = f$$
 \end{frame}
 
 
-\begin{frame}{Has anyone solved these problems before?}
-
-\vspace{-2mm}
-
-  \begin{itemize}
-  \item yes, of course!
-  \item generic result: \emph{ad hoc} schemes near the free boundary
-  \end{itemize}
-
-\medskip
-\begin{columns}
-\begin{column}{0.45\textwidth}
-\includegraphics[width=0.7\textwidth,keepaspectratio=true]{Albrechtetal2011half}
-
-\scriptsize volume-of-fluid method at ice shelf fronts
-
-\tiny (Albrecht et al, 2011)
-
-\medskip
-\includegraphics[width=0.45\textwidth,keepaspectratio=true]{JaroschSchoofAnslow2013}
-
-\scriptsize glacier ice on steep terrain
-
-\smallskip
-\tiny (Jarosch, Schoof, Anslow, 2013)
-\end{column}
-
-\begin{column}{0.5\textwidth}
-\hfill \includegraphics[width=0.45\textwidth,keepaspectratio=true]{LeVequeGeorgeBerger2011}
-
-\hfill \scriptsize tsunami run-up on shore
-
-\smallskip
-\hfill \tiny (LeVeque, George, Berger, 2011)
-
-\medskip
-\hfill \includegraphics[width=0.55\textwidth,keepaspectratio=true]{jouvet-two-grids}
-
-\hfill \scriptsize volume-of-fluid method at glacier surface
-
-\hfill \tiny (Jouvet et al 2008)
-\end{column}
-\end{columns}
-\end{frame}
 
 
-\section{Practical conclusions:}
 
-\subsection{approach I: semi-discretize in time}
+\section{semi-discretize in time}
 
-\begin{frame}{Approach I: semi-discretize in time}
+\begin{frame}{semi-discretize in time}
 
 $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
 
@@ -290,75 +214,12 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \end{frame}
 
 
-\begin{frame}{1D time-stepping examples (and my $\bq$-agnosticism)}
-
-\begin{columns}
-\begin{column}{0.35\textwidth}
-\alert{same:}
-
-\begin{itemize}
-\scriptsize
-\item equation
-
-\tiny
-\hspace{-10mm} $\frac{H_n-H_{n-1}}{\Delta t} + \Div\bQ_n = f$
-\scriptsize
-
-\item BEuler time-step
-\item climate $f$
-\item bed shape
-\item constraint-respecting
-
-Newton scheme
-\end{itemize}
-
-\vspace{2mm}
-
-\alert{top:}
-
-\scriptsize
-
-\medskip
-$\bQ_n = v_0 H_n$
-
-hyperbolic advection with
-
-constant velocity
-
-\vspace{5mm}
-
-\normalsize 
-
-\alert{bottom:}
-
-\scriptsize
-
-\medskip
-$\bQ_n = - \Gamma |H_n|^{n+2}$
-
-$\phantom{bQ_n = }\, \cdot |\grad s_n|^{n-1} \grad s_n$
-
-nonlinear degenerate
-
-diffusion
-\end{column}
-\begin{column}{0.55\textwidth}
-%\hspace{-15mm}
-%\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/adv/u-}{1}{50}
-
-FIXME
-
-\medskip
-%\hspace{-15mm}
-%\animategraphics[autoplay,loop,height=3.5cm]{6}{anim/sia/u-}{1}{50}
-\end{column}
-\end{columns}
-\end{frame}
 
 
-\subsection{approach II: each time-step is weakly-posed free-bdry problem}
 
-\begin{frame}{Approach II: weak form incorporates $H_n\ge 0$ constraint}
+\section{each time-step is weakly-posed free-bdry problem}
+
+\begin{frame}{weak form incorporates $H_n\ge 0$ constraint}
 
   \begin{itemize}
   \item define:
@@ -379,7 +240,7 @@ FIXME
 \end{frame}
 
 
-\begin{frame}{Weak solves strong; gives more info}
+\begin{frame}{aeak solves strong but gives more info}
 
 \begin{itemize}
   \item assume $\bQ_n=0$ when $H_n=0$
@@ -403,10 +264,9 @@ FIXME
 \end{frame}
 
 
-\begin{frame}{Alternative weak formulation: NCP}
+\begin{frame}{nonlinear complementarity problem (NCP)}
 
 \begin{itemize}
-\item NCP = nonlinear complementarity problem
 \item abstractly, NCP is:
   \begin{itemize}
   \item[$\circ$]  given differentiable map $\bF:\RR^n \to \RR^n$
@@ -424,9 +284,9 @@ FIXME
 \end{frame}
 
 
-\subsection{newly-available numerical tools}
+\section{Newton solvers for NCPs}
 
-\begin{frame}{Numerical solution of the weak problem}
+\begin{frame}{numerical solution of the weak problem}
 
 the weak single time-step problem:
 \begin{itemize}
@@ -448,7 +308,7 @@ the weak single time-step problem:
 \end{frame}
 
 
-\begin{frame}{Example: Greenland ice sheet}
+\begin{frame}{example: Greenland ice sheet}
 
 \begin{columns}
 \begin{column}{0.6\textwidth}
@@ -487,82 +347,11 @@ the weak single time-step problem:
 \end{frame}
 
 
-\subsection{new (?) limitations to discrete conservation}
-
-\begin{frame}{Conservation reporting: subsets}
-\begin{itemize}
-\item suppose $H_n$ solves the single time-step problem
-\item define
-	\begin{align*}
-	\Omega_n &= \left\{H_n(x) > 0\right\} \\
-	\Omega_n^r &= \left\{H_n(x)= 0 \text{ and } H_{n-1}(x) > 0\right\} \quad \text{\alert{$\leftarrow$ retreat set}}
-	\end{align*}
-\end{itemize}
-
-\vspace{-3mm}
-\begin{center}
-\includegraphics[width=0.8\textwidth,keepaspectratio=true]{cartoon-sets}
-\end{center}
-\end{frame}
 
 
-\begin{frame}{Conservation reporting: time-series}
+\begin{frame}{summary}
 
-\begin{itemize}
-\item define:
-   $$M_n = \int_\Omega H_n(x)\,dx \qquad \text{\emph{mass at time} $t_n$}$$
-\item then \vspace{-5mm}
-	\begin{align*}
-	M_n - M_{n-1} &= \int_{\Omega_n} \mathLabelBox[
-    labelstyle={xshift=1cm,yshift=2mm},
-    linestyle={out=270,in=90, -latex}
-    ]{H_n - H_{n-1}}{$\boxed{\Delta t\, (-\Div\bQ_n + F_n)}$} \,dx + \int_{\Omega_n^r} 0 - H_{n-1} \,dx \\
-	   &= \Delta t\, \left(0 + \int_{\Omega_n} F_n \,dx\right) - \int_{\Omega_n^r} H_{n-1} \,dx
-	\end{align*}
-\item new term:
-     $$R_n = \int_{\Omega_n^r} H_{n-1} \,dx \qquad \text{\emph{\alert{retreat loss} during step} $n$}$$
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Conservation reporting: \emph{limitation}}
-
-\begin{itemize}
-\item \alert{the retreat loss $R_n$ is not balanced by the climate}
-  \begin{itemize}
-  \item[$\circ$] $R_n$ is \emph{caused} by the climate, but we don't know a computable integral of climate $F_n$ to balance it
-  \end{itemize}
-\item we must track \alert{three} time series:
-  \begin{itemize}
-  \item[$\circ$] mass at time $t_n$: \qquad $M_n = \int_\Omega H_n(x)\,dx$
-
-  \smallskip
-  \item[$\circ$] climate (e.g.~surface mass bal.) over current fluid-covered region:
-     $$C_n = \Delta t\, \int_{\Omega_n} F_n \,dx \qquad \approx \int_{t_{n-1}}^{t_n} \int_{\Omega_n} f(t,x) \,dx\,dt$$
-  \item[$\circ$] retreat loss during time step: \qquad $R_n = \int_{\Omega_n^r} H_{n-1} \,dx$
-  \end{itemize}
-\item now it balances:
-     $$M_n = M_{n-1} + C_n - R_n$$
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Reporting discrete conservation: $R_n\to 0$ as $\Delta t\to 0$}
-
-\begin{center}
-%\vspace{-3.3mm}
-
-%\animategraphics[autoplay,loop,height=2.9cm]{15}{anim/tdep/u-}{1}{250}
-FIXME
-%\vspace{-1.1mm}
-%\includegraphics[width=0.59\textwidth,keepaspectratio=true]{masstimeseries} \, \phantom{!}
-\end{center}
-\end{frame}
-
-
-\begin{frame}{Summary}
-
-consider layer flow model \, $h_t + \Div\bq = f$ \, subject to signed climate $f$ and where $h$ is layer thickness
+FIXME consider layer flow model \, $h_t + \Div\bq = f$ \, subject to signed climate $f$ and where $h$ is layer thickness
 
   \begin{itemize}
   \item goals/issues:
@@ -576,13 +365,6 @@ consider layer flow model \, $h_t + \Div\bq = f$ \, subject to signed climate $f
     \item[$\circ$]  consider discrete-time problem before doing FEM/FVM/etc.
     \item[$\circ$]  pose single time-step problem weakly as VI or NCP
     \item[$\circ$]  solve by scalable constrained-Newton method (PETSc)
-    \end{itemize}
-  \item new (?) result:
-    \begin{itemize}
-    \item[$\circ$]  discrete conservation requires tracking retreat-loss time-series
-      \begin{itemize}
-      \item in addition to climate input during time step
-      \end{itemize}
     \end{itemize}
   \end{itemize}
 
