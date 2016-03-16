@@ -63,28 +63,19 @@
 \newcommand\bX{\mathbf{X}}
 
 \newcommand\CC{\mathbb{C}}
+\newcommand\RR{\mathbb{R}}
+
 \newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
 \newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
-\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
-\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
-\newcommand{\ddxp}[1]{\ensuremath{\frac{\partial #1}{\partial x'}}}
-\newcommand{\ddz}[1]{\ensuremath{\frac{\partial #1}{\partial z}}}
-\newcommand{\ddxx}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x^2}}}
-\newcommand{\ddyy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial y^2}}}
-\newcommand{\ddxy}[1]{\ensuremath{\frac{\partial^2 #1}{\partial x \partial y}}}
-\newcommand{\ddzz}[1]{\ensuremath{\frac{\partial^2 #1}{\partial z^2}}}
-\newcommand{\Div}{\nabla\cdot}
+
+\newcommand\Div{\nabla\cdot}
 \newcommand\eps{\epsilon}
-\newcommand{\grad}{\nabla}
-\newcommand{\ihat}{\mathbf{i}}
+\newcommand\grad{\nabla}
 \newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
-\newcommand{\jhat}{\mathbf{j}}
-\newcommand{\khat}{\mathbf{k}}
-\newcommand{\nhat}{\mathbf{n}}
+\newcommand\nhat{\mathbf{n}}
 \newcommand\lam{\lambda}
 \newcommand\lap{\triangle}
 \newcommand\Matlab{\textsc{Matlab}\xspace}
-\newcommand\RR{\mathbb{R}}
 \newcommand\vf{\varphi}
 
 
@@ -99,7 +90,7 @@
   \tiny (\emph{funded by NASA Modeling, Analysis, and Prediction program})%
 }
 
-\date{Copper Iterative March 2016}
+\date{Copper Mtn Iterative March 2016}
 
 
 \begin{document}
@@ -109,14 +100,22 @@
   \titlepage
 \end{frame}
 
-\begin{frame}{Outline}
+\begin{frame}{outline}
   \tableofcontents
 \end{frame}
 
 
-\section{free-boundary fluid layer models}
+\section{glacier geometry-evolution models}
 
-\begin{frame}{a fluid layer in a climate}
+\begin{frame}{coupled mass and momentum equations}
+
+\begin{itemize}
+\item FIXME
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{a free-boundary fluid layer in a climate}
 
 \begin{center}
 \includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-wclimate}
@@ -137,8 +136,7 @@
 \end{frame}
 
 
-
-\begin{frame}{examples}
+\begin{frame}{examples with similar character}
 
 \includegraphics[width=0.4\textwidth,keepaspectratio=true]{polaris}
 \hfill
@@ -158,43 +156,7 @@
 \end{frame}
 
 
-\begin{frame}{I'm driven here by practical modeling: ice sheets}
-
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\begin{itemize}
-\small
-\item the icy region is nearly-fractal and disconnected
-\item currently in our ice sheet model$^*$:
-  \begin{itemize}
-  \item[$\circ$] explicit time-stepping
-  \item[$\circ$] free boundary by truncation
-  \end{itemize}
-\item want for our model:
-  \begin{itemize}
-  \item[$\circ$] long implicit time steps
-  \item[$\circ$] better conservation accounting to user
-  \end{itemize}
-\end{itemize}
-
-\vspace{10mm}
-{\scriptsize $^*$Parallel Ice Sheet Model, \texttt{pism-docs.org}}
-\end{column}
-\begin{column}{0.5\textwidth}
-\vspace{-5mm}
-
-\begin{center}
-\includegraphics[width=0.8\textwidth,keepaspectratio=true]{ice-mask-900m}
-\end{center}
-\end{column}
-\end{columns}
-\end{frame}
-
-
-
-
-
-\section{semi-discretize in time}
+\section{each time-step is free-boundary problem}
 
 \begin{frame}{semi-discretize in time}
 
@@ -213,11 +175,6 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
   \end{itemize}
 \end{frame}
 
-
-
-
-
-\section{each time-step is weakly-posed free-bdry problem}
 
 \begin{frame}{weak form incorporates $H_n\ge 0$ constraint}
 
@@ -240,7 +197,7 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \end{frame}
 
 
-\begin{frame}{aeak solves strong but gives more info}
+\begin{frame}{weak solves strong but gives more info}
 
 \begin{itemize}
   \item assume $\bQ_n=0$ when $H_n=0$
@@ -284,7 +241,30 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \end{frame}
 
 
-\section{Newton solvers for NCPs}
+\begin{frame}{these are \emph{not} constrained optimization problems}
+
+\begin{itemize}
+\item NCP and VI problems arising this way are not generally optimizations
+  \begin{itemize}
+  \item[$\circ$]  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
+  \end{itemize}
+\item Jacobians are \emph{not} generally symmetric
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{the 3 nonlinearities of the glacier geometry problem}
+
+not counting possible sliding and elevation-accumulation feedbacks
+\begin{itemize}
+\item the constrained problem (VI or NCP) is inherently nonlinear, i.e.~iteration is needed even for LCPs
+\item the $p=n+1$ glen power generates a nonlinearity even in steady state on a flat bed (in that case the ``doubly-nonlinear'' MC equation can be transformed to a straight $p$-laplacian equation)
+\item nonzero bedrock gradient ``brings back'' a nonlinearity (Jouvet \& Bueler 2012)
+\end{itemize}
+\end{frame}
+
+
+\section{numerical solution of the weak problem}
 
 \begin{frame}{numerical solution of the weak problem}
 
@@ -292,7 +272,7 @@ the weak single time-step problem:
 \begin{itemize}
 \item is nonlinear because of constraint (even for $\bQ_n$ linear in $H_n$)
 \item can be solved by a Newton method modified for constraint
-\item scalable implementations are in PETSc$^*$ 3.5+
+\item scalable implementations are in PETSc
   \begin{itemize}
   \item[$\circ$]  see ``SNESVI'' object
   \item[$\circ$]  for NCP there are two implementations (Benson \& Munson, 2006):
@@ -303,8 +283,6 @@ the weak single time-step problem:
   \end{itemize}
 \end{itemize}
 
-\vspace{15mm}
-{\scriptsize $^*$Portable Extensible Toolkit for Scientific computation, \texttt{www.mcs.anl.gov/petsc}}
 \end{frame}
 
 
