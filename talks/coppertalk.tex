@@ -100,10 +100,85 @@
   \titlepage
 \end{frame}
 
+
 \begin{frame}{outline}
   \tableofcontents
 \end{frame}
 
+
+\section{NCPs and VIs}
+
+\begin{frame}{nonlinear complementarity problems (NCP)}
+
+\begin{itemize}
+\item abstractly, NCP is:
+  \begin{itemize}
+  \item[$\circ$]  given differentiable map $\bF:\RR^n \to \RR^n$
+  \item[$\circ$]  solve for $\bx\in\RR^n$:
+     $$\bx \ge 0, \quad \bF(\bx) \ge 0, \quad \bx^\top \bF(\bx) = 0$$
+  \end{itemize}
+\item toy problem:  FIXME show 1D obstacle
+\item our case:
+  \begin{itemize}
+  \item[$\circ$]  $\infty$ dimensions
+  \item[$\circ$] comes from with mass conservation (MC) equation $H_t + \Div\bq = f$
+  \item[$\circ$]  $\bx = H$ and $\bF(\bx) = (\text{residual from discrete-time  MC eqn.})$
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{variational inequalities (VI)}
+
+\begin{itemize}
+\item abstractly, in finite dimensions, VI is:
+  \begin{itemize}
+  \item[$\circ$]  given differentiable map $\bF:\RR^n \to \RR^n$
+  \item[$\circ$]  solve for $\bx\in\RR^n$:
+     $$\ip{\bF(\bx)}{\by-\bx} \ge 0 \quad \forall \by \in \mathcal{K}$$
+  \end{itemize}
+\item toy problem:  FIXME show 1D obstacle
+\item in finite dimensions: VI $\leftrightarrow$ NCP
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{these problems are \emph{intrinsically nonlinear}}
+
+\begin{itemize}
+\item even if $\bF(\bx)$ is linear, problem is nonlinear
+  \begin{itemize}
+  \item[$\circ$]  solution space is not affine
+  \end{itemize}
+\item toy problem:  FIXME show 1D obstacle
+\item iteration appropriate
+  \begin{itemize}
+  \item[$\circ$]  in infinite dimensions, iteration is obligatory
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{these glacier problems are \emph{not} optimizations}
+
+\begin{itemize}
+\item NCP and VI problems arising in glacier problems are not (generally) constrained optimization problems
+  \begin{itemize}
+  \item[$\circ$]  no surprise: the mass continuity equation is not (generally) an Euler-Lagrange (variational) equation of a functional
+  \item[$\circ$]  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
+  \end{itemize}
+\item Jacobians are \emph{not} generally symmetric
+\end{itemize}
+\end{frame}
+
+
+\AtBeginSection[] % Do nothing for \section*
+{
+\begin{frame}<beamer>
+\frametitle{outline}
+\tableofcontents[currentsection]
+\end{frame}
+}
 
 \section{glacier geometry-evolution models}
 
@@ -156,7 +231,7 @@
 \end{frame}
 
 
-\section{each time-step is free-boundary problem}
+\section{every time-step is free-boundary problem}
 
 \begin{frame}{semi-discretize in time}
 
@@ -221,38 +296,6 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \end{frame}
 
 
-\begin{frame}{nonlinear complementarity problem (NCP)}
-
-\begin{itemize}
-\item abstractly, NCP is:
-  \begin{itemize}
-  \item[$\circ$]  given differentiable map $\bF:\RR^n \to \RR^n$
-  \item[$\circ$]  solve
-     $$\bx \ge 0, \quad \bF(\bx) \ge 0, \quad \bx^\top \bF(\bx) = 0$$
-  \end{itemize}
-\item our case:
-  \begin{itemize}
-  \item[$\circ$]  $\infty$ dimensions with m.c.~equation $h_t + \Div\bq = f$
-  \item[$\circ$]  $\bx = H_n$ and $\bF(\bx) = (\text{residual from discrete-time m.c.~eqn.})$
-  \end{itemize}
-\item in finite dimensions we have VI $\leftrightarrow$ NCP equivalence:
-  $$\ip{\bF(\bx)}{\by-\bx} \ge 0 \quad \forall \by \in \mathcal{K} \qquad \iff \qquad \text{NCP}$$
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{these are \emph{not} constrained optimization problems}
-
-\begin{itemize}
-\item NCP and VI problems arising this way are not generally optimizations
-  \begin{itemize}
-  \item[$\circ$]  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
-  \end{itemize}
-\item Jacobians are \emph{not} generally symmetric
-\end{itemize}
-\end{frame}
-
-
 \begin{frame}{the 3 nonlinearities of the glacier geometry problem}
 
 not counting possible sliding and elevation-accumulation feedbacks
@@ -264,7 +307,27 @@ not counting possible sliding and elevation-accumulation feedbacks
 \end{frame}
 
 
-\section{numerical solution of the weak problem}
+\section{discretization scheme: FVE}
+
+\begin{frame}{finite volume element schemes}
+
+\begin{itemize}
+\item FIXME
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{careful: quadrature and upwinding}
+
+\begin{itemize}
+\item FIXME
+\end{itemize}
+
+\end{frame}
+
+
+\section{numerical solution: constrained Newton}
 
 \begin{frame}{numerical solution of the weak problem}
 
@@ -285,6 +348,8 @@ the weak single time-step problem:
 
 \end{frame}
 
+
+\section{the essential difficulty} % i.e. bedrock roughness
 
 \begin{frame}{example: Greenland ice sheet}
 
@@ -323,8 +388,6 @@ the weak single time-step problem:
 \end{column}
 \end{columns}
 \end{frame}
-
-
 
 
 \begin{frame}{summary}
