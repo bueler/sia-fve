@@ -53,6 +53,7 @@
 \newcommand\bbf{\mathbf{f}}
 \newcommand\bn{\mathbf{n}}
 \newcommand\bq{\mathbf{q}}
+\newcommand\bs{\mathbf{s}}
 \newcommand\bu{\mathbf{u}}
 \newcommand\bv{\mathbf{v}}
 \newcommand\bx{\mathbf{x}}
@@ -61,6 +62,7 @@
 
 \newcommand\bF{\mathbf{F}}
 \newcommand\bQ{\mathbf{Q}}
+\newcommand\bU{\mathbf{U}}
 \newcommand\bV{\mathbf{V}}
 \newcommand\bX{\mathbf{X}}
 
@@ -124,7 +126,7 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{column}{0.5\textwidth}
 \small
 \begin{itemize}
-\item example: obstacle problem is to find $u(x)$ so that $u''(x) \le 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
+\item \alert{example}: obstacle problem is to find $u(x)$ so that $u''(x) \le 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
 \item discretized and put in form \eqref{ncp}: $z_j=u_j - \psi(x_j)$ and
   $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi''(x_j)$$
 \end{itemize}
@@ -150,7 +152,7 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{column}{0.5\textwidth}
 \small
 \begin{itemize}
-\item discretized obstacle problem has $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
+\item obstacle problem has $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
   $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2}$$
 \end{itemize}
 \end{column}
@@ -175,38 +177,49 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
   \end{itemize}
 \item constrained optimization $\implies$ NCP $\iff$ VI
   \begin{itemize}
-  \item[$\circ$]  i.e.~find minimum of $\mathcal{I}[\bz]$ from $\mathcal{K}$
-  \item[$\circ$]  constrained optimization generates symmetric Jacobian/Hessian ($J = \bF' = \mathcal{I}''$)
+  \item[$\circ$]  i.e.~find minimum of $\Phi[\bz]$ from $\mathcal{K}$
+  \item[$\circ$]  constrained optimization generates symmetric Jacobian/Hessian ($J = \bF' = \Phi''$)
   \item[$\circ$]  \alert{but} NCP and VI problems arising in glacier problems are not (generally) optimizations, and don't have symmetric Jacobians
   \end{itemize}
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}{numerics}
+\begin{frame}{numerics (gloss)}
 
 \begin{itemize}
-\item FIXME gloss what is in PETSc
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{fixme}
-
-\begin{itemize}
-\item fixme
-\item our case:
+\item support for NCP and/or VI \dots \emph{as known to me}:
   \begin{itemize}
-  \item[$\circ$]  $\infty$ dimensions
-  \item[$\circ$] comes from with mass conservation (MC) equation $H_t + \Div\bq = f$
-  \item[$\circ$]  $\bx = H$ and $\bF(\bx) = (\text{residual from discrete-time  MC eqn.})$
-  \item[$\circ$]  the mass continuity equation is not (generally) an Euler-Lagrange (variational) equation of a functional
-  \item[$\circ$]  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
+  \item[$\circ$]  PETSc SNES \dots \emph{I used this}
+  \item[$\circ$]  TAO (in PETSc release; separate implementations from SNES)
+  \item[$\circ$]  DUNE (maintained?)
   \end{itemize}
-\item Jacobians are \emph{not} generally symmetric
+\item 2 Newton line search methods in PETSc SNES:
+  \begin{itemize}
+  \item[$\circ$]  due to Benson \& Munson (2006), and Barry Smith
+  \item[$\circ$]  neither assume optimization
+  \item[$\circ$]  ``reduced-space'' = \alert{RS}
+    \begin{itemize}
+    \item active set $= \mathcal{A} = \{i \,:\, z_i = 0 \text{ and } F_i(\bz) > 0\}$
+    \item inactive set $= \mathcal{I} = \{i \,:\, z_i > 0 \text{ or } F_i(\bz) \le 0\}$
+    \item \emph{alg}: compute Newton step $\bs^k$ by $\big[J(\bz^k)\big]_{\mathcal{I}^k,\mathcal{I}^k} \bs_{\mathcal{I}^k} = - \bF_{\mathcal{I}^k}(\bz^k)$; do projected line search onto $\{\bz\ge 0\}$
+    \end{itemize}
+  \item[$\circ$]  ``semi-smooth'' = \alert{SS}
+    \begin{itemize}
+    \item ``NCP function'' satisfies $\phi(a,b)=0$ if and only if $a\ge 0,b\ge 0,ab=0$
+    \item \emph{alg}: compute Newton step $\bs^k$ by $L^k \bs^k = - \phi(\bz^k,\bF^k(\bz^k))$ where $L^k$ is any element of $\partial_B \phi(\bz^k,\bF^k(\bz^k))$; do line search
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
+
+%  $\infty$ dimensions
+% comes from with mass conservation (MC) equation $H_t + \Div\bq = f$
+%  $\bx = H$ and $\bF(\bx) = (\text{residual from discrete-time  MC eqn.})$
+%  the mass continuity equation is not (generally) an Euler-Lagrange (variational) equation of a functional
+%  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
+% Jacobians are \emph{not} generally symmetric
 
 \AtBeginSection[] % Do nothing for \section*
 {
@@ -217,6 +230,33 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 }
 
 \section{glacier geometry-evolution models}
+
+\begin{frame}{glacier notation}
+
+\begin{center}
+\includegraphics[width=0.5\textwidth,keepaspectratio=true]{groundedscheme}
+\end{center}
+
+\begin{itemize}
+\item unknowns:
+  \begin{itemize}
+  \item[$\circ$]  $h(t,x,y)$ ice thickness \hfill \dots also $s=h+b$ surface elevation
+  \item[$\circ$]  $\bU(t,x,y,z)$ ice velocity
+  \end{itemize}
+\item ``data'':
+  \begin{itemize}
+  \item[$\circ$]  $b(x,y)$ bed elevation
+  \item[$\circ$]  $a(t,x,y)$ surface mass balance (accumulation/ablation function)
+  \end{itemize}
+\item ignored here:
+  \begin{itemize}
+  \item[$\circ$]  temperature/enthalpy, and conservation of energy
+  \item[$\circ$]  floating ice
+  \item[$\circ$]  bed deformation
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
 
 \begin{frame}{coupled mass and momentum equations}
 
