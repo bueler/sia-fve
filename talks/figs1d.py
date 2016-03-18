@@ -26,7 +26,7 @@ def genbasicfig(showqh=True):
         font = font_manager.FontProperties(family='sans serif', style='italic',
                                            size=24)
         t.set_font_properties(font)
-        arrow(x[450],b[600]+0.3*h[600],-1.0,-0.1,
+        arrow(x[450],b[600]+0.3*h[600],-1.0,0.0,
               lw=2.0,head_width=0.2,color='k',length_includes_head=True)
         t = text(x[400],b[600]+0.45*h[600],'q')
         font = font_manager.FontProperties(family='sans serif', style='normal',

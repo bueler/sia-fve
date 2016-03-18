@@ -15,7 +15,7 @@ def psi(x):
     s2 = s * s
     return 0.6 + 0.1 * s + 0.5 * (0.5 * s2 - 0.25 * s2 * s2)
 
-N = 9
+N = 16
 x = linspace(0.0,1.0,N+1)
 
 mpsi = psi(x).max()
@@ -44,7 +44,8 @@ plot([xL,xR],[0.0,0.0],'k',lw=2.0)
 plot([0.0,0.0],[yB,yT],'k',lw=2.0)
 xx = linspace(xL,xR,201)
 plot(xx,psi(xx),'b',lw=2.0)
-plot(x,H,'r.-',ms=15.0)
+plot(x,H,'r.-',ms=2.0)
+plot(x[1:N],H[1:N],'r.-',ms=15.0)
 axis('off')
 axis('tight')
 axis([xL,xR,yB,yT])
