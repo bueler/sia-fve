@@ -57,6 +57,7 @@
 \newcommand\bv{\mathbf{v}}
 \newcommand\bx{\mathbf{x}}
 \newcommand\by{\mathbf{y}}
+\newcommand\bz{\mathbf{z}}
 
 \newcommand\bF{\mathbf{F}}
 \newcommand\bQ{\mathbf{Q}}
@@ -107,65 +108,99 @@
 \end{frame}
 
 
-\section{NCPs and VIs}
+\section{NCPs and VIs: 4 slide intro}
 
 \begin{frame}{nonlinear complementarity problems (NCP)}
 
 \begin{itemize}
-\item abstractly, NCP is:
-  \begin{itemize}
-  \item[$\circ$]  given differentiable map $\bF:\RR^n \to \RR^n$
-  \item[$\circ$]  solve for $\bx\in\RR^n$:
-     $$\bx \ge 0, \quad \bF(\bx) \ge 0, \quad \bx^\top \bF(\bx) = 0$$
-  \end{itemize}
-\item toy problem:  FIXME show 1D obstacle
-\item our case:
-  \begin{itemize}
-  \item[$\circ$]  $\infty$ dimensions
-  \item[$\circ$] comes from with mass conservation (MC) equation $H_t + \Div\bq = f$
-  \item[$\circ$]  $\bx = H$ and $\bF(\bx) = (\text{residual from discrete-time  MC eqn.})$
-  \end{itemize}
+\item in finite dimensions, an NCP is to find $\bz\in\RR^n$ for which
+\begin{equation}
+\bz \ge 0, \quad \bF(\bz) \ge 0, \quad \bz^\top \bF(\bz) = 0, \label{ncp}
+\end{equation}
+given a differentiable map $\bF:\RR^n \to \RR^n$
 \end{itemize}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\small
+\begin{itemize}
+\item example: obstacle problem is to find $u(x)$ so that $u''(x) \le 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
+\item discretized and put in form \eqref{ncp}: $z_j=u_j - \psi(x_j)$ and
+  $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi''(x_j)$$
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth,keepaspectratio=true]{obstacle1d}
+\end{column}
+\end{columns}
 \end{frame}
 
 
 \begin{frame}{variational inequalities (VI)}
 
 \begin{itemize}
-\item abstractly, in finite dimensions, VI is:
-  \begin{itemize}
-  \item[$\circ$]  given differentiable map $\bF:\RR^n \to \RR^n$
-  \item[$\circ$]  solve for $\bx\in\RR^n$:
-     $$\ip{\bF(\bx)}{\by-\bx} \ge 0 \quad \forall \by \in \mathcal{K}$$
-  \end{itemize}
-\item toy problem:  FIXME show 1D obstacle
-\item in finite dimensions: VI $\leftrightarrow$ NCP
+\item in finite dimensions, a VI is to find $\bz\in\mathcal{K}$, where $\mathcal{K}\subseteq \RR^n$ is convex and closed, for which
+\begin{equation}
+     \ip{\bF(\bz)}{\by-\bz} \ge 0 \quad \forall \by \in \mathcal{K},
+\end{equation}
+given a differentiable map $\bF:\RR^n \to \RR^n$
 \end{itemize}
-\end{frame}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\small
+\begin{itemize}
+\item discretized obstacle problem has $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
+  $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2}$$
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth,keepaspectratio=true]{obstacle1d}
+\end{column}
+\end{columns}\end{frame}
 
 
-\begin{frame}{these problems are \emph{intrinsically nonlinear}}
+\begin{frame}{generalities}
 
 \begin{itemize}
-\item even if $\bF(\bx)$ is linear, problem is nonlinear
+\item both VI and NCP generalize nonlinear equations ``$\bF(\bz)=0$'' to allow constraints on $\bz$
+  \begin{itemize}
+  \item[$\circ$]  in finite dimensions: NCP $\iff$ VI
+  \item[$\circ$]  for obstacle problems, if $\psi\equiv 0$ then $\bF$ is same in NCP and VI
+  \end{itemize}
+\item even if $\bF(\bx)$ is linear, the NCP or VI problem is nonlinear
   \begin{itemize}
   \item[$\circ$]  solution space is not affine
+  \item[$\circ$]  of course: iteration obligatory for $n$ large
   \end{itemize}
-\item toy problem:  FIXME show 1D obstacle
-\item iteration appropriate
+\item constrained optimization $\implies$ NCP $\iff$ VI
   \begin{itemize}
-  \item[$\circ$]  in infinite dimensions, iteration is obligatory
+  \item[$\circ$]  i.e.~find minimum of $\mathcal{I}[\bz]$ from $\mathcal{K}$
+  \item[$\circ$]  constrained optimization generates symmetric Jacobian/Hessian ($J = \bF' = \mathcal{I}''$)
+  \item[$\circ$]  \alert{but} NCP and VI problems arising in glacier problems are not (generally) optimizations, and don't have symmetric Jacobians
   \end{itemize}
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}{these glacier problems are \emph{not} optimizations}
+\begin{frame}{numerics}
 
 \begin{itemize}
-\item NCP and VI problems arising in glacier problems are not (generally) constrained optimization problems
+\item FIXME gloss what is in PETSc
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{fixme}
+
+\begin{itemize}
+\item fixme
+\item our case:
   \begin{itemize}
-  \item[$\circ$]  no surprise: the mass continuity equation is not (generally) an Euler-Lagrange (variational) equation of a functional
+  \item[$\circ$]  $\infty$ dimensions
+  \item[$\circ$] comes from with mass conservation (MC) equation $H_t + \Div\bq = f$
+  \item[$\circ$]  $\bx = H$ and $\bF(\bx) = (\text{residual from discrete-time  MC eqn.})$
+  \item[$\circ$]  the mass continuity equation is not (generally) an Euler-Lagrange (variational) equation of a functional
   \item[$\circ$]  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
   \end{itemize}
 \item Jacobians are \emph{not} generally symmetric
