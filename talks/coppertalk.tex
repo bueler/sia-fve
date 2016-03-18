@@ -126,7 +126,7 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{column}{0.5\textwidth}
 \small
 \begin{itemize}
-\item \alert{example}: obstacle problem is to find $u(x)$ so that $u''(x) \le 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
+\item \alert{example}: obstacle problem is to find $u(x)$ so that $-u''(x) \ge 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
 \item discretized and put in form \eqref{ncp}: $z_j=u_j - \psi(x_j)$ and
   $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi''(x_j)$$
 \end{itemize}
@@ -152,7 +152,9 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{column}{0.5\textwidth}
 \small
 \begin{itemize}
-\item obstacle problem has $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
+\item obstacle problem:
+
+$\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
   $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2}$$
 \end{itemize}
 \end{column}
@@ -165,7 +167,7 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{frame}{generalities}
 
 \begin{itemize}
-\item both VI and NCP generalize nonlinear equations ``$\bF(\bz)=0$'' to allow constraints on $\bz$
+\item both NCP and VI generalize nonlinear equations ``$\bF(\bz)=0$'' to allow constraints on $\bz$
   \begin{itemize}
   \item[$\circ$]  in finite dimensions: NCP $\iff$ VI
   \item[$\circ$]  for obstacle problems, if $\psi\equiv 0$ then $\bF$ is same in NCP and VI
@@ -188,10 +190,10 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{frame}{numerics (gloss)}
 
 \begin{itemize}
-\item support for NCP and/or VI \dots \emph{as known to me}:
+\item have support for NCP and/or VI:
   \begin{itemize}
   \item[$\circ$]  PETSc SNES \dots \emph{I used this}
-  \item[$\circ$]  TAO (in PETSc release; separate implementations from SNES)
+  \item[$\circ$]  TAO (in PETSc release; separate code from SNES)
   \item[$\circ$]  DUNE (maintained?)
   \end{itemize}
 \item 2 Newton line search methods in PETSc SNES:
@@ -200,14 +202,14 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
   \item[$\circ$]  neither assume optimization
   \item[$\circ$]  ``reduced-space'' = \alert{RS}
     \begin{itemize}
-    \item active set $= \mathcal{A} = \{i \,:\, z_i = 0 \text{ and } F_i(\bz) > 0\}$
-    \item inactive set $= \mathcal{I} = \{i \,:\, z_i > 0 \text{ or } F_i(\bz) \le 0\}$
+    \item active set $\mathcal{A} = \{i \,:\, z_i = 0 \text{ and } F_i(\bz) > 0\}$
+    \item inactive set $\mathcal{I} = \{i \,:\, z_i > 0 \text{ or } F_i(\bz) \le 0\}$
     \item \emph{alg}: compute Newton step $\bs^k$ by $\big[J(\bz^k)\big]_{\mathcal{I}^k,\mathcal{I}^k} \bs_{\mathcal{I}^k} = - \bF_{\mathcal{I}^k}(\bz^k)$; do projected line search onto $\{\bz\ge 0\}$
     \end{itemize}
   \item[$\circ$]  ``semi-smooth'' = \alert{SS}
     \begin{itemize}
     \item ``NCP function'' satisfies $\phi(a,b)=0$ if and only if $a\ge 0,b\ge 0,ab=0$
-    \item \emph{alg}: compute Newton step $\bs^k$ by $L^k \bs^k = - \phi(\bz^k,\bF^k(\bz^k))$ where $L^k$ is any element of $\partial_B \phi(\bz^k,\bF^k(\bz^k))$; do line search
+    \item \emph{alg}: compute Newton step $\bs^k$ by $L^k \bs^k = - \phi(\bz^k,\bF^k(\bz^k))$ where $L^k$ is element of $\partial_B \phi(\bz^k,\bF^k(\bz^k))$; do line search
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -231,7 +233,7 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 
 \section{glacier geometry-evolution models}
 
-\begin{frame}{glacier notation}
+\begin{frame}{glacier (and ice sheet) notation}
 
 \begin{center}
 \includegraphics[width=0.5\textwidth,keepaspectratio=true]{groundedscheme}
@@ -241,12 +243,12 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \item unknowns:
   \begin{itemize}
   \item[$\circ$]  $h(t,x,y)$ ice thickness \hfill \dots also $s=h+b$ surface elevation
-  \item[$\circ$]  $\bU(t,x,y,z)$ ice velocity
+  \item[$\circ$]  $\bU(t,x,y,z) = (u,v,w)$ ice velocity
   \end{itemize}
-\item ``data'':
+\item \only<1>{data}\only<2>{\alert{uncertain} ``data'' \alert{from other models}}:
   \begin{itemize}
-  \item[$\circ$]  $b(x,y)$ bed elevation
-  \item[$\circ$]  $a(t,x,y)$ surface mass balance (accumulation/ablation function)
+  \item[$\circ$]  $b(x,y)$ bed elevation \only<2>{\quad \alert{? \quad \dots improving for ice sheets}}
+  \item[$\circ$]  $a(t,x,y)$ surface mass balance \only<1>{(accumulation/ablation function)}  \only<2>{\quad \alert{???}}
   \end{itemize}
 \item ignored here:
   \begin{itemize}
@@ -258,52 +260,110 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \end{frame}
 
 
-\begin{frame}{coupled mass and momentum equations}
+\begin{frame}{solve coupled mass and momentum equations}
 
 \begin{itemize}
-\item FIXME
+\item my goal: better ice sheet models!
+  \begin{itemize}
+  \item[$\circ$]  suitable for long/paleo ($\sim 100$ka) and high res ($\sim 1$ km)
+  \item[$\circ$]  with less time-splitting and no (\emph{pathetic}) first-order explicitness
+  \end{itemize}
+\item here just two coupled conservations:
+  \begin{itemize}
+  \item[$\circ$]  \alert{mass conservation}
+\begin{equation*}
+h_t + \Div\bq = a
+\end{equation*}
+    \begin{itemize}
+    \vspace{-5mm}
+    \item $\bq = h\, \ip{\bar u}{\bar v}$ is vertically-integrated ice flux
+    \item equivalent to ``surface kinematical equation'' if bed stationary
+    \item<2> \emph{the geometry-evolution and climate-interacting part part!}
+    \end{itemize}
+  \item[$\circ$]  \alert{momentum conservation}
+\begin{equation*}
+  \nabla \cdot \bU = 0 \qquad \text{and} \qquad - \nabla \cdot \tau_{ij} + \nabla p - \rho\, \mathbf{g} = 0
+\end{equation*}
+    \begin{itemize}
+    \vspace{-5mm}
+    \item i.e.~incompressible power-law Stokes if strain-rate $= A \tau^{n-1} \tau_{ij}$
+    \item $h$ and $b$ (geometry) enter into boundary conditions
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}{a free-boundary fluid layer in a climate}
+\begin{frame}{possible momentum equations}
+
+\begin{itemize}
+\item common to all momentum-conservation models:
+\begin{center}
+\alert{generate ice velocity $\bU=\left<u,v,w\right>$ from geometry $h$ \& $b$}
+\end{center}
+
+  \begin{itemize}
+  \footnotesize
+  \item[$\circ$] incompressible power-law Stokes
+\begin{equation*}
+  \nabla \cdot \bU = 0 \qquad \text{and} \qquad - \nabla \cdot \tau_{ij} + \nabla p - \rho\, \mathbf{g} = 0
+\end{equation*}
+  \item[$\circ$] Blatter-Pattyn
+$$-\Div \left[\eta \begin{pmatrix}
+4 u_x+2v_y & u_y+v_x   & u_z \\
+u_y+v_x    & 2u_x+4v_y & v_z
+\end{pmatrix} \right] + \rho g \grad s = 0$$
+  \item[$\circ$] shallow shelf equation (SSA)
+$$-\Div \left[\bar \eta h \begin{pmatrix}
+4 \bar u_x+2\bar v_y & \bar u_y+\bar v_x   \\
+\bar u_y+\bar v_x    & 2\bar u_x+4\bar v_y
+\end{pmatrix} \right] - \tau_b + \rho g h \grad s = 0$$
+  \item[$\circ$] shallow ice equation (SIA)
+$$\ip{\bar u}{\bar v} = -\Gamma h^{n+2} |\grad s|^{n-1} \grad s$$
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{a fluid layer in a climate}
 
 \begin{center}
-\includegraphics[width=0.95\textwidth,keepaspectratio=true]{cartoon-wclimate}
+\includegraphics[width=0.7\textwidth,keepaspectratio=true]{cartoon-wclimate}
 \end{center}
 
 \vspace{-7mm}
   \begin{itemize}
-  \item mass conservation PDE for a layer:
-      $$h_t + \Div\bq = {\color{blue} f}$$
+  \item problem is instance of broader class:
+\begin{center}
+\alert{a fluid layer on a substrate, evolving in a climate}
+\end{center}
+  \item always this mass conservation PDE:
+      $$h_t + \Div\bq = {\color{blue} a}$$
     \begin{itemize}
     \vspace{-4mm}
-    \item[$\circ$] $h$ is a thickness: $h\ge 0$
+    \item[$\circ$] $h$ is a thickness so $h\ge 0$
     \item[$\circ$] mass conservation PDE applies only where $h>0$
-    \item[$\circ$] $\bq$ is flow (vertically-integrated)
-    \item[$\circ$] source ${\color{blue} f}$ is ``climate''; ${\color{blue} f}>0$ shown downward
+    \item[$\circ$] source ${\color{blue} a}$ is ``climate''; ${\color{blue} a}>0$ shown downward
     \end{itemize}
   \end{itemize}
 \end{frame}
 
 
-\begin{frame}{examples with similar character}
+\begin{frame}{fluid layers in climates}
 
 \includegraphics[width=0.4\textwidth,keepaspectratio=true]{polaris}
 \hfill
 \includegraphics[width=0.45\textwidth,keepaspectratio=true]{supp4rignot-small}
 
-\small glaciers \hfill ice shelves \& sea ice
+\small glaciers \hfill sea ice (\& ice shelves)
 
 \medskip
 \includegraphics[width=0.41\textwidth,keepaspectratio=true]{marsh-water}
 \hfill
-\includegraphics[width=0.42\textwidth,keepaspectratio=true]{tsunami-sendai}
+\includegraphics<1>[width=0.42\textwidth,keepaspectratio=true]{tsunami-sendai}
+\only<2>{\small \vspace{-3.7mm}\begin{minipage}[t]{0.4\textwidth} surface hydrology, subglacial hydrology, \dots \end{minipage} }
 
-\small tidewater marsh \hfill tsunami inundation
-
-\medskip
-\scriptsize and also surface hydrology, subglacial hydrology, \dots
+\small tidewater marsh \hfill \only<1>{tsunami inundation}
 \end{frame}
 
 
@@ -403,28 +463,6 @@ not counting possible sliding and elevation-accumulation feedbacks
 \end{frame}
 
 
-\section{numerical solution: constrained Newton}
-
-\begin{frame}{numerical solution of the weak problem}
-
-the weak single time-step problem:
-\begin{itemize}
-\item is nonlinear because of constraint (even for $\bQ_n$ linear in $H_n$)
-\item can be solved by a Newton method modified for constraint
-\item scalable implementations are in PETSc
-  \begin{itemize}
-  \item[$\circ$]  see ``SNESVI'' object
-  \item[$\circ$]  for NCP there are two implementations (Benson \& Munson, 2006):
-    \begin{itemize}
-    \item  reduced-set (active-set) method
-    \item  semismooth method
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\end{frame}
-
-
 \section{the essential difficulty} % i.e. bedrock roughness
 
 \begin{frame}{example: Greenland ice sheet}
@@ -449,11 +487,9 @@ the weak single time-step problem:
   \item[$\circ$] 900 m structured grid
   \item[$\circ$] $Q^1$ FEs in space
   \item[$\circ$] $N=7\times 10^6$ d.o.f.
+  \item[$\circ$] Bueler (2016), J.~Glaciol.
   \end{itemize}
 \end{itemize}
-
-\vspace{5mm}
-\tiny (Bueler, submitted to J.~Glaciol.)
 \end{column}
 \begin{column}{0.4\textwidth}
 \vspace{-5mm}
