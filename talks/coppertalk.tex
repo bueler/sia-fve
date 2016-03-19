@@ -355,74 +355,68 @@ v_z
 
 \section{every time-step is free-boundary problem}
 
+\newcommand{\singletsmc}{\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell}
 \begin{frame}{semi-discretize in time}
 
 \begin{itemize}
-\item semi-discretize in time $h^\ell(x,y) \approx h(t^\ell,x,y)$:
+\item semi-discretize coupled model (e.g.~$h^\ell(x,y) \approx h(t^\ell,x,y)$)
 $$\begin{matrix}
  h_t + \Div\bq = a \\
  \phantom{foo} \\
  \mathcal{M}(\bU,h,b) = 0
 \end{matrix} \qquad \to \qquad \begin{matrix}
- \frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell \\
+ \only<1>{\singletsmc} \only<2>{\alert{\singletsmc}} \\
  \phantom{foo} \\
  \mathcal{M}(\bU^\ell,h^\ell,b) = 0
 \end{matrix}$$
-    \begin{itemize}
-    \vspace{-3mm}
-    \item[$\circ$] coupling also through $\bq=\bq(\bU,h,\grad h)$
-    \item[$\circ$] details of flux $\bq^\ell$ and source $a^\ell$ come from time-stepping scheme
+\item coupling also through $\bq=\bq(\bU,h,\grad h)$
+\item details of flux $\bq^\ell$ and source $a^\ell$ come from time-stepping scheme
         \begin{itemize}
-        \item e.g.~$\theta$-methods or BDF
+        \item[$\circ$] backward-Euler shown
+        \item[$\circ$] could use other $\theta$-methods or BDFs
         \end{itemize}
-    \end{itemize}
+\item<2> \alert{need to weakly-pose single time-step mass conservation equation incorporating $h^\ell\ge 0$ constraint!}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{mass conservation: VI form}
+
+\begin{itemize}
 \item single time-step mass conservation equation
-    $$\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell$$
+\begin{equation}
+\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell \tag{MC} \label{mcstrong}
+\end{equation}
+\item from now on: assume $\bq=0$ on any open set where $h=0$
     \begin{itemize}
-    \vspace{-3mm}
-    \item[$\circ$] strong form; a PDE in space only where $h^\ell>0$
+    \item[$\circ$] because it is a flowing \emph{layer}
     \end{itemize}
+\item first weak formulation of \ref{mcstrong} for glaciers was as VI
+    \begin{itemize}
+    \item[$\circ$] Calvo et al (2002): SIA 1d flat bed
+    \item[$\circ$] Jouvet \& Bueler (2012): SIA steady ($\Delta t\to \infty$) 2d general bed
+    \end{itemize}
+\item define $\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\}$
+\item VI form of MC: find $h^\ell\in\mathcal{K}$
+    $$\int_\Omega h^\ell (v - h^\ell) - \Delta t\, \bq^\ell \cdot \grad(v - h^\ell) \ge \int_\Omega \left(h^{\ell-1} + \Delta t\, a^\ell\right) (v - h^\ell)$$
+for all $v \in \mathcal{K}$
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}{mass conservation weak forms for SIA}
+\begin{frame}{mass conservation: NCP form}
+
+FIXME
 
 \begin{itemize}
-\item restrict to SIA
-\item define:
-    $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\} = \text{\alert{admissible thicknesses}}$$
-\item we say $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
-    $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
-  for all $v \in \mathcal{K}$
-\small
-\medskip
-    \begin{itemize}
-    \item[$\circ$] derive this \emph{variational inequality} (VI) from:
-      \begin{itemize}
-      \item[$\diamond$] integration-by-parts on strong form
-      \item[$\diamond$] thought about $H_n=0$ areas
-      \end{itemize}
-    \end{itemize}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{weak solves strong but gives more info}
-
-\begin{itemize}
-  \item assume $\bQ_n=0$ when $H_n=0$
-    \begin{itemize}
-    \item[$\circ$] this means $\bQ_n$ describes a \emph{layer}
-    \end{itemize}
-  \item if $H_n \in \mathcal{K}$ solves weak single time-step problem (VI) then
+\item if $h^\ell \in \mathcal{K}$ solves weak single time-step problem (VI) then
   
       \medskip
 	  \begin{itemize}
-	  \item[$\circ$] PDE applies on the set where $H_n>0$ (interior condition):
-	    $$\frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
-	  \item[$\circ$] plus inequality on the set where $H_n = 0$:
-	    $$H_{n-1} + \Delta t\, F_n \le 0$$
+	  \item[$\circ$] PDE applies on the set where $h^\ell>0$ (interior condition):
+	    $$\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bQ_n = F_n$$
+	  \item[$\circ$] plus inequality on the set where $h^\ell = 0$:
+	    $$h^{\ell-1} + \Delta t\, F_n \le 0$$
 	    \vspace{-6mm}
 	    \begin{itemize}
 	    \item ``climate negative enough during time step to remove old thickness''
@@ -433,6 +427,16 @@ $$\begin{matrix}
 
 
 \begin{frame}{nonlinearities of the SIA glacier geometry problem}
+
+\begin{itemize}
+\item momentum conservation solutions are nontrivial \dots I agree!
+    \begin{itemize}
+    \item[$\circ$] indefinite Stokes or elliptic-ish Blatter-Pattyn or SSA etc.
+    \end{itemize}
+\item but from now on: restrict to nonsliding SIA
+\item single time-step mass conservation equation (SIA MC)
+    $$\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell, \qquad \bq^\ell = - \Gamma (h^\ell)^{\nu+2} |\grad s^\ell|^{\nu-1} \grad s^\ell$$
+\end{itemize}
 
 not counting possible sliding and/or elevation-accumulation processes:
 \begin{enumerate}
@@ -726,15 +730,15 @@ not counting possible sliding and/or elevation-accumulation processes:
     \item[$\circ$]  pose single time-step problem weakly as NCP or VI
       \begin{itemize}
       \item  incorporates constraint $h\ge 0$
+      \item  approach is very flux-agnostic
       \end{itemize}
     \item[$\circ$]  consider discrete-time, continuous-space problem before coding!
     \item[$\circ$]  solve by scalable constrained-Newton method (PETSc?)
     \end{itemize}
-  \item \emph{issues}:
+  \item \emph{issues/challenges}:
     \begin{itemize}
-    \item[$\circ$]  bed roughness damages convergence
-    \item[$\circ$]  modelers not aware of free-boundary nature of problem?
-    \item[$\circ$]  funding goes to Stokes not science?
+    \item[$\circ$]  bed roughness makes convergence hard
+    \item[$\circ$]  \alert{every time-step generates near-fractal domain, by free-boundary problem, on which coupled momentum solve must be accurate, especially near the free boundary}
     \end{itemize}
   \end{itemize}
 
