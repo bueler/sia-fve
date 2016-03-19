@@ -257,7 +257,7 @@ h_t + \Div\bq = a
     \begin{itemize}
     \vspace{-5mm}
     \item $\bq = h\, \ip{\bar u}{\bar v}$ is vertically-integrated ice flux
-    \item equivalent to ``surface kinematical equation'' if bed stationary
+    \item equivalent to ``surface kinematical equation'' (ice incompressible)
     \item<2> \emph{the geometry-evolution and climate-interacting part!}
     \end{itemize}
   \item[$\circ$]  \alert{momentum conservation}
@@ -432,40 +432,12 @@ for all $v \in \mathcal{K}$
 \end{frame}
 
 
-\begin{frame}{nonlinearities of the SIA glacier geometry problem}
-
-FIXME
-
-\begin{itemize}
-\item momentum conservation solutions are nontrivial \dots I agree!
-    \begin{itemize}
-    \item[$\circ$] indefinite Stokes or elliptic-ish Blatter-Pattyn or SSA etc.
-    \end{itemize}
-\item but from now on: restrict to nonsliding SIA
-\item single time-step mass conservation equation (SIA MC)
-    $$\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell, \qquad \bq^\ell = - \Gamma (h^\ell)^{\nu+2} |\grad s^\ell|^{\nu-1} \grad s^\ell$$
-\end{itemize}
-
-not counting possible sliding and/or elevation-accumulation processes:
-\begin{enumerate}
-\item the constrained problem (NCP or VI) is inherently nonlinear
-\item the $\nu\approx 3$ Glen power
-    \begin{itemize}
-    \item[$\circ$] in flat bed case the ``doubly-nonlinear'' MC equation can be transformed to a straight $p$-laplacian equation, a pure diffusion
-    \end{itemize}
-\item nonzero bedrock gradient is un-transformable additional nonlinearity
-    \begin{itemize}
-    \item[$\circ$] Jouvet \& Bueler (2012)
-    \end{itemize}
-\end{enumerate}
-\end{frame}
-
-
 \section{proposed approach: FVE discretization + Newton + continuation}
 
 \begin{frame}{``finite volume element'' discretization}
 
 \begin{itemize}
+\item from now on: steady case $\Delta t \to \infty$ for these slides
 \item for FVE, see Cai (1990) and Ewing, Lin, \& Lin (2002)
 \item thickness $h(x,y)$ lives in $Q^1$ FEM space $\subset W^{1,\nu+1}(\Omega)$
     \begin{itemize}
@@ -651,17 +623,44 @@ not counting possible sliding and/or elevation-accumulation processes:
 \end{frame}
 
 
-
-\begin{frame}{continuation scheme}
+\begin{frame}{restrict to SIA}
 
 \begin{itemize}
-\item for $0 \le \eps \le 1$, regularize $\bq^{(\eps)}$
+\item but from now on: restrict to nonsliding SIA
+    \begin{itemize}
+    \item[$\circ$] other momentum conservation solutions are nontrivial \dots I agree!
+      \begin{itemize}
+      \item indefinite Stokes or elliptic-ish Blatter-Pattyn or SSA etc.
+      \end{itemize}
+    \end{itemize}
+\item steady SIA mass conservation equation (SIA MC)
+    $$\Div \bq = a, \qquad \bq = - \Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s$$
+\end{itemize}
+
+\medskip
+nonlinearities of SIA MC:
+\begin{enumerate}
+\item constrained problem (NCP or VI) is inherently nonlinear
+\item $\nu\approx 3$ Glen power
+    \begin{itemize}
+    \item[$\circ$] in flat bed case, can be transformed to $p$-Laplacian equation
+    \end{itemize}
+\item bedrock gradient is (un-transformable) additional nonlinearity even if $\nu=1$ (Jouvet \& Bueler 2012)
+\end{enumerate}
+\end{frame}
+
+
+\begin{frame}{\emph{ad hoc} continuation scheme}
+
+\begin{itemize}
+\item for $0 \le \eps \le 1$, regularize $\bq^{(\eps)}$ so that
   \begin{itemize}
-  \item[$\circ$] $\bq^{(1)}=\bq^{(\eps_0)}$ gives classical obstacle problem
-    $$\Div \bq^{(1)} = a \quad \iff \quad - \Div (D_0 \grad s) = a$$
-  \item[$\circ$] $\bq^{(0)}=\bq^{(\eps_{12})}$ gives SIA model
-    $$\Div \bq^{(0)} = a \quad \iff \quad - \Div (\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s) = a$$
+  \item[$\circ$] $\bq^{(\eps_0)}$ with $\eps_0=1$ gives classical obstacle problem
+    $$\Div \bq^{(\eps_0)} = a \quad \iff \quad - \Div (D_0 \grad s) = a$$
+  \item[$\circ$] $\bq^{(\eps_{12})}$ with $\eps_{12}=0$ gives SIA model
+    $$\Div \bq^{(\eps_{12})} = a \quad \iff \quad - \Div (\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s) = a$$
   \end{itemize}
+\item $\eps_{k-1}$ level generates initial $h$ for $\eps_k$ level
 \item at each level, goal is quadratic convergence from Newton
 \end{itemize}
 
