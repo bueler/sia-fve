@@ -1,4 +1,4 @@
-\documentclass{beamer}
+\documentclass[xcolor={dvipsnames}]{beamer}
 
 %\usetheme{default}
 \usetheme{Boadilla}
@@ -11,42 +11,10 @@
 
 \usepackage[english]{babel}
 \usepackage[latin1]{inputenc}
-
 \usepackage{times}
 \usepackage[T1]{fontenc}
 
-%\usepackage{animate}
-
-% see http://tex.stackexchange.com/questions/86188/labelling-with-arrows-in-an-automated-way
 \usepackage{tikz,amsmath,verbatim}
-
-\newif\ifclipme\clipmetrue
-\tikzset{labelstyle/.style={LabelStyle/.append style={#1}},linestyle/.style={LineStyle/.append style={#1}}}
-\tikzset{LabelStyle/.initial={},LineStyle/.initial={}}
-
-\newcommand{\mathWithDescription}[4][]{{%
-    \tikzset{#1}%
-    \tikz[baseline]{
-        \node[draw=red,rounded corners,anchor=base] (m#4) {$\displaystyle#2$};
-        \ifclipme\begin{pgfinterruptboundingbox}\fi
-            \node[above of=m#4,font=\strut, LabelStyle] (l#4) {#3};
-            \draw[-,red, LineStyle] (l#4) to (m#4);
-        \ifclipme\end{pgfinterruptboundingbox}\fi
-    }%
-}}
-
-\newcommand{\mathWithDescriptionStarred}[3][]{{%
-    \clipmefalse%
-    \mathWithDescription[#1]{#2}{#3}{\themathLabelNode}%
-}}
-
-\newcounter{mathLabelNode}
-
-\newcommand{\mathLabelBox}[3][]{%
-   \stepcounter{mathLabelNode}%
-   \mathWithDescription[#1]{#2}{#3}{\themathLabelNode}%
-   \vphantom{\mathWithDescriptionStarred[#1]{#2}{#3}{\themathLabelNode}}%
-}
 
 % math macros
 \newcommand\bb{\mathbf{b}}
@@ -66,7 +34,6 @@
 \newcommand\bV{\mathbf{V}}
 \newcommand\bX{\mathbf{X}}
 
-\newcommand\CC{\mathbb{C}}
 \newcommand\RR{\mathbb{R}}
 
 \newcommand{\DDt}[1]{\ensuremath{\frac{d #1}{d t}}}
@@ -76,11 +43,6 @@
 \newcommand\eps{\epsilon}
 \newcommand\grad{\nabla}
 \newcommand{\ip}[2]{\ensuremath{\left<#1,#2\right>}}
-\newcommand\nhat{\mathbf{n}}
-\newcommand\lam{\lambda}
-\newcommand\lap{\triangle}
-\newcommand\Matlab{\textsc{Matlab}\xspace}
-\newcommand\vf{\varphi}
 
 
 \title[Computing glacier geometry]{Computing glacier geometry \\ in nonlinear complementarity problem form}
@@ -110,7 +72,7 @@
 \end{frame}
 
 
-\section{NCPs and VIs: 4 slide intro}
+\section{NCPs and VIs, a superficial intro}
 
 \begin{frame}{nonlinear complementarity problems (NCP)}
 
@@ -123,16 +85,20 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \end{itemize}
 
 \begin{columns}
-\begin{column}{0.5\textwidth}
+\begin{column}{0.45\textwidth}
 \small
 \begin{itemize}
 \item \alert{example}: obstacle problem is to find $u(x)$ so that $-u''(x) \ge 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
-\item discretized and put in form \eqref{ncp}: $z_j=u_j - \psi(x_j)$ and
-  $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi''(x_j)$$
+\item discretized and in form \eqref{ncp}: ${\color{red} z_j}=u_j - \psi(x_j)$ and
+\footnotesize
+  $${\color{ForestGreen} F_j}(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi_j''$$
 \end{itemize}
 \end{column}
-\begin{column}{0.5\textwidth}
+\begin{column}{0.55\textwidth}
 \includegraphics[width=\textwidth,keepaspectratio=true]{obstacle1d}
+
+\medskip
+\includegraphics[width=\textwidth,keepaspectratio=true]{ncp1d}
 \end{column}
 \end{columns}
 \end{frame}
@@ -141,25 +107,25 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 \begin{frame}{variational inequalities (VI)}
 
 \begin{itemize}
-\item in finite dimensions, a VI is to find $\bz\in\mathcal{K}$, where $\mathcal{K}\subseteq \RR^n$ is convex and closed, for which
+\item in finite dimensions, a VI is to find $\bu\in\mathcal{K}$, where $\mathcal{K}\subseteq \RR^n$ is convex and closed, for which
 \begin{equation}
-     \ip{\bF(\bz)}{\by-\bz} \ge 0 \quad \forall \by \in \mathcal{K},
+     \ip{\bF(\bu)}{\bv-\bu} \ge 0 \quad \forall \bv \in \mathcal{K},
 \end{equation}
 given a differentiable map $\bF:\RR^n \to \RR^n$
 \end{itemize}
 
 \begin{columns}
-\begin{column}{0.5\textwidth}
+\begin{column}{0.4\textwidth}
 \small
 \begin{itemize}
 \item obstacle problem:
 
-$\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
-  $$F_j(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2}$$
+$\mathcal{K} = \{{\color{red} u_j} \ge {\color{blue} \psi(x_j)}\}$ and
+  $$F_j(\bu) = - \frac{u_{j+1} - 2 u_j + u_{j-1}}{\Delta x^2}$$
 \end{itemize}
 \end{column}
-\begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth,keepaspectratio=true]{obstacle1d}
+\begin{column}{0.6\textwidth}
+\includegraphics[width=\textwidth,keepaspectratio=true]{vi1d}
 \end{column}
 \end{columns}\end{frame}
 
@@ -167,51 +133,62 @@ $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
 \begin{frame}{generalities}
 
 \begin{itemize}
-\item both NCP and VI generalize nonlinear equations ``$\bF(\bz)=0$'' to allow constraints on $\bz$
-  \begin{itemize}
-  \item[$\circ$]  in finite dimensions: NCP $\iff$ VI
-  \item[$\circ$]  for obstacle problems, if $\psi\equiv 0$ then $\bF$ is same in NCP and VI
-  \end{itemize}
-\item even if $\bF(\bx)$ is linear, the NCP or VI problem is nonlinear
-  \begin{itemize}
-  \item[$\circ$]  solution space is not affine
-  \item[$\circ$]  of course: iteration obligatory for $n$ large
-  \end{itemize}
+\item in $\RR^n$: NCP $\iff$ VI
+\item both generalize nonlinear eqns ``$\bF(\bz)=0$'' to allow constraints on $\bz$
+\item both are nonlinear, even if $\bF$ is linear or affine
+\item both: iteration obligatory if $n$ large
 \item constrained optimization $\implies$ NCP $\iff$ VI
   \begin{itemize}
   \item[$\circ$]  i.e.~find minimum of $\Phi[\bz]$ from $\mathcal{K}$
   \item[$\circ$]  constrained optimization generates symmetric Jacobian/Hessian ($J = \bF' = \Phi''$)
-  \item[$\circ$]  \alert{but} NCP and VI problems arising in glacier problems are not (generally) optimizations, and don't have symmetric Jacobians
+  \item[$\circ$]  NCP and VI arising in glacier problems are \alert{not} optimizations
   \end{itemize}
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}{numerics (gloss)}
+\begin{frame}{numerical support}
 
+libraries with scalable support for NCP and/or VI:
 \begin{itemize}
-\item have support for NCP and/or VI:
+\item  PETSc SNES
   \begin{itemize}
-  \item[$\circ$]  PETSc SNES \dots \emph{I used this}
-  \item[$\circ$]  TAO (in PETSc release; separate code from SNES)
-  \item[$\circ$]  DUNE (maintained?)
+  \item[$\circ$]  do not assume optimization
+  \item[$\circ$]  used this in Bueler (2016)
   \end{itemize}
-\item 2 Newton line search methods in PETSc SNES:
+\item  TAO
   \begin{itemize}
-  \item[$\circ$]  due to Benson \& Munson (2006), and Barry Smith
-  \item[$\circ$]  neither assume optimization
-  \item[$\circ$]  ``reduced-space'' = \alert{RS}
-    \begin{itemize}
-    \item active set $\mathcal{A} = \{i \,:\, z_i = 0 \text{ and } F_i(\bz) > 0\}$
-    \item inactive set $\mathcal{I} = \{i \,:\, z_i > 0 \text{ or } F_i(\bz) \le 0\}$
-    \item \emph{alg}: compute Newton step $\bs^k$ by $\big[J(\bz^k)\big]_{\mathcal{I}^k,\mathcal{I}^k} \bs_{\mathcal{I}^k} = - \bF_{\mathcal{I}^k}(\bz^k)$; do projected line search onto $\{\bz\ge 0\}$
-    \end{itemize}
-  \item[$\circ$]  ``semi-smooth'' = \alert{SS}
-    \begin{itemize}
-    \item ``NCP function'' satisfies $\phi(a,b)=0$ if and only if $a\ge 0,b\ge 0,ab=0$
-    \item \emph{alg}: compute Newton step $\bs^k$ by $L^k \bs^k = - \phi(\bz^k,\bF^k(\bz^k))$ where $L^k$ is element of $\partial_B \phi(\bz^k,\bF^k(\bz^k))$; do line search
-    \end{itemize}
+  \item[$\circ$]  in PETSc release
+  \item[$\circ$]  separate code from SNES
   \end{itemize}
+\item  DUNE
+  \begin{itemize}
+  \item[$\circ$]  used in 2011 \dots still maintained?
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{algorithms (a gloss)}
+
+Newton line search NCP methods in PETSc SNES:
+\begin{itemize}
+\item  due to Benson \& Munson (2006), and Barry Smith
+\item  ``reduced-space'' = \alert{RS}
+    \begin{itemize}
+    \item[$\circ$] active set $\mathcal{A} = \{i \,:\, z_i = 0 \text{ and } F_i(\bz) > 0\}$
+    \item[$\circ$] inactive set $\mathcal{I} = \{i \,:\, z_i > 0 \text{ or } F_i(\bz) \le 0\}$
+    \item[$\circ$] \emph{alg}: compute Newton step $\bs^k$ by
+     $$\big[J(\bz^k)\big]_{\mathcal{I}^k,\mathcal{I}^k} \bs_{\mathcal{I}^k} = - \bF_{\mathcal{I}^k}(\bz^k)$$
+     then do projected line search onto $\{\bz\ge 0\}$
+    \end{itemize}
+\item  ``semi-smooth'' = \alert{SS}
+    \begin{itemize}
+    \item[$\circ$] ``NCP function'' satisfies $\phi(a,b)=0$ if and only if $a\ge 0,b\ge 0,ab=0$
+    \item[$\circ$] \emph{alg}: compute Newton step $\bs^k$ by
+    $$L^k \bs^k = - \phi(\bz^k,\bF^k(\bz^k))$$
+    where $L^k$ is element of $\partial_B \phi(\bz^k,\bF^k(\bz^k))$; then do line search
+    \end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -245,7 +222,7 @@ $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
   \item[$\circ$]  $h(t,x,y)$ ice thickness \hfill \dots also $s=h+b$ surface elevation
   \item[$\circ$]  $\bU(t,x,y,z) = (u,v,w)$ ice velocity
   \end{itemize}
-\item \only<1>{data}\only<2>{\alert{uncertain} ``data'' \alert{from other models}}:
+\item \only<1>{data}\only<2>{\alert{uncertain ``data'' from other models}}:
   \begin{itemize}
   \item[$\circ$]  $b(x,y)$ bed elevation \only<2>{\quad \alert{? \quad \dots improving for ice sheets}}
   \item[$\circ$]  $a(t,x,y)$ surface mass balance  \only<2>{\quad \alert{???}}
@@ -281,7 +258,7 @@ h_t + \Div\bq = a
     \vspace{-5mm}
     \item $\bq = h\, \ip{\bar u}{\bar v}$ is vertically-integrated ice flux
     \item equivalent to ``surface kinematical equation'' if bed stationary
-    \item<2> \emph{the geometry-evolution and climate-interacting part part!}
+    \item<2> \emph{the geometry-evolution and climate-interacting part!}
     \end{itemize}
   \item[$\circ$]  \alert{momentum conservation}
 \begin{equation*}
@@ -290,7 +267,7 @@ h_t + \Div\bq = a
     \begin{itemize}
     \vspace{-5mm}
     \item i.e.~incompressible power-law Stokes if strain-rate $= A \tau^{n-1} \tau_{ij}$
-    \item $h$ and $b$ (geometry) enter into boundary conditions
+    \item geometry $h$ \& $b$ enters into boundary conditions
     \end{itemize}
   \end{itemize}
 \end{itemize}
