@@ -406,27 +406,35 @@ for all $v \in \mathcal{K}$
 
 \begin{frame}{mass conservation: NCP form}
 
-FIXME
-
 \begin{itemize}
-\item if $h^\ell \in \mathcal{K}$ solves weak single time-step problem (VI) then
-  
-      \medskip
-	  \begin{itemize}
-	  \item[$\circ$] PDE applies on the set where $h^\ell>0$ (interior condition):
-	    $$\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bQ_n = F_n$$
-	  \item[$\circ$] plus inequality on the set where $h^\ell = 0$:
-	    $$h^{\ell-1} + \Delta t\, F_n \le 0$$
-	    \vspace{-6mm}
-	    \begin{itemize}
-	    \item ``climate negative enough during time step to remove old thickness''
-	    \end{itemize}
-	  \end{itemize}
+\item recall general NCP is
+  $$\bz \ge 0, \quad \bF(\bz) \ge 0, \quad \bz^\top \bF(\bz) = 0$$
+\item define
+    $$F(h) = h^\ell - h^{\ell-1} + \Delta t\, \Div \bq^\ell - \Delta t\, a^\ell$$
+\item NCP form of MC:
+   $$h^\ell \ge 0, \quad F(h^\ell) \ge 0, \quad h^\ell F(h^\ell) = 0$$
+\item setwise statements within the NCP:
+    \begin{itemize}
+    \item[$\circ$] where $h^\ell > 0$,
+        $$F(h^\ell) = 0 \qquad \iff \qquad \text{strong form MC}$$
+        \vspace{-4mm}
+        \begin{itemize}
+        \item interior condition
+        \end{itemize}
+    \item[$\circ$] where $h^\ell = 0$,
+        $$h^{\ell-1} + \Delta t\, a^\ell \le 0$$
+        \vspace{-4mm}
+        \begin{itemize}
+        \item says ``surface mass balance is negative enough during time step to remove old thickness''
+        \end{itemize}
+    \end{itemize}
 \end{itemize}
 \end{frame}
 
 
 \begin{frame}{nonlinearities of the SIA glacier geometry problem}
+
+FIXME
 
 \begin{itemize}
 \item momentum conservation solutions are nontrivial \dots I agree!
