@@ -311,18 +311,23 @@ h_t + \Div\bq = a
 \begin{equation*}
   \nabla \cdot \bU = 0 \qquad \text{and} \qquad - \nabla \cdot \tau_{ij} + \nabla p - \rho\, \mathbf{g} = 0
 \end{equation*}
-  \item[$\circ$] Blatter-Pattyn
+  \item[$\circ$] Blatter-Pattyn equations
 $$-\Div \left[\eta \begin{pmatrix}
 4 u_x+2v_y & u_y+v_x   & u_z \\
 u_y+v_x    & 2u_x+4v_y & v_z
 \end{pmatrix} \right] + \rho g \grad s = 0$$
-  \item[$\circ$] shallow shelf equation (SSA)
+  \item[$\circ$] shallow shelf approximation (SSA)
 $$-\Div \left[\bar \eta h \begin{pmatrix}
 4 \bar u_x+2\bar v_y & \bar u_y+\bar v_x   \\
 \bar u_y+\bar v_x    & 2\bar u_x+4\bar v_y
 \end{pmatrix} \right] - \tau_b + \rho g h \grad s = 0$$
-  \item[$\circ$] shallow ice equation (SIA)
-$$\ip{\bar u}{\bar v} = -\Gamma h^{n+2} |\grad s|^{n-1} \grad s$$
+  \item[$\circ$] non-sliding shallow ice approximation (SIA)
+$$-\frac{\partial}{\partial z} \left[\eta \begin{pmatrix}
+u_z \\
+v_z
+\end{pmatrix} \right] + \rho g \grad s = 0
+\qquad \to \qquad
+\ip{\bar u}{\bar v} = -\Gamma h^{n+2} |\grad s|^{n-1} \grad s$$
   \end{itemize}
 \end{itemize}
 \end{frame}
@@ -346,7 +351,7 @@ $$\ip{\bar u}{\bar v} = -\Gamma h^{n+2} |\grad s|^{n-1} \grad s$$
     \vspace{-4mm}
     \item[$\circ$] $h$ is a thickness so $h\ge 0$
     \item[$\circ$] mass conservation PDE applies only where $h>0$
-    \item[$\circ$] source ${\color{blue} a}$ is ``climate''; ${\color{blue} a}>0$ shown downward
+    \item[$\circ$] signed source ${\color{blue} a}$ is the ``climate''
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -453,6 +458,122 @@ not counting possible sliding and elevation-accumulation feedbacks
 \begin{itemize}
 \item FIXME
 \end{itemize}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.6]
+  % strong grid around elements
+  \draw (-0.3,0) -- (6.3,0);
+  \draw (-0.3,2) -- (6.3,2);
+  \draw (-0.3,4) -- (6.3,4);
+  \draw (0,-0.25) -- (0,4.25);
+  \draw (3,-0.25) -- (3,4.25);
+  \draw (6,-0.25) -- (6,4.25);
+  % nodes
+  \filldraw (0,0) circle (2.5pt);
+  \filldraw (3,0) circle (2.5pt);
+  \filldraw (6,0) circle (2.5pt);
+  \filldraw (0,2) circle (2.5pt);
+  \filldraw (3,2) circle (2.5pt);
+  \filldraw (6,2) circle (2.5pt);
+  \filldraw (0,4) circle (2.5pt);
+  \filldraw (3,4) circle (2.5pt);
+  \filldraw (6,4) circle (2.5pt);
+  % outline control volume
+  \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
+  % label elements and control volume
+  \draw (3.8,2.5) node {\footnotesize $V_{j,k}$};
+  \draw (5.35,3.7) node {\scriptsize $\square_{j,k}$};
+\end{tikzpicture}
+\qquad
+\begin{tikzpicture}[scale=0.4]
+  % strong grid around elements
+  \draw[thick] (0,0) -- (8,0);
+  \draw[thick] (2,2) -- (10,2);
+  \draw[thick] (4,4) -- (12,4);
+  \draw[thick] (0,0) -- (4,4);
+  \draw[thick] (4,0) -- (8,4);
+  \draw[thick] (8,0) -- (12,4);
+
+  \def\ytop{7};
+
+  % tent lines
+  \draw[gray,thick] (6,\ytop) -- (4,0);
+  \draw[gray,thick] (6,\ytop) -- (2,2);
+  \draw[gray,thick] (6,\ytop) -- (10,2);
+  \draw[gray,thick] (6,\ytop) -- (8,4);
+
+  \def\dx{(10.0-6.0)/6};
+  \def\dy{(2.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,very thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({4+(4/6)*\jj},0.0);
+  }
+
+  \def\dx{(4.0-6.0)/6};
+  \def\dy{(0.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,very thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({10-(2/6)*\jj},{2-(2/6)*\jj});
+  }
+
+  \def\dx{(2.0-6.0)/6};
+  \def\dy{(2.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({4-(4/6)*\jj},0.0);
+  }
+
+  \def\dx{(4.0-6.0)/6};
+  \def\dy{(0.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({2-(2/6)*\jj},{2-(2/6)*\jj});
+  }
+
+  \def\dx{(10.0-6.0)/6};
+  \def\dy{(2.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({8+(4/6)*\jj},4.0);
+  }
+
+  \def\dx{(8.0-6.0)/6};
+  \def\dy{(4.0-\ytop)/6};
+  \foreach \jj in {1,...,5}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({10+(2/6)*\jj},{2+(2/6)*\jj});
+  }
+
+  \def\dx{(2.0-6.0)/3};
+  \def\dy{(2.0-\ytop)/3};
+  \foreach \jj in {1,...,2}  % reduce clutter
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({8-(4/3)*\jj},4.0);
+  }
+
+  \def\dx{(8.0-6.0)/3};
+  \def\dy{(4.0-\ytop)/3};
+  \foreach \jj in {1,...,2}
+  {
+       \draw[gray,thin] ({6+\jj*\dx},{\ytop+\jj*\dy}) -- ({2+(2/3)*\jj},{2+(2/3)*\jj});
+  }
+
+  % nodes in base plane
+  \filldraw (0,0) circle (4pt);
+  \filldraw (4,0) circle (4pt);
+  \filldraw (8,0) circle (4pt);
+  \filldraw (2,2) circle (4pt);
+  %\filldraw (6,2) circle (4pt);   % (x_j,y_k) is at (6,2)
+  \filldraw (10,2) circle (4pt);
+  \filldraw (4,4) circle (4pt);
+  \filldraw (8,4) circle (4pt);
+  \filldraw (12,4) circle (4pt);
+
+  % node at tent top
+  \filldraw (6,\ytop) circle (4pt);
+\end{tikzpicture}
+\end{center}
+
 \end{frame}
 
 
@@ -464,9 +585,6 @@ not counting possible sliding and elevation-accumulation feedbacks
 
 \begin{center}
 \begin{tikzpicture}[scale=0.6]
-  %uncomment to see grid on which it was generated:
-  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
-
   % strong grid around elements
   \draw (-0.3,0) -- (6.3,0);
   \draw (-0.3,2) -- (6.3,2);
@@ -474,7 +592,6 @@ not counting possible sliding and elevation-accumulation feedbacks
   \draw (0,-0.25) -- (0,4.25);
   \draw (3,-0.25) -- (3,4.25);
   \draw (6,-0.25) -- (6,4.25);
-
   % nodes
   \filldraw (0,0) circle (2.5pt);
   \filldraw (3,0) circle (2.5pt);
@@ -485,10 +602,8 @@ not counting possible sliding and elevation-accumulation feedbacks
   \filldraw (0,4) circle (2.5pt);
   \filldraw (3,4) circle (2.5pt);
   \filldraw (6,4) circle (2.5pt);
-
   % outline control volume
   \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
-
   % mark quadrature points
   \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 0};
   \draw (3.75,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 1};
@@ -498,23 +613,9 @@ not counting possible sliding and elevation-accumulation feedbacks
   \draw (2.25,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 5};
   \draw (3.75,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 6};
   \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 7};
-
   % label elements and control volume
   \draw (3.8,2.5) node {\footnotesize $V_{j,k}$};
   \draw (5.35,3.7) node {\scriptsize $\square_{j,k}$};
-  \draw (5.35,0.35) node {\scriptsize $\square_{j,k-1}$};
-  \draw (0.8,3.7) node {\scriptsize $\square_{j-1,k}$};
-  \draw (1.0,0.35) node {\scriptsize $\square_{j-1,k-1}$};
-
-  % label center point
-  \draw (3,-0.6) node {\footnotesize $x_j$};
-  \draw (-0.6,2) node {\footnotesize $y_k$};
-
-  %% indicate coordinates of quadrature points
-  %\draw[dotted] (4.5,-0.25) -- (4.5, 0.8);
-  %\draw (4.5,-0.7) node {\scriptsize $x_j^0$};
-  %\draw[dotted] (4.8,2.5) -- (6.3, 2.5);
-  %\draw (6.7,2.5) node {\scriptsize $y_k^0$};
 \end{tikzpicture}
 \end{center}
 \end{frame}
