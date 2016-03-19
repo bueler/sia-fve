@@ -276,19 +276,13 @@ h_t + \Div\bq = a
 
 \begin{frame}{possible momentum equations}
 
-\begin{itemize}
-\item common to all momentum-conservation models:
-\begin{center}
-\alert{generate ice velocity $\bU=\left<u,v,w\right>$ from geometry $h$ \& $b$}
-\end{center}
-
   \begin{itemize}
-  \footnotesize
+  \scriptsize
   \item[$\circ$] incompressible power-law Stokes
 \begin{equation*}
   \nabla \cdot \bU = 0 \qquad \text{and} \qquad - \nabla \cdot \tau_{ij} + \nabla p - \rho\, \mathbf{g} = 0
 \end{equation*}
-  \item[$\circ$] Blatter-Pattyn equations
+  \item[$\circ$] Blatter-Pattyn equations [$\eta$ is effective viscosity]
 $$-\Div \left[\eta \begin{pmatrix}
 4 u_x+2v_y & u_y+v_x   & u_z \\
 u_y+v_x    & 2u_x+4v_y & v_z
@@ -306,6 +300,13 @@ v_z
 \qquad \to \qquad
 \ip{\bar u}{\bar v} = -\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s$$
   \end{itemize}
+
+\begin{itemize}
+\item slow fluid momentum-conservation models all
+\begin{center}
+\alert{generate velocity $\bU=\left<u,v,w\right>$ from geometry $h$ \& $b$}
+\end{center}
+\item if we have $h$ \& $b$, momentum equations are $\mathcal{M}(\bU,h,b)=0$
 \end{itemize}
 \end{frame}
 
@@ -356,32 +357,46 @@ v_z
 
 \begin{frame}{semi-discretize in time}
 
-$$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_n = F_n$$
-
-  \begin{itemize}
-  \item semi-discretize in time: $H_n(x) \approx h(t_n,x)$
-  \item the new equation is strong form \alert{single time-step problem}
+\begin{itemize}
+\item semi-discretize in time $h^\ell(x,y) \approx h(t^\ell,x,y)$:
+$$\begin{matrix}
+ h_t + \Div\bq = a \\
+ \phantom{foo} \\
+ \mathcal{M}(\bU,h,b) = 0
+\end{matrix} \qquad \to \qquad \begin{matrix}
+ \frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell \\
+ \phantom{foo} \\
+ \mathcal{M}(\bU^\ell,h^\ell,b) = 0
+\end{matrix}$$
     \begin{itemize}
-    \item[$\circ$] a PDE in space where $H_n>0$
-    \item[$\circ$] details of flux $\bQ_n$ and source $F_n$ come from time-stepping scheme
-      \begin{itemize}
-      \item e.g.~$\theta$-methods or RK
-      \end{itemize}
+    \vspace{-3mm}
+    \item[$\circ$] coupling also through $\bq=\bq(\bU,h,\grad h)$
+    \item[$\circ$] details of flux $\bq^\ell$ and source $a^\ell$ come from time-stepping scheme
+        \begin{itemize}
+        \item e.g.~$\theta$-methods or BDF
+        \end{itemize}
     \end{itemize}
-  \end{itemize}
+\item single time-step mass conservation equation
+    $$\frac{h^\ell - h^{\ell-1}}{\Delta t} + \Div \bq^\ell = a^\ell$$
+    \begin{itemize}
+    \vspace{-3mm}
+    \item[$\circ$] strong form; a PDE in space only where $h^\ell>0$
+    \end{itemize}
+\end{itemize}
 \end{frame}
 
 
-\begin{frame}{weak form incorporates $H_n\ge 0$ constraint}
+\begin{frame}{mass conservation weak forms for SIA}
 
-  \begin{itemize}
-  \item define:
+\begin{itemize}
+\item restrict to SIA
+\item define:
     $$\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\} = \text{\alert{admissible thicknesses}}$$
-  \item we say $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
+\item we say $H_n \in \mathcal{K}$ solves the \alert{weak single time-step problem} if
     $$\int_\Omega H_n (v - H_n) - \Delta t\, \bQ_n \cdot \grad(v - H_n) \ge \int_\Omega \left(H_{n-1} + \Delta t\, F_n\right) (v - H_n)$$
   for all $v \in \mathcal{K}$
-  \small
-  \medskip
+\small
+\medskip
     \begin{itemize}
     \item[$\circ$] derive this \emph{variational inequality} (VI) from:
       \begin{itemize}
@@ -389,7 +404,7 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
       \item[$\diamond$] thought about $H_n=0$ areas
       \end{itemize}
     \end{itemize}
-  \end{itemize}
+\end{itemize}
 \end{frame}
 
 
@@ -417,14 +432,20 @@ $$h_t + \Div\bq = f \qquad \to \qquad \frac{H_n - H_{n-1}}{\Delta t} + \Div \bQ_
 \end{frame}
 
 
-\begin{frame}{the 3 nonlinearities of the glacier geometry problem}
+\begin{frame}{nonlinearities of the SIA glacier geometry problem}
 
-not counting possible sliding and elevation-accumulation feedbacks
-\begin{itemize}
-\item the constrained problem (VI or NCP) is inherently nonlinear, i.e.~iteration is needed even for LCPs
-\item the $p=n+1$ glen power generates a nonlinearity even in steady state on a flat bed (in that case the ``doubly-nonlinear'' MC equation can be transformed to a straight $p$-laplacian equation)
-\item nonzero bedrock gradient ``brings back'' a nonlinearity (Jouvet \& Bueler 2012)
-\end{itemize}
+not counting possible sliding and/or elevation-accumulation processes:
+\begin{enumerate}
+\item the constrained problem (NCP or VI) is inherently nonlinear
+\item the $\nu\approx 3$ Glen power
+    \begin{itemize}
+    \item[$\circ$] in flat bed case the ``doubly-nonlinear'' MC equation can be transformed to a straight $p$-laplacian equation, a pure diffusion
+    \end{itemize}
+\item nonzero bedrock gradient is un-transformable additional nonlinearity
+    \begin{itemize}
+    \item[$\circ$] Jouvet \& Bueler (2012)
+    \end{itemize}
+\end{enumerate}
 \end{frame}
 
 
