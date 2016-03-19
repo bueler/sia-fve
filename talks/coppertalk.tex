@@ -154,7 +154,7 @@ libraries with scalable support for NCP and/or VI:
 \item  PETSc SNES
   \begin{itemize}
   \item[$\circ$]  do not assume optimization
-  \item[$\circ$]  used this in Bueler (2016)
+  \item[$\circ$]  used this in Bueler (2016) J.~Glaciol.
   \end{itemize}
 \item  TAO
   \begin{itemize}
@@ -266,8 +266,8 @@ h_t + \Div\bq = a
 \end{equation*}
     \begin{itemize}
     \vspace{-5mm}
-    \item i.e.~incompressible power-law Stokes if strain-rate $= A \tau^{n-1} \tau_{ij}$
-    \item geometry $h$ \& $b$ enters into boundary conditions
+    \item incompressible power-law Stokes ($D_{ij} = A \tau^{\nu-1} \tau_{ij}$ for $\nu=3$)
+    \item geometry ($h$ \& $b$) enters into boundary conditions
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -304,7 +304,7 @@ u_z \\
 v_z
 \end{pmatrix} \right] + \rho g \grad s = 0
 \qquad \to \qquad
-\ip{\bar u}{\bar v} = -\Gamma h^{n+2} |\grad s|^{n-1} \grad s$$
+\ip{\bar u}{\bar v} = -\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s$$
   \end{itemize}
 \end{itemize}
 \end{frame}
@@ -428,41 +428,27 @@ not counting possible sliding and elevation-accumulation feedbacks
 \end{frame}
 
 
-\section{scheme: FVE discretization + Newton + \dots}
+\section{proposed approach: FVE discretization + Newton + continuation}
 
 \begin{frame}{``finite volume element'' discretization}
 
 \begin{itemize}
-\item FIXME
+\item for FVE, see Cai (1990) and Ewing, Lin, \& Lin (2002)
+\item thickness $h(x,y)$ lives in $Q^1$ FEM space $\subset W^{1,\nu+1}(\Omega)$
+    \begin{itemize}
+    \item[$\circ$] structured grid for now; $h$ bilinear on elements $\square_{j,k}$
+    \end{itemize}
+\item mass conservation $\iff$ control-volume integral on $V=V_{j,k}$:
+    $$\Div \bq = a \qquad \iff \qquad \int_{\partial V} \bq \cdot \bn \,ds \stackrel{\ast}{=} \int_V a \,dx\,dy$$ 
+\item \emph{thus}: a finite element method where $\ast$ is the weak form
+    \begin{itemize}
+    \item[$\circ$] \emph{or}: Petrov-Galerkin FEM with $\chi_V$ as test function
+    \item[$\circ$] no symmetry in weak form \dots no loss
+    \end{itemize}
 \end{itemize}
 
 \begin{center}
-\begin{tikzpicture}[scale=0.6]
-  % strong grid around elements
-  \draw (-0.3,0) -- (6.3,0);
-  \draw (-0.3,2) -- (6.3,2);
-  \draw (-0.3,4) -- (6.3,4);
-  \draw (0,-0.25) -- (0,4.25);
-  \draw (3,-0.25) -- (3,4.25);
-  \draw (6,-0.25) -- (6,4.25);
-  % nodes
-  \filldraw (0,0) circle (2.5pt);
-  \filldraw (3,0) circle (2.5pt);
-  \filldraw (6,0) circle (2.5pt);
-  \filldraw (0,2) circle (2.5pt);
-  \filldraw (3,2) circle (2.5pt);
-  \filldraw (6,2) circle (2.5pt);
-  \filldraw (0,4) circle (2.5pt);
-  \filldraw (3,4) circle (2.5pt);
-  \filldraw (6,4) circle (2.5pt);
-  % outline control volume
-  \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
-  % label elements and control volume
-  \draw (3.8,2.5) node {\footnotesize $V_{j,k}$};
-  \draw (5.35,3.7) node {\scriptsize $\square_{j,k}$};
-\end{tikzpicture}
-\qquad
-\begin{tikzpicture}[scale=0.4]
+\begin{tikzpicture}[scale=0.25]
   % strong grid around elements
   \draw[thick] (0,0) -- (8,0);
   \draw[thick] (2,2) -- (10,2);
@@ -549,6 +535,31 @@ not counting possible sliding and elevation-accumulation feedbacks
   % node at tent top
   \filldraw (6,\ytop) circle (4pt);
 \end{tikzpicture}
+\qquad \qquad
+\begin{tikzpicture}[scale=0.45]
+  % strong grid around elements
+  \draw (-0.3,0) -- (6.3,0);
+  \draw (-0.3,2) -- (6.3,2);
+  \draw (-0.3,4) -- (6.3,4);
+  \draw (0,-0.25) -- (0,4.25);
+  \draw (3,-0.25) -- (3,4.25);
+  \draw (6,-0.25) -- (6,4.25);
+  % nodes
+  \filldraw (0,0) circle (2.5pt);
+  \filldraw (3,0) circle (2.5pt);
+  \filldraw (6,0) circle (2.5pt);
+  \filldraw (0,2) circle (2.5pt);
+  \filldraw (3,2) circle (2.5pt);
+  \filldraw (6,2) circle (2.5pt);
+  \filldraw (0,4) circle (2.5pt);
+  \filldraw (3,4) circle (2.5pt);
+  \filldraw (6,4) circle (2.5pt);
+  % outline control volume
+  \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
+  % label elements and control volume
+  \draw (3.8,2.5) node {\footnotesize $V_{j,k}$};
+  \draw (5.35,3.5) node {\scriptsize $\square_{j,k}$};
+\end{tikzpicture}
 \end{center}
 
 \end{frame}
@@ -557,9 +568,11 @@ not counting possible sliding and elevation-accumulation feedbacks
 \begin{frame}{improved quadrature (and upwinding)}
 
 \begin{itemize}
-\item FIXME
-\end{itemize}
-
+\item known FD schemes fit into above FVE framework
+  \begin{itemize}
+  \item[$\circ$] old scheme by Mahaffy (1976) fits \dots but has weird quadrature
+  \item[$\circ$] improved convergence comes from quadrature points below
+  \end{itemize}
 \begin{center}
 \begin{tikzpicture}[scale=0.6]
   % strong grid around elements
@@ -595,18 +608,32 @@ not counting possible sliding and elevation-accumulation feedbacks
   \draw (5.35,3.7) node {\scriptsize $\square_{j,k}$};
 \end{tikzpicture}
 \end{center}
+\item a bit of upwinding improves convergence on non-flat beds
+  \begin{itemize}
+  \item[$\circ$] though this is a fully-implicit approach
+  \item[$\circ$] tested on bedrock-step exact solution (Jarosch et al 2013)
+  \item[$\circ$] subtleties \dots confusing to me \dots out of scope here
+  \end{itemize}
+\end{itemize}
 \end{frame}
 
 
 
-\begin{frame}{Newton + continuation scheme}
+\begin{frame}{continuation scheme}
 
 \begin{itemize}
-\item FIXME
+\item for $0 \le \eps \le 1$, regularize $\bq^{(\eps)}$
+  \begin{itemize}
+  \item[$\circ$] $\bq^{(1)}=\bq^{(\eps_0)}$ gives classical obstacle problem
+    $$\Div \bq^{(1)} = a \quad \iff \quad - \Div (D_0 \grad s) = a$$
+  \item[$\circ$] $\bq^{(0)}=\bq^{(\eps_{12})}$ gives SIA model
+    $$\Div \bq^{(0)} = a \quad \iff \quad - \Div (\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s) = a$$
+  \end{itemize}
+\item at each level, goal is quadratic convergence from Newton
 \end{itemize}
 
 \begin{center}
-\includegraphics[width=0.5\textwidth,keepaspectratio=true]{newtonconv}
+\includegraphics[width=0.4\textwidth,keepaspectratio=true]{newtonconv}
 \end{center}
 \end{frame}
 
@@ -673,11 +700,6 @@ not counting possible sliding and elevation-accumulation feedbacks
     \begin{itemize}
     \item[$\circ$]  long time steps wanted
     \end{itemize}
-  \item \emph{main issue}:
-    \begin{itemize}
-    \item[$\circ$]  modelers not been aware of free-boundary character
-    \item[$\circ$]  scientific computing funding goes to Stokes not science
-    \end{itemize}
   \item \emph{approach}:
     \begin{itemize}
     \item[$\circ$]  pose single time-step problem weakly as NCP or VI
@@ -686,6 +708,12 @@ not counting possible sliding and elevation-accumulation feedbacks
       \end{itemize}
     \item[$\circ$]  consider discrete-time, continuous-space problem before coding!
     \item[$\circ$]  solve by scalable constrained-Newton method (PETSc?)
+    \end{itemize}
+  \item \emph{issues}:
+    \begin{itemize}
+    \item[$\circ$]  bed roughness damages convergence
+    \item[$\circ$]  modelers not aware of free-boundary nature of problem?
+    \item[$\circ$]  funding goes to Stokes not science?
     \end{itemize}
   \end{itemize}
 
