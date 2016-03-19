@@ -248,7 +248,10 @@ $\mathcal{K} = \{z_j \ge \psi(x_j)\}$ and
 \item \only<1>{data}\only<2>{\alert{uncertain} ``data'' \alert{from other models}}:
   \begin{itemize}
   \item[$\circ$]  $b(x,y)$ bed elevation \only<2>{\quad \alert{? \quad \dots improving for ice sheets}}
-  \item[$\circ$]  $a(t,x,y)$ surface mass balance \only<1>{(accumulation/ablation function)}  \only<2>{\quad \alert{???}}
+  \item[$\circ$]  $a(t,x,y)$ surface mass balance  \only<2>{\quad \alert{???}}
+    \begin{itemize}
+    \item accumulation/ablation function; $=$ precipitation $-$ melt
+    \end{itemize}
   \end{itemize}
 \item ignored here:
   \begin{itemize}
@@ -443,52 +446,110 @@ not counting possible sliding and elevation-accumulation feedbacks
 \end{frame}
 
 
-\section{discretization scheme: FVE}
+\section{scheme: FVE discretization + Newton + \dots}
 
-\begin{frame}{finite volume element schemes}
+\begin{frame}{``finite volume element'' discretization}
+
+\begin{itemize}
+\item FIXME
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{improved quadrature (and upwinding)}
 
 \begin{itemize}
 \item FIXME
 \end{itemize}
 
+\begin{center}
+\begin{tikzpicture}[scale=0.6]
+  %uncomment to see grid on which it was generated:
+  %\draw[dotted,step=1.0,black,very thin] (0,0) grid (6,4);
+
+  % strong grid around elements
+  \draw (-0.3,0) -- (6.3,0);
+  \draw (-0.3,2) -- (6.3,2);
+  \draw (-0.3,4) -- (6.3,4);
+  \draw (0,-0.25) -- (0,4.25);
+  \draw (3,-0.25) -- (3,4.25);
+  \draw (6,-0.25) -- (6,4.25);
+
+  % nodes
+  \filldraw (0,0) circle (2.5pt);
+  \filldraw (3,0) circle (2.5pt);
+  \filldraw (6,0) circle (2.5pt);
+  \filldraw (0,2) circle (2.5pt);
+  \filldraw (3,2) circle (2.5pt);
+  \filldraw (6,2) circle (2.5pt);
+  \filldraw (0,4) circle (2.5pt);
+  \filldraw (3,4) circle (2.5pt);
+  \filldraw (6,4) circle (2.5pt);
+
+  % outline control volume
+  \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
+
+  % mark quadrature points
+  \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 0};
+  \draw (3.75,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 1};
+  \draw (2.25,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 2};
+  \draw (1.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 3};
+  \draw (1.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 4};
+  \draw (2.25,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 5};
+  \draw (3.75,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 6};
+  \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 7};
+
+  % label elements and control volume
+  \draw (3.8,2.5) node {\footnotesize $V_{j,k}$};
+  \draw (5.35,3.7) node {\scriptsize $\square_{j,k}$};
+  \draw (5.35,0.35) node {\scriptsize $\square_{j,k-1}$};
+  \draw (0.8,3.7) node {\scriptsize $\square_{j-1,k}$};
+  \draw (1.0,0.35) node {\scriptsize $\square_{j-1,k-1}$};
+
+  % label center point
+  \draw (3,-0.6) node {\footnotesize $x_j$};
+  \draw (-0.6,2) node {\footnotesize $y_k$};
+
+  %% indicate coordinates of quadrature points
+  %\draw[dotted] (4.5,-0.25) -- (4.5, 0.8);
+  %\draw (4.5,-0.7) node {\scriptsize $x_j^0$};
+  %\draw[dotted] (4.8,2.5) -- (6.3, 2.5);
+  %\draw (6.7,2.5) node {\scriptsize $y_k^0$};
+\end{tikzpicture}
+\end{center}
 \end{frame}
 
 
-\begin{frame}{careful: quadrature and upwinding}
+
+\begin{frame}{Newton + continuation scheme}
 
 \begin{itemize}
 \item FIXME
 \end{itemize}
 
+\begin{center}
+\includegraphics[width=0.5\textwidth,keepaspectratio=true]{newtonconv}
+\end{center}
 \end{frame}
 
 
-\section{the essential difficulty} % i.e. bedrock roughness
+\section{partial success \dots and the essential difficulty}
 
 \begin{frame}{example: Greenland ice sheet}
 
 \begin{columns}
 \begin{column}{0.6\textwidth}
 \begin{itemize}
-\small
-\item given steady climate and bedrock elevations, what is shape of Greenland ice sheet?
+\item given steady surface mass balance and bedrock elevation, what is shape of Greenland ice sheet?
+\item assume simplest dynamics: non-sliding SIA
+\item solve NCP:
   \begin{itemize}
-  \scriptsize
-  \item[$\circ$] climate = ``surface mass balance''
-  \item[] \qquad = precipitation $-$ runoff-from-melt
-  \end{itemize}
-\small
-\item assume simplest reasonable dynamics: non-sliding shallow ice approximation
-\item solve VI/NCP weak problem
-  \begin{itemize}
-  \scriptsize
-  \item[$\circ$] steady state ($\Delta t\to \infty$)
-  \item[$\circ$] reduced-set Newton method
+  \item[$\circ$] reduced-space Newton method
   \item[$\circ$] 900 m structured grid
   \item[$\circ$] $Q^1$ FEs in space
   \item[$\circ$] $N=7\times 10^6$ d.o.f.
-  \item[$\circ$] Bueler (2016), J.~Glaciol.
   \end{itemize}
+\item see Bueler (2016), J.~Glaciol.
 \end{itemize}
 \end{column}
 \begin{column}{0.4\textwidth}
@@ -502,22 +563,51 @@ not counting possible sliding and elevation-accumulation feedbacks
 \end{frame}
 
 
+
+\begin{frame}{the essential difficulty: airplanes}
+
+\begin{itemize}
+\item actually: \alert{bedrock roughness}
+\item improved bed observations $\implies$ worse NCP solver convergence
+  \begin{itemize}
+  \item[$\circ$] old bed: Bamber (2001)
+  \item[$\circ$] new bed: Morlighem (2014)
+  \item[$\circ$] results shown for RS; SS is similar
+  \end{itemize}
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\textwidth,keepaspectratio=true]{rseps}
+\end{center}
+\end{frame}
+
+
 \begin{frame}{summary}
 
-FIXME consider layer flow model \, $h_t + \Div\bq = f$ \, subject to signed climate $f$ and where $h$ is layer thickness
-
   \begin{itemize}
-  \item goals/issues:
+  \item \emph{problem}: fluid layer conservation model \, $h_t + \Div\bq = a$
+    \begin{itemize}
+    \item[$\circ$]  subject to signed climate $a$
+    \item[$\circ$]  thickness $h$ is nonnegative
+    \item[$\circ$]  coupled to momentum solver to generate $\bU$ for $\bq$
+    \end{itemize}
+  \item \emph{goal}:
     \begin{itemize}
     \item[$\circ$]  long time steps wanted
-    \item[$\circ$]  models have been limited by free-boundary lack-of-clarity
     \end{itemize}
-  \item approach:
+  \item \emph{main issue}:
     \begin{itemize}
-    \item[$\circ$]  include constraint on thickness: $h\ge 0$
-    \item[$\circ$]  consider discrete-time problem before doing FEM/FVM/etc.
-    \item[$\circ$]  pose single time-step problem weakly as VI or NCP
-    \item[$\circ$]  solve by scalable constrained-Newton method (PETSc)
+    \item[$\circ$]  modelers not been aware of free-boundary character
+    \item[$\circ$]  scientific computing funding goes to Stokes not science
+    \end{itemize}
+  \item \emph{approach}:
+    \begin{itemize}
+    \item[$\circ$]  pose single time-step problem weakly as NCP or VI
+      \begin{itemize}
+      \item  incorporates constraint $h\ge 0$
+      \end{itemize}
+    \item[$\circ$]  consider discrete-time, continuous-space problem before coding!
+    \item[$\circ$]  solve by scalable constrained-Newton method (PETSc?)
     \end{itemize}
   \end{itemize}
 

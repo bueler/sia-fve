@@ -1,6 +1,6 @@
 all: coppertalk.pdf
 
-figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf obstacle1d.pdf
+figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf obstacle1d.pdf rseps.pdf
 
 cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf: figs1d.py
 	python figs1d.py
@@ -9,6 +9,9 @@ cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon
 obstacle1d.pdf: obstacle1d.py
 	python obstacle1d.py
 	pdfcrop obstacle1d.pdf obstacle1d.pdf
+
+rseps.pdf: rseps.py ../paper/study.robust
+	./rseps.py -o rseps.pdf ../paper/study.robust
 
 coppertalk.aux: coppertalk.tex $(figures)
 	pdflatex coppertalk
