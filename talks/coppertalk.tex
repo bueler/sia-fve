@@ -374,7 +374,7 @@ $$\begin{matrix}
  \phantom{foo} \\
  \mathcal{M}(\bU^\ell,h^\ell,b) = 0
 \end{matrix}$$
-\item coupling also through $\bq=\bq(\bU,h,\grad h)$
+\item coupling also through $\bq=\bq(\bU,h)$
 \item details of flux $\bq^\ell$ and source $a^\ell$ come from time-stepping scheme
         \begin{itemize}
         \item[$\circ$] backward-Euler shown
@@ -699,21 +699,31 @@ for all $v \in \mathcal{K}$
 
 
 
-\begin{frame}{the essential difficulty: airplanes}
+\begin{frame}{the essential difficulty: NASA's darn airplanes}
 
 \begin{itemize}
 \item actually: \alert{bedrock roughness}
 \item improved bed observations $\implies$ worse NCP solver convergence
   \begin{itemize}
-  \item[$\circ$] old bed: Bamber (2001)
-  \item[$\circ$] new bed: Morlighem (2014)
+  \item[$\circ$] old bed: Bamber (2001) on 5 km grid
+  \item[$\circ$] new bed: Morlighem (2014) on 150 m grid
   \item[$\circ$] results shown for RS; SS is similar
   \end{itemize}
 \end{itemize}
 
-\begin{center}
-\includegraphics[width=0.6\textwidth,keepaspectratio=true]{rseps}
-\end{center}
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\includegraphics[height=0.5\textheight,keepaspectratio=true]{insetinset}
+
+rougher bed \hfill $\implies$ \phantom{sddf}
+\end{column}
+\begin{column}{0.6\textwidth}
+\includegraphics[height=0.5\textheight,keepaspectratio=true]{rseps}
+
+poorer Newton-solver convergence
+\end{column}
+\end{columns}
+
 \end{frame}
 
 
@@ -724,26 +734,26 @@ for all $v \in \mathcal{K}$
     \begin{itemize}
     \item[$\circ$]  subject to signed climate $a$
     \item[$\circ$]  thickness $h$ is nonnegative
-    \item[$\circ$]  coupled to momentum solver to generate $\bU$ for $\bq$
+    \item[$\circ$]  coupled to momentum solver, for $\bU$ in $\bq=\bq(\bU,h)$
     \end{itemize}
-  \item \emph{goal}:
+  \item \emph{goals}:
     \begin{itemize}
-    \item[$\circ$]  long time steps wanted
+    \item[$\circ$]  long time steps, no first-order splitting errors
     \end{itemize}
   \item \emph{approach}:
     \begin{itemize}
-    \item[$\circ$]  pose single time-step problem weakly as NCP or VI
+    \item[$\circ$]  take discrete-time, continuous-space seriously
+    \item[$\circ$]  pose single time-step weakly as NCP or VI
       \begin{itemize}
       \item  incorporates constraint $h\ge 0$
-      \item  approach is very flux-agnostic
+      \item  approach is largely flux-agnostic
       \end{itemize}
-    \item[$\circ$]  consider discrete-time, continuous-space problem before coding!
-    \item[$\circ$]  solve by scalable constrained-Newton method (PETSc?)
+    \item[$\circ$]  solve by scalable constrained-Newton method (e.g.~PETSc)
     \end{itemize}
-  \item \emph{issues/challenges}:
+  \item \emph{challenges}:
     \begin{itemize}
     \item[$\circ$]  bed roughness makes convergence hard
-    \item[$\circ$]  \alert{every time-step generates near-fractal domain, by free-boundary problem, on which coupled momentum solve must be accurate, especially near the free boundary}
+    \item[$\circ$]  \alert{every time step generates a near-fractal icy domain (e.g.~continental ice sheet), via free-boundary problem, on which momentum solve must be accurate especially near the boundary}
     \end{itemize}
   \end{itemize}
 

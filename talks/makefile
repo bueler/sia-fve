@@ -1,6 +1,6 @@
 all: coppertalk.pdf
 
-figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf obstacle1d.pdf ncp1d.pdf vi1d.pdf rseps.pdf
+figures = cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf obstacle1d.pdf ncp1d.pdf vi1d.pdf rseps.pdf insetinset.pdf
 
 cartoon-wclimate.pdf cartoon-sensitive-one.pdf cartoon-sensitive-two.pdf cartoon-sensitive-three.pdf cartoon-sets.pdf: figs1d.py
 	python figs1d.py
