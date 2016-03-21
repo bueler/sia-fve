@@ -67,10 +67,17 @@
 \end{frame}
 
 
-\begin{frame}{outline}
-  \tableofcontents
-\end{frame}
+%\begin{frame}{outline}
+%  \tableofcontents
+%\end{frame}
 
+\AtBeginSection[] % Do nothing for \section*
+{
+\begin{frame}<beamer>
+\frametitle{outline}
+\tableofcontents[currentsection]
+\end{frame}
+}
 
 \section{NCPs and VIs, a superficial intro}
 
@@ -202,14 +209,6 @@ two Newton line search NCP methods in PETSc SNES:\footnote{Benson \& Munson (200
 \end{itemize}
 \end{frame}
 
-
-\AtBeginSection[] % Do nothing for \section*
-{
-\begin{frame}<beamer>
-\frametitle{outline}
-\tableofcontents[currentsection]
-\end{frame}
-}
 
 \section{glacier geometry-evolution models}
 
