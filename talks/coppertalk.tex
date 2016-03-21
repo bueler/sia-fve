@@ -246,7 +246,7 @@ two Newton line search NCP methods in PETSc SNES:\footnote{Benson \& Munson (200
 \begin{frame}{solve coupled mass and momentum equations}
 
 \begin{itemize}
-\item my goal: better ice sheet models \only<2>{\hfill\alert{\dots than PISM}}
+\item my goal: better ice sheet models \only<2>{\hfill\alert{vs PISM}}
   \begin{itemize}
   \item[$\circ$] suitable for long/paleo ($\sim 100$ka) and high res ($\sim 1$ km) \only<2>{\hfill\alert{$\sim\checkmark$}}
   \item[$\circ$] without time-splitting \only<2>{\hfill\alert{\large\frownie{}}}
@@ -649,17 +649,17 @@ for all $v \in \mathcal{K}$
 \begin{itemize}
 \item for $0 \le \eps \le 1$, regularize $\bq^{(\eps)}$ so that
   \begin{itemize}
+  \item[$\circ$] $\eps_k = 10^{-k/3}$ for $k=0,1,\dots,11$ and $\eps_{12}=0$
   \item[$\circ$] $\bq^{(\eps_0)}$ with $\eps_0=1$ gives classical obstacle problem
-    $$\Div \bq^{(\eps_0)} = a \quad \iff \quad - \Div (D_0 \grad s) = a$$
+    $$- \Div (D_0 \grad s) = a$$
   \item[$\circ$] $\bq^{(\eps_{12})}$ with $\eps_{12}=0$ gives SIA model
-    $$\Div \bq^{(\eps_{12})} = a \quad \iff \quad - \Div (\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s) = a$$
+    $$- \Div (\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s) = a$$
   \end{itemize}
-\item $\eps_{k-1}$ level generates initial $h$ for $\eps_k$ level
-\item at each level, want quadratic convergence from Newton
+\item in idealized cases, quadratic convergence at each level:
 \end{itemize}
 
 \begin{center}
-\includegraphics[width=0.4\textwidth,keepaspectratio=true]{newtonconv}
+\includegraphics[width=0.45\textwidth,keepaspectratio=true]{newtonconv}
 \end{center}
 \end{frame}
 
