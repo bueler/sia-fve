@@ -14,7 +14,7 @@
 \usepackage{times}
 \usepackage[T1]{fontenc}
 
-\usepackage{tikz,amsmath,verbatim}
+\usepackage{tikz,amsmath,verbatim,wasysym}
 
 % math macros
 \newcommand\bb{\mathbf{b}}
@@ -86,12 +86,15 @@ given a differentiable map $\bF:\RR^n \to \RR^n$
 
 \begin{columns}
 \begin{column}{0.45\textwidth}
-\small
 \begin{itemize}
-\item \alert{example}: obstacle problem is to find $u(x)$ so that $-u''(x) \ge 0$, $u(x) \ge \psi(x)$, and either $u=\psi$ or $-u''(x) = 0$
-\item discretized and in form \eqref{ncp}: ${\color{red} z_j}=u_j - \psi(x_j)$ and
 \footnotesize
-  $${\color{ForestGreen} F_j}(\bz) = - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi_j''$$
+\item example: given $\psi(x)$, the 1d \alert{obstacle problem} is to find $u(x)$ so that $u(x) \ge \psi(x)$ and $-u''(x) = 0$ where $u>\psi$
+\item \dots think about the gap \dots
+\item discretized and in form \eqref{ncp}:
+\begin{align*}
+{\color{red} z_j} &= u_j - \psi(x_j) \\
+{\color{ForestGreen} F_j}(\bz) &= - \frac{z_{j+1} - 2 z_j + z_{j-1}}{\Delta x^2} - \psi_j''
+\end{align*}
 \end{itemize}
 \end{column}
 \begin{column}{0.55\textwidth}
@@ -130,19 +133,25 @@ $\mathcal{K} = \{{\color{red} u_j} \ge {\color{blue} \psi(x_j)}\}$ and
 \end{columns}\end{frame}
 
 
-\begin{frame}{generalities}
+\begin{frame}{NCP/VI generalities}
 
 \begin{itemize}
-\item in $\RR^n$: NCP $\iff$ VI
-\item both generalize nonlinear eqns ``$\bF(\bz)=0$'' to allow constraints on $\bz$
-\item both are nonlinear, even if $\bF$ is linear or affine
-\item both: iteration obligatory if $n$ large
-\item constrained optimization $\implies$ NCP $\iff$ VI
+\item in finite dimensions when $\mathcal{K}$ is a cone (as in this talk):
+\begin{center}
+\alert{NCP $\iff$ VI}
+\end{center}
+\item both 
+  \begin{itemize}
+  \item[$\circ$]  generalize nonlinear eqns ``$\bF(\bz)=0$'' to allow constraints on $\bz$
+  \item[$\circ$]  are nonlinear, even if $\bF$ is linear or affine
+  \item[$\circ$]  in practice: need iterative approach to solve
+  \end{itemize}
+\item constrained optimization $\implies$ VI $\iff$ NCP
   \begin{itemize}
   \item[$\circ$]  i.e.~find minimum of $\Phi[\bz]$ from $\mathcal{K}$
-  \item[$\circ$]  constrained optimization generates symmetric Jacobian/Hessian ($J = \bF' = \Phi''$)
-  \item[$\circ$]  NCP and VI arising in glacier problems are \alert{not} optimizations
+  \item[$\circ$]  symmetric Jacobian/Hessian in optimizations ($J = \bF' = \Phi''$)
   \end{itemize}
+\item \emph{but}: NCP and VI arising in glacier problems are \alert{not} optimizations
 \end{itemize}
 \end{frame}
 
@@ -153,8 +162,8 @@ libraries with scalable support for NCP and/or VI:
 \begin{itemize}
 \item  PETSc SNES
   \begin{itemize}
-  \item[$\circ$]  do not assume optimization
-  \item[$\circ$]  used this in Bueler (2016) J.~Glaciol.
+  \item[$\circ$]  does not assume optimization
+  \item[$\circ$]  used this in all results later in talk
   \end{itemize}
 \item  TAO
   \begin{itemize}
@@ -169,36 +178,30 @@ libraries with scalable support for NCP and/or VI:
 \end{frame}
 
 
-\begin{frame}{algorithms (a gloss)}
+\begin{frame}{algorithms}
 
-Newton line search NCP methods in PETSc SNES:
+two Newton line search NCP methods in PETSc SNES:\footnote{Benson \& Munson (2006), and Barry Smith}
 \begin{itemize}
-\item  due to Benson \& Munson (2006), and Barry Smith
 \item  ``reduced-space'' = \alert{RS}
     \begin{itemize}
     \item[$\circ$] active set $\mathcal{A} = \{i \,:\, z_i = 0 \text{ and } F_i(\bz) > 0\}$
     \item[$\circ$] inactive set $\mathcal{I} = \{i \,:\, z_i > 0 \text{ or } F_i(\bz) \le 0\}$
-    \item[$\circ$] \emph{alg}: compute Newton step $\bs^k$ by
+    \item[$\circ$] \emph{algorithm}: compute Newton step $\bs^k$ by
      $$\big[J(\bz^k)\big]_{\mathcal{I}^k,\mathcal{I}^k} \bs_{\mathcal{I}^k} = - \bF_{\mathcal{I}^k}(\bz^k)$$
      then do projected line search onto $\{\bz\ge 0\}$
     \end{itemize}
 \item  ``semi-smooth'' = \alert{SS}
     \begin{itemize}
-    \item[$\circ$] ``NCP function'' satisfies $\phi(a,b)=0$ if and only if $a\ge 0,b\ge 0,ab=0$
-    \item[$\circ$] \emph{alg}: compute Newton step $\bs^k$ by
+    \item[$\circ$] ``NCP function'':
+\vspace{-2mm}
+    $$\phi(a,b)=0 \quad \iff \quad a\ge 0, b\ge 0, ab=0$$
+    \item[$\circ$] \emph{algorithm}: compute Newton step $\bs^k$ by
     $$L^k \bs^k = - \phi(\bz^k,\bF^k(\bz^k))$$
     where $L^k$ is element of $\partial_B \phi(\bz^k,\bF^k(\bz^k))$; then do line search
     \end{itemize}
 \end{itemize}
 \end{frame}
 
-
-%  $\infty$ dimensions
-% comes from with mass conservation (MC) equation $H_t + \Div\bq = f$
-%  $\bx = H$ and $\bF(\bx) = (\text{residual from discrete-time  MC eqn.})$
-%  the mass continuity equation is not (generally) an Euler-Lagrange (variational) equation of a functional
-%  Jouvet \& Bueler (2012) solve problem as fixed-point sequence of optimizations, but this loses Newton quadratic convergence character
-% Jacobians are \emph{not} generally symmetric
 
 \AtBeginSection[] % Do nothing for \section*
 {
@@ -220,7 +223,7 @@ Newton line search NCP methods in PETSc SNES:
 \item unknowns:
   \begin{itemize}
   \item[$\circ$]  $h(t,x,y)$ ice thickness \hfill \dots also $s=h+b$ surface elevation
-  \item[$\circ$]  $\bU(t,x,y,z) = (u,v,w)$ ice velocity
+  \item[$\circ$]  $\bU(t,x,y,z) = \left<u,v,w\right>$ ice velocity
   \end{itemize}
 \item \only<1>{data}\only<2>{\alert{uncertain ``data'' from other models}}:
   \begin{itemize}
@@ -230,11 +233,11 @@ Newton line search NCP methods in PETSc SNES:
     \item accumulation/ablation function; $=$ precipitation $-$ melt
     \end{itemize}
   \end{itemize}
-\item ignored here:
+\item ignored in this talk:
   \begin{itemize}
-  \item[$\circ$]  temperature/enthalpy, and conservation of energy
+  \item[$\circ$]  conservation of energy (temperature/enthalpy)
   \item[$\circ$]  floating ice
-  \item[$\circ$]  bed deformation
+  \item[$\circ$]  solid-earth deformation
   \end{itemize}
 \end{itemize}
 \end{frame}
@@ -243,10 +246,11 @@ Newton line search NCP methods in PETSc SNES:
 \begin{frame}{solve coupled mass and momentum equations}
 
 \begin{itemize}
-\item my goal: better ice sheet models!
+\item my goal: better ice sheet models \only<2>{\hfill\alert{\dots than PISM}}
   \begin{itemize}
-  \item[$\circ$]  suitable for long/paleo ($\sim 100$ka) and high res ($\sim 1$ km)
-  \item[$\circ$]  with less time-splitting and no (\emph{pathetic}) first-order explicitness
+  \item[$\circ$] suitable for long/paleo ($\sim 100$ka) and high res ($\sim 1$ km) \only<2>{\hfill\alert{$\sim\checkmark$}}
+  \item[$\circ$] without time-splitting \only<2>{\hfill\alert{\large\frownie{}}}
+  \item[$\circ$] with explicit time-step restrictions \only<2>{\hfill\alert{\large\frownie{}}}
   \end{itemize}
 \item here just two coupled conservations:
   \begin{itemize}
@@ -258,7 +262,6 @@ h_t + \Div\bq = a
     \vspace{-5mm}
     \item $\bq = h\, \ip{\bar u}{\bar v}$ is vertically-integrated ice flux
     \item equivalent to ``surface kinematical equation'' (ice incompressible)
-    \item<2> \emph{the geometry-evolution and climate-interacting part!}
     \end{itemize}
   \item[$\circ$]  \alert{momentum conservation}
 \begin{equation*}
@@ -274,7 +277,7 @@ h_t + \Div\bq = a
 \end{frame}
 
 
-\begin{frame}{possible momentum equations}
+\begin{frame}{many possible momentum equations}
 
   \begin{itemize}
   \scriptsize
@@ -306,7 +309,7 @@ v_z
 \begin{center}
 \alert{generate velocity $\bU=\left<u,v,w\right>$ from geometry $h$ \& $b$}
 \end{center}
-\item if we have $h$ \& $b$, momentum equations are $\mathcal{M}(\bU,h,b)=0$
+\item momentum equations are $\mathcal{M}(\bU,h,b)=0$
 \end{itemize}
 \end{frame}
 
@@ -318,20 +321,22 @@ v_z
 \end{center}
 
 \vspace{-7mm}
-  \begin{itemize}
-  \item problem is instance of broader class:
-\begin{center}
-\alert{a fluid layer on a substrate, evolving in a climate}
-\end{center}
-  \item always this mass conservation PDE:
-      $$h_t + \Div\bq = {\color{blue} a}$$
+\begin{itemize}
+\item mass conservation equation on last slide applies to broader class:
+  \begin{center}
+  \alert{a fluid layer on a substrate, evolving in a climate}
+  \end{center}
+\item mass conservation PDE:
+\begin{equation}
+h_t + \Div\bq = {\color{blue} a}  \tag{$\ast$} \label{mc}
+\end{equation}
     \begin{itemize}
     \vspace{-4mm}
     \item[$\circ$] $h$ is a thickness so $h\ge 0$
-    \item[$\circ$] mass conservation PDE applies only where $h>0$
+    \item[$\circ$] \eqref{mc} applies only where $h>0$
     \item[$\circ$] signed source ${\color{blue} a}$ is the ``climate''
     \end{itemize}
-  \end{itemize}
+\end{itemize}
 \end{frame}
 
 
@@ -375,7 +380,7 @@ $$\begin{matrix}
         \item[$\circ$] backward-Euler shown
         \item[$\circ$] could use other $\theta$-methods or BDFs
         \end{itemize}
-\item<2> \alert{need to weakly-pose single time-step mass conservation equation incorporating $h^\ell\ge 0$ constraint!}
+\item<2> \alert{need to weakly-pose single time-step mass conservation equation incorporating $h^\ell\ge 0$ constraint \dots it generates the free boundary}
 \end{itemize}
 \end{frame}
 
@@ -391,10 +396,10 @@ $$\begin{matrix}
     \begin{itemize}
     \item[$\circ$] because it is a flowing \emph{layer}
     \end{itemize}
-\item first weak formulation of \ref{mcstrong} for glaciers was as VI
+\item first weak formulations of \ref{mcstrong} for glaciers were VIs
     \begin{itemize}
     \item[$\circ$] Calvo et al (2002): SIA 1d flat bed
-    \item[$\circ$] Jouvet \& Bueler (2012): SIA steady ($\Delta t\to \infty$) 2d general bed
+    \item[$\circ$] Jouvet \& Bueler (2012): SIA 2d general bed steady
     \end{itemize}
 \item define $\mathcal{K} = \left\{v \in W^{1,p}(\Omega) \,\Big|\, v\ge 0\right\}$
 \item VI form of MC: find $h^\ell\in\mathcal{K}$
@@ -413,7 +418,7 @@ for all $v \in \mathcal{K}$
     $$F(h) = h^\ell - h^{\ell-1} + \Delta t\, \Div \bq^\ell - \Delta t\, a^\ell$$
 \item NCP form of MC:
    $$h^\ell \ge 0, \quad F(h^\ell) \ge 0, \quad h^\ell F(h^\ell) = 0$$
-\item setwise statements within the NCP:
+\item setwise statements from the NCP:
     \begin{itemize}
     \item[$\circ$] where $h^\ell > 0$,
         $$F(h^\ell) = 0 \qquad \iff \qquad \text{strong form MC}$$
@@ -434,10 +439,10 @@ for all $v \in \mathcal{K}$
 
 \section{proposed approach: FVE discretization + Newton + continuation}
 
-\begin{frame}{``finite volume element'' discretization}
+\begin{frame}{finite volume element (FVE) discretization}
 
 \begin{itemize}
-\item from now on: steady case $\Delta t \to \infty$ for these slides
+\item from now on in this talk: steady case ($\Delta t = \infty$)
 \item for FVE, see Cai (1990) and Ewing, Lin, \& Lin (2002)
 \item thickness $h(x,y)$ lives in $Q^1$ FEM space $\subset W^{1,\nu+1}(\Omega)$
     \begin{itemize}
@@ -570,16 +575,16 @@ for all $v \in \mathcal{K}$
 \end{frame}
 
 
-\begin{frame}{improved quadrature (and upwinding)}
+\begin{frame}{quadrature and upwinding}
 
 \begin{itemize}
-\item known FD schemes fit into above FVE framework
+\item FD schemes fit into above FVE framework
   \begin{itemize}
-  \item[$\circ$] old scheme by Mahaffy (1976) fits \dots but has weird quadrature
-  \item[$\circ$] improved convergence comes from quadrature points below
+  \item[$\circ$] old FD scheme by Mahaffy (1976) fits \dots has weird quadrature
+  \item[$\circ$] improved convergence comes from using quadrature points below:
   \end{itemize}
 \begin{center}
-\begin{tikzpicture}[scale=0.6]
+\begin{tikzpicture}[scale=0.5]
   % strong grid around elements
   \draw (-0.3,0) -- (6.3,0);
   \draw (-0.3,2) -- (6.3,2);
@@ -600,24 +605,24 @@ for all $v \in \mathcal{K}$
   % outline control volume
   \draw[dashed] (1.5,3) -- (4.5,3) -- (4.5,1) -- (1.5,1) -- cycle;
   % mark quadrature points
-  \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 0};
-  \draw (3.75,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 1};
-  \draw (2.25,3)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 2};
-  \draw (1.5,2.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 3};
-  \draw (1.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 4};
-  \draw (2.25,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 5};
-  \draw (3.75,1)  circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 6};
-  \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.2)}] {\tiny 7};
+  \draw (4.5,2.5) circle (3.0pt) node[shift={(0.2,0.0)}] {\tiny 0};
+  \draw (3.75,3)  circle (3.0pt) node[shift={(0.0,0.2)}] {\tiny 1};
+  \draw (2.25,3)  circle (3.0pt) node[shift={(0.0,0.2)}] {\tiny 2};
+  \draw (1.5,2.5) circle (3.0pt) node[shift={(-0.2,0.0)}] {\tiny 3};
+  \draw (1.5,1.5) circle (3.0pt) node[shift={(-0.2,0.0)}] {\tiny 4};
+  \draw (2.25,1)  circle (3.0pt) node[shift={(0.0,-0.2)}] {\tiny 5};
+  \draw (3.75,1)  circle (3.0pt) node[shift={(0.0,-0.2)}] {\tiny 6};
+  \draw (4.5,1.5) circle (3.0pt) node[shift={(0.2,0.0)}] {\tiny 7};
   % label elements and control volume
   \draw (3.8,2.5) node {\footnotesize $V_{j,k}$};
-  \draw (5.35,3.7) node {\scriptsize $\square_{j,k}$};
+  \draw (5.35,3.6) node {\scriptsize $\square_{j,k}$};
 \end{tikzpicture}
 \end{center}
 \item a bit of upwinding improves convergence on non-flat beds
   \begin{itemize}
-  \item[$\circ$] though this is a fully-implicit approach
+  \item[$\circ$] \dots even though this is a fully-implicit approach
   \item[$\circ$] tested on bedrock-step exact solution (Jarosch et al 2013)
-  \item[$\circ$] subtleties \dots confusing to me \dots out of scope here
+  \item[$\circ$] details out of scope here
   \end{itemize}
 \end{itemize}
 \end{frame}
@@ -626,27 +631,16 @@ for all $v \in \mathcal{K}$
 \begin{frame}{restrict to SIA}
 
 \begin{itemize}
-\item but from now on: restrict to nonsliding SIA
-    \begin{itemize}
-    \item[$\circ$] other momentum conservation solutions are nontrivial \dots I agree!
-      \begin{itemize}
-      \item indefinite Stokes or elliptic-ish Blatter-Pattyn or SSA etc.
-      \end{itemize}
-    \end{itemize}
+\item from now on: restrict to nonsliding SIA
 \item steady SIA mass conservation equation (SIA MC)
     $$\Div \bq = a, \qquad \bq = - \Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s$$
-\end{itemize}
 
-\medskip
-nonlinearities of SIA MC:
-\begin{enumerate}
-\item constrained problem (NCP or VI) is inherently nonlinear
-\item $\nu\approx 3$ Glen power
+\vspace{-2mm}
     \begin{itemize}
-    \item[$\circ$] in flat bed case, can be transformed to $p$-Laplacian equation
+    \item[$\circ$] recall $s=h+b$
+    \item[$\circ$] main idea: these equations are subject to nontrivial constraint $h\ge 0$, so it is an NCP
     \end{itemize}
-\item bedrock gradient is (un-transformable) additional nonlinearity even if $\nu=1$ (Jouvet \& Bueler 2012)
-\end{enumerate}
+\end{itemize}
 \end{frame}
 
 
@@ -661,7 +655,7 @@ nonlinearities of SIA MC:
     $$\Div \bq^{(\eps_{12})} = a \quad \iff \quad - \Div (\Gamma h^{\nu+2} |\grad s|^{\nu-1} \grad s) = a$$
   \end{itemize}
 \item $\eps_{k-1}$ level generates initial $h$ for $\eps_k$ level
-\item at each level, goal is quadratic convergence from Newton
+\item at each level, want quadratic convergence from Newton
 \end{itemize}
 
 \begin{center}
@@ -677,16 +671,20 @@ nonlinearities of SIA MC:
 \begin{columns}
 \begin{column}{0.6\textwidth}
 \begin{itemize}
-\item given steady surface mass balance and bedrock elevation, what is shape of Greenland ice sheet?
-\item assume simplest dynamics: non-sliding SIA
-\item solve NCP:
+\item \emph{goal}: given steady surface mass balance $a(x,y)$ and bedrock elevation $b(x,y)$, predict the steady geometry $h(x,y)$ of the Greenland ice sheet
+
+\bigskip
+\item \emph{method}: solve steady SIA MC NCP
   \begin{itemize}
   \item[$\circ$] reduced-space Newton method
   \item[$\circ$] 900 m structured grid
   \item[$\circ$] $Q^1$ FEs in space
   \item[$\circ$] $N=7\times 10^6$ d.o.f.
   \end{itemize}
-\item see Bueler (2016), J.~Glaciol.
+\item \emph{result}: at right
+  \begin{itemize}
+  \item[$\circ$] see Bueler (2016), J.~Glaciol.
+  \end{itemize}
 \end{itemize}
 \end{column}
 \begin{column}{0.4\textwidth}
