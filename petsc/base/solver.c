@@ -317,7 +317,7 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
   myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
-  myPrintf(user,"eps=%.2e ... %3d KSP (last) iters and %3d Newton iters\n",
+  myPrintf(user,"eps = %.6f ... %3d KSP (last) iters and %3d Newton iters\n",
            user->eps,kspits,its);
   if (user->dtres > 0.0)
       myPrintf(user,"       (on equations for backward Euler time step of %.4f a)\n",
