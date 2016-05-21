@@ -1,4 +1,4 @@
-/* (C) 2015 Ed Bueler */
+/* (C) 2015--2016 Ed Bueler */
 
 /* Structs which are used by mahaffy.c. */
 
@@ -10,6 +10,7 @@
 #include <petscvec.h>
 
 #include "continuationscheme.h"
+#include "cmbmodel.h"
 
 typedef struct {
   Vec       Dnodemax,// maximum value of the diffusivity D at the quadrature points for that node
@@ -68,8 +69,9 @@ typedef struct {
             readname[512],
             readinitialname[512];
   struct timeval     starttime, endtime;
-  ContinuationScheme *cs;
   DiagnosticScheme   ds;
+  ContinuationScheme *cs;
+  CMBModel           *cmbmodel;
 } AppCtx;
 
 PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user);

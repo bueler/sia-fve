@@ -46,6 +46,10 @@ PetscErrorCode initialize(AppCtx *user) {
   strcpy(user->figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user->readname,"FILENAME");
   strcpy(user->readinitialname,"FILENAME");
+
+  user->cs = NULL;
+  user->cmbmodel = NULL;
+
   PetscFunctionReturn(0);
 }
 
@@ -151,6 +155,7 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       "-true", "use true Mahaffy method, not default M*",
       "mahaffy.c",user->mtrue,&user->mtrue,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsEnd();CHKERRQ(ierr);
+
   // enforce consistency of cases
   if (Tset) {
       if ((user->dtres <= 0.0) || (user->dtjac <= 0.0) || (user->dtres != user->dtjac)) {
