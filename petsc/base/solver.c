@@ -139,6 +139,15 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
           }
       }
   }
+  // if CMB m depends on surface elevation, compute it; OVERWRITES Vec user->m
+  if ((user->cmbmodel) && (user->cmb != NULL)) {
+      for (k=info->ys; k<info->ys+info->ym; k++) {
+          for (j=info->xs; j<info->xs+info->xm; j++) {
+              M_CMBModel(user->cmb,ab[k][j],aH[k][j],&(am[k][j]));
+              //PetscPrintf(PETSC_COMM_WORLD,"am[%d][%d] = %.5e\n",k,j,am[k][j]);
+          }
+      }
+  }
   // loop over nodes, not including ghosts, to get residual from quadature over
   // s = 0,1,...,7 points on boundary of control volume (rectangle) around node
   for (k=info->ys; k<info->ys+info->ym; k++) {
@@ -208,11 +217,11 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   const PetscBool upwind = (user->lambda > 0.0);
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
                   upmax = (1.0 + user->lambda) * 0.5;
-  PetscInt        j, k;
-  PetscReal       **ab, ***adQ;
+  PetscInt        j, k, count;
+  PetscReal       **ab, ***adQ, dmdH;
   Vec             dQloc;
-  MyStencil       col[33],row;
-  PetscReal       val[33];
+  MyStencil       col[34],row;
+  PetscReal       val[34];
 
   PetscFunctionBeginUser;
   if (user->mtrue) {
@@ -275,15 +284,23 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
                   val[4*s+l] = coeff[s] * adQ[v][u][4*ce[s]+l];
               }
           }
+          count = 32;
           if (user->dtjac > 0.0) {
-              // add another stencil for diagonal
+              // add another stencil for diagonal, from time-derivative term
               col[32].j = j;
               col[32].k = k;
               val[32]   = dx * dy / user->dtjac;
-              ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,33,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
-          } else {
-              ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,32,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
+              count++;
           }
+          if ((user->cmbmodel) && (user->cmb != NULL)) {
+              // add diagonal term for elevation (thickness) dependence of cmb
+              ierr = dMdH_CMBModel(user->cmb,&dmdH); CHKERRQ(ierr);
+              col[33].j = j;
+              col[33].k = k;
+              val[33]   = - dmdH * dx * dy;
+              count++;
+          }
+          ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,count,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
       }
   }
   ierr = DMDAVecRestoreArray(user->da, user->bloc, &ab);CHKERRQ(ierr);

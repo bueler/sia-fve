@@ -58,6 +58,7 @@ Do "manual" time steps after divergence, to approach steady state:
 
 #include "base/appctx.h"
 #include "base/continuationscheme.h"
+#include "base/cmbmodel.h"
 #include "base/exactsia.h"
 #include "base/io.h"
 #include "base/solver.h"
@@ -73,6 +74,7 @@ int main(int argc,char **argv) {
   Vec                 H;
   AppCtx              user;
   ContinuationScheme  cs;
+  CMBModel            cmb;
   DMDALocalInfo       info;
   SNESConvergedReason reason;
 
@@ -81,6 +83,10 @@ int main(int argc,char **argv) {
   ierr = SetFromOptionsAppCtx("mah_",&user); CHKERRQ(ierr);
   ierr = SetFromOptionsCS("cs_",&cs); CHKERRQ(ierr);
   user.cs = &cs;
+  if (user.cmbmodel) {
+      ierr = SetFromOptionsCMBModel(&cmb,"cmb_",user.secpera);
+      user.cmb = &cmb;
+  }
 
   if (user.read) {
       myPrintf(&user,
@@ -310,7 +316,25 @@ int main(int argc,char **argv) {
 // set initial H by chop & scale SMB
 PetscErrorCode ChopScaleSMBforInitialH(Vec Hinitial, AppCtx *user) {
   PetscErrorCode ierr;
+  PetscReal      **ab, **am;
+  PetscInt       j, k;
+  DMDALocalInfo  info;
+
   PetscFunctionBeginUser;
+  // if CMB m depends on surface elevation, use thickness zero so s=b
+  if ((user->cmbmodel) && (user->cmb != NULL)) {
+      ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(user->da, user->b, &ab);CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
+      for (k=info.ys; k<info.ys+info.ym; k++) {
+          for (j=info.xs; j<info.xs+info.xm; j++) {
+              M_CMBModel(user->cmb,ab[k][j],0,&(am[k][j]));
+          }
+      }
+      ierr = DMDAVecRestoreArray(user->da, user->b, &ab);CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(user->da, user->m, &am);CHKERRQ(ierr);
+  }
+  // now do chop and scale
   ierr = VecCopy(user->m,Hinitial); CHKERRQ(ierr);
   ierr = VecTrueChop(Hinitial,0.0); CHKERRQ(ierr);
   ierr = VecScale(Hinitial,user->initmagic * user->secpera); CHKERRQ(ierr);

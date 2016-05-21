@@ -20,25 +20,8 @@ PetscErrorCode SetFromOptionsCMBModel(CMBModel *cmb, const char *optprefix, Pets
 }
 
 
-PetscErrorCode M_CMBModel(CMBModel *cmb, DM da, Vec b, Vec H, Vec m) {
-  PetscErrorCode ierr;
-  DMDALocalInfo info;
-  PetscReal     **am, **ab, **aH;
-  PetscInt      j, k;
-
-  PetscFunctionBeginUser;
-  ierr = DMDAGetLocalInfo(da, &info); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(da, m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(da, b, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(da, H, &aH);CHKERRQ(ierr);
-  for (k=info.ys; k<info.ys+info.ym; k++) {
-      for (j=info.xs; j<info.xs+info.xm; j++) {
-          am[k][j] = cmb->lapse * (ab[k][j] + aH[k][j] - cmb->ela);
-      }
-  }
-  ierr = DMDAVecRestoreArray(da, m, &am);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(da, b, &ab);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(da, H, &aH);CHKERRQ(ierr);
+PetscErrorCode M_CMBModel(CMBModel *cmb, PetscReal b, PetscReal H, PetscReal *m) {
+  *m = cmb->lapse * (b + H - cmb->ela);
   PetscFunctionReturn(0);
 }
 

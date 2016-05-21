@@ -64,14 +64,15 @@ typedef struct {
             averr,  // only display average error at end
             maxerr, // only display maximum error at end
             nodiag, // do not use DiagnosticScheme
-            history;// write ASCII history file
+            history,// write ASCII history file
+            cmbmodel;// use ela + lapse-rate model for CMB
   char      figsprefix[512],
             readname[512],
             readinitialname[512];
   struct timeval     starttime, endtime;
   DiagnosticScheme   ds;
   ContinuationScheme *cs;
-  CMBModel           *cmbmodel;
+  CMBModel           *cmb;
 } AppCtx;
 
 PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user);

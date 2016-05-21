@@ -42,13 +42,14 @@ PetscErrorCode initialize(AppCtx *user) {
   user->silent     = PETSC_FALSE;
   user->averr      = PETSC_FALSE;
   user->maxerr     = PETSC_FALSE;
+  user->cmbmodel   = PETSC_FALSE;
 
   strcpy(user->figsprefix,"PREFIX/");  // dummies improve "mahaffy -help" appearance
   strcpy(user->readname,"FILENAME");
   strcpy(user->readinitialname,"FILENAME");
 
   user->cs = NULL;
-  user->cmbmodel = NULL;
+  user->cmb = NULL;
 
   PetscFunctionReturn(0);
 }
@@ -75,6 +76,9 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
   ierr = PetscOptionsBool(
       "-checkadmissible", "in FormFunctionLocal(), stop if H < 0.0",
       "mahaffy.c",user->checkadmissible,&user->checkadmissible,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsBool(
+      "-cmbmodel", "use ela + lapse-rate model for computing climatic mass balance (CMB)",
+      "mahaffy.c",user->cmbmodel,&user->cmbmodel,NULL);CHKERRQ(ierr);
   ierr = PetscOptionsReal(
       "-delta", "dimensionless regularization for slope in SIA formulas",
       "mahaffy.c",user->delta,&user->delta,NULL);CHKERRQ(ierr);

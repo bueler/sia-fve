@@ -18,7 +18,7 @@ typedef struct {
 
 PetscErrorCode SetFromOptionsCMBModel(CMBModel *cmb, const char *optprefix, PetscReal secpera);
 
-PetscErrorCode M_CMBModel(CMBModel *cmb, DM da, Vec b, Vec H, Vec m);
+PetscErrorCode M_CMBModel(CMBModel *cmb, PetscReal b, PetscReal H, PetscReal *m);
 
 PetscErrorCode dMdH_CMBModel(CMBModel *cmb, PetscReal *dmdH);
 
