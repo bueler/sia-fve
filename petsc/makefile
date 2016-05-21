@@ -4,7 +4,7 @@ all: mahaffy
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-base := appctx.o continuationscheme.o sia.o exactsia.o io.o q1op.o solver.o
+base := appctx.o cmbmodel.o continuationscheme.o sia.o exactsia.o io.o q1op.o solver.o
 base := $(addprefix base/, $(base))
 
 mahaffy: mahaffy.o $(base) chkopts

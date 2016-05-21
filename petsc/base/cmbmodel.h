@@ -16,9 +16,11 @@ typedef struct {
             lapse; // lapse rate in s^-1
 } CMBModel;
 
-PetscErrorCode SetFromOptionsCMBModel(const char *optprefix, CMBModel *cmb);
+PetscErrorCode SetFromOptionsCMBModel(CMBModel *cmb, const char *optprefix, PetscReal secpera);
 
-PetscErrorCode GetCMBfromCMBModel(Vec b, Vec H, Vec m, CMBModel *cmb);
+PetscErrorCode M_CMBModel(CMBModel *cmb, DM da, Vec b, Vec H, Vec m);
+
+PetscErrorCode dMdH_CMBModel(CMBModel *cmb, PetscReal *dmdH);
 
 #endif // CMBMODEL_H_
 
