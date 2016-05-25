@@ -204,11 +204,9 @@ typedef struct {
   PetscInt foo,k,j,bar;
 } MyStencil;
 
-/* For call-back by SNES using DMDA info.
-
-Evaluates Jacobian matrix on local process patch.
-
-For examples see $PETSC_DIR/src/snes/examples/tutorials/ex5.c or ex9.c.
+/* For call-back by SNES using DMDA info.  Evaluates Jacobian matrix on local
+process patch.  For related examples see ex5.c or ex9.c in
+$PETSC_DIR/src/snes/examples/tutorials/
 */
 PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac, Mat jacpre, AppCtx *user) {
   PetscErrorCode  ierr;
@@ -218,15 +216,15 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
                   upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k, count;
-  PetscReal       **ab, ***adQ, dmdH;
+//  PetscReal       **ab, ***adQ, dmdH;
+  PetscReal       **ab, ***adQ;
   Vec             dQloc;
   MyStencil       col[34],row;
   PetscReal       val[34];
 
   PetscFunctionBeginUser;
   if (user->mtrue) {
-      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: analytical jacobian not ready in this cases ...\n"); }
-  //ierr = PetscPrintf(PETSC_COMM_WORLD,"[inside FormJacobianLocal()]\n"); CHKERRQ(ierr);
+      SETERRQ(PETSC_COMM_WORLD,1,"ERROR: analytical jacobian not ready in this case ...\n"); }
   if (user->checkadmissible) {
       ierr = checkadmissible(info,aH); CHKERRQ(ierr); }
 
@@ -292,6 +290,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
               val[32]   = dx * dy / user->dtjac;
               count++;
           }
+#if 0
           if ((user->cmbmodel) && (user->cmb != NULL)) {
               // add diagonal term for elevation (thickness) dependence of cmb
               ierr = dMdH_CMBModel(user->cmb,&dmdH); CHKERRQ(ierr);
@@ -300,6 +299,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
               val[33]   = - dmdH * dx * dy;
               count++;
           }
+#endif
           ierr = MatSetValuesStencil(jac,1,(MatStencil*)&row,count,(MatStencil*)col,val,ADD_VALUES);CHKERRQ(ierr);
       }
   }
