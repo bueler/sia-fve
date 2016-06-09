@@ -109,7 +109,7 @@ PetscErrorCode SetFromOptionsAppCtx(const char *optprefix, AppCtx *user) {
       "mahaffy.c",user->dumpdt/user->secpera,&user->dumpdt,&dtflg);CHKERRQ(ierr);
   if (dtflg)  user->dumpdt *= user->secpera;
   ierr = PetscOptionsReal(
-      "-initmagic", "constant, in years, used to multiply SMB to get initial iterate for thickness",
+      "-initmagic", "constant, in years, used to multiply CMB to get initial iterate for thickness",
       "mahaffy.c",user->initmagic,&user->initmagic,NULL);CHKERRQ(ierr);
   strcpy(histprefix,"PREFIX/");
   ierr = PetscOptionsString(

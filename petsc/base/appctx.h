@@ -44,7 +44,7 @@ typedef struct {
             dtjac,  //     ...                      used in steady-state for Jacobian eval
             dtrecovery,//  ...                      used in steady-state recovery
             dumpdt, // period between dumping state when time-stepping
-            initmagic;// constant, in years, used to multiply SMB to get initial iterate for thickness
+            initmagic;// constant, in years, used to multiply CMB to get initial iterate for thickness
   PetscInt  Nx, Ny, // grid has Nx x Ny nodes
             recoverycount,// number of steps of recovery taken; zero if recovery did not happen
             luzeropvterr, // error handler sets this if it "intercepts" zero pivot error
