@@ -329,7 +329,7 @@ PetscErrorCode ChopScaleCMBforInitialH(Vec Hinitial, AppCtx *user) {
       ierr = DMDAVecGetArray(user->da, user->m, &am);CHKERRQ(ierr);
       for (k=info.ys; k<info.ys+info.ym; k++) {
           for (j=info.xs; j<info.xs+info.xm; j++) {
-              M_CMBModel(user->cmb,ab[k][j],0,&(am[k][j]));
+              M_CMBModel(user->cmb,ab[k][j],&(am[k][j]));
           }
       }
       ierr = DMDAVecRestoreArray(user->da, user->b, &ab);CHKERRQ(ierr);
@@ -399,3 +399,4 @@ PetscErrorCode Step(Vec H, SNES *snes, ContinuationScheme *cs, SNESConvergedReas
   ierr = VecDestroy(&Htry);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
+

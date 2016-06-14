@@ -6,21 +6,20 @@
 #include <petsc.h>
 
 // model is:
-//     m(x,y) = lapse * (s(x,y) - ela)
-// where m(x,y) in m s^-1 is the climatic mass balance and where
-//     s(x,y) = b(x,y) + H(x,y)
-// is the surface elevation in m
+//     M = cmbgrad * (s - ela)
+// where  M  in m s^-1 is the climatic mass balance and where
+// s  is the surface elevation in m
 
 typedef struct {
-  PetscReal ela,   // elevation in meters of equilibrium-line-altitude
-            lapse; // lapse rate in s^-1
+  PetscReal ela,   // equilibrium line altitude (m)
+            zgrad; // vertical derivative (gradient) of CMB (s^-1)
 } CMBModel;
 
 PetscErrorCode SetFromOptionsCMBModel(CMBModel *cmb, const char *optprefix, PetscReal secpera);
 
-PetscErrorCode M_CMBModel(CMBModel *cmb, PetscReal b, PetscReal H, PetscReal *m);
+PetscErrorCode M_CMBModel(CMBModel *cmb, PetscReal s, PetscReal *M);
 
-PetscErrorCode dMdH_CMBModel(CMBModel *cmb, PetscReal *dmdH);
+PetscErrorCode dMds_CMBModel(CMBModel *cmb, PetscReal s, PetscReal *dMds);
 
 #endif // CMBMODEL_H_
 

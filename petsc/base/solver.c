@@ -74,7 +74,7 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
                   upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k;
   PetscReal       **am, **ab, **aHprev, **aDnodemax, **aWmagnodemax,
-                  ***aqquad,  ***aDquad, ***aWquad;
+                  ***aqquad,  ***aDquad, ***aWquad, s;
   Vec             qloc, Dloc, Wloc;
   DiagnosticScheme *ds = &(user->ds);
 
@@ -143,7 +143,8 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info, PetscScalar **aH, PetscSca
   if ((user->cmbmodel) && (user->cmb != NULL)) {
       for (k=info->ys; k<info->ys+info->ym; k++) {
           for (j=info->xs; j<info->xs+info->xm; j++) {
-              M_CMBModel(user->cmb,ab[k][j],aH[k][j],&(am[k][j]));
+              s = ab[k][j] + aH[k][j];             // surface elevation
+              M_CMBModel(user->cmb,s,&(am[k][j]));
               //PetscPrintf(PETSC_COMM_WORLD,"am[%d][%d] = %.5e\n",k,j,am[k][j]);
           }
       }
@@ -216,7 +217,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
   const PetscReal upmin = (1.0 - user->lambda) * 0.5,
                   upmax = (1.0 + user->lambda) * 0.5;
   PetscInt        j, k, count;
-//  PetscReal       **ab, ***adQ, dmdH;
+//  PetscReal       **ab, ***adQ, dMds;
   PetscReal       **ab, ***adQ;
   Vec             dQloc;
   MyStencil       col[34],row;
@@ -293,10 +294,11 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info, PetscScalar **aH, Mat jac,
 #if 0
           if ((user->cmbmodel) && (user->cmb != NULL)) {
               // add diagonal term for elevation (thickness) dependence of cmb
-              ierr = dMdH_CMBModel(user->cmb,&dmdH); CHKERRQ(ierr);
+              s = ab[k][j] + aH[k][j];             // FIXME: surface elevation
+              ierr = dMdH_CMBModel(user->cmb,s,&dMds); CHKERRQ(ierr);
               col[33].j = j;
               col[33].k = k;
-              val[33]   = - dmdH * dx * dy;
+              val[33]   = - dMds * dx * dy;
               count++;
           }
 #endif
