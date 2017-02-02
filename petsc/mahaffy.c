@@ -1,4 +1,4 @@
-/* (C) 2015 Ed Bueler */
+/* (C) 2015-2017 Ed Bueler */
 
 static const char help[] =
 "Solves steady ice sheet problem in 2d:\n"
@@ -19,12 +19,12 @@ static const char help[] =
 /* See README.md first.  Here are additional technical notes:
 
 Solution options:
+   ./mahaffy -mah_notry        # on SNES diverge, do not try again in recovery mode
    ./mahaffy -cs_end 4         # don't go all the way on continuation scheme
    ./mahaffy -cs_D0 1.0        # change constant diffusivity used in continuation scheme to other value than
                                # default = 10.0;  big may be good for convergence, esp. w upwinding
    ./mahaffy -mah_bedstep -mah_lambda 0.0  # NO upwinding on  grad b  part of flux
    ./mahaffy -mah_bedstep -mah_lambda 1.0  # FULL upwinding
-   ./mahaffy -mah_notry        # on SNES diverge, do not try again in recovery mode
 
 Jacobian by FD coloring:
    ./mahaffy -snes_fd_color    # with M*; this requires 3|mx and 3|my !
