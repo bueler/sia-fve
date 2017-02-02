@@ -13,9 +13,6 @@ Also utilities for computing stats, viewing at stdout, and viewing with X. */
 // below tol
 PetscErrorCode VecTrueChop(Vec v, PetscReal tol);
 
-// print according to AppCtx.silent
-void myPrintf(const AppCtx *user, const char format[], ...);
-
 // print a report to stdout
 PetscErrorCode StdoutReport(Vec,AppCtx *user);
 
