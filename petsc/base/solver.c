@@ -335,11 +335,11 @@ PetscErrorCode SNESAttempt(SNES *s, Vec H, PetscInt m,
   ierr = SNESGetIterationNumber(*s,&its);CHKERRQ(ierr);
   ierr = SNESGetKSP(*s,&ksp); CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&kspits); CHKERRQ(ierr);
-  myPrintf(user,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
-  myPrintf(user,"eps = %.6f ... %3d KSP (last) iters and %3d Newton iters\n",
+  if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"%3d. %s   with   ",m,SNESConvergedReasons[*reason]);
+  if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"eps = %.6f ... %3d KSP (last) iters and %3d Newton iters\n",
            user->eps,kspits,its);
   if (user->dtres > 0.0)
-      myPrintf(user,"       (on equations for backward Euler time step of %.4f a)\n",
+      if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"       (on equations for backward Euler time step of %.4f a)\n",
                user->dtres / user->secpera);
   PetscFunctionReturn(0);
 }

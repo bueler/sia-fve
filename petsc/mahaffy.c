@@ -89,7 +89,7 @@ int main(int argc,char **argv) {
   }
 
   if (user.read) {
-      myPrintf(&user,
+      if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,
           "reading dimensions and grid spacing from %s ...\n",user.readname);
       ierr = ReadDimensions(&user); CHKERRQ(ierr);  // sets user.[Nx,Ny,Lx,Ly,dx]
   } else {
@@ -106,6 +106,8 @@ int main(int argc,char **argv) {
                       user.Nx,user.Ny,PETSC_DECIDE,PETSC_DECIDE,  // default grid if Nx<0, Ny<0
                       1, (user.mtrue==PETSC_TRUE) ? 2 : 1,        // dof=1, stencilwidth=1 or 2
                       NULL,NULL,&user.da);
+  ierr = DMSetFromOptions(user.da); CHKERRQ(ierr);
+  ierr = DMSetUp(user.da); CHKERRQ(ierr);  // this must be called BEFORE SetUniformCoordinates
   ierr = DMSetApplicationContext(user.da, &user);CHKERRQ(ierr);
 
   // we now know grid spacing
@@ -118,7 +120,7 @@ int main(int argc,char **argv) {
                                    -user.Lx+user.dx/2, user.Lx+user.dx/2,
                                    -user.Ly+user.dy/2, user.Ly+user.dy/2,
                                    0.0,1.0); CHKERRQ(ierr);
-  myPrintf(&user,"solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
+  if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"solving on [-Lx,Lx]x[-Ly,Ly] with  Lx=%.3f km  and  Ly=%.3f km\n"
                  "grid of  %d x %d  points with spacing  dx = %.6f km  and  dy = %.6f km ...\n",
            user.Lx/1000.0,user.Ly/1000.0,info.mx,info.my,user.dx/1000.0,user.dy/1000.0);
 
@@ -129,6 +131,7 @@ int main(int argc,char **argv) {
                       info.mx,info.my,PETSC_DECIDE,PETSC_DECIDE,
                       4, (user.mtrue==PETSC_TRUE) ? 2 : 1,  // dof=4,  stencilwidth=1 or 2
                       NULL,NULL,&user.quadda);
+  ierr = DMSetUp(user.quadda); CHKERRQ(ierr);
   ierr = DMSetApplicationContext(user.quadda, &user);CHKERRQ(ierr);
 
   // this DMDA is used for evaluating DfluxDl at 4 quadrature points on each
@@ -140,6 +143,7 @@ int main(int argc,char **argv) {
                       16, 1,  // dof=16,  stencilwidth=1 ALWAYS
                               // SETERRQ() in Jacobian protects from use in mtrue=TRUE case
                       NULL,NULL,&user.sixteenda);
+  ierr = DMSetUp(user.sixteenda); CHKERRQ(ierr);
   ierr = DMSetApplicationContext(user.sixteenda, &user);CHKERRQ(ierr);
 
   ierr = DMCreateGlobalVector(user.da,&H);CHKERRQ(ierr);
@@ -161,16 +165,16 @@ int main(int argc,char **argv) {
 
   // fill user.[b,m,Hexact] according to 3 choices: data, dome exact soln, JSA exact soln
   if (user.read) {
-      myPrintf(&user,"reading b, m, Hexact (or Hobserved) from %s ...\n", user.readname);
+      if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"reading b, m, Hexact (or Hobserved) from %s ...\n", user.readname);
       ierr = ReadDataVecs(&user); CHKERRQ(ierr);
   } else {
       if (user.dome) {
-          myPrintf(&user,"generating b, m, Hexact from dome formulas in Bueler (2003) ...\n");
+          if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"generating b, m, Hexact from dome formulas in Bueler (2003) ...\n");
           ierr = VecSet(user.b,0.0); CHKERRQ(ierr);
           ierr = DomeCMB(user.m,&user); CHKERRQ(ierr);
           ierr = DomeExactThickness(user.Hexact,&user); CHKERRQ(ierr);
       } else if (user.bedstep) {
-          myPrintf(&user,"generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n");
+          if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"generating b, m, Hexact from bedrock step formulas in Jarosch et al (2013) ...\n");
           ierr = BedStepBed(user.b,&user); CHKERRQ(ierr);
           ierr = BedStepCMB(user.m,&user); CHKERRQ(ierr);
           ierr = BedStepExactThickness(user.Hexact,&user); CHKERRQ(ierr);
@@ -181,15 +185,15 @@ int main(int argc,char **argv) {
 
   // fill user.Hinitial according to either -mah_readinitial{surface} foo.dat or chop-scale-CMB
   if (user.readinitial) {
-      myPrintf(&user,"  reading Hinitial from %s ...\n", user.readinitialname);
+      if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"  reading Hinitial from %s ...\n", user.readinitialname);
       ierr = ReadInitialH(&user); CHKERRQ(ierr);
   } else if (user.readinitialsurface) {
-      myPrintf(&user,"  generating Hinitial by reading surface from %s\n"
+      if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"  generating Hinitial by reading surface from %s\n"
                      "    and subtracting bed which was from %s ...\n",
                user.readinitialname, user.readname);
       ierr = GenerateInitialHFromReadSurface(&user); CHKERRQ(ierr);
   } else {
-      myPrintf(&user,"  generating Hinitial by chop-and-scale of CMB ...\n");
+      if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"  generating Hinitial by chop-and-scale of CMB ...\n");
       ierr = ChopScaleCMBforInitialH(user.Hinitial,&user); CHKERRQ(ierr);
       //ierr = VecSet(user.Hinitial,0.0); CHKERRQ(ierr);
   }
@@ -214,12 +218,12 @@ int main(int argc,char **argv) {
   ierr = SNESVISetComputeVariableBounds(snes,&FormBounds);CHKERRQ(ierr);
   ierr = SNESSetFromOptions(snes);CHKERRQ(ierr);
 
-  myPrintf(&user,    "solving %s by %s method ...\n",
+  if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,    "solving %s by %s method ...\n",
            (user.dtres > 0.0) ? "backward-Euler time-step problems" : "steady-state problem",
            (user.mtrue) ? "true Mahaffy" :
                ((user.lambda == 0.0) ? "M*-without-upwinding" : "M*"));
   if (user.dtres > 0.0) {
-      myPrintf(&user,"  time-stepping on interval [0.0 a,%.4f a] with initial step %.4f a\n",
+      if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"  time-stepping on interval [0.0 a,%.4f a] with initial step %.4f a\n",
                user.T/user.secpera,user.dtres/user.secpera);
   }
 
@@ -250,7 +254,7 @@ int main(int argc,char **argv) {
           }
           ierr = VecCopy(H,user.Hinitial); CHKERRQ(ierr);
           tcurrent += user.dtres;
-          myPrintf(&user,"t = %.4f a: completed time step of duration %.4f a in interval [0.0 a,%.4f a]\n",
+          if (!user.silent) PetscPrintf(PETSC_COMM_WORLD,"t = %.4f a: completed time step of duration %.4f a in interval [0.0 a,%.4f a]\n",
                    tcurrent/user.secpera,user.dtres/user.secpera,user.T/user.secpera);
           if ((user.dumpdt > 0.0) && (tcurrent >= dumpdtlast + user.dumpdt)) {
               Vec  r;
@@ -369,14 +373,14 @@ PetscErrorCode Step(Vec H, SNES *snes, ContinuationScheme *cs, SNESConvergedReas
       ierr = SNESAttempt(snes,Htry,m,reason,user);CHKERRQ(ierr);
       if (*reason < 0) {
           if ((user->divergetryagain) && (user->recoverycount == 0) && (user->dtres <= 0.0)) {
-              myPrintf(user,
+              if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,
                   "         turning on steady-state recovery mode (backward Euler time step of %.2f a) ...\n",
                   user->dtrecovery/user->secpera);
               user->dtres = user->dtrecovery;
               user->dtjac = user->dtrecovery;
               user->recoverycount = 1;
               user->goodm = m-1;
-              myPrintf(user,
+              if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,
                   "         trying again ...\n");
               ierr = VecCopy(H,user->Hinitial); CHKERRQ(ierr);
               ierr = VecCopy(H,Htry); CHKERRQ(ierr);

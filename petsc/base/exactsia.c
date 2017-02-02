@@ -9,8 +9,8 @@
 #define domeH0 3600.0  // center thickness of exact ice sheet
 
 PetscErrorCode DomeDefaultGrid(AppCtx *user) {
-  user->Nx = -18;        // so DMDACreate2d() defaults to 18x18
-  user->Ny = -18;
+  user->Nx = 18;        // so DMDACreate2d() defaults to 18x18
+  user->Ny = 18;
   user->Lx = 900.0e3;    // m
   user->Ly = 900.0e3;    // m
   PetscFunctionReturn(0);
@@ -122,8 +122,8 @@ PetscErrorCode DomeExactThickness(Vec H, const AppCtx *user) {
 #define bedstepm0 2.0/secpera
 
 PetscErrorCode BedStepDefaultGrid(AppCtx *user) {
-  user->Nx = -30;
-  user->Ny = -30;
+  user->Nx = 30;
+  user->Ny = 30;
   user->Lx = 30.0e3;    // m
   user->Ly = 30.0e3;    // m
   PetscFunctionReturn(0);

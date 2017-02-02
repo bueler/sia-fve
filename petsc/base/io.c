@@ -38,17 +38,6 @@ PetscErrorCode VecZeroWhereVecSmall(Vec v, Vec w, PetscReal tol) {
   PetscFunctionReturn(0);
 }
 
-void myPrintf(const AppCtx *user, const char format[], ...) {
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if ((!user->silent) && (rank==0)) {
-        va_list Argp;
-        va_start(Argp, format);
-        PetscVFPrintf(PETSC_STDOUT, format, Argp);
-        va_end(Argp);
-    }
-}
-
 PetscErrorCode AxisExtractSizes(Vec a, PetscInt *N, PetscReal *delta, PetscReal *L) {
     PetscErrorCode ierr;
     PetscReal *aa, fulllength;
@@ -212,7 +201,7 @@ PetscErrorCode DumpToFile(Vec H, Vec r, const char name[], AppCtx *user) {
     int            strerr;
     PetscViewer    viewer;
 
-    myPrintf(user,"writing x,y,b,m,Hexact,H,residual%s into file %s in %s ...\n",
+    if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"writing x,y,b,m,Hexact,H,residual%s into file %s in %s ...\n",
              (user->nodiag) ? "" : ",D,Wmag",name,user->figsprefix);
 
     strerr = sprintf(filename,"%s%s",user->figsprefix,name);
@@ -313,22 +302,22 @@ PetscErrorCode StdoutReport(Vec H, AppCtx *user) {
   PetscReal       volH, volHexact, areaH, enorminf, enorm1, voldiffrel;
 
   ierr = GetVolumeArea(H, user, &volH, &volHexact, &areaH); CHKERRQ(ierr);
-  myPrintf(user,"       vol = %8.2e km3,  area = %8.2e km2",
+  if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"       vol = %8.2e km3,  area = %8.2e km2",
                 (double)volH / 1.0e9, (double)areaH / 1.0e6);
 
   if (!user->nodiag) {
       PetscReal avD, maxD;
       ierr = DiffusivityReduce(user,&avD,&maxD); CHKERRQ(ierr);
-      myPrintf(user,";  diagnostics:  max D = %6.4f,  av D = %6.4f m^2 s-1\n",
+      if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,";  diagnostics:  max D = %6.4f,  av D = %6.4f m^2 s-1\n",
                     (double)maxD, (double)avD);
   } else
-      myPrintf(user,"\n");
+      if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"\n");
 
   ierr = DMDAGetLocalInfo(user->da,&info); CHKERRQ(ierr);
   NN = info.mx * info.my;
   ierr = GetErrors(H, user, &enorminf, &enorm1); CHKERRQ(ierr);
   voldiffrel = PetscAbsReal(volH - volHexact) / volHexact;
-  myPrintf(user,"       errors:  max = %7.2f m,  av = %7.2f m,  voldiff%% = %5.2f\n",
+  if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"       errors:  max = %7.2f m,  av = %7.2f m,  voldiff%% = %5.2f\n",
                 (double)enorminf, (double)enorm1 / NN, 100.0 * (double)voldiffrel);
 
   PetscFunctionReturn(0);
@@ -344,7 +333,7 @@ PetscErrorCode WriteHistoryFile(Vec H, const char name[], int argc, char **argv,
     double          computationtime;
     PetscReal       volH, volHexact, areaH, enorminf, enorm1, avD, maxD;
 
-    myPrintf(user,"writing %s to %s ...\n",name,user->figsprefix);
+    if (!user->silent) PetscPrintf(PETSC_COMM_WORLD,"writing %s to %s ...\n",name,user->figsprefix);
 
     strerr = sprintf(filename,"%s%s",user->figsprefix,name);
     if (strerr < 0) { SETERRQ1(PETSC_COMM_WORLD,6,"sprintf() returned %d < 0 ... stopping\n",strerr); }
