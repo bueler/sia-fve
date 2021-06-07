@@ -7,6 +7,17 @@ We use PETSc DMDA and SNESVI to solve the steady-state SIA free boundary problem
 
 This code is documented by the paper in `../paper/`.
 
+Note added June 2021
+--------------------
+
+This application still works in PETSc 3.15.0.  Thus `mahaffy.c`, which was last updated in 2017, has been stable as a PETSc application.
+
+Here are three comments regarding the lack of multilevel ideas herein:
+
+    1. I failed to exploit `-snes_grid_sequence`, which represents an alternative (or supplement) to the continuation scheme which was implemented.  Relatively-easy modifications should make this work.
+    2. `-pc_type gamg` seems promising but it fails with the default SNESVI type `-snes_type vinewtonrsls`.  (I think this is a PETSc bug, i.e. in the RS code; see [PETSc issue 829](https://gitlab.com/petsc/petsc/-/issues/829).)  Some runs seem to work with `-snes_type vinewtonssls -pc_type gamg`.
+    3. True geometric multigrid needs something like an multilevel constraint decomposition (MCD) scheme which maintains admissibility across the grid hierarchy.  See the [mg-glaciers](https://github.com/bueler/mg-glaciers) repo.
+
 Quickstart
 ----------
 
